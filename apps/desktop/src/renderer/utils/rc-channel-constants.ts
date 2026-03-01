@@ -74,3 +74,35 @@ export function reorderChannels<T>(rawChannels: T[], rxMap: number[]): T[] {
   }
   return reordered;
 }
+
+/**
+ * Reorder MAVLink RC_CHANNELS into functional order using RCMAP_* parameters.
+ *
+ * MAVLink RC_CHANNELS arrive in physical order (CH1, CH2, ...).
+ * RCMAP_* params define which physical channel carries which function (1-based).
+ * This returns channels in functional order: [Roll, Pitch, Throttle, Yaw, CH5, CH6, ...]
+ * matching the standard display order users expect.
+ *
+ * Only the first 4 channels are reordered; channels 5+ pass through unchanged.
+ */
+export function reorderChannelsWithRcmap<T>(
+  channels: T[],
+  rcmap: { roll: number; pitch: number; throttle: number; yaw: number },
+): T[] {
+  if (channels.length < 4) return channels;
+
+  const reordered = [...channels];
+  // RCMAP values are 1-based, convert to 0-based index
+  const rollIdx = rcmap.roll - 1;
+  const pitchIdx = rcmap.pitch - 1;
+  const throttleIdx = rcmap.throttle - 1;
+  const yawIdx = rcmap.yaw - 1;
+
+  // Place in functional order: Roll, Pitch, Throttle, Yaw
+  if (rollIdx >= 0 && rollIdx < channels.length) reordered[0] = channels[rollIdx]!;
+  if (pitchIdx >= 0 && pitchIdx < channels.length) reordered[1] = channels[pitchIdx]!;
+  if (throttleIdx >= 0 && throttleIdx < channels.length) reordered[2] = channels[throttleIdx]!;
+  if (yawIdx >= 0 && yawIdx < channels.length) reordered[3] = channels[yawIdx]!;
+
+  return reordered;
+}

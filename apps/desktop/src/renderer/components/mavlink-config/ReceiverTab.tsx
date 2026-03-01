@@ -13,7 +13,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Radio, Signal, SignalZero, Activity, AlertTriangle, HelpCircle } from 'lucide-react';
 import { useParameterStore } from '../../stores/parameter-store';
 import { useTelemetryStore } from '../../stores/telemetry-store';
-import { PRIMARY_CHANNEL_COUNT, getMavlinkChannelNames } from '../../utils/rc-channel-constants';
+import { PRIMARY_CHANNEL_COUNT, getMavlinkChannelNames, reorderChannelsWithRcmap } from '../../utils/rc-channel-constants';
 
 // =============================================================================
 // Constants
@@ -132,14 +132,23 @@ const ReceiverTab: React.FC = () => {
   const rcChannels = useTelemetryStore((s) => s.rcChannels);
   const lastRcChannels = useTelemetryStore((s) => s.lastRcChannels);
 
-  // Build RCMAP-aware channel names from ArduPilot parameters
-  const channelNames = useMemo(() => {
-    const roll = (parameters.get('RCMAP_ROLL')?.value as number) ?? 1;
-    const pitch = (parameters.get('RCMAP_PITCH')?.value as number) ?? 2;
-    const throttle = (parameters.get('RCMAP_THROTTLE')?.value as number) ?? 3;
-    const yaw = (parameters.get('RCMAP_YAW')?.value as number) ?? 4;
-    return getMavlinkChannelNames({ roll, pitch, throttle, yaw });
-  }, [parameters]);
+  // RCMAP parameters — which physical channel carries which function (1-based)
+  const rcmap = useMemo(() => ({
+    roll: (parameters.get('RCMAP_ROLL')?.value as number) ?? 1,
+    pitch: (parameters.get('RCMAP_PITCH')?.value as number) ?? 2,
+    throttle: (parameters.get('RCMAP_THROTTLE')?.value as number) ?? 3,
+    yaw: (parameters.get('RCMAP_YAW')?.value as number) ?? 4,
+  }), [parameters]);
+
+  // Channel names in physical order (for calibration table)
+  const physicalChannelNames = useMemo(() => {
+    return getMavlinkChannelNames(rcmap);
+  }, [rcmap]);
+
+  // Functional channel names: Roll, Pitch, Throttle, Yaw, CH5, CH6, ...
+  const functionalChannelNames = useMemo(() => {
+    return reorderChannelsWithRcmap(physicalChannelNames, rcmap);
+  }, [physicalChannelNames, rcmap]);
 
   // Signal status based on last update time
   const [signalStatus, setSignalStatus] = useState<'none' | 'stale' | 'active'>('none');
@@ -176,6 +185,16 @@ const ReceiverTab: React.FC = () => {
       setActiveChannels(active);
     }
   }, [rcChannels.channels, channelBaseline]);
+
+  // Reorder channels and active flags into functional order for display
+  const functionalChannels = useMemo(
+    () => reorderChannelsWithRcmap(rcChannels.channels, rcmap),
+    [rcChannels.channels, rcmap],
+  );
+  const functionalActive = useMemo(
+    () => reorderChannelsWithRcmap(activeChannels, rcmap),
+    [activeChannels, rcmap],
+  );
 
   // Current RC protocol bitmask
   const rcProtocols = parameters.get('RC_PROTOCOLS')?.value ?? 0;
@@ -285,20 +304,20 @@ const ReceiverTab: React.FC = () => {
               <span>{rcChannels.chancount} channels</span>
             </div>
 
-            {/* Primary sticks - 2 column grid */}
+            {/* Primary sticks - functional order (Roll, Pitch, Throttle, Yaw) */}
             <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-              {rcChannels.channels.slice(0, Math.min(rcChannels.chancount, PRIMARY_CHANNEL_COUNT)).map((value, i) => (
+              {functionalChannels.slice(0, Math.min(rcChannels.chancount, PRIMARY_CHANNEL_COUNT)).map((value, i) => (
                 <ChannelBar
                   key={i}
                   channelIndex={i}
                   value={value}
-                  isActive={activeChannels[i] ?? false}
-                  name={channelNames[i] ?? `CH${i + 1}`}
+                  isActive={functionalActive[i] ?? false}
+                  name={functionalChannelNames[i] ?? `CH${i + 1}`}
                 />
               ))}
             </div>
 
-            {/* AUX channels - compact 3-column grid */}
+            {/* AUX channels - compact 3-column grid (physical order) */}
             {rcChannels.chancount > PRIMARY_CHANNEL_COUNT && (
               <>
                 <div className="border-t border-zinc-700/50" />
@@ -309,7 +328,7 @@ const ReceiverTab: React.FC = () => {
                       channelIndex={i + PRIMARY_CHANNEL_COUNT}
                       value={value}
                       isActive={activeChannels[i + PRIMARY_CHANNEL_COUNT] ?? false}
-                      name={channelNames[i + PRIMARY_CHANNEL_COUNT] ?? `CH${i + PRIMARY_CHANNEL_COUNT + 1}`}
+                      name={physicalChannelNames[i + PRIMARY_CHANNEL_COUNT] ?? `CH${i + PRIMARY_CHANNEL_COUNT + 1}`}
                     />
                   ))}
                 </div>
@@ -361,7 +380,7 @@ const ReceiverTab: React.FC = () => {
             <tbody>
               {calData.map((cal, i) => (
                 <tr key={i} className="border-t border-zinc-800/50">
-                  <td className="px-3 py-1.5 text-zinc-300">{channelNames[i] ?? `CH${i + 1}`}</td>
+                  <td className="px-3 py-1.5 text-zinc-300">{physicalChannelNames[i] ?? `CH${i + 1}`}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-zinc-400">{cal.min}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-zinc-400">{cal.trim}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-zinc-400">{cal.max}</td>

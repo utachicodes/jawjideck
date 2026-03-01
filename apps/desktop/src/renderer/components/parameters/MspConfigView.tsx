@@ -2136,6 +2136,9 @@ export function MspConfigView() {
     setLoading(true);
     setError(null);
     try {
+      // Load rxMap early so all tabs have correct channel mapping
+      useReceiverStore.getState().loadRxMap();
+
       // First batch: essential config (PID, rates, modes)
       const [pidData, rcData, modesData] = await Promise.all([
         window.electronAPI?.mspGetPid(),

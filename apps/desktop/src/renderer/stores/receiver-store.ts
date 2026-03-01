@@ -62,6 +62,7 @@ interface ReceiverState {
   startPolling: () => void;
   stopPolling: () => void;
   loadConfig: () => Promise<void>;
+  loadRxMap: () => Promise<void>;
   saveConfig: () => Promise<boolean>;
   hasChanges: () => boolean;
   reset: () => void;
@@ -231,6 +232,17 @@ export const useReceiverStore = create<ReceiverState>((set, get) => ({
       console.error('[ReceiverStore] loadConfig failed:', error);
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  loadRxMap: async () => {
+    try {
+      const rxMap = await window.electronAPI?.mspGetRxMap();
+      if (rxMap) {
+        set({ rxMap: [...rxMap], rxMapOriginal: [...rxMap] });
+      }
+    } catch (error) {
+      console.error('[ReceiverStore] loadRxMap failed:', error);
     }
   },
 
