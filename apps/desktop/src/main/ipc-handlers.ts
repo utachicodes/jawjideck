@@ -612,6 +612,29 @@ const VEHICLE_NAMES: Record<number, string> = {
   42: 'Winch',
 };
 
+// Non-vehicle MAV_TYPE values that should be ignored for heartbeat/telemetry
+// These are peripheral components (companion computers, cameras, gimbals, etc.)
+// that send their own heartbeats but don't represent the actual vehicle
+const NON_VEHICLE_TYPES = new Set([
+  5,  // Antenna Tracker
+  6,  // GCS
+  18, // Onboard Companion
+  26, // Gimbal
+  27, // ADSB
+  30, // Camera
+  31, // Charging Station
+  32, // FLARM
+  33, // Servo
+  34, // ODID
+  36, // Battery
+  37, // Parachute
+  38, // Log
+  39, // OSD
+  40, // IMU
+  41, // GPS
+  42, // Winch
+]);
+
 // Safely send IPC message to window (checks if window is still valid)
 function safeSend(mainWindow: BrowserWindow, channel: string, ...args: unknown[]): void {
   try {
@@ -730,6 +753,10 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
       const vehicleType = payload[4]!;
       const autopilotType = payload[5]!;
       const baseMode = payload[6]!;
+
+      // Only process heartbeats from the connected autopilot, not companion computers/cameras/etc.
+      if (NON_VEHICLE_TYPES.has(vehicleType)) break;
+      if (connectionState.componentId != null && packet.compid !== connectionState.componentId) break;
 
       currentVehicleType = vehicleType;
       const armed = (baseMode & 0x80) !== 0; // MAV_MODE_FLAG_SAFETY_ARMED
@@ -1659,7 +1686,14 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
               const vehicleType = packet.payload[4]!;
               const autopilotType = packet.payload[5]!;
 
-              // First heartbeat - connection confirmed!
+              // Skip heartbeats from non-vehicle components (companion computers, cameras, GCS, etc.)
+              // These send their own heartbeats but don't represent the actual vehicle
+              if (NON_VEHICLE_TYPES.has(vehicleType)) {
+                sendLog(mainWindow, 'debug', `Ignoring heartbeat from non-vehicle component: ${VEHICLE_NAMES[vehicleType] || vehicleType} (sysid=${packet.sysid}, compid=${packet.compid})`);
+                break;
+              }
+
+              // First heartbeat from a real vehicle - connection confirmed!
               if (connectionState.isWaitingForHeartbeat) {
                 if (heartbeatTimeout) {
                   clearTimeout(heartbeatTimeout);
@@ -4560,6 +4594,12 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
               const vehicleType = payload.length > 4 ? payload[4] : 0;
               const vTypeName = VEHICLE_NAMES[vehicleType] || `Type ${vehicleType}`;
 
+              // Skip non-vehicle heartbeats (companion computers, cameras, etc.)
+              if (NON_VEHICLE_TYPES.has(vehicleType)) {
+                sendLog(mainWindow, 'debug', `Skipping non-vehicle heartbeat: ${vTypeName}`);
+                return;
+              }
+
               const autopilotType = payload.length > 5 ? payload[5] : 0;
               const autopilotName = AUTOPILOT_NAMES[autopilotType] || `Autopilot ${autopilotType}`;
 
@@ -4789,13 +4829,16 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
             let pkt;
             while ((pkt = parser.parseNext()) !== null) {
               if (pkt.msgid === 0) { // HEARTBEAT
+                const vType = pkt.payload.length > 4 ? pkt.payload[4]! : 0;
+                // Skip non-vehicle heartbeats (companion computers, cameras, etc.)
+                if (NON_VEHICLE_TYPES.has(vType)) continue;
                 gotHeartbeat = true;
                 transport.off('data', handler);
                 resolve({
                   systemId: pkt.sysid,
                   componentId: pkt.compid,
                   mavVersion: pkt.header === 0xFD ? 2 : 1,
-                  vehicleType: pkt.payload.length > 4 ? pkt.payload[4]! : 0,
+                  vehicleType: vType,
                 });
               }
             }
