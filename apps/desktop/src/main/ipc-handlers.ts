@@ -107,6 +107,7 @@ import {
   createReportPayload,
   createMspBoardDump,
   createMavlinkBoardDump,
+  applyPrivacyFilter,
   saveEncryptedReport,
   getEncryptionInfo,
   type FileLogEntry,
@@ -501,6 +502,20 @@ let paramRequestInFlight = false; // Guard against concurrent param download req
 // STATUSTEXT chunk reassembly buffer (for multi-chunk messages >50 chars)
 const statustextChunkBuffer = new Map<number, { severity: number; chunks: string[]; timer: NodeJS.Timeout | null }>();
 
+// MAVLink diagnostic cache for bug reports
+let cachedSysStatus: BoardDumpMavlink['sys_status'] | null = null;
+let cachedHeartbeat: BoardDumpMavlink['heartbeat'] | null = null;
+let cachedAutopilotVersion: BoardDumpMavlink['autopilot_version'] | null = null;
+let statustextHistory: Array<{ ts: number; severity: number; severityLabel: string; text: string }> = [];
+const MAX_STATUSTEXT_HISTORY = 150;
+
+function resetMavlinkDiagCache(): void {
+  cachedSysStatus = null;
+  cachedHeartbeat = null;
+  cachedAutopilotVersion = null;
+  statustextHistory = [];
+}
+
 // Parameter metadata cache (keyed by vehicle type)
 const metadataCache = new Map<VehicleType, ParameterMetadataStore>();
 
@@ -778,6 +793,9 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
         isFlying: armed && (baseMode & 0x04) !== 0, // MAV_MODE_FLAG_CUSTOM_MODE_ENABLED as proxy
       };
       queueMavlinkTelemetry(mainWindow, { flight });
+
+      // Cache for bug report diagnostics
+      cachedHeartbeat = { autopilot: autopilotType, type: vehicleType, base_mode: baseMode, custom_mode: customMode, system_status: payload[7]! };
       break;
     }
 
@@ -789,6 +807,20 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
 
       const battery: BatteryData = { voltage, current, remaining };
       queueMavlinkTelemetry(mainWindow, { battery });
+
+      // Cache full SYS_STATUS for bug report diagnostics
+      cachedSysStatus = {
+        sensors_present: readUint32(payload, 0),
+        sensors_enabled: readUint32(payload, 4),
+        sensors_health: readUint32(payload, 8),
+        load: readUint16(payload, 12),
+        voltage_battery: readUint16(payload, 14),
+        current_battery: readInt16(payload, 16),
+        errors_count1: readUint16(payload, 18),
+        errors_count2: readUint16(payload, 20),
+        errors_count3: readUint16(payload, 22),
+        errors_count4: readUint16(payload, 24),
+      };
       break;
     }
 
@@ -874,10 +906,17 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
       const chunkId = payload.length >= 54 ? readUint16(payload, 51) : 0;
       const chunkSeq = payload.length >= 54 ? (payload[53] ?? 0) : 0;
 
+      // Helper to push to statustext history ring buffer
+      const pushStatustextHistory = (sev: number, sevLabel: string, msg: string): void => {
+        statustextHistory.push({ ts: Date.now(), severity: sev, severityLabel: sevLabel, text: msg });
+        if (statustextHistory.length > MAX_STATUSTEXT_HISTORY) statustextHistory = statustextHistory.slice(-MAX_STATUSTEXT_HISTORY);
+      };
+
       if (chunkId === 0) {
         // Single-chunk message — emit immediately
         const severityLabel = SEVERITY_LABELS[severity] ?? 'INFO';
         mainWindow.webContents.send(IPC_CHANNELS.MAVLINK_STATUSTEXT, { severity, severityLabel, text });
+        pushStatustextHistory(severity, severityLabel, text);
       } else {
         // Multi-chunk message — accumulate and reassemble
         let entry = statustextChunkBuffer.get(chunkId);
@@ -897,6 +936,7 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
           const fullText = entry.chunks.join('');
           const severityLabel = SEVERITY_LABELS[entry.severity] ?? 'INFO';
           mainWindow.webContents.send(IPC_CHANNELS.MAVLINK_STATUSTEXT, { severity: entry.severity, severityLabel, text: fullText });
+          pushStatustextHistory(entry.severity, severityLabel, fullText);
           statustextChunkBuffer.delete(chunkId);
         } else {
           // Set timeout to flush incomplete messages after 2s
@@ -906,6 +946,7 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
               const fullText = buf.chunks.join('');
               const severityLabel = SEVERITY_LABELS[buf.severity] ?? 'INFO';
               mainWindow.webContents.send(IPC_CHANNELS.MAVLINK_STATUSTEXT, { severity: buf.severity, severityLabel, text: fullText });
+              pushStatustextHistory(buf.severity, severityLabel, fullText);
               statustextChunkBuffer.delete(chunkId);
             }
           }, 2000);
@@ -1338,6 +1379,13 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
             sendConnectionState(mainWindow);
             sendLog(mainWindow, 'info', `Board UID: ${boardUid}`);
           }
+
+          // Cache for bug report diagnostics
+          cachedAutopilotVersion = {
+            flight_sw_version: view.getUint32(16, true),
+            board_version: view.getUint32(28, true),
+            capabilities: view.getUint32(0, true), // lower 32 bits of capabilities u64
+          };
         }
       } catch (err) {
         sendLog(mainWindow, 'debug', 'Failed to parse AUTOPILOT_VERSION', String(err));
@@ -1625,6 +1673,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     }
 
     pendingReconnect = null;
+    resetMavlinkDiagCache();
     connectionState = {
       isConnected: false,
       isReconnecting: false,
@@ -1851,6 +1900,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       }
       currentTransport = null;
       mavlinkParser = null;
+      resetMavlinkDiagCache();
       connectionState.isConnected = false;
       connectionState.isWaitingForHeartbeat = false;
       sendLog(mainWindow, 'info', 'Connection closed');
@@ -2110,6 +2160,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       }
       currentTransport = null;
       mavlinkParser = null;
+      resetMavlinkDiagCache();
       connectionState.isConnected = false;
       connectionState.isWaitingForHeartbeat = false;
       sendLog(mainWindow, 'info', 'Connection closed');
@@ -2288,6 +2339,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         }
         currentTransport = null;
         mavlinkParser = null;
+        resetMavlinkDiagCache();
         connectionState.isConnected = false;
         connectionState.isWaitingForHeartbeat = false;
         sendLog(mainWindow, 'info', 'Connection closed');
@@ -2365,6 +2417,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
               await new Promise(resolve => setTimeout(resolve, 500));
               currentTransport?.close();
               currentTransport = null;
+              resetMavlinkDiagCache();
               connectionState = { isConnected: false, isWaitingForHeartbeat: false, packetsReceived: 0, packetsSent: 0 };
               sendConnectionState(mainWindow);
 
@@ -2580,6 +2633,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       currentTransport = null;
       mavlinkParser = null;
       paramRequestInFlight = false;
+      resetMavlinkDiagCache();
       if (ftpClient) {
         ftpClient.cleanup().catch(() => {});
         ftpClient = null;
@@ -5430,31 +5484,42 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         return { success: false, error: 'Not connected to MAVLink board' };
       }
 
-      // For MAVLink, we use cached data from parameter store (sent via renderer)
-      // The actual parameter data needs to be passed from renderer since it's stored there
-      // Return a template - renderer will fill in the parameters
+      safeSend(mainWindow, IPC_CHANNELS.REPORT_PROGRESS, { stage: 'board_dump', message: 'Collecting MAVLink diagnostics...' });
+
+      const defaultSysStatus: BoardDumpMavlink['sys_status'] = {
+        sensors_present: 0, sensors_enabled: 0, sensors_health: 0, load: 0,
+        voltage_battery: 0, current_battery: 0,
+        errors_count1: 0, errors_count2: 0, errors_count3: 0, errors_count4: 0,
+      };
+      const defaultHeartbeat: BoardDumpMavlink['heartbeat'] = {
+        autopilot: 0, type: 0, base_mode: 0, custom_mode: 0, system_status: 0,
+      };
+
+      // Decode firmware version from flight_sw_version (ArduPilot encoding: major<<24 | minor<<16 | patch<<8 | type)
+      let fcVersion = 'Unknown';
+      if (cachedAutopilotVersion) {
+        const swVer = cachedAutopilotVersion.flight_sw_version;
+        const major = (swVer >> 24) & 0xFF;
+        const minor = (swVer >> 16) & 0xFF;
+        const patch = (swVer >> 8) & 0xFF;
+        if (major > 0 || minor > 0 || patch > 0) {
+          fcVersion = `${major}.${minor}.${patch}`;
+        }
+      }
+
       return {
         success: true,
         dump: {
           type: 'mavlink',
           parameters: {}, // Will be filled by renderer from parameter store
-          sys_status: {
-            sensors_present: 0,
-            sensors_enabled: 0,
-            sensors_health: 0,
-            load: 0,
-            voltage_battery: 0,
-            current_battery: 0,
-            errors_count1: 0,
-          },
-          heartbeat: {
-            autopilot: 0,
-            type: 0,
-            base_mode: 0,
-            custom_mode: 0,
-          },
+          sys_status: cachedSysStatus ?? defaultSysStatus,
+          heartbeat: cachedHeartbeat ?? defaultHeartbeat,
+          autopilot_version: cachedAutopilotVersion ?? undefined,
+          statustext_history: statustextHistory.map(e => ({ ...e, text: applyPrivacyFilter(e.text) })),
+          board_uid: connectionState.boardUid,
+          board_id: connectionState.boardId,
           fc_variant: connectionState.autopilot || 'Unknown',
-          fc_version: 'Unknown',
+          fc_version: fcVersion,
         },
       };
     } catch (error) {

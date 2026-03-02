@@ -38,18 +38,25 @@ export interface BoardDumpMavlink {
     voltage_battery: number;
     current_battery: number;
     errors_count1: number;
+    errors_count2: number;
+    errors_count3: number;
+    errors_count4: number;
   };
   heartbeat: {
     autopilot: number;
     type: number;
     base_mode: number;
     custom_mode: number;
+    system_status: number;
   };
   autopilot_version?: {
     flight_sw_version: number;
     board_version: number;
     capabilities: number;
   };
+  statustext_history?: Array<{ ts: number; severity: number; severityLabel: string; text: string }>;
+  board_uid?: string;
+  board_id?: string;
   fc_variant: string;
   fc_version: string;
 }
@@ -250,7 +257,10 @@ export function createMavlinkBoardDump(
   heartbeat: BoardDumpMavlink['heartbeat'],
   autopilotVersion: BoardDumpMavlink['autopilot_version'] | undefined,
   fcVariant: string,
-  fcVersion: string
+  fcVersion: string,
+  statustextHistory?: Array<{ ts: number; severity: number; severityLabel: string; text: string }>,
+  boardUid?: string,
+  boardId?: string,
 ): BoardDumpMavlink {
   return {
     type: 'mavlink',
@@ -258,6 +268,9 @@ export function createMavlinkBoardDump(
     sys_status: sysStatus,
     heartbeat,
     autopilot_version: autopilotVersion,
+    statustext_history: statustextHistory?.map(e => ({ ...e, text: applyPrivacyFilter(e.text) })),
+    board_uid: boardUid,
+    board_id: boardId,
     fc_variant: fcVariant,
     fc_version: fcVersion,
   };
