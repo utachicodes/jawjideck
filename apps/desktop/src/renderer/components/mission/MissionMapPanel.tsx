@@ -13,6 +13,10 @@ import { SEGMENT_COLORS, getSegmentColor, computeItemColors } from '../../utils/
 import { FenceMapOverlay } from '../geofence/FenceMapOverlay';
 import { FenceDrawTool } from '../geofence/FenceDrawTool';
 import { RallyMapOverlay } from '../rally/RallyMapOverlay';
+
+// Terrain elevation overlay
+import { TerrainOverlayLayer, type ElevationRange } from '../map/TerrainOverlayLayer';
+import { ElevationLegend } from '../map/ElevationLegend';
 import { useFenceStore } from '../../stores/fence-store';
 import { useRallyStore } from '../../stores/rally-store';
 import { useEditModeStore } from '../../stores/edit-mode-store';
@@ -645,6 +649,10 @@ export function MissionMapPanel({ readOnly = false }: MissionMapPanelProps) {
   const [fitTrigger, setFitTrigger] = useState(0);
   const [centerOnVehicleTrigger, setCenterOnVehicleTrigger] = useState(0);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [showTerrain, setShowTerrain] = useState(false);
+  const [elevationRange, setElevationRange] = useState<ElevationRange>({ min: 0, max: 0 });
+  const [terrainAutoRange, setTerrainAutoRange] = useState(true);
+  const [terrainFixedRange, setTerrainFixedRange] = useState<ElevationRange>({ min: 0, max: 1500 });
 
   // Update layer when vehicle type changes (e.g., connecting to a Rover)
   useEffect(() => {
@@ -833,6 +841,15 @@ export function MissionMapPanel({ readOnly = false }: MissionMapPanelProps) {
           maxZoom={layer.maxZoom}
         />
 
+        {/* Terrain elevation heatmap overlay */}
+        {showTerrain && (
+          <TerrainOverlayLayer
+            opacity={0.6}
+            fixedRange={terrainAutoRange ? null : terrainFixedRange}
+            onElevationRangeChange={setElevationRange}
+          />
+        )}
+
         {/* Mission path - colored segments based on active state */}
         {pathSegments.map((seg, i) => (
           <Polyline
@@ -942,7 +959,33 @@ export function MissionMapPanel({ readOnly = false }: MissionMapPanelProps) {
             {MAP_LAYERS[key].name}
           </button>
         ))}
+        <div className="border-t border-gray-700/50 my-0.5" />
+        <button
+          onClick={() => setShowTerrain(!showTerrain)}
+          className={`px-2 py-1 text-xs rounded transition-colors ${
+            showTerrain
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+          }`}
+          title="Toggle terrain elevation heatmap"
+        >
+          Height
+        </button>
       </div>
+
+      {/* Elevation legend */}
+      {showTerrain && elevationRange.max > 0 && (
+        <div className="absolute top-3 left-3 z-[1000]">
+          <ElevationLegend
+            minElevation={elevationRange.min}
+            maxElevation={elevationRange.max}
+            autoRange={terrainAutoRange}
+            onAutoRangeChange={setTerrainAutoRange}
+            fixedRange={terrainFixedRange}
+            onFixedRangeChange={setTerrainFixedRange}
+          />
+        </div>
+      )}
 
       {/* Bottom controls - mode-specific floating tools */}
       <div className="absolute bottom-3 left-3 z-[1000] flex items-center gap-2">

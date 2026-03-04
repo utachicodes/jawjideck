@@ -105,6 +105,16 @@ interface ParameterStore {
   applySelectedFileParams: () => Promise<{ applied: number; failed: number }>;
 }
 
+/**
+ * Float32-aware equality check for ArduPilot parameters.
+ * ArduPilot stores params as float32 but JS uses float64. Values like 0.135
+ * become 0.13500000536441803 after the float32→float64 round-trip.
+ * Math.fround() normalizes both sides to the nearest float32 representation.
+ */
+function f32Equal(a: number, b: number): boolean {
+  return Math.fround(a) === Math.fround(b);
+}
+
 // Tracks params the user has actively edited via setParameter (pending FC confirmation)
 const userModifiedParams = new Set<string>();
 
@@ -322,7 +332,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
         params.set(paramId, {
           ...existing,
           value,
-          isModified: existing.originalValue !== value,
+          isModified: !f32Equal(existing.originalValue, value),
         });
       } else {
         // Parameter wasn't in cache - add it now
@@ -366,7 +376,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
         type: param.paramType,
         index: param.paramIndex,
         originalValue,
-        isModified: isUserEdit ? originalValue !== param.paramValue : false,
+        isModified: isUserEdit ? !f32Equal(originalValue, param.paramValue) : false,
         isReadOnly: readOnly,
       });
 
@@ -509,8 +519,8 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
       if (!existing) { skipped++; continue; } // Skip params not on the vehicle
       if (existing.isReadOnly) continue; // Skip read-only params
 
-      // Only include if values actually differ
-      if (existing.value !== fp.value) {
+      // Only include if values actually differ (float32-aware)
+      if (!f32Equal(existing.value, fp.value)) {
         diffs.push({
           paramId: fp.id,
           currentValue: existing.value,
@@ -579,7 +589,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
             params.set(diff.paramId, {
               ...existing,
               value: diff.fileValue,
-              isModified: existing.originalValue !== diff.fileValue,
+              isModified: !f32Equal(existing.originalValue, diff.fileValue),
             });
           }
           return {

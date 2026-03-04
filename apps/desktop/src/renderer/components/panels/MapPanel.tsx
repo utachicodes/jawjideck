@@ -12,6 +12,10 @@ import { useIpLocation } from '../../utils/ip-geolocation';
 import { FenceMapOverlay } from '../geofence/FenceMapOverlay';
 import { RallyMapOverlay } from '../rally/RallyMapOverlay';
 
+// Terrain elevation overlay
+import { TerrainOverlayLayer, type ElevationRange } from '../map/TerrainOverlayLayer';
+import { ElevationLegend } from '../map/ElevationLegend';
+
 // Map layer definitions
 const MAP_LAYERS = {
   osm: {
@@ -556,6 +560,10 @@ export const MapPanel = React.memo(function MapPanel() {
   const [showCompass, setShowCompass] = useState(true);
   const [showAttitude, setShowAttitude] = useState(true);
   const [showMission, setShowMission] = useState(true); // Show mission overlays by default
+  const [showTerrain, setShowTerrain] = useState(false);
+  const [elevationRange, setElevationRange] = useState<ElevationRange>({ min: 0, max: 0 });
+  const [terrainAutoRange, setTerrainAutoRange] = useState(true);
+  const [terrainFixedRange, setTerrainFixedRange] = useState<ElevationRange>({ min: 0, max: 1500 });
   const [headingLineLength, setHeadingLineLength] = useState(100); // meters
   const lastUpdateRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -721,6 +729,17 @@ export const MapPanel = React.memo(function MapPanel() {
         >
           Mission
         </button>
+        <button
+          onClick={() => setShowTerrain(!showTerrain)}
+          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
+            showTerrain
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+          }`}
+          title="Toggle terrain elevation heatmap"
+        >
+          Height
+        </button>
       </div>
 
       {/* Compass overlay */}
@@ -746,6 +765,20 @@ export const MapPanel = React.memo(function MapPanel() {
       {!hasValidGps && (
         <div className="absolute top-2 left-2 z-[1000] px-2 py-1 bg-yellow-600/90 text-white text-xs rounded shadow-lg">
           No GPS fix
+        </div>
+      )}
+
+      {/* Elevation legend (above stats overlay) */}
+      {showTerrain && elevationRange.max > 0 && (
+        <div className="absolute bottom-[120px] left-2 z-[1000]">
+          <ElevationLegend
+            minElevation={elevationRange.min}
+            maxElevation={elevationRange.max}
+            autoRange={terrainAutoRange}
+            onAutoRangeChange={setTerrainAutoRange}
+            fixedRange={terrainFixedRange}
+            onFixedRangeChange={setTerrainFixedRange}
+          />
         </div>
       )}
 
@@ -806,6 +839,15 @@ export const MapPanel = React.memo(function MapPanel() {
           url={layer.url}
           maxZoom={layer.maxZoom}
         />
+
+        {/* Terrain elevation heatmap overlay */}
+        {showTerrain && (
+          <TerrainOverlayLayer
+            opacity={0.6}
+            fixedRange={terrainAutoRange ? null : terrainFixedRange}
+            onElevationRangeChange={setElevationRange}
+          />
+        )}
 
         {/* Map controller for resize handling and following */}
         <MapController

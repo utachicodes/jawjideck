@@ -16,6 +16,15 @@ import { MspConfigView } from './MspConfigView';
 import MavlinkConfigView from '../mavlink-config/MavlinkConfigView';
 import { LegacyConfigView } from '../legacy-config';
 
+/**
+ * Format a parameter value for display, stripping float32→float64 noise.
+ * float32 has ~7 significant digits; anything beyond is IEEE representation noise.
+ */
+function formatParamValue(value: number): string {
+  if (Number.isInteger(value)) return String(value);
+  return String(parseFloat(value.toPrecision(7)));
+}
+
 // Simple toast notification state
 type ToastType = 'success' | 'error' | 'info';
 interface Toast {
@@ -701,7 +710,7 @@ export function ParametersView() {
                     <div className="flex items-center gap-2">
                       {param.isReadOnly ? (
                         <span className="font-mono text-sm text-gray-500 tabular-nums" title="Read-only parameter">
-                          {param.value}
+                          {formatParamValue(param.value)}
                         </span>
                       ) : editingParam === param.id ? (
                         <div className="relative flex-1">
@@ -738,7 +747,7 @@ export function ParametersView() {
                             return hints.length > 0 ? hints.join('\n') : undefined;
                           })()}
                         >
-                          {param.value}
+                          {formatParamValue(param.value)}
                         </button>
                       )}
                       {param.isReadOnly ? (
@@ -753,7 +762,7 @@ export function ParametersView() {
                           <button
                             onClick={() => revertParameter(param.id)}
                             className="text-[10px] text-gray-500 hover:text-gray-300"
-                            title={`Revert to ${param.originalValue}`}
+                            title={`Revert to ${formatParamValue(param.originalValue)}`}
                           >
                             (revert)
                           </button>
@@ -858,9 +867,9 @@ export function ParametersView() {
                           </span>
                         )}
                       </td>
-                      <td className="py-2 text-right font-mono text-gray-500">{param.originalValue}</td>
+                      <td className="py-2 text-right font-mono text-gray-500">{formatParamValue(param.originalValue)}</td>
                       <td className="py-2 text-center text-gray-600">→</td>
-                      <td className="py-2 font-mono text-amber-400">{param.value}</td>
+                      <td className="py-2 font-mono text-amber-400">{formatParamValue(param.value)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -969,13 +978,13 @@ export function ParametersView() {
                             </div>
                           </td>
                           <td className="py-2 font-mono text-gray-300">{diff.paramId}</td>
-                          <td className="py-2 text-right font-mono text-gray-500">{diff.currentValue}</td>
+                          <td className="py-2 text-right font-mono text-gray-500">{formatParamValue(diff.currentValue)}</td>
                           <td className="py-2 text-center text-gray-600">
                             <svg className="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                             </svg>
                           </td>
-                          <td className="py-2 font-mono text-amber-400">{diff.fileValue}</td>
+                          <td className="py-2 font-mono text-amber-400">{formatParamValue(diff.fileValue)}</td>
                         </tr>
                       ))}
                     </tbody>

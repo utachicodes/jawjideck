@@ -744,7 +744,7 @@ const ParameterTable: React.FC = () => {
                         <button
                           onClick={() => revertParameter(param.id)}
                           className="text-xs text-zinc-500 hover:text-zinc-300"
-                          title={`Revert to ${param.originalValue}`}
+                          title={`Revert to ${formatParamValue(param.originalValue as number)}`}
                         >
                           (revert)
                         </button>
@@ -833,9 +833,9 @@ const ParameterTable: React.FC = () => {
                           </span>
                         )}
                       </td>
-                      <td className="py-2 text-right font-mono text-zinc-500">{param.originalValue}</td>
+                      <td className="py-2 text-right font-mono text-zinc-500">{formatParamValue(param.originalValue as number)}</td>
                       <td className="py-2 text-center text-zinc-600">-</td>
-                      <td className="py-2 font-mono text-amber-400">{param.value}</td>
+                      <td className="py-2 font-mono text-amber-400">{formatParamValue(param.value)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -954,13 +954,13 @@ const ParameterTable: React.FC = () => {
                             </div>
                           </td>
                           <td className="py-2 font-mono text-zinc-300">{diff.paramId}</td>
-                          <td className="py-2 text-right font-mono text-zinc-500">{diff.currentValue}</td>
+                          <td className="py-2 text-right font-mono text-zinc-500">{formatParamValue(diff.currentValue)}</td>
                           <td className="py-2 text-center text-zinc-600">
                             <svg className="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                             </svg>
                           </td>
-                          <td className="py-2 font-mono text-amber-400">{diff.fileValue}</td>
+                          <td className="py-2 font-mono text-amber-400">{formatParamValue(diff.fileValue)}</td>
                         </tr>
                       ))}
                     </tbody>
