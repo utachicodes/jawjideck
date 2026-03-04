@@ -762,7 +762,7 @@ export function ParametersView() {
                           <button
                             onClick={() => revertParameter(param.id)}
                             className="text-[10px] text-gray-500 hover:text-gray-300"
-                            title={`Revert to ${formatParamValue(param.originalValue)}`}
+                            title={`Revert to ${formatParamValue(param.originalValue ?? param.value)}`}
                           >
                             (revert)
                           </button>
@@ -867,7 +867,7 @@ export function ParametersView() {
                           </span>
                         )}
                       </td>
-                      <td className="py-2 text-right font-mono text-gray-500">{formatParamValue(param.originalValue)}</td>
+                      <td className="py-2 text-right font-mono text-gray-500">{formatParamValue(param.originalValue ?? param.value)}</td>
                       <td className="py-2 text-center text-gray-600">→</td>
                       <td className="py-2 font-mono text-amber-400">{formatParamValue(param.value)}</td>
                     </tr>

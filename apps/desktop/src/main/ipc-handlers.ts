@@ -41,6 +41,8 @@ import {
   serializeSetupSigning,
   getSigningTimestamp,
   generateSigningKey,
+  verifySignature,
+  MAVLINK_SIGNATURE_BLOCK_LEN,
   SETUP_SIGNING_ID,
   SETUP_SIGNING_CRC_EXTRA,
   PARAM_REQUEST_LIST_ID,
@@ -1770,12 +1772,23 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
               connectionState.fcSigning = true;
               sendLog(mainWindow, 'info', 'FC is sending signed packets - MAVLink signing is active on the vehicle');
 
-              // Auto-enable signing if we have a stored key that was previously sent to FC
-              if (signingKey && signingSentToFc && !signingEnabled) {
-                signingEnabled = true;
-                connectionState.signingEnabled = true;
-                sendLog(mainWindow, 'info', 'MAVLink signing auto-enabled (stored key found)');
-                safeSend(mainWindow, IPC_CHANNELS.MAVLINK_SIGNING_STATUS, getSigningStatus());
+              // Auto-enable signing if we have a key that verifies against the FC's signed packets
+              // Must await so signing is enabled BEFORE subsequent packets (heartbeat, AUTOPILOT_VERSION) are sent
+              if (signingKey && !signingEnabled && packet.signature) {
+                try {
+                  const packetDataWithoutSig = packet.buffer.slice(0, packet.buffer.length - MAVLINK_SIGNATURE_BLOCK_LEN);
+                  const isValid = await verifySignature(signingKey, packetDataWithoutSig, packet.signature, true);
+                  if (isValid) {
+                    signingEnabled = true;
+                    connectionState.signingEnabled = true;
+                    sendLog(mainWindow, 'info', 'MAVLink signing auto-enabled (key verified against FC)');
+                    safeSend(mainWindow, IPC_CHANNELS.MAVLINK_SIGNING_STATUS, getSigningStatus());
+                  } else {
+                    sendLog(mainWindow, 'warn', 'Stored signing key does not match the vehicle. Check your passphrase in Settings.');
+                  }
+                } catch {
+                  // Non-critical - signing verification failed, continue without signing
+                }
               } else if (!signingKey) {
                 sendLog(mainWindow, 'warn', 'Vehicle requires MAVLink signing but no key is configured. Go to Settings to set a signing passphrase.');
               }
@@ -1832,9 +1845,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
                     param1: MSG_AUTOPILOT_VERSION,
                     param2: 0, param3: 0, param4: 0, param5: 0, param6: 0, param7: 0,
                   });
-                  const pkt = detectedMavlinkVersion === 2
-                    ? serializeV2(COMMAND_LONG_ID, cmdPayload, COMMAND_LONG_CRC_EXTRA)
-                    : serializeV1(COMMAND_LONG_ID, cmdPayload, COMMAND_LONG_CRC_EXTRA);
+                  // Use sendMavlinkPacket to apply signing when enabled
+                  const pkt = await sendMavlinkPacket(COMMAND_LONG_ID, cmdPayload, COMMAND_LONG_CRC_EXTRA);
                   await currentTransport!.write(pkt);
                 } catch {
                   // Non-critical - boardUid will use fallback
@@ -1857,10 +1869,10 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
                       systemStatus: 4, // MAV_STATE_ACTIVE
                       mavlinkVersion: 3,
                     });
-                    const hbPkt = mavVer === 2
-                      ? serializeV2(HEARTBEAT_ID, hbPayload, HEARTBEAT_CRC_EXTRA)
-                      : serializeV1(HEARTBEAT_ID, hbPayload, HEARTBEAT_CRC_EXTRA);
-                    currentTransport!.write(hbPkt).catch(() => {});
+                    // Use sendMavlinkPacket to apply signing when enabled
+                    sendMavlinkPacket(HEARTBEAT_ID, hbPayload, HEARTBEAT_CRC_EXTRA)
+                      .then(pkt => currentTransport?.write(pkt))
+                      .catch(() => {});
                   } catch {
                     // Non-critical
                   }

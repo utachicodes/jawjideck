@@ -332,7 +332,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
         params.set(paramId, {
           ...existing,
           value,
-          isModified: !f32Equal(existing.originalValue, value),
+          isModified: !f32Equal(existing.originalValue ?? existing.value, value),
         });
       } else {
         // Parameter wasn't in cache - add it now
@@ -589,7 +589,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
             params.set(diff.paramId, {
               ...existing,
               value: diff.fileValue,
-              isModified: !f32Equal(existing.originalValue, diff.fileValue),
+              isModified: !f32Equal(existing.originalValue ?? existing.value, diff.fileValue),
             });
           }
           return {
