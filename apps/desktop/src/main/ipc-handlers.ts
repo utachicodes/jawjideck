@@ -3093,6 +3093,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         paramType: p.type,
         paramCount: result.totalParams,
         paramIndex: i,
+        defaultValue: p.defaultValue,
       };
 
       receivedParams.set(p.name, entry);

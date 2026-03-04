@@ -93,6 +93,8 @@ export function ParametersView() {
     showOnlyFavourites,
     toggleShowOnlyFavourites,
     favouriteCount,
+    nonDefaultCount: nonDefaultCountFn,
+    hasDefaults: hasDefaultsFn,
     // File compare
     showCompareModal,
     fileParamDiffs,
@@ -219,24 +221,27 @@ export function ParametersView() {
     }
   }, [connectionState.isConnected, connectionState.isReconnecting, showToast]);
 
-  const handleSaveToFile = useCallback(async (changedOnly?: boolean) => {
+  const handleSaveToFile = useCallback(async (mode: 'all' | 'changed' | 'nondefault') => {
     setIsSavingFile(true);
     setSaveDropdownOpen(false);
     try {
-      let params = Array.from(parameters.values())
-        .filter(p => !p.isReadOnly)
+      const allParams = Array.from(parameters.values());
+      let filtered;
+      if (mode === 'changed') {
+        filtered = allParams.filter(p => !p.isReadOnly && p.isModified);
+      } else if (mode === 'nondefault') {
+        filtered = allParams.filter(p => !p.isReadOnly && p.defaultValue !== undefined && Math.fround(p.value) !== Math.fround(p.defaultValue));
+      } else {
+        filtered = allParams.filter(p => !p.isReadOnly);
+      }
+
+      const params = filtered
         .sort((a, b) => a.id.localeCompare(b.id))
         .map(p => ({ id: p.id, value: p.value }));
 
-      if (changedOnly) {
-        params = Array.from(parameters.values())
-          .filter(p => !p.isReadOnly && p.isModified)
-          .sort((a, b) => a.id.localeCompare(b.id))
-          .map(p => ({ id: p.id, value: p.value }));
-      }
-
       if (params.length === 0) {
-        showToast(changedOnly ? 'No changed parameters to save' : 'No parameters to save', 'info');
+        const labels = { all: 'No parameters to save', changed: 'No changed parameters to save', nondefault: 'No non-default parameters to save' };
+        showToast(labels[mode], 'info');
         return;
       }
 
@@ -391,6 +396,8 @@ export function ParametersView() {
   const displayParams = filteredParameters();
   const paramCount = parameters.size;
   const modified = modifiedCount();
+  const nonDefaultCount = nonDefaultCountFn();
+  const hasDefaults = hasDefaultsFn();
 
   return (
     <div className="h-full flex flex-col">
@@ -430,7 +437,7 @@ export function ParametersView() {
           <div className="relative" ref={saveDropdownRef}>
             <div className="flex">
               <button
-                onClick={() => handleSaveToFile(false)}
+                onClick={() => handleSaveToFile('all')}
                 disabled={isSavingFile || paramCount === 0}
                 className="px-3 py-2 bg-gray-700/30 hover:bg-gray-700/50 disabled:bg-gray-800/30 text-gray-300 disabled:text-gray-600 rounded-l-lg text-sm font-medium transition-colors flex items-center gap-2"
                 title="Save all parameters to file"
@@ -452,20 +459,29 @@ export function ParametersView() {
               </button>
             </div>
             {saveDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-52 bg-gray-800 border border-gray-700/50 rounded-lg shadow-xl z-50 py-1">
+              <div className="absolute top-full left-0 mt-1 w-56 bg-gray-800 border border-gray-700/50 rounded-lg shadow-xl z-50 py-1">
                 <button
-                  onClick={() => handleSaveToFile(false)}
+                  onClick={() => handleSaveToFile('all')}
                   className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700/50 transition-colors"
                 >
                   Save All Parameters
                 </button>
                 <button
-                  onClick={() => handleSaveToFile(true)}
+                  onClick={() => handleSaveToFile('changed')}
                   disabled={modified === 0}
                   className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700/50 disabled:text-gray-600 disabled:hover:bg-transparent transition-colors"
                 >
                   Save Changed Only
                   {modified > 0 && <span className="ml-1 text-xs text-yellow-400">({modified})</span>}
+                </button>
+                <button
+                  onClick={() => handleSaveToFile('nondefault')}
+                  disabled={!hasDefaults}
+                  className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700/50 disabled:text-gray-600 disabled:hover:bg-transparent transition-colors"
+                  title={!hasDefaults ? 'Defaults not available — requires MAVLink FTP' : undefined}
+                >
+                  Save Non-Default Only
+                  {hasDefaults && nonDefaultCount > 0 && <span className="ml-1 text-xs text-purple-400">({nonDefaultCount})</span>}
                 </button>
               </div>
             )}

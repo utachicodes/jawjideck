@@ -52,6 +52,7 @@ export interface Parameter {
  */
 export interface ParameterWithMeta extends Parameter {
   originalValue?: number;  // Original value from vehicle
+  defaultValue?: number;   // Firmware default value (from param.pck)
   isModified?: boolean;    // Has been changed locally
   isReadOnly?: boolean;    // Dynamic/sensor param that shouldn't be edited
 }
@@ -74,6 +75,7 @@ export interface ParamValuePayload {
   paramType: number;
   paramCount: number;
   paramIndex: number;
+  defaultValue?: number;
 }
 
 /**

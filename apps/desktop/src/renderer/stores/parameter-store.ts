@@ -68,6 +68,8 @@ interface ParameterStore {
   modifiedParameters: () => ParameterWithMeta[];
   groupCounts: () => Map<string, number>;
   favouriteCount: () => number;
+  nonDefaultCount: () => number;
+  hasDefaults: () => boolean;
   getDescription: (paramId: string) => string;
   hasOfficialDescription: (paramId: string) => boolean;
   validateParameter: (paramId: string, value: number) => ValidationResult;
@@ -278,6 +280,25 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
     return count;
   },
 
+  nonDefaultCount: () => {
+    const { parameters } = get();
+    let count = 0;
+    for (const p of parameters.values()) {
+      if (!p.isReadOnly && p.defaultValue !== undefined && !f32Equal(p.value, p.defaultValue)) {
+        count++;
+      }
+    }
+    return count;
+  },
+
+  hasDefaults: () => {
+    const { parameters } = get();
+    for (const p of parameters.values()) {
+      if (p.defaultValue !== undefined) return true;
+    }
+    return false;
+  },
+
   fetchParameters: async () => {
     set({ isLoading: true, error: null, progress: null });
 
@@ -376,6 +397,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
         type: param.paramType,
         index: param.paramIndex,
         originalValue,
+        defaultValue: param.defaultValue ?? existing?.defaultValue,
         isModified: isUserEdit ? !f32Equal(originalValue, param.paramValue) : false,
         isReadOnly: readOnly,
       });
@@ -395,6 +417,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
         type: p.paramType,
         index: p.paramIndex,
         originalValue: p.paramValue,
+        defaultValue: p.defaultValue,
         isModified: false,
         isReadOnly: isReadOnlyParameter(p.paramId),
       });
