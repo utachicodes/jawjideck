@@ -3287,8 +3287,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       scheduleReconnect({
         reason: 'Rebooting flight controller',
         delayMs: 3000,
-        timeoutMs: 15000,
-        maxAttempts: 20,
+        timeoutMs: 60000,
+        maxAttempts: 30,
       });
 
       return true;

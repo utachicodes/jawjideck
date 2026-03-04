@@ -190,8 +190,8 @@ export async function reboot(autoReconnect = true): Promise<boolean> {
         scheduleReconnect({
           reason: 'Rebooting board',
           delayMs: 3000,
-          timeoutMs: 5000,
-          maxAttempts: 10,
+          timeoutMs: 60000,
+          maxAttempts: 30,
         });
       }
     }
