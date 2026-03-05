@@ -564,6 +564,7 @@ export const MapPanel = React.memo(function MapPanel() {
   const [elevationRange, setElevationRange] = useState<ElevationRange>({ min: 0, max: 0 });
   const [terrainAutoRange, setTerrainAutoRange] = useState(true);
   const [terrainFixedRange, setTerrainFixedRange] = useState<ElevationRange>({ min: 0, max: 1500 });
+  const [terrainRelativeMode, setTerrainRelativeMode] = useState(false);
   const [headingLineLength, setHeadingLineLength] = useState(100); // meters
   const lastUpdateRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -778,6 +779,9 @@ export const MapPanel = React.memo(function MapPanel() {
             onAutoRangeChange={setTerrainAutoRange}
             fixedRange={terrainFixedRange}
             onFixedRangeChange={setTerrainFixedRange}
+            relativeMode={terrainRelativeMode}
+            onRelativeModeChange={setTerrainRelativeMode}
+            hasCraftPosition={vfrHud.alt !== 0}
           />
         </div>
       )}
@@ -845,6 +849,7 @@ export const MapPanel = React.memo(function MapPanel() {
           <TerrainOverlayLayer
             opacity={0.6}
             fixedRange={terrainAutoRange ? null : terrainFixedRange}
+            referenceAlt={terrainRelativeMode ? vfrHud.alt : null}
             onElevationRangeChange={setElevationRange}
           />
         )}

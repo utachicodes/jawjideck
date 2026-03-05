@@ -13,6 +13,7 @@ import ReportBugView from './components/report/ReportBugView';
 import SitlView from './components/sitl/SitlView';
 import { CalibrationView } from './components/calibration/CalibrationView';
 import { MissionLibraryView } from './components/mission-library/MissionLibraryView';
+import { LuaGraphView } from './components/lua-graph/LuaGraphView';
 import { useConnectionStore } from './stores/connection-store';
 import { useCalibrationStore } from './stores/calibration-store';
 import { useTelemetryStore } from './stores/telemetry-store';
@@ -554,6 +555,9 @@ function App() {
       if (currentView === 'report') {
         return <ReportBugView />;
       }
+      if (currentView === 'lua-graph') {
+        return <LuaGraphView />;
+      }
       // Default welcome screen for telemetry
       return (
         <div className="h-full flex items-center justify-center p-8">
@@ -640,6 +644,8 @@ function App() {
         return <ReportBugView />;
       case 'calibration':
         return <CalibrationView />;
+      case 'lua-graph':
+        return <LuaGraphView />;
       case 'telemetry':
       default:
         return <TelemetryDashboard />;

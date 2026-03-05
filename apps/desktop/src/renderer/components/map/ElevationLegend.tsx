@@ -67,6 +67,11 @@ interface ElevationLegendProps {
   onAutoRangeChange: (auto: boolean) => void;
   fixedRange: ElevationRange;
   onFixedRangeChange: (range: ElevationRange) => void;
+  /** Whether elevations are shown relative to craft altitude */
+  relativeMode?: boolean;
+  onRelativeModeChange?: (relative: boolean) => void;
+  /** Whether craft position is available (to enable Rel button) */
+  hasCraftPosition?: boolean;
 }
 
 export function ElevationLegend({
@@ -76,6 +81,9 @@ export function ElevationLegend({
   onAutoRangeChange,
   fixedRange,
   onFixedRangeChange,
+  relativeMode = false,
+  onRelativeModeChange,
+  hasCraftPosition = false,
 }: ElevationLegendProps) {
   const displayMin = autoRange ? minElevation : fixedRange.min;
   const displayMax = autoRange ? maxElevation : fixedRange.max;
@@ -85,17 +93,35 @@ export function ElevationLegend({
     <div className="bg-gray-900/90 backdrop-blur-sm rounded px-2 py-2 text-[10px] text-gray-300 select-none">
       {/* Header */}
       <div className="flex items-center gap-1 mb-1.5">
-        <span className="text-gray-500 font-medium">AMSL</span>
-        <button
-          onClick={() => onAutoRangeChange(!autoRange)}
-          className={`ml-auto px-1.5 py-px rounded text-[9px] font-medium transition-colors ${
-            autoRange
-              ? 'bg-blue-500/25 text-blue-400'
-              : 'bg-gray-700/40 text-gray-500 hover:text-gray-300'
-          }`}
-        >
-          Auto
-        </button>
+        <span className="text-gray-500 font-medium">{relativeMode ? 'REL' : 'AMSL'}</span>
+        <div className="ml-auto flex items-center gap-1">
+          {onRelativeModeChange && (
+            <button
+              onClick={() => onRelativeModeChange(!relativeMode)}
+              disabled={!hasCraftPosition}
+              className={`px-1.5 py-px rounded text-[9px] font-medium transition-colors ${
+                relativeMode
+                  ? 'bg-emerald-500/25 text-emerald-400'
+                  : hasCraftPosition
+                    ? 'bg-gray-700/40 text-gray-500 hover:text-gray-300'
+                    : 'bg-gray-700/20 text-gray-600 cursor-not-allowed'
+              }`}
+              title={hasCraftPosition ? 'Show height relative to craft' : 'No craft position available'}
+            >
+              Rel
+            </button>
+          )}
+          <button
+            onClick={() => onAutoRangeChange(!autoRange)}
+            className={`px-1.5 py-px rounded text-[9px] font-medium transition-colors ${
+              autoRange
+                ? 'bg-blue-500/25 text-blue-400'
+                : 'bg-gray-700/40 text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            Auto
+          </button>
+        </div>
       </div>
 
       {/* Gradient bar + values */}

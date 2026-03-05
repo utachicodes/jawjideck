@@ -653,6 +653,7 @@ export function MissionMapPanel({ readOnly = false }: MissionMapPanelProps) {
   const [elevationRange, setElevationRange] = useState<ElevationRange>({ min: 0, max: 0 });
   const [terrainAutoRange, setTerrainAutoRange] = useState(true);
   const [terrainFixedRange, setTerrainFixedRange] = useState<ElevationRange>({ min: 0, max: 1500 });
+  const [terrainRelativeMode, setTerrainRelativeMode] = useState(false);
 
   // Update layer when vehicle type changes (e.g., connecting to a Rover)
   useEffect(() => {
@@ -846,6 +847,7 @@ export function MissionMapPanel({ readOnly = false }: MissionMapPanelProps) {
           <TerrainOverlayLayer
             opacity={0.6}
             fixedRange={terrainAutoRange ? null : terrainFixedRange}
+            referenceAlt={terrainRelativeMode ? vfrHud.alt : null}
             onElevationRangeChange={setElevationRange}
           />
         )}
@@ -983,6 +985,9 @@ export function MissionMapPanel({ readOnly = false }: MissionMapPanelProps) {
             onAutoRangeChange={setTerrainAutoRange}
             fixedRange={terrainFixedRange}
             onFixedRangeChange={setTerrainFixedRange}
+            relativeMode={terrainRelativeMode}
+            onRelativeModeChange={setTerrainRelativeMode}
+            hasCraftPosition={vfrHud.alt !== 0}
           />
         </div>
       )}

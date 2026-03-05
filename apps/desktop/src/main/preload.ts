@@ -1285,6 +1285,16 @@ const api = {
   logEntry: (level: 'info' | 'warn' | 'error' | 'debug', message: string, details?: string): void => {
     ipcRenderer.invoke('log:entry', level, message, details);
   },
+
+  // Lua Graph Editor
+  luaGraphSave: (graph: unknown): Promise<{ success: boolean; filePath?: string; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LUA_GRAPH_SAVE, graph),
+
+  luaGraphOpen: (): Promise<{ success: boolean; data?: unknown; filePath?: string; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LUA_GRAPH_OPEN),
+
+  luaGraphExportLua: (code: string, name: string): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LUA_GRAPH_EXPORT_LUA, code, name),
 };
 
 // Expose to renderer

@@ -142,6 +142,15 @@ ArduDeck is a next-generation ground control station built with Electron, React,
 - **CCRP Indicator** - Continuously Computed Release Point for payload drops (shows predicted impact point)
 - **Element Toggle** - Enable/disable individual OSD elements
 
+### Lua Graph Editor
+- **Visual Scripting** - Build ArduPilot Lua scripts by connecting nodes, no coding required
+- **37+ Nodes** - Sensors, logic, math, actions, timing, and variables
+- **Live Lua Preview** - See compiled output in real-time as you build
+- **Templates** - Pre-built graphs for common tasks (battery alerts, geofencing, camera triggers)
+- **Export to .lua** - One-click compilation to ArduPilot-compatible Lua scripts
+- **In-App Documentation** - Full reference docs viewable inside the editor
+- **[Lua Graph Editor Docs](apps/desktop/src/renderer/components/lua-graph/docs/)** - Also available on the GitHub wiki
+
 ### Firmware Flash
 - **Multi-Protocol Detection** - Auto-detect boards via MAVLink, MSP, or STM32 bootloader
 - **USB VID/PID Recognition** - 30+ known boards identified by USB IDs
@@ -493,6 +502,7 @@ Found a bug? We want to hear about it! ArduDeck includes a built-in bug reportin
 - **Quick Setup Wizard** with preset library for common frame types
 - **VTX and filter configuration** for Betaflight/iNav
 - **ArduPilot configuration UI** - PID tuning, rate profiles, flight modes, safety, battery monitor, sensors
+- **Lua Graph Editor** - Visual scripting for ArduPilot Lua with 37+ nodes, compiler, and [in-app docs](apps/desktop/src/renderer/components/lua-graph/docs/)
 
 ### Coming Soon
 - **SITL Simulator** - iNav and ArduPilot software-in-the-loop with FlightGear integration (temporarily disabled)

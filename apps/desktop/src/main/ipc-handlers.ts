@@ -5684,6 +5684,68 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     }
   });
 
+  // ==================== LUA GRAPH EDITOR ====================
+
+  ipcMain.handle(IPC_CHANNELS.LUA_GRAPH_SAVE, async (_event, graph: unknown): Promise<{ success: boolean; filePath?: string; error?: string }> => {
+    try {
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: 'Save Lua Graph',
+        defaultPath: `${(graph as any)?.name || 'untitled'}.adgraph`,
+        filters: [
+          { name: 'ArduDeck Graph', extensions: ['adgraph'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      });
+      if (result.canceled || !result.filePath) return { success: false };
+      const fs = await import('fs/promises');
+      await fs.writeFile(result.filePath, JSON.stringify(graph, null, 2), 'utf-8');
+      return { success: true, filePath: result.filePath };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Save failed' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.LUA_GRAPH_OPEN, async (): Promise<{ success: boolean; data?: unknown; filePath?: string; error?: string }> => {
+    try {
+      const result = await dialog.showOpenDialog(mainWindow, {
+        title: 'Open Lua Graph',
+        filters: [
+          { name: 'ArduDeck Graph', extensions: ['adgraph'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+        properties: ['openFile'],
+      });
+      if (result.canceled || result.filePaths.length === 0) return { success: false };
+      const filePath = result.filePaths[0]!;
+      const fs = await import('fs/promises');
+      const content = await fs.readFile(filePath, 'utf-8');
+      const data = JSON.parse(content);
+      return { success: true, data, filePath };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Open failed' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.LUA_GRAPH_EXPORT_LUA, async (_event, code: string, name: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const safeName = (name || 'script').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: 'Export Lua Script',
+        defaultPath: `${safeName}.lua`,
+        filters: [
+          { name: 'Lua Script', extensions: ['lua'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      });
+      if (result.canceled || !result.filePath) return { success: false };
+      const fs = await import('fs/promises');
+      await fs.writeFile(result.filePath, code, 'utf-8');
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Export failed' };
+    }
+  });
+
   // Initialize auto-updater (handles auto-check on its own schedule)
   initAutoUpdater(mainWindow);
 }

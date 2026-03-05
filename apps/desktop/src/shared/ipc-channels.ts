@@ -355,6 +355,11 @@ export const IPC_CHANNELS = {
   MISSION_LIBRARY_UPDATE_LOG: 'mission-library:update-log',
   MISSION_LIBRARY_DELETE_LOG: 'mission-library:delete-log',
 
+  // Lua Graph Editor
+  LUA_GRAPH_SAVE: 'lua-graph:save',
+  LUA_GRAPH_OPEN: 'lua-graph:open',
+  LUA_GRAPH_EXPORT_LUA: 'lua-graph:export-lua',
+
   // App / Updates
   APP_GET_VERSION: 'app:get-version',
   APP_CHECK_UPDATE: 'app:check-update',

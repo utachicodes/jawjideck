@@ -20,6 +20,8 @@ interface TerrainOverlayLayerProps {
   opacity?: number;
   /** When set, clamp color mapping to this fixed range instead of using absolute scale */
   fixedRange?: ElevationRange | null;
+  /** When set, subtract this AMSL altitude from terrain elevations (relative-to-craft mode) */
+  referenceAlt?: number | null;
   onElevationRangeChange?: (range: ElevationRange) => void;
 }
 
@@ -28,6 +30,7 @@ function createTerrainGridLayer(
   lut: ColorLookupTable,
   opacity: number,
   fixedRange: ElevationRange | null,
+  referenceAlt: number | null,
   onElevationRangeChange?: (range: ElevationRange) => void,
 ) {
   // Track min/max elevation across all visible tiles
@@ -53,6 +56,7 @@ function createTerrainGridLayer(
   const useFixed = fixedRange !== null && fixedRange.max > fixedRange.min;
   const fixedMin = useFixed ? fixedRange!.min : 0;
   const fixedSpan = useFixed ? (fixedRange!.max - fixedRange!.min) : 0;
+  const refAlt = referenceAlt ?? 0;
 
   const TerrainLayer = L.GridLayer.extend({
     options: {
@@ -110,9 +114,10 @@ function createTerrainGridLayer(
           const g = src[i + 1]!;
           const b = src[i + 2]!;
 
-          const elev = decodeTerrarium(r, g, b);
+          const rawElev = decodeTerrarium(r, g, b);
+          const elev = rawElev - refAlt;
 
-          if (elev < WATER_THRESHOLD) {
+          if (rawElev < WATER_THRESHOLD) {
             // Water/ocean/coastline noise - transparent
             out[i] = 0;
             out[i + 1] = 0;
@@ -128,8 +133,8 @@ function createTerrainGridLayer(
               const norm = Math.max(0, Math.min(1, (elev - fixedMin) / fixedSpan));
               idx = Math.min(Math.floor(norm * lutSteps), lutSteps - 1);
             } else {
-              // Absolute mapping
-              idx = Math.min(Math.floor((elev / lutMaxElev) * lutSteps), lutSteps - 1);
+              // Absolute mapping (clamp negative to 0 for relative mode)
+              idx = Math.max(0, Math.min(Math.floor((elev / lutMaxElev) * lutSteps), lutSteps - 1));
             }
 
             const offset = idx * 4;
@@ -178,6 +183,7 @@ function createTerrainGridLayer(
 export function TerrainOverlayLayer({
   opacity = 0.6,
   fixedRange = null,
+  referenceAlt = null,
   onElevationRangeChange,
 }: TerrainOverlayLayerProps) {
   const map = useMap();
@@ -187,13 +193,17 @@ export function TerrainOverlayLayer({
 
   // Serialize fixedRange to a stable string to avoid unnecessary layer recreations
   const rangeKey = fixedRange ? `${fixedRange.min}:${fixedRange.max}` : 'auto';
+  // Round referenceAlt to nearest 10m to avoid excessive tile redraws during flight
+  const refAltKey = referenceAlt !== null ? Math.round(referenceAlt / 10) * 10 : 'none';
 
   useEffect(() => {
     const lut = getSharedLookupTable();
+    const snappedRef = typeof refAltKey === 'number' ? refAltKey : null;
     const layer = createTerrainGridLayer(
       lut,
       opacity,
       fixedRange,
+      snappedRef,
       (range) => callbackRef.current?.(range),
     );
     layer.addTo(map);
@@ -203,7 +213,7 @@ export function TerrainOverlayLayer({
       map.removeLayer(layer);
       layerRef.current = null;
     };
-  }, [map, opacity, rangeKey]);
+  }, [map, opacity, rangeKey, refAltKey]);
 
   return null;
 }
