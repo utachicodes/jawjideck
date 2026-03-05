@@ -6,8 +6,8 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { History, AlertTriangle, RotateCw, Loader2, Star } from 'lucide-react';
-import { useParameterStore, type SortColumn, type FileParamDiff } from '../../stores/parameter-store';
+import { History, AlertTriangle, RotateCw, Loader2, Star, CheckCircle, XCircle, Info } from 'lucide-react';
+import { useParameterStore, type SortColumn } from '../../stores/parameter-store';
 import { PARAMETER_GROUPS } from '../../../shared/parameter-groups';
 import { useConnectionStore } from '../../stores/connection-store';
 import BitmaskEditor from './BitmaskEditor';
@@ -119,6 +119,12 @@ const ParameterTable: React.FC = () => {
     selectAllDiffs,
     deselectAllDiffs,
     applySelectedFileParams,
+    // Post-apply / reboot cycle
+    fileApplyResult,
+    clearFileApplyResult,
+    setPendingRetryParams,
+    retryPendingParams,
+    clearPendingRetryParams,
   } = useParameterStore();
 
   const [editingParam, setEditingParam] = useState<string | null>(null);
@@ -139,6 +145,21 @@ const ParameterTable: React.FC = () => {
   const pendingParamRefresh = useRef(false);
   const [saveDropdownOpen, setSaveDropdownOpen] = useState(false);
   const saveDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Reboot cycle state
+  const rebootCycleRef = useRef<{
+    active: boolean;
+    phase: 'idle' | 'flashing' | 'rebooting' | 'waiting-params' | 'retrying' | 'done';
+    count: number;
+    totalApplied: number;
+    totalFailed: number;
+  }>({ active: false, phase: 'idle', count: 0, totalApplied: 0, totalFailed: 0 });
+  const [cycleStatus, setCycleStatus] = useState<string | null>(null);
+  const [cycleResult, setCycleResult] = useState<{
+    totalApplied: number;
+    totalReboots: number;
+    stillPending: Array<{ id: string; value: number }>;
+  } | null>(null);
 
   // Close save dropdown on outside click
   useEffect(() => {
@@ -232,6 +253,130 @@ const ParameterTable: React.FC = () => {
       showToast('Reboot complete', 'success');
     }
   }, [connectionState.isConnected, connectionState.isReconnecting, showToast]);
+
+  // Reboot cycle: watch for reconnection after cycle-initiated reboot
+  useEffect(() => {
+    const cycle = rebootCycleRef.current;
+    if (!cycle.active || cycle.phase !== 'rebooting') return;
+    if (connectionState.isConnected && !connectionState.isReconnecting) {
+      cycle.phase = 'waiting-params';
+      setCycleStatus('Refreshing parameters...');
+      fetchParameters();
+    }
+  }, [connectionState.isConnected, connectionState.isReconnecting, fetchParameters]);
+
+  // Reboot cycle: watch for param refresh completion, then retry pending params
+  useEffect(() => {
+    const cycle = rebootCycleRef.current;
+    if (!cycle.active || cycle.phase !== 'waiting-params') return;
+    if (lastRefresh === 0) return;
+
+    const runRetry = async () => {
+      cycle.phase = 'retrying';
+      const pending = useParameterStore.getState().pendingRetryParams;
+      setCycleStatus(`Applying ${pending.length} pending parameter${pending.length !== 1 ? 's' : ''}...`);
+
+      const result = await retryPendingParams();
+      cycle.totalApplied += result.applied;
+      cycle.totalFailed += result.failed;
+
+      // If params were applied, flash write again
+      if (result.applied > 0) {
+        setCycleStatus('Writing new parameters to flash...');
+        await window.electronAPI?.writeParamsToFlash();
+        markAllAsSaved();
+      }
+
+      // If newly applied params need reboot AND we haven't hit max cycles
+      if (result.rebootRequired.length > 0 && cycle.count < 3) {
+        cycle.count++;
+        setPendingRetryParams(result.stillPending);
+        cycle.phase = 'rebooting';
+        setCycleStatus(`Rebooting flight controller (cycle ${cycle.count}/3)...`);
+        await window.electronAPI?.mavlinkReboot();
+        return;
+      }
+
+      // Cycle done
+      cycle.active = false;
+      cycle.phase = 'done';
+      setCycleStatus(null);
+      setCycleResult({
+        totalApplied: cycle.totalApplied,
+        totalReboots: cycle.count,
+        stillPending: result.stillPending,
+      });
+      clearPendingRetryParams();
+    };
+
+    runRetry();
+  }, [lastRefresh]); // Intentionally only depends on lastRefresh to detect param refresh completion
+
+  // Start the auto reboot cycle
+  const startRebootCycle = useCallback(async () => {
+    if (!fileApplyResult) return;
+
+    const cycle = rebootCycleRef.current;
+    cycle.active = true;
+    cycle.phase = 'flashing';
+    cycle.count = 1;
+    cycle.totalApplied = fileApplyResult.applied;
+    cycle.totalFailed = fileApplyResult.failed;
+
+    // Store skipped params for retry after reboot
+    setPendingRetryParams(fileApplyResult.skippedParams);
+    clearFileApplyResult();
+
+    // Close compare modal
+    closeCompareModal();
+
+    // Flash write
+    setCycleStatus('Writing parameters to flash...');
+    try {
+      const flashResult = await window.electronAPI?.writeParamsToFlash();
+      if (!flashResult?.success) {
+        cycle.active = false;
+        cycle.phase = 'idle';
+        setCycleStatus(null);
+        showToast(flashResult?.error ?? 'Failed to write to flash', 'error');
+        return;
+      }
+      markAllAsSaved();
+    } catch {
+      cycle.active = false;
+      cycle.phase = 'idle';
+      setCycleStatus(null);
+      showToast('Failed to write to flash', 'error');
+      return;
+    }
+
+    // Reboot
+    cycle.phase = 'rebooting';
+    setCycleStatus('Rebooting flight controller...');
+    try {
+      const success = await window.electronAPI?.mavlinkReboot();
+      if (!success) {
+        cycle.active = false;
+        cycle.phase = 'idle';
+        setCycleStatus(null);
+        showToast('Failed to send reboot command', 'error');
+      }
+    } catch {
+      cycle.active = false;
+      cycle.phase = 'idle';
+      setCycleStatus(null);
+      showToast('Failed to reboot flight controller', 'error');
+    }
+  }, [fileApplyResult, setPendingRetryParams, clearFileApplyResult, closeCompareModal, markAllAsSaved, showToast]);
+
+  // Handle "Close" on summary dialog — dismiss and show reboot banner if needed
+  const handleSummaryClose = useCallback(() => {
+    if (fileApplyResult?.rebootRequired && fileApplyResult.rebootRequired.length > 0) {
+      setRebootRequiredParams(fileApplyResult.rebootRequired);
+    }
+    clearFileApplyResult();
+    closeCompareModal();
+  }, [fileApplyResult, clearFileApplyResult, closeCompareModal]);
 
   const handleSaveToFile = useCallback(async (changedOnly?: boolean) => {
     setIsSavingFile(true);
@@ -591,6 +736,23 @@ const ParameterTable: React.FC = () => {
         </div>
       )}
 
+      {/* Reboot Cycle Progress Banner */}
+      {cycleStatus && (
+        <div className="shrink-0 px-4 py-2.5 border-b bg-blue-500/10 border-blue-500/30">
+          <div className="flex items-center gap-2.5">
+            <Loader2 className="w-4 h-4 text-blue-400 animate-spin shrink-0" />
+            <span className="text-sm text-blue-300">
+              {cycleStatus}
+            </span>
+            {rebootCycleRef.current.active && rebootCycleRef.current.phase === 'rebooting' && connectionState.isReconnecting && connectionState.reconnectAttempt != null && (
+              <span className="text-blue-400/70 text-sm ml-2">
+                Attempt {connectionState.reconnectAttempt}{connectionState.reconnectMaxAttempts ? ` / ${connectionState.reconnectMaxAttempts}` : ''}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Parameter table */}
       <div className="flex-1 overflow-auto">
         {paramCount === 0 && !isLoading ? (
@@ -870,141 +1032,278 @@ const ParameterTable: React.FC = () => {
         />
       )}
 
-      {/* File Compare Modal */}
+      {/* File Compare Modal — shows compare view OR post-apply summary */}
       {showCompareModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
-            <div className="px-6 py-4 border-b border-zinc-800">
-              <h3 className="text-lg font-semibold text-white">Compare Parameters</h3>
-              <p className="text-sm text-zinc-400 mt-1">
-                {fileParamDiffs.length === 0
-                  ? 'No differences found - all file parameters match the vehicle.'
-                  : `${fileParamDiffs.length} parameter${fileParamDiffs.length !== 1 ? 's' : ''} differ between file and vehicle. Select which to apply.`
-                }
-              </p>
-              {(() => {
-                const currentVehicle = connectionState.vehicleType || connectionState.fcVariant;
-                return fileVehicleType && currentVehicle && fileVehicleType !== currentVehicle ? (
-                  <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span className="text-xs text-amber-300">
-                      File was saved from <span className="font-semibold">{fileVehicleType}</span> but vehicle is <span className="font-semibold">{currentVehicle}</span>
-                    </span>
-                  </div>
-                ) : null;
-              })()}
-              {fileSkippedCount > 0 && (
-                <p className="text-xs text-zinc-500 mt-2">
-                  {fileTotalCount} params in file: {fileTotalCount - fileSkippedCount} matched vehicle, {fileSkippedCount} skipped (not found on this firmware)
-                </p>
-              )}
-            </div>
 
-            {fileParamDiffs.length > 0 && (
+            {fileApplyResult ? (
+              /* Post-apply summary view */
               <>
-                {/* Select all / Deselect all */}
-                <div className="px-6 py-2 border-b border-zinc-800/50 flex items-center gap-3">
-                  <button
-                    onClick={selectAllDiffs}
-                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                  >
-                    Select all
-                  </button>
-                  <span className="text-zinc-700">|</span>
-                  <button
-                    onClick={deselectAllDiffs}
-                    className="text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
-                  >
-                    Deselect all
-                  </button>
-                  <span className="ml-auto text-xs text-zinc-500">
-                    {fileParamDiffs.filter(d => d.selected).length} of {fileParamDiffs.length} selected
-                  </span>
+                <div className="px-6 py-4 border-b border-zinc-800">
+                  <h3 className="text-lg font-semibold text-white">Apply Results</h3>
                 </div>
 
-                <div className="flex-1 overflow-auto px-6 py-2">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-xs text-zinc-500 uppercase">
-                        <th className="pb-2 w-8"></th>
-                        <th className="pb-2">Parameter</th>
-                        <th className="pb-2 text-right">Vehicle</th>
-                        <th className="pb-2 text-center w-8"></th>
-                        <th className="pb-2">File</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-800/50">
-                      {fileParamDiffs.map(diff => (
-                        <tr
-                          key={diff.paramId}
-                          className={`cursor-pointer transition-colors ${diff.selected ? 'hover:bg-zinc-800/30' : 'opacity-50 hover:opacity-75'}`}
-                          onClick={() => toggleDiffSelection(diff.paramId)}
-                        >
-                          <td className="py-2 pr-2">
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                              diff.selected
-                                ? 'bg-blue-500/30 border-blue-500/50'
-                                : 'border-zinc-600 bg-zinc-800/50'
-                            }`}>
-                              {diff.selected && (
-                                <svg className="w-3 h-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                <div className="flex-1 overflow-auto px-6 py-5 space-y-4">
+                  {/* Applied count */}
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-400 shrink-0" />
+                    <span className="text-sm text-green-300">
+                      {fileApplyResult.applied} parameter{fileApplyResult.applied !== 1 ? 's' : ''} applied
+                    </span>
+                  </div>
+
+                  {/* Failed count */}
+                  {fileApplyResult.failed > 0 && (
+                    <div className="flex items-center gap-3">
+                      <XCircle className="w-5 h-5 text-red-400 shrink-0" />
+                      <span className="text-sm text-red-300">
+                        {fileApplyResult.failed} parameter{fileApplyResult.failed !== 1 ? 's' : ''} failed
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Reboot required */}
+                  {fileApplyResult.rebootRequired.length > 0 && (
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-sm text-amber-300">
+                          {fileApplyResult.rebootRequired.length} require reboot to take effect:
+                        </span>
+                        <p className="font-mono text-xs text-amber-400/70 mt-1">
+                          {fileApplyResult.rebootRequired.join(', ')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Skipped / not found */}
+                  {fileApplyResult.skippedParams.length > 0 && (
+                    <div className="flex items-start gap-3">
+                      <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-sm text-blue-300">
+                          {fileApplyResult.skippedParams.length} not found on this firmware:
+                        </span>
+                        <p className="font-mono text-xs text-blue-400/70 mt-1">
+                          {fileApplyResult.skippedParams.map(p => p.id).join(', ')}
+                        </p>
+                        <p className="text-xs text-zinc-500 mt-1">
+                          These may become available after reboot
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="px-6 py-4 border-t border-zinc-800 flex justify-end gap-3">
+                  <button
+                    onClick={handleSummaryClose}
+                    className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+                  >
+                    Close
+                  </button>
+                  {(fileApplyResult.rebootRequired.length > 0 || fileApplyResult.skippedParams.length > 0) && (
+                    <button
+                      onClick={startRebootCycle}
+                      className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-amber-500/30"
+                    >
+                      <RotateCw className="w-3.5 h-3.5" />
+                      Write to Flash & Reboot
+                    </button>
+                  )}
+                </div>
+              </>
+            ) : (
+              /* Normal compare view */
+              <>
+                <div className="px-6 py-4 border-b border-zinc-800">
+                  <h3 className="text-lg font-semibold text-white">Compare Parameters</h3>
+                  <p className="text-sm text-zinc-400 mt-1">
+                    {fileParamDiffs.length === 0
+                      ? 'No differences found - all file parameters match the vehicle.'
+                      : `${fileParamDiffs.length} parameter${fileParamDiffs.length !== 1 ? 's' : ''} differ between file and vehicle. Select which to apply.`
+                    }
+                  </p>
+                  {(() => {
+                    const currentVehicle = connectionState.vehicleType || connectionState.fcVariant;
+                    return fileVehicleType && currentVehicle && fileVehicleType !== currentVehicle ? (
+                      <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="text-xs text-amber-300">
+                          File was saved from <span className="font-semibold">{fileVehicleType}</span> but vehicle is <span className="font-semibold">{currentVehicle}</span>
+                        </span>
+                      </div>
+                    ) : null;
+                  })()}
+                  {fileSkippedCount > 0 && (
+                    <p className="text-xs text-zinc-500 mt-2">
+                      {fileTotalCount} params in file: {fileTotalCount - fileSkippedCount} matched vehicle, {fileSkippedCount} skipped (not found on this firmware)
+                    </p>
+                  )}
+                </div>
+
+                {fileParamDiffs.length > 0 && (
+                  <>
+                    {/* Select all / Deselect all */}
+                    <div className="px-6 py-2 border-b border-zinc-800/50 flex items-center gap-3">
+                      <button
+                        onClick={selectAllDiffs}
+                        className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                      >
+                        Select all
+                      </button>
+                      <span className="text-zinc-700">|</span>
+                      <button
+                        onClick={deselectAllDiffs}
+                        className="text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
+                      >
+                        Deselect all
+                      </button>
+                      <span className="ml-auto text-xs text-zinc-500">
+                        {fileParamDiffs.filter(d => d.selected).length} of {fileParamDiffs.length} selected
+                      </span>
+                    </div>
+
+                    <div className="flex-1 overflow-auto px-6 py-2">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-left text-xs text-zinc-500 uppercase">
+                            <th className="pb-2 w-8"></th>
+                            <th className="pb-2">Parameter</th>
+                            <th className="pb-2 text-right">Vehicle</th>
+                            <th className="pb-2 text-center w-8"></th>
+                            <th className="pb-2">File</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-800/50">
+                          {fileParamDiffs.map(diff => (
+                            <tr
+                              key={diff.paramId}
+                              className={`cursor-pointer transition-colors ${diff.selected ? 'hover:bg-zinc-800/30' : 'opacity-50 hover:opacity-75'}`}
+                              onClick={() => toggleDiffSelection(diff.paramId)}
+                            >
+                              <td className="py-2 pr-2">
+                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                                  diff.selected
+                                    ? 'bg-blue-500/30 border-blue-500/50'
+                                    : 'border-zinc-600 bg-zinc-800/50'
+                                }`}>
+                                  {diff.selected && (
+                                    <svg className="w-3 h-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-2 font-mono text-zinc-300">{diff.paramId}</td>
+                              <td className="py-2 text-right font-mono text-zinc-500">{formatParamValue(diff.currentValue)}</td>
+                              <td className="py-2 text-center text-zinc-600">
+                                <svg className="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                 </svg>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-2 font-mono text-zinc-300">{diff.paramId}</td>
-                          <td className="py-2 text-right font-mono text-zinc-500">{formatParamValue(diff.currentValue)}</td>
-                          <td className="py-2 text-center text-zinc-600">
-                            <svg className="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                            </svg>
-                          </td>
-                          <td className="py-2 font-mono text-amber-400">{formatParamValue(diff.fileValue)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                              </td>
+                              <td className="py-2 font-mono text-amber-400">{formatParamValue(diff.fileValue)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+
+                {/* Progress bar while applying */}
+                {isApplyingFileParams && applyProgress && (
+                  <div className="px-6 py-2 border-t border-zinc-800/50">
+                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+                      <span>Applying parameters...</span>
+                      <span>{applyProgress.applied} / {applyProgress.total}</span>
+                    </div>
+                    <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 transition-all duration-150"
+                        style={{ width: `${(applyProgress.applied / applyProgress.total) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="px-6 py-4 border-t border-zinc-800 flex justify-end gap-3">
+                  <button
+                    onClick={closeCompareModal}
+                    disabled={isApplyingFileParams}
+                    className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 disabled:text-zinc-600 transition-colors"
+                  >
+                    {fileParamDiffs.length === 0 ? 'Close' : 'Cancel'}
+                  </button>
+                  {fileParamDiffs.length > 0 && (
+                    <button
+                      onClick={handleApplySelectedParams}
+                      disabled={isApplyingFileParams || fileParamDiffs.filter(d => d.selected).length === 0}
+                      className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-zinc-700/30 text-blue-400 disabled:text-zinc-500 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      {isApplyingFileParams
+                        ? 'Applying...'
+                        : `Apply ${fileParamDiffs.filter(d => d.selected).length} Parameter${fileParamDiffs.filter(d => d.selected).length !== 1 ? 's' : ''}`
+                      }
+                    </button>
+                  )}
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
 
-            {/* Progress bar while applying */}
-            {isApplyingFileParams && applyProgress && (
-              <div className="px-6 py-2 border-t border-zinc-800/50">
-                <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
-                  <span>Applying parameters...</span>
-                  <span>{applyProgress.applied} / {applyProgress.total}</span>
-                </div>
-                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 transition-all duration-150"
-                    style={{ width: `${(applyProgress.applied / applyProgress.total) * 100}%` }}
-                  />
-                </div>
+      {/* Reboot Cycle Results Modal */}
+      {cycleResult && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl max-w-lg w-full mx-4 flex flex-col">
+            <div className="px-6 py-4 border-b border-zinc-800">
+              <h3 className="text-lg font-semibold text-white">Reboot Cycle Complete</h3>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-green-400 shrink-0" />
+                <span className="text-sm text-green-300">
+                  {cycleResult.totalApplied} parameter{cycleResult.totalApplied !== 1 ? 's' : ''} applied
+                </span>
               </div>
-            )}
 
-            <div className="px-6 py-4 border-t border-zinc-800 flex justify-end gap-3">
-              <button
-                onClick={closeCompareModal}
-                disabled={isApplyingFileParams}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 disabled:text-zinc-600 transition-colors"
-              >
-                {fileParamDiffs.length === 0 ? 'Close' : 'Cancel'}
-              </button>
-              {fileParamDiffs.length > 0 && (
-                <button
-                  onClick={handleApplySelectedParams}
-                  disabled={isApplyingFileParams || fileParamDiffs.filter(d => d.selected).length === 0}
-                  className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-zinc-700/30 text-blue-400 disabled:text-zinc-500 rounded-lg text-sm font-medium transition-colors"
-                >
-                  {isApplyingFileParams
-                    ? 'Applying...'
-                    : `Apply ${fileParamDiffs.filter(d => d.selected).length} Parameter${fileParamDiffs.filter(d => d.selected).length !== 1 ? 's' : ''}`
-                  }
-                </button>
+              <div className="flex items-center gap-3">
+                <RotateCw className="w-5 h-5 text-blue-400 shrink-0" />
+                <span className="text-sm text-blue-300">
+                  {cycleResult.totalReboots} reboot{cycleResult.totalReboots !== 1 ? 's' : ''} performed
+                </span>
+              </div>
+
+              {cycleResult.stillPending.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-sm text-amber-300">
+                      {cycleResult.stillPending.length} parameter{cycleResult.stillPending.length !== 1 ? 's' : ''} could not be set:
+                    </span>
+                    <p className="font-mono text-xs text-amber-400/70 mt-1">
+                      {cycleResult.stillPending.map(p => p.id).join(', ')}
+                    </p>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      These parameters may not exist in this firmware version
+                    </p>
+                  </div>
+                </div>
               )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-zinc-800 flex justify-end">
+              <button
+                onClick={() => setCycleResult(null)}
+                className="px-4 py-2 bg-zinc-700/30 hover:bg-zinc-700/50 text-zinc-300 rounded-lg text-sm font-medium transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

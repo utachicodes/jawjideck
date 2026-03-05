@@ -56,10 +56,22 @@ interface ParameterStore {
   showCompareModal: boolean;
   fileParamDiffs: FileParamDiff[];
   fileSkippedCount: number;
+  fileSkippedParams: Array<{ id: string; value: number }>;
   fileTotalCount: number;
   fileVehicleType: string | null;
   isApplyingFileParams: boolean;
   applyProgress: { applied: number; total: number } | null;
+
+  // Post-apply result — drives the summary dialog in ParameterTable
+  fileApplyResult: {
+    applied: number;
+    failed: number;
+    rebootRequired: string[];
+    skippedParams: Array<{ id: string; value: number }>;
+  } | null;
+
+  // Pending retry params for after reboot
+  pendingRetryParams: Array<{ id: string; value: number }>;
 
   // Computed
   paramCount: number;
@@ -104,7 +116,13 @@ interface ParameterStore {
   toggleDiffSelection: (paramId: string) => void;
   selectAllDiffs: () => void;
   deselectAllDiffs: () => void;
-  applySelectedFileParams: () => Promise<{ applied: number; failed: number }>;
+  applySelectedFileParams: () => Promise<{ applied: number; failed: number; rebootRequired: string[]; skippedParams: Array<{ id: string; value: number }> }>;
+
+  // Post-apply actions
+  setPendingRetryParams: (params: Array<{ id: string; value: number }>) => void;
+  retryPendingParams: () => Promise<{ applied: number; failed: number; rebootRequired: string[]; stillPending: Array<{ id: string; value: number }> }>;
+  clearFileApplyResult: () => void;
+  clearPendingRetryParams: () => void;
 }
 
 /**
@@ -141,10 +159,13 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
   showCompareModal: false,
   fileParamDiffs: [],
   fileSkippedCount: 0,
+  fileSkippedParams: [],
   fileTotalCount: 0,
   fileVehicleType: null,
   isApplyingFileParams: false,
   applyProgress: null,
+  fileApplyResult: null,
+  pendingRetryParams: [],
 
   filteredParameters: () => {
     const { parameters, searchQuery, selectedGroup, showOnlyModified, showOnlyFavourites, favourites, sortColumn, sortDirection } = get();
@@ -535,12 +556,15 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
   loadFileForCompare: (fileParams, fileVehicleType) => {
     const { parameters } = get();
     const diffs: FileParamDiff[] = [];
-    let skipped = 0;
+    const skippedList: Array<{ id: string; value: number }> = [];
 
     for (const fp of fileParams) {
       const existing = parameters.get(fp.id);
-      if (!existing) { skipped++; continue; } // Skip params not on the vehicle
-      if (existing.isReadOnly) continue; // Skip read-only params
+      if (!existing) {
+        skippedList.push({ id: fp.id, value: fp.value });
+        continue;
+      }
+      if (existing.isReadOnly) continue;
 
       // Only include if values actually differ (float32-aware)
       if (!f32Equal(existing.value, fp.value)) {
@@ -560,14 +584,15 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
     set({
       showCompareModal: true,
       fileParamDiffs: diffs,
-      fileSkippedCount: skipped,
+      fileSkippedParams: skippedList,
+      fileSkippedCount: skippedList.length,
       fileTotalCount: fileParams.length,
       fileVehicleType: fileVehicleType ?? null,
     });
   },
 
   closeCompareModal: () => {
-    set({ showCompareModal: false, fileParamDiffs: [], fileSkippedCount: 0, fileTotalCount: 0, fileVehicleType: null, applyProgress: null });
+    set({ showCompareModal: false, fileParamDiffs: [], fileSkippedParams: [], fileSkippedCount: 0, fileTotalCount: 0, fileVehicleType: null, applyProgress: null, fileApplyResult: null });
   },
 
   toggleDiffSelection: (paramId) => {
@@ -591,19 +616,21 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
   },
 
   applySelectedFileParams: async () => {
-    const { fileParamDiffs } = get();
+    const { fileParamDiffs, fileSkippedParams, metadata } = get();
     const selected = fileParamDiffs.filter(d => d.selected);
-    if (selected.length === 0) return { applied: 0, failed: 0 };
+    if (selected.length === 0) return { applied: 0, failed: 0, rebootRequired: [], skippedParams: fileSkippedParams };
 
     set({ isApplyingFileParams: true, applyProgress: { applied: 0, total: selected.length } });
 
     let applied = 0;
     let failed = 0;
+    const appliedParamIds: string[] = [];
 
     for (const diff of selected) {
       const result = await window.electronAPI?.setParameter(diff.paramId, diff.fileValue, diff.type);
       if (result?.success) {
         applied++;
+        appliedParamIds.push(diff.paramId);
         // Update local state
         set(state => {
           const params = new Map(state.parameters);
@@ -625,8 +652,83 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
       }
     }
 
-    set({ isApplyingFileParams: false, showCompareModal: false, fileParamDiffs: [], fileSkippedCount: 0, fileTotalCount: 0, fileVehicleType: null, applyProgress: null });
-    return { applied, failed };
+    // Collect params that require reboot
+    const rebootRequired = appliedParamIds.filter(id => metadata?.[id]?.rebootRequired === true);
+
+    if (rebootRequired.length > 0 || fileSkippedParams.length > 0) {
+      // Show summary dialog instead of closing
+      set({
+        isApplyingFileParams: false,
+        applyProgress: null,
+        fileApplyResult: { applied, failed, rebootRequired, skippedParams: fileSkippedParams },
+      });
+    } else {
+      // Clean apply — close modal
+      set({ isApplyingFileParams: false, showCompareModal: false, fileParamDiffs: [], fileSkippedParams: [], fileSkippedCount: 0, fileTotalCount: 0, fileVehicleType: null, applyProgress: null });
+    }
+
+    return { applied, failed, rebootRequired, skippedParams: fileSkippedParams };
+  },
+
+  setPendingRetryParams: (params) => {
+    set({ pendingRetryParams: params });
+  },
+
+  retryPendingParams: async () => {
+    const { pendingRetryParams, parameters, metadata } = get();
+    let applied = 0;
+    let failed = 0;
+    const appliedParamIds: string[] = [];
+    const stillPending: Array<{ id: string; value: number }> = [];
+
+    for (const pending of pendingRetryParams) {
+      const existing = parameters.get(pending.id);
+      if (!existing) {
+        // Param still doesn't exist on FC after reboot
+        stillPending.push(pending);
+        continue;
+      }
+      if (existing.isReadOnly) continue;
+
+      // Skip if already at the desired value
+      if (f32Equal(existing.value, pending.value)) {
+        applied++;
+        appliedParamIds.push(pending.id);
+        continue;
+      }
+
+      const result = await window.electronAPI?.setParameter(pending.id, pending.value, existing.type);
+      if (result?.success) {
+        applied++;
+        appliedParamIds.push(pending.id);
+        // Update local state
+        set(state => {
+          const params = new Map(state.parameters);
+          const ex = params.get(pending.id);
+          if (ex) {
+            params.set(pending.id, {
+              ...ex,
+              value: pending.value,
+              isModified: !f32Equal(ex.originalValue ?? ex.value, pending.value),
+            });
+          }
+          return { parameters: params, paramCount: params.size };
+        });
+      } else {
+        failed++;
+      }
+    }
+
+    const rebootRequired = appliedParamIds.filter(id => metadata?.[id]?.rebootRequired === true);
+    return { applied, failed, rebootRequired, stillPending };
+  },
+
+  clearFileApplyResult: () => {
+    set({ fileApplyResult: null });
+  },
+
+  clearPendingRetryParams: () => {
+    set({ pendingRetryParams: [] });
   },
 
   reset: () => { userModifiedParams.clear(); set({
@@ -647,10 +749,13 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
     sortDirection: 'asc',
     showCompareModal: false,
     fileParamDiffs: [],
+    fileSkippedParams: [],
     fileSkippedCount: 0,
     fileTotalCount: 0,
     fileVehicleType: null,
     isApplyingFileParams: false,
     applyProgress: null,
+    fileApplyResult: null,
+    pendingRetryParams: [],
   }); },
 }));
