@@ -17,6 +17,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { MoveHorizontal, MoveVertical, RefreshCw, Lightbulb, AlertTriangle } from 'lucide-react';
 import { useParameterStore } from '../../stores/parameter-store';
+import { useSettingsStore } from '../../stores/settings-store';
 import { DraggableSlider } from '../ui/DraggableSlider';
 import { PresetSelector } from '../ui/PresetSelector';
 import { ProfileManager } from '../ui/ProfileManager';
@@ -29,6 +30,7 @@ const PID_PROFILES_KEY = 'ardudeck_mavlink_pid_profiles';
 
 const PidTuningTab: React.FC = () => {
   const { parameters, setParameter, fetchParameters, isLoading } = useParameterStore();
+  const showExplanationCards = useSettingsStore((s) => s.uiVisibility.showExplanationCards);
 
   // Check if parameters are loaded
   const hasParameters = parameters.size > 0;
@@ -277,39 +279,41 @@ const PidTuningTab: React.FC = () => {
       </div>
 
       {/* Explanation card */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
-        <h4 className="font-medium text-gray-300 mb-3 flex items-center gap-2">
-          <Lightbulb className="w-4 h-4 text-yellow-400" /> What do these numbers mean?
-        </h4>
-        <div className={`grid ${scheme?.hasFF !== false ? 'grid-cols-4' : 'grid-cols-3'} gap-6 text-sm`}>
-          <div>
-            <span className="text-blue-400 font-medium">P (Proportional)</span>
-            <p className="text-gray-500 mt-1">
-              How quickly your aircraft reacts to errors. Too high = oscillation/vibration. Too low = mushy feeling.
-            </p>
+      {showExplanationCards && (
+        <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+          <h4 className="font-medium text-gray-300 mb-3 flex items-center gap-2">
+            <Lightbulb className="w-4 h-4 text-yellow-400" /> What do these numbers mean?
+          </h4>
+          <div className={`grid ${scheme?.hasFF !== false ? 'grid-cols-4' : 'grid-cols-3'} gap-6 text-sm`}>
+            <div>
+              <span className="text-blue-400 font-medium">P (Proportional)</span>
+              <p className="text-gray-500 mt-1">
+                How quickly your aircraft reacts to errors. Too high = oscillation/vibration. Too low = mushy feeling.
+              </p>
+            </div>
+            <div>
+              <span className="text-emerald-400 font-medium">I (Integral)</span>
+              <p className="text-gray-500 mt-1">
+                Keeps your aircraft on target over time. Helps fight wind and drift. Too high = slow wobbles.
+              </p>
+            </div>
+            <div>
+              <span className="text-purple-400 font-medium">D (Derivative)</span>
+              <p className="text-gray-500 mt-1">
+                Dampens overshooting and oscillation. Too high = hot motors and noise. Too low = bouncy stops.
+              </p>
+            </div>
+            {scheme?.hasFF !== false && (
+            <div>
+              <span className="text-amber-400 font-medium">FF (Feedforward)</span>
+              <p className="text-gray-500 mt-1">
+                Anticipates stick movements for faster response. Useful for agile flying but can cause overshoot.
+              </p>
+            </div>
+            )}
           </div>
-          <div>
-            <span className="text-emerald-400 font-medium">I (Integral)</span>
-            <p className="text-gray-500 mt-1">
-              Keeps your aircraft on target over time. Helps fight wind and drift. Too high = slow wobbles.
-            </p>
-          </div>
-          <div>
-            <span className="text-purple-400 font-medium">D (Derivative)</span>
-            <p className="text-gray-500 mt-1">
-              Dampens overshooting and oscillation. Too high = hot motors and noise. Too low = bouncy stops.
-            </p>
-          </div>
-          {scheme?.hasFF !== false && (
-          <div>
-            <span className="text-amber-400 font-medium">FF (Feedforward)</span>
-            <p className="text-gray-500 mt-1">
-              Anticipates stick movements for faster response. Useful for agile flying but can cause overshoot.
-            </p>
-          </div>
-          )}
         </div>
-      </div>
+      )}
 
       {/* AutoTune tip */}
       <InfoCard title="Use AutoTune for Best Results" variant="tip">

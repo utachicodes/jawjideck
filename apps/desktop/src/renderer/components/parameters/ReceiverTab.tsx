@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useReceiverStore } from '../../stores/receiver-store';
 import { useConnectionStore } from '../../stores/connection-store';
+import { useSettingsStore } from '../../stores/settings-store';
 import { DraggableSlider } from '../ui/DraggableSlider';
 import {
   Radio,
@@ -125,6 +126,9 @@ const BANNER_STYLES: Record<string, { bg: string; border: string; icon: string; 
 };
 
 function InfoBanner({ children, color = 'blue' }: { children: React.ReactNode; color?: string }) {
+  const showTips = useSettingsStore((s) => s.uiVisibility.showTips);
+  if (!showTips) return null;
+
   const s = BANNER_STYLES[color] ?? BANNER_STYLES.blue!;
   return (
     <div className={`flex items-start gap-2.5 px-4 py-3 rounded-xl ${s.bg} ${s.border} border`}>

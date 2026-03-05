@@ -547,6 +547,18 @@ export interface SettingsConnectionMemory {
 }
 
 /**
+ * UI visibility settings - granular control over educational UI elements
+ */
+export interface UiVisibilitySettings {
+  showInfoCards?: boolean;
+  showExplanationCards?: boolean;
+  showTips?: boolean;
+  showQuickPresets?: boolean;
+  showSectionDescriptions?: boolean;
+  defaultAdvancedViews?: boolean;
+}
+
+/**
  * Settings store schema (persisted to disk)
  */
 export interface SettingsStoreSchema {
@@ -556,6 +568,9 @@ export interface SettingsStoreSchema {
   flightStats: SettingsFlightStats;
   connectionMemory?: SettingsConnectionMemory;
   telemetrySpeed?: TelemetrySpeed;
+  experienceLevel?: 'beginner' | 'advanced';
+  experienceLevelVersion?: string;
+  uiVisibility?: UiVisibilitySettings;
 }
 
 // =============================================================================

@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { Info, Lightbulb, AlertTriangle, HelpCircle, type LucideIcon } from 'lucide-react';
+import { useSettingsStore } from '../../stores/settings-store';
 
 export type InfoCardVariant = 'info' | 'tip' | 'warning' | 'help';
 
@@ -29,6 +30,9 @@ const VARIANTS: Record<InfoCardVariant, { icon: LucideIcon; colors: string }> = 
   },
 };
 
+/** Variants hidden in advanced mode */
+const EDUCATIONAL_VARIANTS: Set<InfoCardVariant> = new Set(['info', 'tip', 'help']);
+
 export interface InfoCardProps {
   /** Card title */
   title: string;
@@ -49,6 +53,12 @@ export function InfoCard({
   icon,
   className = '',
 }: InfoCardProps) {
+  const showInfoCards = useSettingsStore((s) => s.uiVisibility.showInfoCards);
+
+  if (!showInfoCards && EDUCATIONAL_VARIANTS.has(variant)) {
+    return null;
+  }
+
   const config = VARIANTS[variant];
   const IconComponent = icon || config.icon;
   const [bgColor, borderColor, textColor] = config.colors.split(' ');
@@ -83,6 +93,12 @@ export interface ExplanationCardProps {
 }
 
 export function ExplanationCard({ title, explanations, className = '' }: ExplanationCardProps) {
+  const showExplanationCards = useSettingsStore((s) => s.uiVisibility.showExplanationCards);
+
+  if (!showExplanationCards) {
+    return null;
+  }
+
   return (
     <div className={`bg-gray-800/30 rounded-xl border border-gray-700/30 p-5 ${className}`}>
       <h4 className="font-medium text-gray-300 mb-3 flex items-center gap-2">
@@ -109,6 +125,12 @@ export interface TipProps {
 }
 
 export function Tip({ children, className = '' }: TipProps) {
+  const showTips = useSettingsStore((s) => s.uiVisibility.showTips);
+
+  if (!showTips) {
+    return null;
+  }
+
   return (
     <div className={`bg-zinc-800/50 rounded-lg p-3 ${className}`}>
       <p className="text-xs text-zinc-500">

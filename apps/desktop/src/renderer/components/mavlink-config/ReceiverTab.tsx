@@ -13,6 +13,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Radio, Signal, SignalZero, Activity, AlertTriangle, HelpCircle } from 'lucide-react';
 import { useParameterStore } from '../../stores/parameter-store';
 import { useTelemetryStore } from '../../stores/telemetry-store';
+import { useSettingsStore } from '../../stores/settings-store';
 import { PRIMARY_CHANNEL_COUNT, getMavlinkChannelNames, reorderChannelsWithRcmap } from '../../utils/rc-channel-constants';
 
 // =============================================================================
@@ -106,6 +107,9 @@ const CompactChannelBar: React.FC<{
 // =============================================================================
 
 function InfoBanner({ children, color = 'teal' }: { children: React.ReactNode; color?: string }) {
+  const showTips = useSettingsStore((s) => s.uiVisibility.showTips);
+  if (!showTips) return null;
+
   const styles: Record<string, { bg: string; border: string; icon: string; label: string }> = {
     teal:  { bg: 'bg-teal-500/5',  border: 'border-teal-500/20',  icon: 'text-teal-400',  label: 'text-teal-300' },
     blue:  { bg: 'bg-blue-500/5',  border: 'border-blue-500/20',  icon: 'text-blue-400',  label: 'text-blue-300' },

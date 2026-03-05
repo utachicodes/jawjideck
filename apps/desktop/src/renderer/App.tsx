@@ -24,7 +24,8 @@ import { useFenceStore } from './stores/fence-store';
 import { useRallyStore } from './stores/rally-store';
 import { useLegacyConfigStore } from './stores/legacy-config-store';
 import { useCliStore, setupCliDataListener, cleanupCliDataListener } from './stores/cli-store';
-import { initializeSettings, useSettingsStore, type VehicleType } from './stores/settings-store';
+import { initializeSettings, useSettingsStore, type VehicleType, type ExperienceLevel } from './stores/settings-store';
+import { ExperienceLevelDialog } from './components/ui/ExperienceLevelDialog';
 import { useFlightControlStore } from './stores/flight-control-store';
 import { useMessagesStore } from './stores/messages-store';
 import type { ElectronAPI } from '../main/preload';
@@ -216,7 +217,7 @@ function App() {
   const { reset: resetLegacyConfig } = useLegacyConfigStore();
   const { reset: resetCli } = useCliStore();
   const { clearModeMappings: resetFlightControl, stopOverride } = useFlightControlStore();
-  const { vehicles, activeVehicleId, updateVehicle } = useSettingsStore();
+  const { vehicles, activeVehicleId, updateVehicle, experienceLevel, experienceLevelVersion, setExperienceLevel } = useSettingsStore();
   const {
     reset: resetCalibration,
     handleProgressUpdate: handleCalibrationProgressUpdate,
@@ -232,6 +233,9 @@ function App() {
   // CLI exit dialog state
   const [showCliExitDialog, setShowCliExitDialog] = useState(false);
   const [cliExitPendingView, setCliExitPendingView] = useState<ViewId | null>(null);
+
+  // Experience level dialog state
+  const [showExperienceDialog, setShowExperienceDialog] = useState(false);
 
   // Get active vehicle profile type
   const activeVehicle = vehicles.find(v => v.id === activeVehicleId);
@@ -313,6 +317,24 @@ function App() {
   useEffect(() => {
     initializeSettings();
   }, []);
+
+  // Show experience level dialog on first launch or version change
+  useEffect(() => {
+    if (!useSettingsStore.getState()._isInitialized) return;
+    (async () => {
+      const currentVersion = await window.electronAPI?.getAppVersion();
+      if (!currentVersion) return;
+      if (!experienceLevel || experienceLevelVersion !== currentVersion) {
+        setShowExperienceDialog(true);
+      }
+    })();
+  }, [experienceLevel, experienceLevelVersion]);
+
+  const handleExperienceLevelSelect = async (level: ExperienceLevel) => {
+    const currentVersion = await window.electronAPI?.getAppVersion();
+    setExperienceLevel(level, currentVersion || '0.0.0');
+    setShowExperienceDialog(false);
+  };
 
   // Initialize CLI data listener globally (captures CLI output from any view)
   useEffect(() => {
@@ -695,6 +717,11 @@ function App() {
           onIgnore={handleIgnoreMismatch}
           onDismissSession={handleDismissSession}
         />
+      )}
+
+      {/* Experience level dialog */}
+      {showExperienceDialog && (
+        <ExperienceLevelDialog onSelect={handleExperienceLevelSelect} />
       )}
 
       {/* CLI exit confirmation dialog */}

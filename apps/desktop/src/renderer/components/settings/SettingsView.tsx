@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSettingsStore, type VehicleProfile, type VehicleType, type DisplayUnits } from '../../stores/settings-store';
+import { useSettingsStore, type VehicleProfile, type VehicleType, type DisplayUnits, type ExperienceLevel, type UiVisibility } from '../../stores/settings-store';
 import { useParameterStore } from '../../stores/parameter-store';
 import { useTelemetryStore } from '../../stores/telemetry-store';
 import { useConnectionStore } from '../../stores/connection-store';
@@ -985,6 +985,10 @@ export function SettingsView() {
     getEstimatedRange,
     displayUnits,
     setDisplayUnits,
+    experienceLevel,
+    setExperienceLevel,
+    uiVisibility,
+    setUiVisibility,
   } = useSettingsStore();
 
   const { connectionState } = useConnectionStore();
@@ -1324,6 +1328,75 @@ export function SettingsView() {
               >
                 m / kg / Ah
               </button>
+            </div>
+          </div>
+
+          {/* Experience Level & UI Visibility */}
+          <div className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-4 mb-4">
+            {/* Preset row */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <div>
+                  <div className="text-sm font-medium text-white">Experience Level</div>
+                  <div className="text-[11px] text-gray-500">Presets control all options below</div>
+                </div>
+              </div>
+              <div className="flex bg-gray-900/50 rounded-lg border border-gray-700/50 overflow-hidden">
+                <button
+                  onClick={async () => {
+                    const v = await window.electronAPI?.getAppVersion() || '0.0.0';
+                    setExperienceLevel('beginner', v);
+                  }}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    experienceLevel === 'beginner'
+                      ? 'bg-blue-500/20 text-blue-400'
+                      : 'text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  Beginner
+                </button>
+                <button
+                  onClick={async () => {
+                    const v = await window.electronAPI?.getAppVersion() || '0.0.0';
+                    setExperienceLevel('advanced', v);
+                  }}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    experienceLevel === 'advanced'
+                      ? 'bg-purple-500/20 text-purple-400'
+                      : 'text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  Advanced
+                </button>
+              </div>
+            </div>
+
+            {/* Granular checkbox grid */}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+              {([
+                { key: 'showInfoCards' as const, label: 'Info Cards', desc: '"What are PIDs?" panels' },
+                { key: 'showQuickPresets' as const, label: 'Quick Presets', desc: 'Tuning style selectors' },
+                { key: 'showExplanationCards' as const, label: 'Explanation Cards', desc: '"What is X?" breakdowns' },
+                { key: 'showSectionDescriptions' as const, label: 'Section Descriptions', desc: 'Header subtitle text' },
+                { key: 'showTips' as const, label: 'Inline Tips', desc: 'Compact hint text' },
+                { key: 'defaultAdvancedViews' as const, label: 'Default Advanced Views', desc: 'Start in advanced mode' },
+              ] as const).map(({ key, label, desc }) => (
+                <label key={key} className="flex items-start gap-2.5 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={uiVisibility[key]}
+                    onChange={(e) => setUiVisibility({ [key]: e.target.checked })}
+                    className="mt-0.5 w-3.5 h-3.5 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500/30 focus:ring-offset-0 cursor-pointer"
+                  />
+                  <div className="min-w-0">
+                    <div className="text-xs font-medium text-gray-300 group-hover:text-white transition-colors">{label}</div>
+                    <div className="text-[11px] text-gray-600">{desc}</div>
+                  </div>
+                </label>
+              ))}
             </div>
           </div>
 

@@ -9,6 +9,7 @@
 import React, { useMemo } from 'react';
 import { Cable, Usb, AlertTriangle, HelpCircle } from 'lucide-react';
 import { useParameterStore } from '../../stores/parameter-store';
+import { useSettingsStore } from '../../stores/settings-store';
 
 // =============================================================================
 // Constants
@@ -181,6 +182,7 @@ function PortRow({ index }: { index: number }) {
 
 const SerialPortsTab: React.FC = () => {
   const { parameters } = useParameterStore();
+  const showTips = useSettingsStore((s) => s.uiVisibility.showTips);
 
   // Determine how many serial ports exist by checking parameters
   const portCount = useMemo(() => {
@@ -216,13 +218,15 @@ const SerialPortsTab: React.FC = () => {
           </div>
         </div>
         {/* How this works banner */}
-        <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-sky-500/5 border border-sky-500/20 mb-4">
-          <HelpCircle className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
-          <p className="text-xs text-zinc-300 leading-relaxed">
-            <span className="font-semibold text-sky-300">How this works: </span>
-            Each row is a serial port on your flight controller. Set the protocol to match what's physically wired to that port — like <span className="text-zinc-200">RCIN</span> for your receiver or <span className="text-zinc-200">GPS</span> for a GPS module.
-          </p>
-        </div>
+        {showTips && (
+          <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-sky-500/5 border border-sky-500/20 mb-4">
+            <HelpCircle className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              <span className="font-semibold text-sky-300">How this works: </span>
+              Each row is a serial port on your flight controller. Set the protocol to match what's physically wired to that port — like <span className="text-zinc-200">RCIN</span> for your receiver or <span className="text-zinc-200">GPS</span> for a GPS module.
+            </p>
+          </div>
+        )}
         <div className="rounded-lg border border-gray-700/30 overflow-hidden">
           <table className="w-full text-sm">
             <thead>

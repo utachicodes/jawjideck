@@ -101,6 +101,41 @@ export interface MissionDefaults {
 export type DisplayUnits = 'small' | 'large';
 
 /**
+ * Experience level controls visibility of educational UI elements
+ */
+export type ExperienceLevel = 'beginner' | 'advanced';
+
+/**
+ * Granular UI visibility settings
+ */
+export interface UiVisibility {
+  showInfoCards: boolean;
+  showExplanationCards: boolean;
+  showTips: boolean;
+  showQuickPresets: boolean;
+  showSectionDescriptions: boolean;
+  defaultAdvancedViews: boolean;
+}
+
+const BEGINNER_UI_VISIBILITY: UiVisibility = {
+  showInfoCards: true,
+  showExplanationCards: true,
+  showTips: true,
+  showQuickPresets: true,
+  showSectionDescriptions: true,
+  defaultAdvancedViews: false,
+};
+
+const ADVANCED_UI_VISIBILITY: UiVisibility = {
+  showInfoCards: false,
+  showExplanationCards: false,
+  showTips: false,
+  showQuickPresets: false,
+  showSectionDescriptions: false,
+  defaultAdvancedViews: true,
+};
+
+/**
  * Connection memory - remembers last used connection settings
  */
 export interface ConnectionMemory {
@@ -151,6 +186,15 @@ interface SettingsStore {
   // Display units
   displayUnits: DisplayUnits;
   setDisplayUnits: (units: DisplayUnits) => void;
+
+  // Experience level
+  experienceLevel: ExperienceLevel | null;
+  experienceLevelVersion: string | null;
+  setExperienceLevel: (level: ExperienceLevel, version: string) => void;
+
+  // UI visibility (granular control)
+  uiVisibility: UiVisibility;
+  setUiVisibility: (updates: Partial<UiVisibility>) => void;
 
   // Computed
   getActiveVehicle: () => VehicleProfile | null;
@@ -502,6 +546,9 @@ export const useSettingsStore = create<SettingsStore>()(
   defaultSitlType: 'inav',
   telemetrySpeed: 'normal' as TelemetrySpeed,
   displayUnits: 'small' as DisplayUnits,
+  experienceLevel: null as ExperienceLevel | null,
+  experienceLevelVersion: null as string | null,
+  uiVisibility: { ...BEGINNER_UI_VISIBILITY },
 
   // Computed
   getActiveVehicle: () => {
@@ -566,6 +613,12 @@ export const useSettingsStore = create<SettingsStore>()(
           defaultSitlType: (settings as unknown as Record<string, unknown>).defaultSitlType as DefaultSitlType || 'inav',
           telemetrySpeed: ((settings as unknown as Record<string, unknown>).telemetrySpeed as TelemetrySpeed) || 'normal',
           displayUnits: ((settings as unknown as Record<string, unknown>).displayUnits as DisplayUnits) || 'small',
+          experienceLevel: ((settings as unknown as Record<string, unknown>).experienceLevel as ExperienceLevel) || null,
+          experienceLevelVersion: ((settings as unknown as Record<string, unknown>).experienceLevelVersion as string) || null,
+          uiVisibility: {
+            ...BEGINNER_UI_VISIBILITY,
+            ...((settings as unknown as Record<string, unknown>).uiVisibility as Partial<UiVisibility> | undefined),
+          },
           _isInitialized: true,
         });
       } else {
@@ -592,6 +645,9 @@ export const useSettingsStore = create<SettingsStore>()(
         defaultSitlType: state.defaultSitlType,
         telemetrySpeed: state.telemetrySpeed,
         displayUnits: state.displayUnits,
+        ...(state.experienceLevel ? { experienceLevel: state.experienceLevel } : {}),
+        ...(state.experienceLevelVersion ? { experienceLevelVersion: state.experienceLevelVersion } : {}),
+        uiVisibility: state.uiVisibility,
       };
       await window.electronAPI?.saveSettings(payload);
     } catch (error) {
@@ -703,6 +759,30 @@ export const useSettingsStore = create<SettingsStore>()(
     set({ displayUnits: units });
   },
 
+  setExperienceLevel: (level, version) => {
+    const uiVis = level === 'advanced' ? { ...ADVANCED_UI_VISIBILITY } : { ...BEGINNER_UI_VISIBILITY };
+    set((state) => ({
+      experienceLevel: level,
+      experienceLevelVersion: version,
+      uiVisibility: uiVis,
+      missionDefaults: { ...state.missionDefaults, advancedMissionLabels: uiVis.defaultAdvancedViews },
+    }));
+  },
+
+  setUiVisibility: (updates) => {
+    set((state) => {
+      const newUiVisibility = { ...state.uiVisibility, ...updates };
+      // Sync advancedMissionLabels when defaultAdvancedViews changes
+      if (updates.defaultAdvancedViews !== undefined) {
+        return {
+          uiVisibility: newUiVisibility,
+          missionDefaults: { ...state.missionDefaults, advancedMissionLabels: updates.defaultAdvancedViews },
+        };
+      }
+      return { uiVisibility: newUiVisibility };
+    });
+  },
+
   // Reset
   resetToDefaults: () => {
     set({
@@ -736,6 +816,9 @@ useSettingsStore.subscribe(
     defaultSitlType: state.defaultSitlType,
     telemetrySpeed: state.telemetrySpeed,
     displayUnits: state.displayUnits,
+    experienceLevel: state.experienceLevel,
+    experienceLevelVersion: state.experienceLevelVersion,
+    uiVisibility: state.uiVisibility,
   }),
   (curr, prev) => {
     // Only save if initialized and something changed
@@ -749,7 +832,10 @@ useSettingsStore.subscribe(
         curr.connectionMemory !== prev.connectionMemory ||
         curr.defaultSitlType !== prev.defaultSitlType ||
         curr.telemetrySpeed !== prev.telemetrySpeed ||
-        curr.displayUnits !== prev.displayUnits
+        curr.displayUnits !== prev.displayUnits ||
+        curr.experienceLevel !== prev.experienceLevel ||
+        curr.experienceLevelVersion !== prev.experienceLevelVersion ||
+        curr.uiVisibility !== prev.uiVisibility
       ) {
         debouncedSave();
       }

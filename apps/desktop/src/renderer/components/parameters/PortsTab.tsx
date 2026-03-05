@@ -8,6 +8,7 @@
 import React, { useEffect, useState } from 'react';
 import { useReceiverStore, type SerialPort } from '../../stores/receiver-store';
 import { useConnectionStore } from '../../stores/connection-store';
+import { useSettingsStore } from '../../stores/settings-store';
 import {
   BOARD_UART_LABELS,
 } from '../../../shared/board-uart-labels';
@@ -293,6 +294,7 @@ interface PortsTabProps {
 
 export default function PortsTab({ modified, setModified }: PortsTabProps) {
   const connection = useConnectionStore((s) => s.connectionState);
+  const showTips = useSettingsStore((s) => s.uiVisibility.showTips);
   const {
     serialConfig,
     loadConfig,
@@ -361,14 +363,16 @@ export default function PortsTab({ modified, setModified }: PortsTabProps) {
           </div>
         </div>
         {/* How this works banner */}
-        <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-sky-500/5 border border-sky-500/20 mb-4">
-          <HelpCircle className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
-          <p className="text-xs text-zinc-300 leading-relaxed">
-            <span className="font-semibold text-sky-300">How this works: </span>
-            Each row is a physical UART connector on your board. Enable <span className="text-zinc-200">RX</span> on the UART your receiver is wired to.
-            Set <span className="text-zinc-200">Sensors</span> for GPS or rangefinder, and <span className="text-zinc-200">Peripherals</span> for OSD or VTX control. Save and reboot to apply.
-          </p>
-        </div>
+        {showTips && (
+          <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-sky-500/5 border border-sky-500/20 mb-4">
+            <HelpCircle className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              <span className="font-semibold text-sky-300">How this works: </span>
+              Each row is a physical UART connector on your board. Enable <span className="text-zinc-200">RX</span> on the UART your receiver is wired to.
+              Set <span className="text-zinc-200">Sensors</span> for GPS or rangefinder, and <span className="text-zinc-200">Peripherals</span> for OSD or VTX control. Save and reboot to apply.
+            </p>
+          </div>
+        )}
         <div className="rounded-lg border border-gray-700/30 overflow-hidden">
           <table className="w-full text-sm">
             <thead>

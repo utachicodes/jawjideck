@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { Wand2, type LucideIcon } from 'lucide-react';
+import { useSettingsStore } from '../../stores/settings-store';
 
 export interface Preset {
   name: string;
@@ -36,6 +37,9 @@ export function PresetSelector<T extends Record<string, Preset>>({
   hint = 'Click to apply a tuning style',
   activeKey,
 }: PresetSelectorProps<T>) {
+  const showQuickPresets = useSettingsStore((s) => s.uiVisibility.showQuickPresets);
+  if (!showQuickPresets) return null;
+
   return (
     <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/5 rounded-xl border border-indigo-500/20 p-4">
       <div className="flex items-center justify-between">
@@ -80,6 +84,9 @@ export function CompactPresetSelector<T extends Record<string, Preset>>({
   onApply,
   activeKey,
 }: Omit<PresetSelectorProps<T>, 'label' | 'hint'>) {
+  const showQuickPresets = useSettingsStore((s) => s.uiVisibility.showQuickPresets);
+  if (!showQuickPresets) return null;
+
   return (
     <div className="flex gap-2 flex-wrap">
       {Object.entries(presets).map(([key, preset]) => {

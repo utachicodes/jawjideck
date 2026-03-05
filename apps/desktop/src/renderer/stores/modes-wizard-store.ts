@@ -8,6 +8,7 @@
 import { create } from 'zustand';
 import type { MSPModeRange } from '@ardudeck/msp-ts';
 import { PRESETS, type ModePreset } from '../components/modes/presets/mode-presets';
+import { useSettingsStore } from './settings-store';
 
 // Wizard steps
 export type WizardStep =
@@ -115,7 +116,7 @@ const STEP_ORDER: WizardStep[] = ['welcome', 'transmitter', 'mode-config', 'revi
 
 export const useModesWizardStore = create<ModesWizardState>((set, get) => ({
   // Initial state
-  viewMode: 'wizard',
+  viewMode: useSettingsStore.getState().uiVisibility.defaultAdvancedViews ? 'advanced' : 'wizard',
   isWizardOpen: false,
 
   currentStep: 'welcome',
@@ -470,7 +471,7 @@ export const useModesWizardStore = create<ModesWizardState>((set, get) => ({
   reset: () => {
     get().stopRcPolling();
     set({
-      viewMode: 'wizard',
+      viewMode: useSettingsStore.getState().uiVisibility.defaultAdvancedViews ? 'advanced' : 'wizard',
       isWizardOpen: false,
       currentStep: 'welcome',
       selectedPreset: null,

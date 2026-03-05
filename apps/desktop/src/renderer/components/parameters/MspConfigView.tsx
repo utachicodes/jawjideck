@@ -28,6 +28,7 @@ import ReceiverTab from './ReceiverTab';
 import PortsTab from './PortsTab';
 import ReceiverWizard from './ReceiverWizard';
 import { useReceiverStore } from '../../stores/receiver-store';
+import { useSettingsStore } from '../../stores/settings-store';
 import { DraggableSlider } from '../ui/DraggableSlider';
 import {
   SlidersHorizontal,
@@ -359,6 +360,9 @@ function PresetSelector<T extends Record<string, { name: string; description: st
   onApply: (key: keyof T) => void;
   label?: string;
 }) {
+  const showQuickPresets = useSettingsStore((s) => s.uiVisibility.showQuickPresets);
+  if (!showQuickPresets) return null;
+
   return (
     <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/5 rounded-xl border border-indigo-500/20 p-4">
       <div className="flex items-center justify-between">
@@ -673,6 +677,7 @@ function RatesTab({
   isLegacyInav?: boolean;  // Legacy iNav < 2.3.0 has no per-axis RC rates
   isInav?: boolean;  // iNav firmware (RC_RATE is fixed at 100)
 }) {
+  const showInfoCards = useSettingsStore((s) => s.uiVisibility.showInfoCards);
   const [customProfiles, setCustomProfiles] = useState<Record<string, { name: string; data: Partial<MSPRcTuning> }>>({});
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [profileName, setProfileName] = useState('');
@@ -742,15 +747,17 @@ function RatesTab({
   return (
     <div className="max-w-full px-4 space-y-6">
       {/* Info card */}
-      <div className="bg-blue-500/10 rounded-xl border border-blue-500/30 p-4 flex items-center gap-4">
-        <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-          <Info className="w-5 h-5 text-blue-400" />
+      {showInfoCards && (
+        <div className="bg-blue-500/10 rounded-xl border border-blue-500/30 p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+            <Info className="w-5 h-5 text-blue-400" />
+          </div>
+          <div>
+            <p className="text-blue-400 font-medium">What are rates?</p>
+            <p className="text-sm text-gray-400">Rates control how fast your quad spins when you move the sticks. Higher = faster rotation.</p>
+          </div>
         </div>
-        <div>
-          <p className="text-blue-400 font-medium">What are rates?</p>
-          <p className="text-sm text-gray-400">Rates control how fast your quad spins when you move the sticks. Higher = faster rotation.</p>
-        </div>
-      </div>
+      )}
 
       {/* Quick Presets */}
       <PresetSelector
@@ -935,6 +942,7 @@ function PidTuningTab({
   updatePid: (axis: 'roll' | 'pitch' | 'yaw', field: 'p' | 'i' | 'd', value: number) => void;
   setModified: (v: boolean) => void;
 }) {
+  const showExplanationCards = useSettingsStore((s) => s.uiVisibility.showExplanationCards);
   const [customProfiles, setCustomProfiles] = useState<Record<string, { name: string; data: MSPPid }>>({});
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [profileName, setProfileName] = useState('');
@@ -1132,25 +1140,27 @@ function PidTuningTab({
       </div>
 
       {/* Help card */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
-        <h4 className="font-medium text-gray-300 mb-3 flex items-center gap-2">
-          <Lightbulb className="w-4 h-4 text-yellow-400" /> What do these numbers mean?
-        </h4>
-        <div className="grid grid-cols-3 gap-6 text-sm">
-          <div>
-            <span className="text-blue-400 font-medium">P (Response)</span>
-            <p className="text-gray-500 mt-1">How quickly your quad reacts. Too high = oscillation/vibration. Too low = mushy feeling.</p>
-          </div>
-          <div>
-            <span className="text-emerald-400 font-medium">I (Stability)</span>
-            <p className="text-gray-500 mt-1">Keeps your quad on target. Helps fight wind and drift. Too high = slow wobbles.</p>
-          </div>
-          <div>
-            <span className="text-purple-400 font-medium">D (Smoothness)</span>
-            <p className="text-gray-500 mt-1">Dampens overshooting. Too high = hot motors and noise. Too low = bouncy stops.</p>
+      {showExplanationCards && (
+        <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+          <h4 className="font-medium text-gray-300 mb-3 flex items-center gap-2">
+            <Lightbulb className="w-4 h-4 text-yellow-400" /> What do these numbers mean?
+          </h4>
+          <div className="grid grid-cols-3 gap-6 text-sm">
+            <div>
+              <span className="text-blue-400 font-medium">P (Response)</span>
+              <p className="text-gray-500 mt-1">How quickly your quad reacts. Too high = oscillation/vibration. Too low = mushy feeling.</p>
+            </div>
+            <div>
+              <span className="text-emerald-400 font-medium">I (Stability)</span>
+              <p className="text-gray-500 mt-1">Keeps your quad on target. Helps fight wind and drift. Too high = slow wobbles.</p>
+            </div>
+            <div>
+              <span className="text-purple-400 font-medium">D (Smoothness)</span>
+              <p className="text-gray-500 mt-1">Dampens overshooting. Too high = hot motors and noise. Too low = bouncy stops.</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
     </div>
   );
@@ -1573,6 +1583,7 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
   } = useModesWizardStore();
 
   const { connectionState } = useConnectionStore();
+  const showSectionDescriptions = useSettingsStore((s) => s.uiVisibility.showSectionDescriptions);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   // Load modes and start RC polling on mount
@@ -1621,9 +1632,11 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
           </div>
           <div>
             <p className="text-purple-300 font-medium">Flight Modes</p>
-            <p className="text-sm text-purple-200/60">
-              Configure how your {connectionState.vehicleType?.toLowerCase() || 'aircraft'} responds to switch positions on your transmitter.
-            </p>
+            {showSectionDescriptions && (
+              <p className="text-sm text-purple-200/60">
+                Configure how your {connectionState.vehicleType?.toLowerCase() || 'aircraft'} responds to switch positions on your transmitter.
+              </p>
+            )}
           </div>
         </div>
 
@@ -1686,13 +1699,15 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
             /* Show existing modes */
             <div className="space-y-4">
               {/* Helper tip for newbies */}
-              <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                <HelpCircle className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-                <p className="text-sm text-blue-200/80">
-                  <strong>How this works:</strong> Each mode is triggered by a switch on your transmitter.
-                  Move your switches to see which modes activate. The bar shows where your switch needs to be.
-                </p>
-              </div>
+              {showSectionDescriptions && (
+                <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <HelpCircle className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-blue-200/80">
+                    <strong>How this works:</strong> Each mode is triggered by a switch on your transmitter.
+                    Move your switches to see which modes activate. The bar shows where your switch needs to be.
+                  </p>
+                </div>
+              )}
 
               {/* Mode cards */}
               <div className="grid gap-3">

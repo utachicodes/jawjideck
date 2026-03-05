@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useConnectionStore } from '../../stores/connection-store';
+import { useSettingsStore } from '../../stores/settings-store';
 import { CompactSlider } from '../ui/DraggableSlider';
 import {
   Cog, Plus, Trash2, RotateCcw, RotateCw, Download, RefreshCw, XCircle,
@@ -304,6 +305,7 @@ function getPlatformCategory(vehicleType?: string): PlatformCategory {
 
 export default function MotorMixerTab({ modified, setModified }: Props) {
   const connectionState = useConnectionStore((s) => s.connectionState);
+  const showInfoCards = useSettingsStore((s) => s.uiVisibility.showInfoCards);
   const [motors, setMotors] = useState<MotorMix[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -568,19 +570,21 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
       )}
 
       {/* Beginner Help */}
-      <div className="bg-blue-500/10 rounded-xl border border-blue-500/20 p-4">
-        <div className="flex items-start gap-3">
-          <Lightbulb className="w-5 h-5 text-blue-400 mt-0.5 shrink-0" />
-          <div>
-            <h3 className="font-medium text-blue-300 mb-1">What is Motor Mixer?</h3>
-            <p className="text-sm text-blue-200/70">
-              {currentPlatform === 'airplane'
-                ? 'Motor mixer controls how your motor(s) respond to throttle. Most airplanes have one motor - control surfaces handle steering.'
-                : 'Motor mixer tells your flight controller how each motor should respond when you move the sticks. Pick a preset that matches your frame shape.'}
-            </p>
+      {showInfoCards && (
+        <div className="bg-blue-500/10 rounded-xl border border-blue-500/20 p-4">
+          <div className="flex items-start gap-3">
+            <Lightbulb className="w-5 h-5 text-blue-400 mt-0.5 shrink-0" />
+            <div>
+              <h3 className="font-medium text-blue-300 mb-1">What is Motor Mixer?</h3>
+              <p className="text-sm text-blue-200/70">
+                {currentPlatform === 'airplane'
+                  ? 'Motor mixer controls how your motor(s) respond to throttle. Most airplanes have one motor - control surfaces handle steering.'
+                  : 'Motor mixer tells your flight controller how each motor should respond when you move the sticks. Pick a preset that matches your frame shape.'}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Frame Selection - Visual Presets */}
       <div className="space-y-4">
