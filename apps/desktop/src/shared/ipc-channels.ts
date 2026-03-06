@@ -381,6 +381,10 @@ export interface ConnectOptions {
   host?: string;
   tcpPort?: number;
   udpPort?: number;
+  /** UDP mode: 'listen' binds locally, 'client' sends to remote host */
+  udpMode?: 'listen' | 'client';
+  udpRemoteHost?: string;
+  udpRemotePort?: number;
   /** Force a specific protocol, skipping auto-detection */
   protocol?: 'mavlink' | 'msp';
 }
@@ -543,6 +547,9 @@ export interface SettingsConnectionMemory {
   lastTcpHost?: string;
   lastTcpPort?: number;
   lastUdpPort?: number;
+  lastUdpMode?: 'listen' | 'client';
+  lastUdpRemoteHost?: string;
+  lastUdpRemotePort?: number;
   lastConnectionType?: 'serial' | 'tcp' | 'udp';
 }
 

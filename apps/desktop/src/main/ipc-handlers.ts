@@ -2366,10 +2366,20 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
           transportName = `TCP ${options.host}:${options.tcpPort}`;
           break;
         case 'udp':
-          currentTransport = new UdpTransport({
-            localPort: options.udpPort ?? 14550,
-          });
-          transportName = `UDP :${options.udpPort ?? 14550}`;
+          if (options.udpMode === 'client') {
+            if (!options.udpRemoteHost || !options.udpRemotePort) throw new Error('Remote host and port required for UDP client mode');
+            currentTransport = new UdpTransport({
+              localPort: 0,
+              remoteHost: options.udpRemoteHost,
+              remotePort: options.udpRemotePort,
+            });
+            transportName = `UDP client ${options.udpRemoteHost}:${options.udpRemotePort}`;
+          } else {
+            currentTransport = new UdpTransport({
+              localPort: options.udpPort ?? 14550,
+            });
+            transportName = `UDP :${options.udpPort ?? 14550}`;
+          }
           break;
         default:
           throw new Error(`Invalid connection type: ${options.type ?? 'undefined'}. Must be 'serial', 'tcp', or 'udp'.`);

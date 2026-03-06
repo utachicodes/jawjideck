@@ -19,6 +19,9 @@ export function ConnectionPanel() {
   const [tcpHost, setTcpHost] = useState('127.0.0.1');
   const [tcpPort, setTcpPort] = useState(5760);
   const [udpPort, setUdpPort] = useState(14550);
+  const [udpMode, setUdpMode] = useState<'listen' | 'client'>('listen');
+  const [udpRemoteHost, setUdpRemoteHost] = useState('192.168.1.1');
+  const [udpRemotePort, setUdpRemotePort] = useState(14550);
   const [showDriverHelp, setShowDriverHelp] = useState(false);
   const hasAppliedMemory = useRef(false);
 
@@ -39,6 +42,15 @@ export function ConnectionPanel() {
       }
       if (connectionMemory.lastUdpPort) {
         setUdpPort(connectionMemory.lastUdpPort);
+      }
+      if (connectionMemory.lastUdpMode) {
+        setUdpMode(connectionMemory.lastUdpMode);
+      }
+      if (connectionMemory.lastUdpRemoteHost) {
+        setUdpRemoteHost(connectionMemory.lastUdpRemoteHost);
+      }
+      if (connectionMemory.lastUdpRemotePort) {
+        setUdpRemotePort(connectionMemory.lastUdpRemotePort);
       }
       hasAppliedMemory.current = true;
     }
@@ -277,10 +289,19 @@ export function ConnectionPanel() {
         });
       }
     } else {
-      success = await connect({ type: 'udp', udpPort });
+      success = await connect({
+        type: 'udp',
+        udpPort,
+        udpMode,
+        udpRemoteHost: udpMode === 'client' ? udpRemoteHost : undefined,
+        udpRemotePort: udpMode === 'client' ? udpRemotePort : undefined,
+      });
       if (success) {
         updateConnectionMemory({
           lastUdpPort: udpPort,
+          lastUdpMode: udpMode,
+          lastUdpRemoteHost: udpRemoteHost,
+          lastUdpRemotePort: udpRemotePort,
           lastConnectionType: 'udp',
         });
       }
@@ -498,19 +519,76 @@ export function ConnectionPanel() {
         {/* UDP settings */}
         {connectionType === 'udp' && (
           <div className="space-y-4">
-            <div>
-              <label className="label">Local Port</label>
-              <input
-                type="number"
-                value={udpPort}
-                onChange={(e) => setUdpPort(Number(e.target.value))}
-                className="input"
+            {/* UDP mode toggle */}
+            <div className="flex rounded-lg overflow-hidden border border-gray-700/50">
+              <button
+                onClick={() => setUdpMode('listen')}
                 disabled={connectionState.isConnected}
-              />
+                className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
+                  udpMode === 'listen'
+                    ? 'bg-blue-600/30 text-blue-300 border-r border-blue-500/30'
+                    : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/30 border-r border-gray-700/50'
+                }`}
+              >
+                Listen (Server)
+              </button>
+              <button
+                onClick={() => setUdpMode('client')}
+                disabled={connectionState.isConnected}
+                className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
+                  udpMode === 'client'
+                    ? 'bg-blue-600/30 text-blue-300'
+                    : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/30'
+                }`}
+              >
+                Client (Connect)
+              </button>
             </div>
-            <p className="text-xs text-gray-500">
-              Listen for incoming MAVLink packets on this port
-            </p>
+
+            {udpMode === 'listen' ? (
+              <>
+                <div>
+                  <label className="label">Local Port</label>
+                  <input
+                    type="number"
+                    value={udpPort}
+                    onChange={(e) => setUdpPort(Number(e.target.value))}
+                    className="input"
+                    disabled={connectionState.isConnected}
+                  />
+                </div>
+                <p className="text-xs text-gray-500">
+                  Listen for incoming packets on this port
+                </p>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className="label">Remote Host</label>
+                  <input
+                    type="text"
+                    value={udpRemoteHost}
+                    onChange={(e) => setUdpRemoteHost(e.target.value)}
+                    className="input"
+                    placeholder="192.168.1.1"
+                    disabled={connectionState.isConnected}
+                  />
+                </div>
+                <div>
+                  <label className="label">Remote Port</label>
+                  <input
+                    type="number"
+                    value={udpRemotePort}
+                    onChange={(e) => setUdpRemotePort(Number(e.target.value))}
+                    className="input"
+                    disabled={connectionState.isConnected}
+                  />
+                </div>
+                <p className="text-xs text-gray-500">
+                  Connect to a remote device at this address
+                </p>
+              </>
+            )}
           </div>
         )}
 

@@ -144,6 +144,9 @@ export interface ConnectionMemory {
   lastTcpHost?: string;
   lastTcpPort?: number;
   lastUdpPort?: number;
+  lastUdpMode?: 'listen' | 'client';
+  lastUdpRemoteHost?: string;
+  lastUdpRemotePort?: number;
   lastConnectionType?: 'serial' | 'tcp' | 'udp';
 }
 
@@ -163,6 +166,10 @@ interface SettingsStore {
   // Non-persisted: SITL switch flag (set when SITL starts, cleared when ConnectionPanel reads it)
   pendingSitlSwitch: boolean;
   setPendingSitlSwitch: (value: boolean) => void;
+
+  // Experimental features
+  surveyUnlocked: boolean;
+  setSurveyUnlocked: (enabled: boolean) => void;
 
   // Mission defaults
   missionDefaults: MissionDefaults;
@@ -537,6 +544,12 @@ export const useSettingsStore = create<SettingsStore>()(
   pendingSitlSwitch: false,
   setPendingSitlSwitch: (value: boolean) => set({ pendingSitlSwitch: value }),
 
+  // Experimental features
+  surveyUnlocked: false,
+  setSurveyUnlocked: (enabled: boolean) => {
+    set({ surveyUnlocked: enabled });
+  },
+
   // Initial state (will be replaced by loadSettings)
   missionDefaults: { ...DEFAULT_MISSION_DEFAULTS },
   vehicles: [{ ...DEFAULT_VEHICLE }],
@@ -619,6 +632,7 @@ export const useSettingsStore = create<SettingsStore>()(
             ...BEGINNER_UI_VISIBILITY,
             ...((settings as unknown as Record<string, unknown>).uiVisibility as Partial<UiVisibility> | undefined),
           },
+          surveyUnlocked: !!((settings as unknown as Record<string, unknown>).surveyUnlocked),
           _isInitialized: true,
         });
       } else {
@@ -648,6 +662,7 @@ export const useSettingsStore = create<SettingsStore>()(
         ...(state.experienceLevel ? { experienceLevel: state.experienceLevel } : {}),
         ...(state.experienceLevelVersion ? { experienceLevelVersion: state.experienceLevelVersion } : {}),
         uiVisibility: state.uiVisibility,
+        surveyUnlocked: state.surveyUnlocked,
       };
       await window.electronAPI?.saveSettings(payload);
     } catch (error) {
@@ -819,6 +834,7 @@ useSettingsStore.subscribe(
     experienceLevel: state.experienceLevel,
     experienceLevelVersion: state.experienceLevelVersion,
     uiVisibility: state.uiVisibility,
+    surveyUnlocked: state.surveyUnlocked,
   }),
   (curr, prev) => {
     // Only save if initialized and something changed
@@ -835,7 +851,8 @@ useSettingsStore.subscribe(
         curr.displayUnits !== prev.displayUnits ||
         curr.experienceLevel !== prev.experienceLevel ||
         curr.experienceLevelVersion !== prev.experienceLevelVersion ||
-        curr.uiVisibility !== prev.uiVisibility
+        curr.uiVisibility !== prev.uiVisibility ||
+        curr.surveyUnlocked !== prev.surveyUnlocked
       ) {
         debouncedSave();
       }
