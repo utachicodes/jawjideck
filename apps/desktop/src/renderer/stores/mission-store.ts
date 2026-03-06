@@ -192,6 +192,7 @@ interface MissionStore {
   updateWaypoint: (seq: number, updates: Partial<MissionItem>) => void;
   removeWaypoint: (seq: number) => void;
   reorderWaypoints: (fromSeq: number, toSeq: number) => void;
+  insertMissionItems: (items: MissionItem[]) => void;
   clearMission: () => void;
 
   // UI state
@@ -481,6 +482,16 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
       missionItems: renumbered,
       isDirty: true,
       selectedSeq: toSeq,
+    });
+  },
+
+  insertMissionItems: (items: MissionItem[]) => {
+    const { missionItems } = get();
+    const startSeq = missionItems.length;
+    const renumbered = items.map((item, i) => ({ ...item, seq: startSeq + i }));
+    set({
+      missionItems: [...missionItems, ...renumbered],
+      isDirty: true,
     });
   },
 

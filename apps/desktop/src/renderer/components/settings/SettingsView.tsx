@@ -1534,10 +1534,62 @@ export function SettingsView() {
           </div>
         </div>
 
+        {/* SECTION: Experimental Features */}
+        {/* ============================================ */}
+        <ExperimentalFeaturesSection />
+
         {/* SECTION: About */}
         {/* ============================================ */}
         <AboutSection />
       </div>
+    </div>
+  );
+}
+
+function ExperimentalFeaturesSection() {
+  const surveyUnlocked = useSettingsStore((s) => s.surveyUnlocked);
+  const setSurveyUnlocked = useSettingsStore((s) => s.setSurveyUnlocked);
+
+  return (
+    <div className="mt-8">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-1.5 h-5 bg-purple-500 rounded-full" />
+        <h2 className="text-sm font-medium text-gray-300 uppercase tracking-wider">Experimental</h2>
+      </div>
+
+      <section className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-5">
+        <h2 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
+          <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+          </svg>
+          Experimental Features
+        </h2>
+        <p className="text-xs text-gray-500 mb-4">
+          These features are under active development and may have rough edges. ArduPilot/MAVLink only.
+        </p>
+
+        <div className="space-y-3">
+          {/* Survey Grid Planner */}
+          <div className="flex items-center justify-between bg-gray-900/40 rounded-lg p-3">
+            <div className="flex-1 mr-3">
+              <div className="text-sm text-gray-200 font-medium">Survey Grid Planner</div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                Photogrammetry survey grid planning with camera presets, overlap control, and auto-waypoint generation
+              </div>
+            </div>
+            <button
+              onClick={() => setSurveyUnlocked(!surveyUnlocked)}
+              className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${
+                surveyUnlocked ? 'bg-purple-600' : 'bg-gray-600'
+              }`}
+            >
+              <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${
+                surveyUnlocked ? 'left-4.5' : 'left-0.5'
+              }`} />
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

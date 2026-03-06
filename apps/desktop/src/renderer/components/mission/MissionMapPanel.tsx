@@ -22,6 +22,12 @@ import { useRallyStore } from '../../stores/rally-store';
 import { useEditModeStore } from '../../stores/edit-mode-store';
 import { useSettingsStore } from '../../stores/settings-store';
 
+// Survey grid overlay
+import { SurveyDrawTool } from '../survey/SurveyDrawTool';
+import { SurveyMapOverlay } from '../survey/SurveyMapOverlay';
+import { SurveyConfigPanel } from '../survey/SurveyConfigPanel';
+import { useSurveyStore } from '../../stores/survey-store';
+
 // Catmull-Rom spline interpolation between two nav waypoints
 function interpolateSpline(
   navWaypoints: MissionItem[],
@@ -707,8 +713,17 @@ export function MissionMapPanel({ readOnly = false }: MissionMapPanelProps) {
   const rallyAddMode = useRallyStore((state) => state.addMode);
   const setRallyAddMode = useRallyStore((state) => state.setAddMode);
 
-  // Disable mission editing when fence or rally editing is active
-  const isFenceOrRallyActive = fenceDrawMode !== 'none' || rallyAddMode;
+  // Survey state
+  const surveyUnlocked = useSettingsStore((s) => s.surveyUnlocked);
+  const surveyIsActive = useSurveyStore((s) => s.isActive);
+  const surveyDrawMode = useSurveyStore((s) => s.drawMode);
+  const surveyPolygon = useSurveyStore((s) => s.polygon);
+  const activateSurvey = useSurveyStore((s) => s.activateSurvey);
+  const deactivateSurvey = useSurveyStore((s) => s.deactivateSurvey);
+  const startSurveyDrawing = useSurveyStore((s) => s.startDrawing);
+
+  // Disable mission editing when fence, rally, or survey editing is active
+  const isFenceOrRallyActive = fenceDrawMode !== 'none' || rallyAddMode || surveyDrawMode !== 'none';
 
   // Filter to only items with locations and valid (non-zero) coordinates
   const waypoints = missionItems.filter(
@@ -846,7 +861,16 @@ export function MissionMapPanel({ readOnly = false }: MissionMapPanelProps) {
         {showTerrain && (
           <TerrainOverlayLayer
             opacity={0.6}
-            fixedRange={terrainAutoRange ? null : terrainFixedRange}
+            fixedRange={
+              terrainAutoRange
+                ? elevationRange.max > elevationRange.min
+                  ? {
+                      min: Math.floor(elevationRange.min / 25) * 25,
+                      max: Math.ceil(elevationRange.max / 25) * 25,
+                    }
+                  : null
+                : terrainFixedRange
+            }
             referenceAlt={terrainRelativeMode ? vfrHud.alt : null}
             onElevationRangeChange={setElevationRange}
           />
@@ -944,7 +968,18 @@ export function MissionMapPanel({ readOnly = false }: MissionMapPanelProps) {
 
         {/* Rally point overlays - always visible */}
         <RallyMapOverlay readOnly={readOnly} />
+
+        {/* Survey grid overlay */}
+        {surveyIsActive && (
+          <>
+            <SurveyDrawTool />
+            <SurveyMapOverlay />
+          </>
+        )}
       </MapContainer>
+
+      {/* Survey config panel */}
+      {surveyIsActive && surveyPolygon && <SurveyConfigPanel />}
 
       {/* Layer selector */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-1">
@@ -1083,6 +1118,55 @@ export function MissionMapPanel({ readOnly = false }: MissionMapPanelProps) {
               <span className="text-xs text-emerald-400 bg-gray-800/90 px-2.5 py-1.5 rounded">
                 Click on map to set home
               </span>
+            )}
+
+            {/* Survey button */}
+            {!readOnly && surveyUnlocked && (
+              <>
+                <div className="w-px h-5 bg-gray-700/50" />
+                {!surveyIsActive ? (
+                  <button
+                    onClick={() => { activateSurvey(); startSurveyDrawing(); }}
+                    className="px-2.5 py-1.5 rounded text-xs font-medium bg-gray-800/90 text-purple-400 hover:bg-purple-600/30 transition-colors flex items-center gap-1.5"
+                    title="Start survey grid planning"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                    </svg>
+                    Survey
+                  </button>
+                ) : (
+                  <>
+                    {surveyDrawMode === 'polygon' && (
+                      <span className="text-xs text-purple-400 bg-gray-800/90 px-2.5 py-1.5 rounded">
+                        Click to add boundary points, double-click to finish
+                      </span>
+                    )}
+                    {surveyDrawMode === 'none' && !surveyPolygon && (
+                      <button
+                        onClick={startSurveyDrawing}
+                        className="px-2.5 py-1.5 rounded text-xs font-medium bg-purple-600/80 text-white transition-colors flex items-center gap-1.5"
+                        title="Draw survey boundary"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Draw Boundary
+                      </button>
+                    )}
+                    <button
+                      onClick={deactivateSurvey}
+                      className="px-2.5 py-1.5 rounded text-xs font-medium bg-gray-800/90 text-red-400 hover:bg-red-600/20 transition-colors flex items-center gap-1.5"
+                      title="Exit survey mode"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Exit Survey
+                    </button>
+                  </>
+                )}
+              </>
             )}
           </>
         )}

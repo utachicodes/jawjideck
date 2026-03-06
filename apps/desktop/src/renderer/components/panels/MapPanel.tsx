@@ -848,7 +848,16 @@ export const MapPanel = React.memo(function MapPanel() {
         {showTerrain && (
           <TerrainOverlayLayer
             opacity={0.6}
-            fixedRange={terrainAutoRange ? null : terrainFixedRange}
+            fixedRange={
+              terrainAutoRange
+                ? elevationRange.max > elevationRange.min
+                  ? {
+                      min: Math.floor(elevationRange.min / 25) * 25,
+                      max: Math.ceil(elevationRange.max / 25) * 25,
+                    }
+                  : null
+                : terrainFixedRange
+            }
             referenceAlt={terrainRelativeMode ? vfrHud.alt : null}
             onElevationRangeChange={setElevationRange}
           />

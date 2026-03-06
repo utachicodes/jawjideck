@@ -224,6 +224,7 @@ function compileNode(
     ctx.varMap.set(varKey(node.id, 'state'), stateVar);
     ctx.varMap.set(varKey(node.id, 'is_high'), `(${stateVar} == 2)`);
     ctx.varMap.set(varKey(node.id, 'is_mid'), `(${stateVar} == 1)`);
+    ctx.varMap.set(varKey(node.id, 'is_low'), `(${stateVar} == 0)`);
     return;
   }
 
@@ -233,6 +234,69 @@ function compileNode(
     emit(ctx, `local ${distVar} = rangefinder:distance_cm_orient(${orient})`);
     emit(ctx, `${distVar} = ${distVar} and (${distVar} / 100.0) or -1`);
     ctx.varMap.set(varKey(node.id, 'distance_m'), distVar);
+    return;
+  }
+
+  if (type === 'sensor-flight-mode') {
+    setOutput('mode_num', 'vehicle:get_mode()');
+    return;
+  }
+
+  if (type === 'sensor-armed') {
+    setOutput('is_armed', 'arming:is_armed()');
+    return;
+  }
+
+  if (type === 'sensor-gps-status') {
+    const inst = String(prop('instance'));
+    const fixVar = nextVar(ctx, 'gps_fix');
+    emit(ctx, `local ${fixVar} = gps:status(${inst})`);
+    ctx.varMap.set(varKey(node.id, 'fix_type'), fixVar);
+    setOutput('num_sats', `gps:num_sats(${inst})`);
+    ctx.varMap.set(varKey(node.id, 'has_3d_fix'), `(${fixVar} >= 3)`);
+    return;
+  }
+
+  if (type === 'sensor-home') {
+    const locVar = nextVar(ctx, 'home_loc');
+    emit(ctx, `local ${locVar} = ahrs:get_home()`);
+    const latVar = nextVar(ctx, 'home_lat');
+    const lngVar = nextVar(ctx, 'home_lng');
+    const altVar = nextVar(ctx, 'home_alt');
+    emit(ctx, `local ${latVar} = ${locVar} and ${locVar}:lat() * 1.0e-7 or 0`);
+    emit(ctx, `local ${lngVar} = ${locVar} and ${locVar}:lng() * 1.0e-7 or 0`);
+    emit(ctx, `local ${altVar} = ${locVar} and ${locVar}:alt() * 0.01 or 0`);
+    ctx.varMap.set(varKey(node.id, 'lat'), latVar);
+    ctx.varMap.set(varKey(node.id, 'lng'), lngVar);
+    ctx.varMap.set(varKey(node.id, 'alt'), altVar);
+    return;
+  }
+
+  if (type === 'sensor-velocity-ned') {
+    const vecVar = nextVar(ctx, 'vel_ned');
+    emit(ctx, `local ${vecVar} = ahrs:get_velocity_NED()`);
+    const nVar = nextVar(ctx, 'vel_n');
+    const eVar = nextVar(ctx, 'vel_e');
+    const dVar = nextVar(ctx, 'vel_d');
+    emit(ctx, `local ${nVar} = ${vecVar} and ${vecVar}:x() or 0`);
+    emit(ctx, `local ${eVar} = ${vecVar} and ${vecVar}:y() or 0`);
+    emit(ctx, `local ${dVar} = ${vecVar} and ${vecVar}:z() or 0`);
+    ctx.varMap.set(varKey(node.id, 'vel_n'), nVar);
+    ctx.varMap.set(varKey(node.id, 'vel_e'), eVar);
+    ctx.varMap.set(varKey(node.id, 'vel_d'), dVar);
+    return;
+  }
+
+  if (type === 'sensor-wind') {
+    const vecVar = nextVar(ctx, 'wind_vec');
+    emit(ctx, `local ${vecVar} = ahrs:wind_estimate()`);
+    const speedVar = nextVar(ctx, 'wind_spd');
+    const dirVar = nextVar(ctx, 'wind_dir');
+    emit(ctx, `local ${speedVar} = ${vecVar} and ${vecVar}:length() or 0`);
+    emit(ctx, `local ${dirVar} = ${vecVar} and math.deg(math.atan(${vecVar}:y(), ${vecVar}:x())) or 0`);
+    emit(ctx, `if ${dirVar} < 0 then ${dirVar} = ${dirVar} + 360 end`);
+    ctx.varMap.set(varKey(node.id, 'speed_ms'), speedVar);
+    ctx.varMap.set(varKey(node.id, 'dir_deg'), dirVar);
     return;
   }
 
@@ -444,6 +508,28 @@ function compileNode(
     return;
   }
 
+  if (type === 'action-play-tune') {
+    const trigger = input('trigger', 'true');
+    const tune = String(prop('tune'));
+    emit(ctx, `if ${trigger} then`);
+    ctx.indent += 1;
+    emit(ctx, `notify:play_tune("${tune.replace(/"/g, '\\"')}")`);
+    ctx.indent -= 1;
+    emit(ctx, 'end');
+    return;
+  }
+
+  if (type === 'action-set-waypoint') {
+    const trigger = input('trigger', 'true');
+    const idx = String(prop('cmd_idx'));
+    emit(ctx, `if ${trigger} then`);
+    ctx.indent += 1;
+    emit(ctx, `mission:set_current_cmd(${idx})`);
+    ctx.indent -= 1;
+    emit(ctx, 'end');
+    return;
+  }
+
   // ── Timing ──────────────────────────────────────────────
 
   if (type === 'timing-run-every') {
@@ -500,6 +586,28 @@ function compileNode(
     emit(ctx, `local ${trigVar} = (${inp} and not ${prevVar})`);
     emit(ctx, `${prevVar} = ${inp}`);
     ctx.varMap.set(varKey(node.id, 'triggered'), trigVar);
+    return;
+  }
+
+  if (type === 'timing-falling-edge') {
+    const inp = input('input', 'false');
+    const prevVar = `_fedge_${sanitizeVarName(node.id)}`;
+    ctx.stateVars.set(prevVar, 'true');
+    const trigVar = nextVar(ctx, 'fedge_trig');
+    emit(ctx, `local ${trigVar} = (not ${inp} and ${prevVar})`);
+    emit(ctx, `${prevVar} = ${inp}`);
+    ctx.varMap.set(varKey(node.id, 'triggered'), trigVar);
+    return;
+  }
+
+  if (type === 'timing-latch') {
+    const setIn = input('set', 'false');
+    const resetIn = input('reset', 'false');
+    const stateVar = `_latch_${sanitizeVarName(node.id)}`;
+    ctx.stateVars.set(stateVar, 'false');
+    emit(ctx, `if ${resetIn} then ${stateVar} = false end`);
+    emit(ctx, `if ${setIn} then ${stateVar} = true end`);
+    ctx.varMap.set(varKey(node.id, 'state'), stateVar);
     return;
   }
 

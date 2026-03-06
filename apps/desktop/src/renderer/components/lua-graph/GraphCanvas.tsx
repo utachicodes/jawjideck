@@ -10,6 +10,9 @@ import {
   Controls,
   type ReactFlowInstance,
   type IsValidConnection,
+  type Edge,
+  type Connection,
+  reconnectEdge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import GraphNodeComponent from './GraphNodeComponent';
@@ -86,6 +89,38 @@ export function GraphCanvas() {
     rfInstance.current = instance as any;
   }, []);
 
+  // Edge reconnection — drag endpoint to new port or off into space to delete
+  const reconnectDone = useRef(false);
+
+  const onReconnectStart = useCallback(() => {
+    reconnectDone.current = false;
+  }, []);
+
+  const onReconnect = useCallback(
+    (oldEdge: Edge, newConnection: Connection) => {
+      reconnectDone.current = true;
+      pushHistory();
+      useLuaGraphStore.setState((state) => ({
+        edges: reconnectEdge(oldEdge, newConnection, state.edges) as any,
+        isDirty: true,
+      }));
+    },
+    [pushHistory],
+  );
+
+  const onReconnectEnd = useCallback(
+    (_event: MouseEvent | TouchEvent, edge: Edge, _handleType: any) => {
+      if (!reconnectDone.current) {
+        pushHistory();
+        useLuaGraphStore.setState((state) => ({
+          edges: state.edges.filter((e) => e.id !== edge.id),
+          isDirty: true,
+        }));
+      }
+    },
+    [pushHistory],
+  );
+
   // Click on canvas background deselects
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
@@ -113,6 +148,7 @@ export function GraphCanvas() {
       type: 'smoothstep' as const,
       style: { strokeWidth: 2, stroke: '#4b5563' },
       animated: false,
+      selectable: true,
     }),
     [],
   );
@@ -130,6 +166,9 @@ export function GraphCanvas() {
         onDragOver={onDragOver}
         onPaneClick={onPaneClick}
         onNodeDragStart={pushHistory}
+        onReconnectStart={onReconnectStart}
+        onReconnect={onReconnect}
+        onReconnectEnd={onReconnectEnd}
         isValidConnection={isValidConnection}
         nodeTypes={nodeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
@@ -140,6 +179,8 @@ export function GraphCanvas() {
         maxZoom={4}
         proOptions={{ hideAttribution: true }}
         deleteKeyCode={null}
+        edgesFocusable
+        edgesReconnectable
         className="bg-transparent"
       >
         <Background

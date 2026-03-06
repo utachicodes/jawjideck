@@ -124,6 +124,7 @@ const sensorNodes: NodeDefinition[] = [
       { id: 'state', label: 'State (0-2)', type: 'number', direction: 'output' },
       { id: 'is_high', label: 'Is High', type: 'boolean', direction: 'output' },
       { id: 'is_mid', label: 'Is Mid', type: 'boolean', direction: 'output' },
+      { id: 'is_low', label: 'Is Low', type: 'boolean', direction: 'output' },
     ],
     properties: [
       { id: 'aux_fn', label: 'Aux Function', type: 'number', defaultValue: 300, min: 0, max: 999 },
@@ -150,6 +151,87 @@ const sensorNodes: NodeDefinition[] = [
       },
     ],
     luaTemplate: 'rangefinder:distance_cm_orient(ORIENT) / 100.0',
+  },
+  {
+    type: 'sensor-flight-mode',
+    label: 'Flight Mode',
+    description: 'Current flight mode number from the vehicle',
+    category: 'sensors',
+    inputs: [],
+    outputs: [
+      { id: 'mode_num', label: 'Mode Number', type: 'number', direction: 'output' },
+    ],
+    properties: [],
+    luaTemplate: 'vehicle:get_mode()',
+  },
+  {
+    type: 'sensor-armed',
+    label: 'Armed State',
+    description: 'Whether the vehicle is currently armed',
+    category: 'sensors',
+    inputs: [],
+    outputs: [
+      { id: 'is_armed', label: 'Is Armed', type: 'boolean', direction: 'output' },
+    ],
+    properties: [],
+    luaTemplate: 'arming:is_armed()',
+  },
+  {
+    type: 'sensor-gps-status',
+    label: 'GPS Status',
+    description: 'GPS fix type and satellite count',
+    category: 'sensors',
+    inputs: [],
+    outputs: [
+      { id: 'fix_type', label: 'Fix Type (0-6)', type: 'number', direction: 'output' },
+      { id: 'num_sats', label: 'Satellites', type: 'number', direction: 'output' },
+      { id: 'has_3d_fix', label: 'Has 3D Fix', type: 'boolean', direction: 'output' },
+    ],
+    properties: [
+      { id: 'instance', label: 'GPS Instance', type: 'number', defaultValue: 0, min: 0, max: 1 },
+    ],
+    luaTemplate: 'gps:status(INST)',
+  },
+  {
+    type: 'sensor-home',
+    label: 'Home Position',
+    description: 'Home location coordinates and altitude',
+    category: 'sensors',
+    inputs: [],
+    outputs: [
+      { id: 'lat', label: 'Latitude', type: 'number', direction: 'output' },
+      { id: 'lng', label: 'Longitude', type: 'number', direction: 'output' },
+      { id: 'alt', label: 'Altitude (m)', type: 'number', direction: 'output' },
+    ],
+    properties: [],
+    luaTemplate: 'ahrs:get_home()',
+  },
+  {
+    type: 'sensor-velocity-ned',
+    label: 'Velocity NED',
+    description: 'Vehicle velocity in North/East/Down frame (m/s)',
+    category: 'sensors',
+    inputs: [],
+    outputs: [
+      { id: 'vel_n', label: 'North (m/s)', type: 'number', direction: 'output' },
+      { id: 'vel_e', label: 'East (m/s)', type: 'number', direction: 'output' },
+      { id: 'vel_d', label: 'Down (m/s)', type: 'number', direction: 'output' },
+    ],
+    properties: [],
+    luaTemplate: 'ahrs:get_velocity_NED()',
+  },
+  {
+    type: 'sensor-wind',
+    label: 'Wind Estimate',
+    description: 'Estimated wind speed and direction',
+    category: 'sensors',
+    inputs: [],
+    outputs: [
+      { id: 'speed_ms', label: 'Speed (m/s)', type: 'number', direction: 'output' },
+      { id: 'dir_deg', label: 'Direction (deg)', type: 'number', direction: 'output' },
+    ],
+    properties: [],
+    luaTemplate: 'ahrs:wind_estimate()',
   },
 ];
 
@@ -527,6 +609,34 @@ const actionNodes: NodeDefinition[] = [
     ],
     luaTemplate: 'serialLED:set_RGB(INST, LED, R, G, B)',
   },
+  {
+    type: 'action-play-tune',
+    label: 'Play Tune',
+    description: 'Play a tone/melody on the buzzer (MML notation)',
+    category: 'actions',
+    inputs: [
+      { id: 'trigger', label: 'Trigger', type: 'boolean', direction: 'input' },
+    ],
+    outputs: [],
+    properties: [
+      { id: 'tune', label: 'Tune (MML)', type: 'string', defaultValue: 'MFT200L4O5CDE' },
+    ],
+    luaTemplate: 'notify:play_tune(TUNE)',
+  },
+  {
+    type: 'action-set-waypoint',
+    label: 'Jump to Waypoint',
+    description: 'Set the current mission command index (jump to a waypoint)',
+    category: 'actions',
+    inputs: [
+      { id: 'trigger', label: 'Trigger', type: 'boolean', direction: 'input' },
+    ],
+    outputs: [],
+    properties: [
+      { id: 'cmd_idx', label: 'Waypoint Index', type: 'number', defaultValue: 1, min: 0, max: 999 },
+    ],
+    luaTemplate: 'mission:set_current_cmd(IDX)',
+  },
 ];
 
 // ── Timing ──────────────────────────────────────────────────────
@@ -585,6 +695,33 @@ const timingNodes: NodeDefinition[] = [
     ],
     outputs: [
       { id: 'triggered', label: 'Triggered', type: 'boolean', direction: 'output' },
+    ],
+    properties: [],
+  },
+  {
+    type: 'timing-falling-edge',
+    label: 'Falling Edge',
+    description: 'Fires once when input transitions from true to false',
+    category: 'timing',
+    inputs: [
+      { id: 'input', label: 'Input', type: 'boolean', direction: 'input' },
+    ],
+    outputs: [
+      { id: 'triggered', label: 'Triggered', type: 'boolean', direction: 'output' },
+    ],
+    properties: [],
+  },
+  {
+    type: 'timing-latch',
+    label: 'Latch / Toggle',
+    description: 'Set/Reset flip-flop — Set turns output on, Reset turns it off',
+    category: 'timing',
+    inputs: [
+      { id: 'set', label: 'Set', type: 'boolean', direction: 'input' },
+      { id: 'reset', label: 'Reset', type: 'boolean', direction: 'input' },
+    ],
+    outputs: [
+      { id: 'state', label: 'State', type: 'boolean', direction: 'output' },
     ],
     properties: [],
   },

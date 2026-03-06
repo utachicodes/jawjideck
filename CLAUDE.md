@@ -663,7 +663,6 @@ Open-Meteo Elevation API (free): `renderer/utils/elevation-api.ts`
 
 - **Target**: Pixhawk-compatible boards (SpeedyBee F405-Wing)
 - **Firmware**: ArduPlane with QuadPlane support
-- **Use Case**: VTOL delta wing for wildfire surveillance
 - **Desktop Comms**: USB serial (COM port)
 - **Mobile Comms**: Bluetooth/WiFi telemetry
 

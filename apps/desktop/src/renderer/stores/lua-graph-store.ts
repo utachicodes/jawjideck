@@ -177,18 +177,27 @@ export const useLuaGraphStore = create<LuaGraphStore>((set, get) => ({
 
   removeSelectedNodes: () => {
     const { nodes, edges, selectedNodeId } = get();
-    const selectedIds = nodes.filter((n) => n.selected).map((n) => n.id);
-    if (selectedIds.length === 0 && selectedNodeId) {
-      selectedIds.push(selectedNodeId);
+
+    // Collect selected edges
+    const selectedEdgeIds = edges.filter((e) => e.selected).map((e) => e.id);
+
+    // Collect selected nodes
+    const selectedNodeIds = nodes.filter((n) => n.selected).map((n) => n.id);
+    if (selectedNodeIds.length === 0 && selectedNodeId) {
+      selectedNodeIds.push(selectedNodeId);
     }
-    if (selectedIds.length === 0) return;
+
+    if (selectedNodeIds.length === 0 && selectedEdgeIds.length === 0) return;
 
     get().pushHistory();
 
-    const idSet = new Set(selectedIds);
+    const nodeIdSet = new Set(selectedNodeIds);
+    const edgeIdSet = new Set(selectedEdgeIds);
     set({
-      nodes: nodes.filter((n) => !idSet.has(n.id)),
-      edges: edges.filter((e) => !idSet.has(e.source) && !idSet.has(e.target)),
+      nodes: nodes.filter((n) => !nodeIdSet.has(n.id)),
+      edges: edges.filter(
+        (e) => !edgeIdSet.has(e.id) && !nodeIdSet.has(e.source) && !nodeIdSet.has(e.target),
+      ),
       selectedNodeId: null,
       isDirty: true,
     });
