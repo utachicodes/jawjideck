@@ -7,6 +7,8 @@ import { useMissionStore } from '../../stores/mission-store';
 import { commandHasLocation, MAV_CMD, type MissionItem } from '../../../shared/mission-types';
 import { AttitudeIndicator } from './AttitudePanel';
 import { useIpLocation } from '../../utils/ip-geolocation';
+import { useEditModeStore } from '../../stores/edit-mode-store';
+import { Mission3DPanel } from '../mission/Mission3DPanel';
 
 // Geofence and Rally overlays (read-only in telemetry view)
 import { FenceMapOverlay } from '../geofence/FenceMapOverlay';
@@ -545,7 +547,215 @@ function formatDistance(meters: number): string {
   return `${(meters / 1000).toFixed(2)}km`;
 }
 
+// Sync telemetry map viewport to shared store (for 2D↔3D switch)
+function TelemetryViewportSync() {
+  const map = useMap();
+
+  useEffect(() => {
+    const sync = () => {
+      const c = map.getCenter();
+      useEditModeStore.getState().setMapViewport({
+        center: [c.lng, c.lat],
+        zoom: map.getZoom(),
+        pitch: 0,
+        bearing: 0,
+      });
+    };
+    map.on('moveend', sync);
+    sync();
+    return () => { map.off('moveend', sync); };
+  }, [map]);
+
+  return null;
+}
+
+// ─── 2D/3D toggle (shared between telemetry 2D and 3D wrappers) ─────────────
+
+function MapModeToggle({ className }: { className?: string }) {
+  const mapMode = useEditModeStore((s) => s.mapMode);
+  const setMapMode = useEditModeStore((s) => s.setMapMode);
+
+  return (
+    <div className={`flex rounded-lg overflow-hidden shadow-lg border border-gray-600/50 ${className ?? ''}`}>
+      <button
+        onClick={() => setMapMode('2d')}
+        className={`px-2 py-1 text-xs font-medium transition-colors ${
+          mapMode === '2d' ? 'bg-gray-600 text-white' : 'bg-gray-800/90 text-gray-500 hover:text-gray-300'
+        }`}
+      >2D</button>
+      <button
+        onClick={() => setMapMode('3d')}
+        className={`px-2 py-1 text-xs font-medium transition-colors ${
+          mapMode === '3d' ? 'bg-indigo-600 text-white' : 'bg-gray-800/90 text-gray-500 hover:text-gray-300'
+        }`}
+      >3D</button>
+    </div>
+  );
+}
+
+// ─── 3D Telemetry Map (wraps Mission3DPanel with HUD overlays) ───────────────
+
+const TelemetryMap3D = React.memo(function TelemetryMap3D() {
+  const gps = useTelemetryStore((s) => s.gps);
+  const position = useTelemetryStore((s) => s.position);
+  const vfrHud = useTelemetryStore((s) => s.vfrHud);
+  const flight = useTelemetryStore((s) => s.flight);
+  const attitude = useTelemetryStore((s) => s.attitude);
+
+  const [followVehicle, setFollowVehicle] = useState(true);
+  const [showCompass, setShowCompass] = useState(true);
+  const [showAttitude, setShowAttitude] = useState(true);
+
+  const mapInstanceRef = useRef<import('maplibre-gl').Map | null>(null);
+
+  const hasValidGps = gps.fixType >= 2 && gps.lat !== 0 && gps.lon !== 0;
+
+  // Use mission home for distance calculation (set via MAVLink HOME_POSITION or mission load)
+  const missionHome = useMissionStore((s) => s.homePosition);
+  const homeStats = useMemo(() => {
+    if (!missionHome || (missionHome.lat === 0 && missionHome.lon === 0)) return null;
+    if (!hasValidGps) return null;
+    const distance = calculateDistance(gps.lat, gps.lon, missionHome.lat, missionHome.lon);
+    const bearing = calculateBearing(gps.lat, gps.lon, missionHome.lat, missionHome.lon);
+    return { distance, bearing };
+  }, [gps.lat, gps.lon, missionHome, hasValidGps]);
+
+  // Handle map ready — store ref and attach drag listener
+  const handleMapReady = useCallback((map: import('maplibre-gl').Map) => {
+    mapInstanceRef.current = map;
+    map.on('dragstart', () => setFollowVehicle(false));
+  }, []);
+
+  // Follow vehicle on GPS update
+  useEffect(() => {
+    if (!followVehicle || !hasValidGps || !mapInstanceRef.current) return;
+    mapInstanceRef.current.flyTo({ center: [gps.lon, gps.lat], duration: 500 });
+  }, [followVehicle, hasValidGps, gps.lat, gps.lon]);
+
+  return (
+    <div className="relative h-full w-full">
+      <Mission3DPanel showMapModeToggle onMapReady={handleMapReady} />
+
+      {/* Compass overlay */}
+      {showCompass && <CompassOverlay heading={vfrHud.heading} />}
+
+      {/* Attitude indicator overlay */}
+      {showAttitude && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000]">
+          <div className="absolute inset-[-4px] rounded-full bg-gray-900/80 shadow-xl" />
+          <div className="relative">
+            <AttitudeIndicator
+              roll={attitude.roll}
+              pitch={attitude.pitch}
+              heading={vfrHud.heading}
+              size={140}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* GPS warning */}
+      {!hasValidGps && (
+        <div className="absolute top-2 left-2 z-[1000] px-2 py-1 bg-yellow-600/90 text-white text-xs rounded shadow-lg">
+          No GPS fix
+        </div>
+      )}
+
+      {/* Stats overlay */}
+      <div className="absolute bottom-2 left-2 z-[1000] bg-gray-900/90 backdrop-blur-sm rounded px-3 py-2 text-xs text-gray-300 space-y-1 min-w-[130px]">
+        <div className="flex justify-between">
+          <span className="text-gray-500">Alt</span>
+          <span className="font-mono text-white">{position.relativeAlt.toFixed(1)}<span className="text-gray-500 ml-0.5">m</span></span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500">Spd</span>
+          <span className="font-mono text-white">{vfrHud.groundspeed.toFixed(1)}<span className="text-gray-500 ml-0.5">m/s</span></span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500">Hdg</span>
+          <span className="font-mono text-white">{vfrHud.heading.toFixed(0)}<span className="text-gray-500 ml-0.5">deg</span></span>
+        </div>
+        {homeStats && (
+          <>
+            <div className="border-t border-gray-700 my-1" />
+            <div className="flex justify-between">
+              <span className="text-gray-500">Home</span>
+              <span className="font-mono text-emerald-400">{formatDistance(homeStats.distance)}</span>
+            </div>
+          </>
+        )}
+        {hasValidGps && (
+          <>
+            <div className="border-t border-gray-700 my-1" />
+            <div className="text-[10px] text-gray-500 font-mono">
+              {gps.lat.toFixed(6)}, {gps.lon.toFixed(6)}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Armed status indicator */}
+      <div className={`absolute bottom-2 right-2 z-[1000] px-2 py-1 rounded shadow-lg text-xs font-bold ${
+        flight.armed ? 'bg-red-600 text-white' : 'bg-gray-800/90 text-gray-400'
+      }`}>
+        {flight.armed ? 'ARMED' : 'DISARMED'}
+      </div>
+
+      {/* Toolbar toggles — positioned left of the layer selector */}
+      <div className="absolute top-3 right-[6.5rem] z-[1000] flex flex-col gap-1">
+        <button
+          onClick={() => setFollowVehicle(!followVehicle)}
+          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
+            followVehicle
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+          }`}
+          title={followVehicle ? 'Following vehicle' : 'Free camera'}
+        >
+          {followVehicle ? 'Following' : 'Free'}
+        </button>
+        <button
+          onClick={() => setShowCompass(!showCompass)}
+          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
+            showCompass
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+          }`}
+          title="Toggle compass"
+        >
+          Compass
+        </button>
+        <button
+          onClick={() => setShowAttitude(!showAttitude)}
+          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
+            showAttitude
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+          }`}
+          title="Toggle attitude indicator"
+        >
+          Attitude
+        </button>
+      </div>
+    </div>
+  );
+});
+
+// ─── MapPanel entry point — delegates to 2D or 3D based on global mapMode ────
+
 export const MapPanel = React.memo(function MapPanel() {
+  const mapMode = useEditModeStore((s) => s.mapMode);
+
+  if (mapMode === '3d') {
+    return <TelemetryMap3D />;
+  }
+
+  return <TelemetryMap2D />;
+});
+
+// ─── 2D Telemetry Map ────────────────────────────────────────────────────────
+
+const TelemetryMap2D = React.memo(function TelemetryMap2D() {
   // Use selective subscriptions to prevent re-renders on unrelated telemetry updates
   const gps = useTelemetryStore((s) => s.gps);
   const position = useTelemetryStore((s) => s.position);
@@ -659,6 +869,7 @@ export const MapPanel = React.memo(function MapPanel() {
     <div ref={containerRef} className="h-full w-full flex flex-col bg-gray-900 relative">
       {/* Top toolbar */}
       <div className="absolute top-2 right-2 z-[1000] flex flex-col gap-1">
+        <MapModeToggle />
         <LayerSwitcher currentLayer={currentLayer} onLayerChange={setCurrentLayer} />
         <button
           onClick={() => setFollowVehicle(!followVehicle)}
@@ -838,6 +1049,7 @@ export const MapPanel = React.memo(function MapPanel() {
         zoomControl={false}
         attributionControl={false}
       >
+        <TelemetryViewportSync />
         <TileLayer
           key={currentLayer}
           url={layer.url}

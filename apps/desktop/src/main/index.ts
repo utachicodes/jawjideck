@@ -7,6 +7,7 @@ import { app, BrowserWindow, shell } from 'electron';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { setupIpcHandlers, cleanupOnShutdown } from './ipc-handlers.js';
+import { setupModuleIpc } from './modules/module-ipc.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -120,6 +121,7 @@ app.whenReady().then(() => {
 
   // Setup IPC handlers
   setupIpcHandlers(mainWindow);
+  setupModuleIpc(mainWindow);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

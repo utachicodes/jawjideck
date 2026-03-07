@@ -7,21 +7,44 @@ import { create } from 'zustand';
  * - rally: Rally points (orange)
  */
 export type EditMode = 'mission' | 'geofence' | 'rally';
+export type MapMode = '2d' | '3d';
+
+/** Shared viewport state — synced between 2D and 3D panels on every camera move */
+export interface MapViewport {
+  center: [number, number]; // [lng, lat]
+  zoom: number;
+  pitch: number;  // always 0 from 2D
+  bearing: number; // always 0 from 2D
+}
 
 interface EditModeStore {
   activeMode: EditMode;
+  mapMode: MapMode;
+  mapViewport: MapViewport | null;
   setActiveMode: (mode: EditMode) => void;
+  setMapMode: (mode: MapMode) => void;
+  setMapViewport: (viewport: MapViewport) => void;
   reset: () => void;
 }
 
 export const useEditModeStore = create<EditModeStore>((set) => ({
   activeMode: 'mission',
+  mapMode: '2d',
+  mapViewport: null,
 
   setActiveMode: (mode) => {
     set({ activeMode: mode });
   },
 
+  setMapMode: (mode) => {
+    set({ mapMode: mode });
+  },
+
+  setMapViewport: (viewport) => {
+    set({ mapViewport: viewport });
+  },
+
   reset: () => {
-    set({ activeMode: 'mission' });
+    set({ activeMode: 'mission', mapMode: '2d', mapViewport: null });
   },
 }));

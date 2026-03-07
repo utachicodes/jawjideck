@@ -3189,6 +3189,103 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     }
   });
 
+  // Set multiple parameters in rapid succession (batch mode for file import)
+  // Fires all PARAM_SET messages with minimal delay instead of waiting for each confirmation.
+  // The FC echoes PARAM_VALUE for each accepted param which the renderer handles via the
+  // existing onParamValue listener. We collect confirmations here to report success/fail counts.
+  ipcMain.handle(IPC_CHANNELS.PARAM_SET_BATCH, async (_, params: Array<{ paramId: string; value: number; type: number }>): Promise<{
+    success: boolean;
+    sent: number;
+    confirmed: number;
+    failed: string[];
+    error?: string;
+  }> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return { success: false, sent: 0, confirmed: 0, failed: [], error: 'Not connected' };
+    }
+
+    if (params.length === 0) {
+      return { success: true, sent: 0, confirmed: 0, failed: [] };
+    }
+
+    sendLog(mainWindow, 'info', `Batch setting ${params.length} parameters...`);
+
+    const pendingConfirms = new Set<string>();
+    const failed: string[] = [];
+    let sent = 0;
+
+    // Track confirmations via PARAM_VALUE responses echoed by the FC.
+    // The main message loop already updates receivedParams on each PARAM_VALUE.
+    // We poll receivedParams to detect when values match what we sent.
+    const timeoutMs = Math.max(5000, params.length * 200);
+    const confirmPromise = new Promise<void>((resolve) => {
+      const deadline = Date.now() + timeoutMs;
+
+      const intervalCheck = setInterval(() => {
+        for (const id of [...pendingConfirms]) {
+          const p = params.find(pp => pp.paramId === id);
+          if (!p) continue;
+          const received = receivedParams.get(id);
+          if (received && Math.fround(received.paramValue) === Math.fround(p.value)) {
+            pendingConfirms.delete(id);
+          }
+        }
+        if (pendingConfirms.size === 0 || Date.now() >= deadline) {
+          clearInterval(intervalCheck);
+          for (const id of pendingConfirms) {
+            failed.push(id);
+          }
+          resolve();
+        }
+      }, 50);
+    });
+
+    // Fire all PARAM_SET messages with small inter-message delays
+    for (const p of params) {
+      // Skip params that don't exist on FC
+      if (receivedParams.size > 0 && !receivedParams.has(p.paramId)) {
+        failed.push(p.paramId);
+        continue;
+      }
+
+      try {
+        const payload = serializeParamSet({
+          targetSystem: connectionState.systemId ?? 1,
+          targetComponent: 1,
+          paramId: p.paramId,
+          paramValue: p.value,
+          paramType: p.type,
+        });
+
+        const packet = await sendMavlinkPacket(PARAM_SET_ID, payload, PARAM_SET_CRC_EXTRA);
+        await currentTransport.write(packet);
+        connectionState.packetsSent++;
+        pendingConfirms.add(p.paramId);
+        sent++;
+
+        // Small delay between messages to avoid overwhelming the FC serial buffer
+        if (sent < params.length) {
+          await new Promise(r => setTimeout(r, 20));
+        }
+      } catch {
+        failed.push(p.paramId);
+      }
+    }
+
+    // Wait for confirmations (or timeout)
+    await confirmPromise;
+
+    const confirmed = sent - pendingConfirms.size;
+    sendLog(mainWindow, 'info', `Batch complete: ${confirmed}/${sent} confirmed, ${failed.length} failed`);
+
+    return {
+      success: failed.length === 0,
+      sent,
+      confirmed,
+      failed,
+    };
+  });
+
   // Fetch parameter metadata from ArduPilot
   ipcMain.handle(IPC_CHANNELS.PARAM_METADATA_FETCH, async (_, mavType: number): Promise<{ success: boolean; metadata?: ParameterMetadataStore; error?: string }> => {
     const vehicleType = mavTypeToVehicleType(mavType);

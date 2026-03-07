@@ -55,6 +55,7 @@ export const IPC_CHANNELS = {
   // Parameters
   PARAM_REQUEST_ALL: 'param:request-all',
   PARAM_SET: 'param:set',
+  PARAM_SET_BATCH: 'param:set-batch',
   PARAM_VALUE: 'param:value',
   PARAM_BULK_LOAD: 'param:bulk-load', // FTP fast path: all params in one event
   PARAM_PROGRESS: 'param:progress',
@@ -359,6 +360,13 @@ export const IPC_CHANNELS = {
   LUA_GRAPH_SAVE: 'lua-graph:save',
   LUA_GRAPH_OPEN: 'lua-graph:open',
   LUA_GRAPH_EXPORT_LUA: 'lua-graph:export-lua',
+
+  // Module Manager
+  MODULE_ACTIVATE: 'module:activate',
+  MODULE_LIST: 'module:list',
+  MODULE_REMOVE: 'module:remove',
+  MODULE_CHECK_UPDATES: 'module:check-updates',
+  MODULE_PROGRESS: 'module:progress',
 
   // App / Updates
   APP_GET_VERSION: 'app:get-version',

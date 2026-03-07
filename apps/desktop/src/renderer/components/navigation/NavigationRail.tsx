@@ -93,6 +93,16 @@ const navItems: NavItem[] = [
       </svg>
     ),
   },
+  // Modules nav item - hidden until marketplace is ready
+  // {
+  //   id: 'modules',
+  //   label: 'Modules',
+  //   icon: (
+  //     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  //       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+  //     </svg>
+  //   ),
+  // },
 ];
 
 // CLI nav item - only shown for MSP connections (Betaflight/iNav)

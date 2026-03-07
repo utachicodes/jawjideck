@@ -3,7 +3,7 @@ import { useConnectionStore } from '../../stores/connection-store';
 import { useMissionStore } from '../../stores/mission-store';
 import { useFenceStore } from '../../stores/fence-store';
 import { useRallyStore } from '../../stores/rally-store';
-import { useEditModeStore, type EditMode } from '../../stores/edit-mode-store';
+import { useEditModeStore, type EditMode, type MapMode } from '../../stores/edit-mode-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import { SaveMissionModal } from '../mission-library/SaveMissionModal';
 
@@ -157,7 +157,7 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
   const isMspProtocol = connectionState?.protocol === 'msp';
 
   // Edit mode state
-  const { activeMode, setActiveMode } = useEditModeStore();
+  const { activeMode, setActiveMode, mapMode, setMapMode } = useEditModeStore();
 
   // Mission store
   const missionStore = useMissionStore();
@@ -499,6 +499,33 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
 
       {/* Firmware + Simple/Advanced controls */}
       <MissionModeControls />
+
+      {/* 2D/3D Map Toggle */}
+      <div className="flex items-center rounded-lg overflow-hidden border border-gray-600/50 shrink-0">
+        <button
+          onClick={() => setMapMode('2d')}
+          className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
+            mapMode === '2d'
+              ? 'bg-gray-600 text-white'
+              : 'text-gray-500 hover:bg-gray-700/40'
+          }`}
+          title="2D Map"
+        >
+          2D
+        </button>
+        <div className="w-px h-5 bg-gray-600/50" />
+        <button
+          onClick={() => setMapMode('3d')}
+          className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
+            mapMode === '3d'
+              ? 'bg-indigo-600 text-white'
+              : 'text-gray-500 hover:bg-gray-700/40'
+          }`}
+          title="3D Terrain View"
+        >
+          3D
+        </button>
+      </div>
 
       {/* Layout controls */}
       <button

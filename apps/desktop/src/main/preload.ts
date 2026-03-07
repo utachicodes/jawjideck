@@ -5,6 +5,7 @@
 
 import { contextBridge, ipcRenderer } from 'electron';
 import { IPC_CHANNELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type SettingsStoreSchema, type MSPConnectOptions, type MSPConnectionState, type MSPTelemetryData, type SitlConfig, type SitlStatus, type SitlExitData, type VirtualRCState, type ArduPilotSitlConfig, type ArduPilotSitlStatus, type ArduPilotSitlExitData, type ArduPilotSitlDownloadProgress, type ArduPilotSitlBinaryInfo, type ArduPilotVehicleType, type ArduPilotReleaseTrack, type AppUpdateInfo, type SigningStatus, type TelemetrySpeed, type StatusMessage } from '../shared/ipc-channels.js';
+import type { InstalledModule, ModuleProgress, UpdateAvailable } from '../shared/module-types.js';
 import type { ParamChange, ParamCheckpoint } from '../shared/param-history-types.js';
 import type { AttitudeData, PositionData, GpsData, BatteryData, VfrHudData, FlightState, RcChannelsData } from '../shared/telemetry-types.js';
 import type { ParamValuePayload, ParameterProgress } from '../shared/parameter-types.js';
@@ -185,6 +186,14 @@ const api = {
 
   setParameter: (paramId: string, value: number, type: number): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.PARAM_SET, paramId, value, type),
+
+  setParameterBatch: (params: Array<{ paramId: string; value: number; type: number }>): Promise<{
+    success: boolean;
+    sent: number;
+    confirmed: number;
+    failed: string[];
+    error?: string;
+  }> => ipcRenderer.invoke(IPC_CHANNELS.PARAM_SET_BATCH, params),
 
   onParamValue: (callback: (param: ParamValuePayload) => void) => {
     const handler = (_: unknown, param: ParamValuePayload) => callback(param);
@@ -1295,6 +1304,28 @@ const api = {
 
   luaGraphExportLua: (code: string, name: string): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.LUA_GRAPH_EXPORT_LUA, code, name),
+
+  // =============================================================================
+  // Module Manager
+  // =============================================================================
+
+  moduleActivate: (key: string): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MODULE_ACTIVATE, key),
+
+  moduleList: (): Promise<InstalledModule[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MODULE_LIST),
+
+  moduleRemove: (key: string): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MODULE_REMOVE, key),
+
+  moduleCheckUpdates: (): Promise<UpdateAvailable[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MODULE_CHECK_UPDATES),
+
+  onModuleProgress: (callback: (progress: ModuleProgress) => void) => {
+    const handler = (_: unknown, progress: ModuleProgress) => callback(progress);
+    ipcRenderer.on(IPC_CHANNELS.MODULE_PROGRESS, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.MODULE_PROGRESS, handler);
+  },
 };
 
 // Expose to renderer

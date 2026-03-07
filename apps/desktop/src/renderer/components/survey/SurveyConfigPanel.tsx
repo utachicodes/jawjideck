@@ -67,9 +67,9 @@ export function SurveyConfigPanel() {
   if (!polygon) return null;
 
   return (
-    <div className="absolute top-3 right-24 z-[1000] w-72 bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-2xl overflow-hidden">
+    <div className="absolute top-3 right-24 z-[1000] w-72 max-h-[calc(100%-24px)] flex flex-col bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-2xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50 flex-shrink-0">
         <div className="flex items-center gap-2">
           <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
@@ -98,7 +98,7 @@ export function SurveyConfigPanel() {
         </div>
       </div>
 
-      <div className="p-4 space-y-4 max-h-[calc(100vh-180px)] overflow-y-auto">
+      <div className="p-4 space-y-4 overflow-y-auto flex-1 min-h-0">
         {/* Camera Section */}
         <Section title="Camera">
           <CameraPresetSelector value={config.camera} onChange={handleCameraChange} />
@@ -181,8 +181,11 @@ export function SurveyConfigPanel() {
           </div>
         )}
 
-        {/* Insert button */}
-        {result && result.waypoints.length > 0 && (
+      </div>
+
+      {/* Insert button — pinned outside scroll area */}
+      {result && result.waypoints.length > 0 && (
+        <div className="p-4 pt-0 flex-shrink-0">
           <button
             onClick={handleInsertSurvey}
             className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -196,8 +199,8 @@ export function SurveyConfigPanel() {
               : `Insert Survey (${result.waypoints.length} WPs)`
             }
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

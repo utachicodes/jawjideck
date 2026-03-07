@@ -622,35 +622,41 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
 
     set({ isApplyingFileParams: true, applyProgress: { applied: 0, total: selected.length } });
 
-    let applied = 0;
-    let failed = 0;
-    const appliedParamIds: string[] = [];
-
+    // Track user-initiated edits so updateParameter preserves originalValue
     for (const diff of selected) {
-      const result = await window.electronAPI?.setParameter(diff.paramId, diff.fileValue, diff.type);
-      if (result?.success) {
-        applied++;
-        appliedParamIds.push(diff.paramId);
-        // Update local state
-        set(state => {
-          const params = new Map(state.parameters);
-          const existing = params.get(diff.paramId);
-          if (existing) {
-            params.set(diff.paramId, {
-              ...existing,
-              value: diff.fileValue,
-              isModified: !f32Equal(existing.originalValue ?? existing.value, diff.fileValue),
-            });
-          }
-          return {
-            parameters: params, paramCount: params.size,
-            applyProgress: { applied, total: selected.length },
-          };
-        });
-      } else {
-        failed++;
-      }
+      userModifiedParams.add(diff.paramId);
     }
+
+    // Use batch endpoint — sends all PARAM_SET messages rapidly instead of one-by-one
+    const batchParams = selected.map(d => ({ paramId: d.paramId, value: d.fileValue, type: d.type }));
+    const result = await window.electronAPI?.setParameterBatch(batchParams);
+
+    const failedSet = new Set(result?.failed ?? []);
+    const applied = result?.confirmed ?? 0;
+    const failed = selected.length - applied;
+    const appliedParamIds = selected
+      .filter(d => !failedSet.has(d.paramId))
+      .map(d => d.paramId);
+
+    // Update local state for all confirmed params in one batch
+    set(state => {
+      const params = new Map(state.parameters);
+      for (const diff of selected) {
+        if (failedSet.has(diff.paramId)) continue;
+        const existing = params.get(diff.paramId);
+        if (existing) {
+          params.set(diff.paramId, {
+            ...existing,
+            value: diff.fileValue,
+            isModified: !f32Equal(existing.originalValue ?? existing.value, diff.fileValue),
+          });
+        }
+      }
+      return {
+        parameters: params, paramCount: params.size,
+        applyProgress: { applied, total: selected.length },
+      };
+    });
 
     // Collect params that require reboot
     const rebootRequired = appliedParamIds.filter(id => metadata?.[id]?.rebootRequired === true);
@@ -676,51 +682,62 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
 
   retryPendingParams: async () => {
     const { pendingRetryParams, parameters, metadata } = get();
-    let applied = 0;
-    let failed = 0;
     const appliedParamIds: string[] = [];
     const stillPending: Array<{ id: string; value: number }> = [];
+    const toSend: Array<{ paramId: string; value: number; type: number }> = [];
 
+    // Separate params into: already correct, need sending, still missing
     for (const pending of pendingRetryParams) {
       const existing = parameters.get(pending.id);
       if (!existing) {
-        // Param still doesn't exist on FC after reboot
         stillPending.push(pending);
         continue;
       }
       if (existing.isReadOnly) continue;
 
-      // Skip if already at the desired value
       if (f32Equal(existing.value, pending.value)) {
-        applied++;
         appliedParamIds.push(pending.id);
         continue;
       }
 
-      const result = await window.electronAPI?.setParameter(pending.id, pending.value, existing.type);
-      if (result?.success) {
-        applied++;
-        appliedParamIds.push(pending.id);
-        // Update local state
-        set(state => {
-          const params = new Map(state.parameters);
-          const ex = params.get(pending.id);
-          if (ex) {
-            params.set(pending.id, {
-              ...ex,
-              value: pending.value,
-              isModified: !f32Equal(ex.originalValue ?? ex.value, pending.value),
-            });
-          }
-          return { parameters: params, paramCount: params.size };
-        });
-      } else {
-        failed++;
-      }
+      userModifiedParams.add(pending.id);
+      toSend.push({ paramId: pending.id, value: pending.value, type: existing.type });
     }
 
+    let batchFailed = 0;
+    if (toSend.length > 0) {
+      const result = await window.electronAPI?.setParameterBatch(toSend);
+      const failedSet = new Set(result?.failed ?? []);
+      batchFailed = failedSet.size;
+
+      // Track confirmed params
+      for (const p of toSend) {
+        if (!failedSet.has(p.paramId)) {
+          appliedParamIds.push(p.paramId);
+        }
+      }
+
+      // Update local state for confirmed params
+      set(state => {
+        const params = new Map(state.parameters);
+        for (const p of toSend) {
+          if (failedSet.has(p.paramId)) continue;
+          const ex = params.get(p.paramId);
+          if (ex) {
+            params.set(p.paramId, {
+              ...ex,
+              value: p.value,
+              isModified: !f32Equal(ex.originalValue ?? ex.value, p.value),
+            });
+          }
+        }
+        return { parameters: params, paramCount: params.size };
+      });
+    }
+
+    const applied = appliedParamIds.length;
     const rebootRequired = appliedParamIds.filter(id => metadata?.[id]?.rebootRequired === true);
-    return { applied, failed, rebootRequired, stillPending };
+    return { applied, failed: batchFailed, rebootRequired, stillPending };
   },
 
   clearFileApplyResult: () => {

@@ -30,10 +30,16 @@ export default defineConfig({
   renderer: {
     root: 'src/renderer',
     build: {
+      target: 'esnext',
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/renderer/index.html'),
         },
+      },
+    },
+    optimizeDeps: {
+      esbuildOptions: {
+        target: 'esnext',
       },
     },
     plugins: [react()],

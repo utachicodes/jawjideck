@@ -21,6 +21,7 @@ import { useFenceStore } from '../../stores/fence-store';
 import { useRallyStore } from '../../stores/rally-store';
 import { useEditModeStore } from '../../stores/edit-mode-store';
 import { useSettingsStore } from '../../stores/settings-store';
+import { Mission3DPanel } from './Mission3DPanel';
 
 // Survey grid overlay
 import { SurveyDrawTool } from '../survey/SurveyDrawTool';
@@ -456,7 +457,8 @@ function FocusOnSelected({ waypoints, selectedSeq }: { waypoints: MissionItem[];
 // Uses interval polling to avoid React re-renders that break marker drag
 function CenterOnGps() {
   const map = useMap();
-  const hasCenteredRef = useRef(false);
+  // Skip auto-centering when restoring viewport from a view switch (2D↔3D)
+  const hasCenteredRef = useRef(useEditModeStore.getState().mapViewport !== null);
 
   useEffect(() => {
     // Check immediately on mount
@@ -502,6 +504,28 @@ function CenterOnVehicle({ trigger }: { trigger: number }) {
       map.setView([gps.lat, gps.lon], map.getZoom(), { animate: true, duration: 0.5 });
     }
   }, [trigger, map]);
+
+  return null;
+}
+
+// Sync Leaflet viewport to shared store on every camera move (for 2D↔3D switch)
+function ViewportSync() {
+  const map = useMap();
+
+  useEffect(() => {
+    const sync = () => {
+      const c = map.getCenter();
+      useEditModeStore.getState().setMapViewport({
+        center: [c.lng, c.lat],
+        zoom: map.getZoom(),
+        pitch: 0,
+        bearing: 0,
+      });
+    };
+    map.on('moveend', sync);
+    sync(); // capture initial position
+    return () => { map.off('moveend', sync); };
+  }, [map]);
 
   return null;
 }
@@ -638,6 +662,17 @@ interface ContextMenuState {
 }
 
 export function MissionMapPanel({ readOnly = false }: MissionMapPanelProps) {
+  const mapMode = useEditModeStore((s) => s.mapMode);
+
+  // 3D mode — render the MapLibre 3D viewer instead of Leaflet
+  if (mapMode === '3d') {
+    return <Mission3DPanel />;
+  }
+
+  return <MissionMapPanel2D readOnly={readOnly} />;
+}
+
+function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
   // Get connection state to check protocol type and vehicle type
   const connectionState = useConnectionStore((state) => state.connectionState);
   const isMspProtocol = connectionState?.protocol === 'msp';
@@ -671,10 +706,16 @@ export function MissionMapPanel({ readOnly = false }: MissionMapPanelProps) {
   // IP geolocation fallback (used when no GPS or mission items)
   const [ipLocation] = useIpLocation();
 
-  // Dynamic default center - use IP location if available
-  const defaultCenter: [number, number] = ipLocation
-    ? [ipLocation.lat, ipLocation.lon]
-    : FALLBACK_CENTER;
+  // Restore viewport from previous panel (read once on mount, not reactive)
+  const storedViewport = useMemo(() => useEditModeStore.getState().mapViewport, []);
+
+  // Dynamic default center - stored viewport > IP location > fallback
+  const defaultCenter: [number, number] = storedViewport
+    ? [storedViewport.center[1]!, storedViewport.center[0]!] // [lat, lng] for Leaflet
+    : ipLocation
+      ? [ipLocation.lat, ipLocation.lon]
+      : FALLBACK_CENTER;
+  const effectiveZoom = storedViewport?.zoom ?? defaultZoom;
 
   const {
     missionItems,
@@ -832,11 +873,12 @@ export function MissionMapPanel({ readOnly = false }: MissionMapPanelProps) {
     <div className="h-full w-full relative">
       <MapContainer
         center={defaultCenter}
-        zoom={defaultZoom}
+        zoom={effectiveZoom}
         maxZoom={layer.maxZoom}
         className="h-full w-full"
         zoomControl={false}
       >
+        <ViewportSync />
         <MapResizeHandler />
         <MaxZoomUpdater maxZoom={layer.maxZoom} />
         <MapClickHandler
