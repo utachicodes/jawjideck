@@ -584,10 +584,9 @@ function MapModeToggle({ className }: { className?: string }) {
         }`}
       >2D</button>
       <button
-        onClick={() => setMapMode('3d')}
-        className={`px-2 py-1 text-xs font-medium transition-colors ${
-          mapMode === '3d' ? 'bg-indigo-600 text-white' : 'bg-gray-800/90 text-gray-500 hover:text-gray-300'
-        }`}
+        disabled
+        title="Coming in Alpha 30"
+        className="px-2 py-1 text-xs font-medium bg-gray-800/90 text-gray-600 cursor-not-allowed"
       >3D</button>
     </div>
   );
