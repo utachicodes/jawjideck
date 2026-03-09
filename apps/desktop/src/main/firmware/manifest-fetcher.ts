@@ -187,6 +187,7 @@ function categorizeboard(platform: string): string {
   if (p.includes('mamba')) return 'Mamba';
   if (p.includes('flywoo')) return 'Flywoo';
   if (p.includes('iflight')) return 'iFlight';
+  if (p.includes('micoair')) return 'MicoAir';
   if (p.includes('radiolink')) return 'Radiolink';
   if (p.includes('skyviper')) return 'SkyViper';
   if (p.includes('sitl')) return 'Simulator';
@@ -307,6 +308,14 @@ const STATIC_BOARDS: BoardInfo[] = [
   { id: 'CUAV-X7', name: 'CUAV X7/X7Pro', category: 'CUAV' },
   { id: 'CUAVv5', name: 'CUAV v5', category: 'CUAV' },
   { id: 'CUAVv5Nano', name: 'CUAV v5 Nano', category: 'CUAV' },
+
+  // MicoAir
+  { id: 'MicoAir405v2', name: 'MicoAir 405 V2', category: 'MicoAir' },
+  { id: 'MicoAir405Mini', name: 'MicoAir 405 Mini', category: 'MicoAir' },
+  { id: 'MicoAir743', name: 'MicoAir 743', category: 'MicoAir' },
+  { id: 'MicoAir743-AIO', name: 'MicoAir 743 AIO', category: 'MicoAir' },
+  { id: 'MicoAir743v2', name: 'MicoAir 743 V2', category: 'MicoAir' },
+  { id: 'MicoAir743-Lite', name: 'MicoAir 743 Lite', category: 'MicoAir' },
 
   // Flywoo
   { id: 'FlywooF405HD-AIOv2', name: 'Flywoo F405 HD AIO v2', category: 'Flywoo' },
