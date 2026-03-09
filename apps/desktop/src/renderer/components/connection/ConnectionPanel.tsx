@@ -22,6 +22,8 @@ export function ConnectionPanel() {
   const [udpMode, setUdpMode] = useState<'listen' | 'client'>('listen');
   const [udpRemoteHost, setUdpRemoteHost] = useState('192.168.1.1');
   const [udpRemotePort, setUdpRemotePort] = useState(14550);
+  const [tcpProtocol, setTcpProtocol] = useState<'mavlink' | 'msp'>('mavlink');
+  const [udpProtocol, setUdpProtocol] = useState<'mavlink' | 'msp'>('mavlink');
   const [showDriverHelp, setShowDriverHelp] = useState(false);
   const hasAppliedMemory = useRef(false);
 
@@ -51,6 +53,12 @@ export function ConnectionPanel() {
       }
       if (connectionMemory.lastUdpRemotePort) {
         setUdpRemotePort(connectionMemory.lastUdpRemotePort);
+      }
+      if (connectionMemory.lastTcpProtocol) {
+        setTcpProtocol(connectionMemory.lastTcpProtocol);
+      }
+      if (connectionMemory.lastUdpProtocol) {
+        setUdpProtocol(connectionMemory.lastUdpProtocol);
       }
       hasAppliedMemory.current = true;
     }
@@ -280,11 +288,17 @@ export function ConnectionPanel() {
         });
       }
     } else if (connectionType === 'tcp') {
-      success = await connect({ type: 'tcp', host: tcpHost, tcpPort });
+      success = await connect({
+        type: 'tcp',
+        host: tcpHost,
+        tcpPort,
+        protocol: tcpProtocol,
+      });
       if (success) {
         updateConnectionMemory({
           lastTcpHost: tcpHost,
           lastTcpPort: tcpPort,
+          lastTcpProtocol: tcpProtocol,
           lastConnectionType: 'tcp',
         });
       }
@@ -295,6 +309,7 @@ export function ConnectionPanel() {
         udpMode,
         udpRemoteHost: udpMode === 'client' ? udpRemoteHost : undefined,
         udpRemotePort: udpMode === 'client' ? udpRemotePort : undefined,
+        protocol: udpProtocol,
       });
       if (success) {
         updateConnectionMemory({
@@ -302,6 +317,7 @@ export function ConnectionPanel() {
           lastUdpMode: udpMode,
           lastUdpRemoteHost: udpRemoteHost,
           lastUdpRemotePort: udpRemotePort,
+          lastUdpProtocol: udpProtocol,
           lastConnectionType: 'udp',
         });
       }
@@ -513,6 +529,25 @@ export function ConnectionPanel() {
                 disabled={connectionState.isConnected}
               />
             </div>
+            <div>
+              <label className="label">Protocol</label>
+              <div className="flex rounded-lg overflow-hidden border border-gray-700/50">
+                {(['mavlink', 'msp'] as const).map((proto) => (
+                  <button
+                    key={proto}
+                    onClick={() => setTcpProtocol(proto)}
+                    disabled={connectionState.isConnected}
+                    className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
+                      tcpProtocol === proto
+                        ? 'bg-blue-600/30 text-blue-300'
+                        : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/30'
+                    } ${proto === 'mavlink' ? 'border-r border-gray-700/50' : ''}`}
+                  >
+                    {proto === 'mavlink' ? 'MAVLink' : 'MSP'}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -589,6 +624,26 @@ export function ConnectionPanel() {
                 </p>
               </>
             )}
+
+            <div>
+              <label className="label">Protocol</label>
+              <div className="flex rounded-lg overflow-hidden border border-gray-700/50">
+                {(['mavlink', 'msp'] as const).map((proto) => (
+                  <button
+                    key={proto}
+                    onClick={() => setUdpProtocol(proto)}
+                    disabled={connectionState.isConnected}
+                    className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
+                      udpProtocol === proto
+                        ? 'bg-blue-600/30 text-blue-300'
+                        : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/30'
+                    } ${proto === 'mavlink' ? 'border-r border-gray-700/50' : ''}`}
+                  >
+                    {proto === 'mavlink' ? 'MAVLink' : 'MSP'}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 

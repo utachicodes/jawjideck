@@ -143,10 +143,12 @@ export interface ConnectionMemory {
   lastBaudRate?: number;
   lastTcpHost?: string;
   lastTcpPort?: number;
+  lastTcpProtocol?: 'mavlink' | 'msp';
   lastUdpPort?: number;
   lastUdpMode?: 'listen' | 'client';
   lastUdpRemoteHost?: string;
   lastUdpRemotePort?: number;
+  lastUdpProtocol?: 'mavlink' | 'msp';
   lastConnectionType?: 'serial' | 'tcp' | 'udp';
 }
 

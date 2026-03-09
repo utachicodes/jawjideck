@@ -584,9 +584,10 @@ function MapModeToggle({ className }: { className?: string }) {
         }`}
       >2D</button>
       <button
-        disabled
-        title="Coming in Alpha 30"
-        className="px-2 py-1 text-xs font-medium bg-gray-800/90 text-gray-600 cursor-not-allowed"
+        onClick={() => setMapMode('3d')}
+        className={`px-2 py-1 text-xs font-medium transition-colors ${
+          mapMode === '3d' ? 'bg-gray-600 text-white' : 'bg-gray-800/90 text-gray-500 hover:text-gray-300'
+        }`}
       >3D</button>
     </div>
   );
@@ -604,9 +605,11 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
   const [followVehicle, setFollowVehicle] = useState(true);
   const [showCompass, setShowCompass] = useState(true);
   const [showAttitude, setShowAttitude] = useState(true);
-  const [showHeadingLine, setShowHeadingLine] = useState(true);
+  const [showHeadingLine, setShowHeadingLine] = useState(false); // off by default in 3D — vehicle model shows heading
   const [showMission, setShowMission] = useState(true);
   const [showTerrain, setShowTerrain] = useState(true);
+  const [useRealVehicleSize, setUseRealVehicleSize] = useState(true);
+  const [showMoreTools, setShowMoreTools] = useState(false);
   const [trail, setTrail] = useState<[number, number][]>([]);
   const [homePosition, setHomePosition] = useState<[number, number] | null>(null);
   const [headingLineLength] = useState(100); // meters
@@ -694,93 +697,63 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
     if (gpsPosition) setHomePosition(gpsPosition);
   }, [gpsPosition]);
 
-  // Toolbar buttons — rendered inside Mission3DPanel's toolbar column (after layer buttons)
+  // Center on vehicle + re-enable follow (uses display position, works even without GPS)
+  const handleCenterOnVehicle = useCallback(() => {
+    if (!mapInstanceRef.current) return;
+    setFollowVehicle(true);
+    mapInstanceRef.current.flyTo({ center: vehicleLngLat, duration: 800 });
+  }, [vehicleLngLat]);
+
+  // Toolbar toggle helper
+  const toggleBtn = useCallback((label: string, active: boolean, onClick: () => void, title: string) => (
+    <button
+      key={label}
+      onClick={onClick}
+      className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
+        active ? 'bg-blue-600 text-white' : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+      }`}
+      title={title}
+    >{label}</button>
+  ), []);
+
+  // Toolbar buttons — compact with overflow toggle
   const toolbarContent = useMemo(() => (
     <>
       <div className="my-0.5 border-t border-gray-600/30" />
+      {toggleBtn(followVehicle ? 'Following' : 'Free', followVehicle, () => setFollowVehicle(f => !f), followVehicle ? 'Following vehicle' : 'Free camera')}
+      {toggleBtn(useRealVehicleSize ? 'Real Size' : 'Auto Size', useRealVehicleSize, () => setUseRealVehicleSize(v => !v), useRealVehicleSize ? 'Vehicle at real profile size' : 'Vehicle auto-scaled to stay visible')}
+      {/* Overflow toggle */}
       <button
-        onClick={() => setFollowVehicle(f => !f)}
+        onClick={() => setShowMoreTools(v => !v)}
         className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
-          followVehicle
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+          showMoreTools ? 'bg-gray-600 text-white' : 'bg-gray-800/90 text-gray-400 hover:text-gray-200'
         }`}
-        title={followVehicle ? 'Following vehicle' : 'Free camera'}
+        title="More options"
       >
-        {followVehicle ? 'Following' : 'Free'}
+        {showMoreTools ? 'Less' : 'More...'}
       </button>
-      <button
-        onClick={() => setShowHeadingLine(v => !v)}
-        className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
-          showHeadingLine
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
-        }`}
-        title="Toggle heading line"
-      >
-        HDG Line
-      </button>
-      <button
-        onClick={() => setShowCompass(v => !v)}
-        className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
-          showCompass
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
-        }`}
-        title="Toggle compass"
-      >
-        Compass
-      </button>
-      <button
-        onClick={() => setShowAttitude(v => !v)}
-        className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
-          showAttitude
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
-        }`}
-        title="Toggle attitude indicator"
-      >
-        Attitude
-      </button>
-      <button
-        onClick={clearTrail}
-        className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors"
-        title="Clear flight trail"
-      >
-        Clear Trail
-      </button>
-      <button
-        onClick={setHome}
-        disabled={!hasValidGps}
-        className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        title="Set home to current position"
-      >
-        Set Home
-      </button>
-      <button
-        onClick={() => setShowMission(v => !v)}
-        className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
-          showMission
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
-        }`}
-        title="Toggle mission overlays"
-      >
-        Mission
-      </button>
-      <button
-        onClick={() => setShowTerrain(v => !v)}
-        className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
-          showTerrain
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
-        }`}
-        title="Toggle terrain elevation"
-      >
-        Height
-      </button>
+      {showMoreTools && (
+        <>
+          {toggleBtn('Compass', showCompass, () => setShowCompass(v => !v), 'Toggle compass')}
+          {toggleBtn('Attitude', showAttitude, () => setShowAttitude(v => !v), 'Toggle attitude indicator')}
+          {toggleBtn('Mission', showMission, () => setShowMission(v => !v), 'Toggle mission overlays')}
+          {toggleBtn('Height', showTerrain, () => setShowTerrain(v => !v), 'Toggle terrain elevation')}
+          <div className="my-0.5 border-t border-gray-600/30" />
+          <button
+            onClick={clearTrail}
+            className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors"
+            title="Clear flight trail"
+          >Clear Trail</button>
+          <button
+            onClick={setHome}
+            disabled={!hasValidGps}
+            className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Set home to current position"
+          >Set Home</button>
+        </>
+      )}
     </>
-  ), [followVehicle, showHeadingLine, showCompass, showAttitude, showMission, showTerrain, hasValidGps, clearTrail, setHome]);
+  ), [followVehicle, showCompass, showAttitude, showMission, showTerrain, useRealVehicleSize, showMoreTools, hasValidGps, clearTrail, setHome, toggleBtn]);
 
   return (
     <div className="relative h-full w-full">
@@ -790,6 +763,7 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
         isTelemetryMode
         headingLineEnd={headingLineEnd}
         headingLineColor={headingLineColor}
+        headingLineLength={headingLineLength}
         trail={trail}
         showMission={showMission}
         showTerrain={showTerrain}
@@ -797,6 +771,9 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
         vehicleLngLat={vehicleLngLat}
         vehicleHeading={vfrHud.heading}
         vehicleArmed={flight.armed}
+        vehicleAttitude={{ roll: attitude.roll, pitch: attitude.pitch }}
+        vehicleAltitudeAgl={position.relativeAlt}
+        useRealVehicleSize={useRealVehicleSize}
       />
 
       {/* Compass overlay */}
@@ -857,8 +834,27 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
         )}
       </div>
 
+      {/* Center on vehicle FAB — Google Maps style */}
+      <button
+        onClick={handleCenterOnVehicle}
+        className={`absolute bottom-14 right-3 z-[1000] w-9 h-9 rounded-full shadow-lg flex items-center justify-center transition-all ${
+          followVehicle
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-800/90 text-gray-400 hover:text-white hover:bg-gray-700/90'
+        }`}
+        title={followVehicle ? 'Following vehicle' : 'Center on vehicle'}
+      >
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="4" />
+          <line x1="12" y1="2" x2="12" y2="6" />
+          <line x1="12" y1="18" x2="12" y2="22" />
+          <line x1="2" y1="12" x2="6" y2="12" />
+          <line x1="18" y1="12" x2="22" y2="12" />
+        </svg>
+      </button>
+
       {/* Armed status indicator */}
-      <div className={`absolute bottom-2 right-2 z-[1000] px-2 py-1 rounded shadow-lg text-xs font-bold ${
+      <div className={`absolute bottom-2 right-3 z-[1000] px-2 py-1 rounded shadow-lg text-xs font-bold ${
         flight.armed ? 'bg-red-600 text-white' : 'bg-gray-800/90 text-gray-400'
       }`}>
         {flight.armed ? 'ARMED' : 'DISARMED'}
@@ -891,7 +887,11 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
   const [followVehicle, setFollowVehicle] = useState(true);
   const [trail, setTrail] = useState<[number, number][]>([]);
   const [homePosition, setHomePosition] = useState<[number, number] | null>(null);
-  const [currentLayer, setCurrentLayer] = useState<LayerKey>('osm');
+  const sharedMapLayer = useEditModeStore((s) => s.mapLayer);
+  const setSharedMapLayer = useEditModeStore((s) => s.setMapLayer);
+  // Use shared layer if it's a valid 2D key, otherwise fall back to 'osm'
+  const currentLayer: LayerKey = (sharedMapLayer in MAP_LAYERS ? sharedMapLayer : 'osm') as LayerKey;
+  const setCurrentLayer = (layer: LayerKey) => setSharedMapLayer(layer);
   const [showHeadingLine, setShowHeadingLine] = useState(true);
   const [showCompass, setShowCompass] = useState(true);
   const [showAttitude, setShowAttitude] = useState(true);
@@ -988,6 +988,11 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
       setHomePosition(gpsPosition);
     }
   }, [gpsPosition]);
+
+  // Center on vehicle + re-enable follow
+  const handleCenterOnVehicle = useCallback(() => {
+    setFollowVehicle(true);
+  }, []);
 
   const layer = MAP_LAYERS[currentLayer];
 
@@ -1160,8 +1165,27 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
         )}
       </div>
 
+      {/* Center on vehicle FAB — Google Maps style */}
+      <button
+        onClick={handleCenterOnVehicle}
+        className={`absolute bottom-14 right-3 z-[1000] w-9 h-9 rounded-full shadow-lg flex items-center justify-center transition-all ${
+          followVehicle
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-800/90 text-gray-400 hover:text-white hover:bg-gray-700/90'
+        }`}
+        title={followVehicle ? 'Following vehicle' : 'Center on vehicle'}
+      >
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="4" />
+          <line x1="12" y1="2" x2="12" y2="6" />
+          <line x1="12" y1="18" x2="12" y2="22" />
+          <line x1="2" y1="12" x2="6" y2="12" />
+          <line x1="18" y1="12" x2="22" y2="12" />
+        </svg>
+      </button>
+
       {/* Armed status indicator */}
-      <div className={`absolute bottom-2 right-2 z-[1000] px-2 py-1 rounded shadow-lg text-xs font-bold ${
+      <div className={`absolute bottom-2 right-3 z-[1000] px-2 py-1 rounded shadow-lg text-xs font-bold ${
         flight.armed ? 'bg-red-600 text-white' : 'bg-gray-800/90 text-gray-400'
       }`}>
         {flight.armed ? 'ARMED' : 'DISARMED'}

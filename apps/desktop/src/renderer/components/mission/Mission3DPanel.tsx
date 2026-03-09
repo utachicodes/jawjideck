@@ -8,6 +8,7 @@ import { useMissionStore } from '../../stores/mission-store';
 import { useTelemetryStore } from '../../stores/telemetry-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useEditModeStore } from '../../stores/edit-mode-store';
+import { useSettingsStore } from '../../stores/settings-store';
 import { getElevations } from '../../utils/elevation-api';
 import { useIpLocation } from '../../utils/ip-geolocation';
 import { computeItemColors } from '../../utils/mission-segment-colors';
@@ -19,6 +20,7 @@ import {
   MAV_CMD,
 } from '../../../shared/mission-types';
 import { createMissionThreeJsLayer, type MissionThreeJsLayer } from './mission-threejs-layer';
+import { createVehicleThreeJsLayer, type VehicleThreeJsLayer } from './vehicle-threejs-layer';
 
 // ─── Map layers — same as Leaflet 2D panel ───────────────────────────────────
 const MAP_LAYERS = {
@@ -155,11 +157,10 @@ const DARK_MAP_CSS = `
 .maplibregl-ctrl-attrib a {
   color: rgba(156, 163, 175, 0.3) !important;
 }
-.maplibregl-ctrl-bottom-left {
+.maplibregl-ctrl-top-left,
+.maplibregl-ctrl-bottom-left,
+.maplibregl-ctrl-bottom-right {
   display: none !important;
-}
-.maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib {
-  margin-bottom: 32px !important;
 }
 `;
 
@@ -188,6 +189,14 @@ interface Mission3DPanelProps {
   vehicleHeading?: number;
   /** Override vehicle armed state (for telemetry mode) */
   vehicleArmed?: boolean;
+  /** Vehicle attitude for 3D model (roll/pitch in degrees) */
+  vehicleAttitude?: { roll: number; pitch: number };
+  /** Vehicle altitude above ground level in meters (for 3D model) */
+  vehicleAltitudeAgl?: number;
+  /** Heading line length in meters (for 3D heading line) */
+  headingLineLength?: number;
+  /** Use real vehicle size from profile (true) or auto-scale (false). Default: true */
+  useRealVehicleSize?: boolean;
 }
 
 export function Mission3DPanel({
@@ -203,15 +212,23 @@ export function Mission3DPanel({
   vehicleLngLat,
   vehicleHeading,
   vehicleArmed,
+  vehicleAttitude,
+  vehicleAltitudeAgl,
+  headingLineLength,
+  useRealVehicleSize = true,
 }: Mission3DPanelProps = {}) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const vehicleMarkerRef = useRef<maplibregl.Marker | null>(null);
   const threeLayerRef = useRef<MissionThreeJsLayer | null>(null);
+  const vehicleLayerRef = useRef<VehicleThreeJsLayer | null>(null);
   const markerContainerRef = useRef<HTMLDivElement>(null);
   const isInitialFitDone = useRef(false);
 
-  const [activeLayer, setActiveLayer] = useState<LayerKey>('satellite');
+  const sharedMapLayer = useEditModeStore((s) => s.mapLayer);
+  const setSharedMapLayer = useEditModeStore((s) => s.setMapLayer);
+  // Use shared layer if it's a valid 3D key, otherwise fall back to 'osm'
+  const activeLayer: LayerKey = (sharedMapLayer in MAP_LAYERS ? sharedMapLayer : 'osm') as LayerKey;
+  const setActiveLayer = (layer: LayerKey) => setSharedMapLayer(layer);
   const [exaggeration, setExaggeration] = useState(1.0);
   const [mapReady, setMapReady] = useState(false);
   const [wpDisplayData, setWpDisplayData] = useState<WpDisplay[]>([]);
@@ -373,6 +390,7 @@ export function Mission3DPanel({
         tiles: [DEM_SOURCE_URL],
         tileSize: 256,
         encoding: 'terrarium',
+        maxzoom: 15, // Terrarium tiles only available up to zoom 15
       });
 
       map.setTerrain({ source: 'terrain-dem', exaggeration });
@@ -505,6 +523,11 @@ export function Mission3DPanel({
       threeLayerRef.current = threeLayer;
       map.addLayer(threeLayer.layer);
 
+      // Vehicle 3D model layer
+      const vehicleLayer = createVehicleThreeJsLayer();
+      vehicleLayerRef.current = vehicleLayer;
+      map.addLayer(vehicleLayer.layer);
+
       // If restoring from a stored viewport (2D↔3D switch), skip fitting to waypoints.
       // Otherwise, fit instantly (duration: 0) to avoid the "flap" on fresh 3D open.
       if (storedVp) {
@@ -536,6 +559,8 @@ export function Mission3DPanel({
     mapRef.current = map;
 
     return () => {
+      vehicleLayerRef.current?.dispose();
+      vehicleLayerRef.current = null;
       threeLayerRef.current?.dispose();
       threeLayerRef.current = null;
       map.remove();
@@ -660,89 +685,58 @@ export function Mission3DPanel({
     map.flyTo({ center: [wp.lon, wp.lat], zoom: Math.max(map.getZoom(), 15), duration: 800 });
   }, [selectedSeq, mapReady, wpDisplayData]);
 
-  // Vehicle marker — uses override props (vehicleLngLat etc.) if provided, otherwise store data
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) return;
+  // Compute real-world vehicle size from active profile (mm → meters)
+  const vehicleSizeMeters = useMemo(() => {
+    const vehicle = useSettingsStore.getState().getActiveVehicle();
+    if (!vehicle) return 3; // fallback 3m
+    // Pick the most relevant dimension per vehicle type
+    const sizeMm = vehicle.wingspan  // planes, VTOLs
+      ?? vehicle.frameSize           // copters (diagonal)
+      ?? vehicle.hullLength          // boats, subs
+      ?? vehicle.wheelbase           // rovers
+      ?? 3000;                       // fallback 3m
+    return Math.max(0.3, sizeMm / 1000); // mm → meters, min 30cm
+  }, []);
 
-    // Determine position: use override prop if provided, else fall back to telemetry store
+  // 3D vehicle model — uses override props if provided, otherwise store data
+  useEffect(() => {
+    if (!mapReady || !vehicleLayerRef.current) return;
+
     const lngLat: [number, number] | null = vehicleLngLat
       ?? (isConnected && (position.lat !== 0 || position.lon !== 0)
         ? [position.lon, position.lat]
         : null);
 
-    if (!lngLat) {
-      if (vehicleMarkerRef.current) {
-        vehicleMarkerRef.current.remove();
-        vehicleMarkerRef.current = null;
-      }
-      return;
-    }
-
     const armed = vehicleArmed ?? flight.armed;
     const heading = vehicleHeading ?? vfrHud.heading;
-    const fillColor = armed ? '#f97316' : '#22d3ee';
-    const strokeColor = armed ? '#7c2d12' : '#0e7490';
+    const roll = vehicleAttitude?.roll ?? 0;
+    const pitch = vehicleAttitude?.pitch ?? 0;
+    const altAgl = vehicleAltitudeAgl ?? 0;
 
-    if (!vehicleMarkerRef.current) {
-      const el = document.createElement('div');
-      el.style.width = '48px';
-      el.style.height = '48px';
-      el.style.zIndex = '10';
-      el.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))';
-      el.innerHTML = `<svg viewBox="0 0 24 24">
-        <path d="M12 2L4 20l8-4 8 4L12 2z" fill="none" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
-        <path d="M12 2L4 20l8-4 8 4L12 2z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
-        <path d="M12 2L4 20l8-4 8 4L12 2z" fill="${fillColor}" stroke="${strokeColor}" stroke-width="1" stroke-linejoin="round"/>
-      </svg>`;
-      vehicleMarkerRef.current = new maplibregl.Marker({
-        element: el,
-        rotationAlignment: 'map',
-        rotation: heading,
-      })
-        .setLngLat(lngLat)
-        .addTo(map);
-    } else {
-      vehicleMarkerRef.current.setLngLat(lngLat);
-      vehicleMarkerRef.current.setRotation(heading);
+    vehicleLayerRef.current.updateState({
+      lngLat,
+      heading,
+      roll,
+      pitch,
+      altitudeAgl: altAgl,
+      armed,
+      terrainExaggeration: exaggeration,
+      vehicleSizeMeters,
+      useRealSize: useRealVehicleSize,
+      showHeadingLine: !!headingLineEnd,
+      headingLineLength: headingLineLength ?? 100,
+      headingLineColor: headingLineColor,
+    });
+  }, [vehicleLngLat, vehicleHeading, vehicleArmed, vehicleAttitude, vehicleAltitudeAgl, position.lat, position.lon, vfrHud.heading, flight.armed, isConnected, mapReady, exaggeration, headingLineEnd, headingLineLength, headingLineColor, vehicleSizeMeters, useRealVehicleSize]);
 
-      // Update colors when armed state changes
-      const el = vehicleMarkerRef.current.getElement();
-      const paths = el.querySelectorAll('path');
-      if (paths[2]) {
-        paths[2].setAttribute('fill', fillColor);
-        paths[2].setAttribute('stroke', strokeColor);
-      }
-    }
-  }, [vehicleLngLat, vehicleHeading, vehicleArmed, position.lat, position.lon, vfrHud.heading, flight.armed, isConnected, mapReady]);
-
-  // Update heading line
+  // Update heading line — in 3D mode the Three.js layer renders it at altitude,
+  // so we clear the native MapLibre flat line to avoid duplicates.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
 
-    // Use override position if provided, else telemetry store position
-    const startLngLat = vehicleLngLat ?? (
-      position.lat !== 0 || position.lon !== 0 ? [position.lon, position.lat] as [number, number] : null
-    );
-
-    const features: GeoJSON.Feature[] = [];
-    if (headingLineEnd && startLngLat) {
-      features.push({
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'LineString',
-          coordinates: [startLngLat, headingLineEnd],
-        },
-      });
-    }
-    setSourceData(map, 'heading-line', features);
-
-    // Update heading line color
-    if (map.getLayer('heading-line-color')) {
-      map.setPaintProperty('heading-line-color', 'line-color', headingLineColor);
-    }
+    // 3D: Three.js renders heading line at altitude — hide flat MapLibre version
+    setSourceData(map, 'heading-line', []);
   }, [headingLineEnd, headingLineColor, vehicleLngLat, position.lat, position.lon, mapReady]);
 
   // Update flight trail
@@ -882,30 +876,7 @@ export function Mission3DPanel({
           Vehicle
         </button>
 
-        <span className="text-[10px] text-gray-600 bg-gray-800/60 px-2 py-1 rounded">
-          3D View (read-only)
-        </span>
       </div>
-
-      {/* Terrain exaggeration (only visible when terrain is enabled) */}
-      {showTerrain && <div className="absolute bottom-3 right-3 z-[1000] flex items-center gap-1.5 px-2 py-1 bg-gray-800/90 rounded backdrop-blur-sm">
-        <svg className="w-3 h-3 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M8 21l4-10 4 10M2 21l5-16 3 8M15 21l3-8 5 16" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <input
-          type="range"
-          min="0"
-          max="3"
-          step="0.1"
-          value={exaggeration}
-          onChange={handleExaggerationChange}
-          className="w-14 h-0.5 appearance-none bg-gray-600 rounded-full cursor-pointer
-            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5
-            [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:border-0
-            [&::-webkit-slider-thumb]:cursor-pointer"
-        />
-        <span className="text-[10px] text-gray-500 tabular-nums w-5 text-right">{exaggeration.toFixed(1)}x</span>
-      </div>}
 
       {/* Placeholder — hidden in telemetry mode */}
       {navWaypoints.length === 0 && !isTelemetryMode && (

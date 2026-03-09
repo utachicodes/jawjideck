@@ -21,9 +21,12 @@ interface EditModeStore {
   activeMode: EditMode;
   mapMode: MapMode;
   mapViewport: MapViewport | null;
+  /** Shared map layer key — synced between 2D and 3D panels */
+  mapLayer: string;
   setActiveMode: (mode: EditMode) => void;
   setMapMode: (mode: MapMode) => void;
   setMapViewport: (viewport: MapViewport) => void;
+  setMapLayer: (layer: string) => void;
   reset: () => void;
 }
 
@@ -31,6 +34,7 @@ export const useEditModeStore = create<EditModeStore>((set) => ({
   activeMode: 'mission',
   mapMode: '2d',
   mapViewport: null,
+  mapLayer: 'osm',
 
   setActiveMode: (mode) => {
     set({ activeMode: mode });
@@ -44,7 +48,11 @@ export const useEditModeStore = create<EditModeStore>((set) => ({
     set({ mapViewport: viewport });
   },
 
+  setMapLayer: (layer) => {
+    set({ mapLayer: layer });
+  },
+
   reset: () => {
-    set({ activeMode: 'mission', mapMode: '2d', mapViewport: null });
+    set({ activeMode: 'mission', mapMode: '2d', mapViewport: null, mapLayer: 'osm' });
   },
 }));
