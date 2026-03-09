@@ -2589,60 +2589,67 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       sendConnectionState(mainWindow);
 
       // Set heartbeat timeout - try MSP if no MAVLink heartbeat
+      // MSP fallback only applies to serial connections — MSP is not used over UDP/TCP
+      const canTryMsp = options.type === 'serial';
       heartbeatTimeout = setTimeout(async () => {
         if (connectionState.isWaitingForHeartbeat && currentTransport?.isOpen) {
-          sendLog(mainWindow, 'info', 'No MAVLink heartbeat, trying MSP protocol...');
+          if (canTryMsp) {
+            sendLog(mainWindow, 'info', 'No MAVLink heartbeat, trying MSP protocol...');
 
-          // IMPORTANT: Remove MAVLink handler before trying MSP
-          // BSOD FIX: Use stored handler reference and clear it
-          if (mavlinkDataHandler) {
-            currentTransport.off('data', mavlinkDataHandler as (...args: unknown[]) => void);
-            mavlinkDataHandler = null;
-          }
-          mavlinkParser = null;
-          processingMavlink = false;
-          pendingMavlinkData.length = 0;
+            // IMPORTANT: Remove MAVLink handler before trying MSP
+            // BSOD FIX: Use stored handler reference and clear it
+            if (mavlinkDataHandler) {
+              currentTransport.off('data', mavlinkDataHandler as (...args: unknown[]) => void);
+              mavlinkDataHandler = null;
+            }
+            mavlinkParser = null;
+            processingMavlink = false;
+            pendingMavlinkData.length = 0;
 
-          // Try MSP detection
-          const mspInfo = await tryMspDetection(currentTransport, mainWindow);
+            // Try MSP detection
+            const mspInfo = await tryMspDetection(currentTransport, mainWindow);
 
-          if (mspInfo) {
-            // MSP detected! Update connection state
-            const isLegacy = isLegacyMspBoard(mspInfo.fcVariant, mspInfo.fcVersion);
-            sendLog(mainWindow, 'info', `Connected to ${mspInfo.fcVariant} ${mspInfo.fcVersion}${isLegacy ? ' (Legacy - CLI only)' : ''}`, `Board: ${mspInfo.boardId}`);
+            if (mspInfo) {
+              // MSP detected! Update connection state
+              const isLegacy = isLegacyMspBoard(mspInfo.fcVariant, mspInfo.fcVersion);
+              sendLog(mainWindow, 'info', `Connected to ${mspInfo.fcVariant} ${mspInfo.fcVersion}${isLegacy ? ' (Legacy - CLI only)' : ''}`, `Board: ${mspInfo.boardId}`);
 
-            // Get actual vehicle type from mixer config (not hardcoded)
-            const vehicleType = await getMspVehicleType(mspInfo.fcVariant) || 'Unknown';
+              // Get actual vehicle type from mixer config (not hardcoded)
+              const vehicleType = await getMspVehicleType(mspInfo.fcVariant) || 'Unknown';
 
-            connectionState = {
-              isConnected: true,
-              isWaitingForHeartbeat: false,
-              protocol: 'msp',
-              transport: transportName,
-              portPath: options.port, // Store port path for reconnection
-              fcVariant: mspInfo.fcVariant,
-              fcVersion: mspInfo.fcVersion,
-              boardId: mspInfo.boardId,
-              apiVersion: mspInfo.apiVersion,
-              autopilot: mspInfo.fcVariant, // Show variant as autopilot
-              vehicleType,
-              isLegacyBoard: isLegacy,
-              packetsReceived: connectionState.packetsReceived,
-              packetsSent: connectionState.packetsSent,
-            };
-            sendConnectionState(mainWindow);
+              connectionState = {
+                isConnected: true,
+                isWaitingForHeartbeat: false,
+                protocol: 'msp',
+                transport: transportName,
+                portPath: options.port, // Store port path for reconnection
+                fcVariant: mspInfo.fcVariant,
+                fcVersion: mspInfo.fcVersion,
+                boardId: mspInfo.boardId,
+                apiVersion: mspInfo.apiVersion,
+                autopilot: mspInfo.fcVariant, // Show variant as autopilot
+                vehicleType,
+                isLegacyBoard: isLegacy,
+                packetsReceived: connectionState.packetsReceived,
+                packetsSent: connectionState.packetsSent,
+              };
+              sendConnectionState(mainWindow);
 
-            // NOTE: MSP telemetry is NOT auto-started here.
-            // The renderer will start/stop telemetry based on which view is active.
-            // This prevents wasted polling when user is on config screens.
+              // NOTE: MSP telemetry is NOT auto-started here.
+              // The renderer will start/stop telemetry based on which view is active.
+              // This prevents wasted polling when user is on config screens.
+            } else {
+              // Neither MAVLink nor MSP
+              const errorMsg = 'Device did not respond to MAVLink or MSP. Check connection.';
+              sendLog(mainWindow, 'error', 'No protocol detected', errorMsg);
+              safeSend(mainWindow, 'connection:error', errorMsg);
+              connectionState.isWaitingForHeartbeat = false;
+              sendConnectionState(mainWindow);
+              currentTransport?.close();
+            }
           } else {
-            // Neither MAVLink nor MSP
-            const errorMsg = 'Device did not respond to MAVLink or MSP. Check connection.';
-            sendLog(mainWindow, 'error', 'No protocol detected', errorMsg);
-            safeSend(mainWindow, 'connection:error', errorMsg);
-            connectionState.isWaitingForHeartbeat = false;
-            sendConnectionState(mainWindow);
-            currentTransport?.close();
+            // UDP/TCP: no MSP fallback, just keep waiting for MAVLink heartbeat
+            sendLog(mainWindow, 'warn', 'No MAVLink heartbeat received yet, still waiting...', `Transport: ${transportName}`);
           }
         }
       }, 2500); // Shorter timeout, then try MSP
