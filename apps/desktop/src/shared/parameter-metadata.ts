@@ -15,6 +15,7 @@ export interface ParameterMetadata {
   values?: Record<number, string>; // For enum-like params (e.g., 0: "Disabled", 1: "Enabled")
   increment?: number;
   rebootRequired?: boolean;
+  readOnly?: boolean;
   bitmask?: Record<number, string>; // For bitmask params
 }
 

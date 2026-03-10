@@ -344,6 +344,17 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
 
     if (result?.success && result.metadata) {
       set({ metadata: result.metadata, isLoadingMetadata: false });
+
+      // Re-scan existing params for newly-discovered readonly flags from metadata
+      const params = new Map(get().parameters);
+      let changed = false;
+      for (const [id, param] of params) {
+        if (!param.isReadOnly && result.metadata[id]?.readOnly) {
+          params.set(id, { ...param, isReadOnly: true });
+          changed = true;
+        }
+      }
+      if (changed) set({ parameters: params });
     } else {
       // Non-fatal - just log and continue without metadata
       console.warn('Failed to load parameter metadata:', result?.error);
@@ -404,7 +415,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
     set(state => {
       const params = new Map(state.parameters);
       const existing = params.get(param.paramId);
-      const readOnly = isReadOnlyParameter(param.paramId);
+      const readOnly = isReadOnlyParameter(param.paramId) || (state.metadata?.[param.paramId]?.readOnly === true);
 
       // For user edits: preserve originalValue so the param shows as modified
       // For FC-initiated changes (e.g. MIS_TOTAL after mission upload): update baseline
@@ -430,6 +441,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
   bulkLoadParameters: (params) => {
     // FTP fast path: build entire parameter map in one state update
     userModifiedParams.clear();
+    const { metadata } = get();
     const newParams = new Map<string, ParameterWithMeta>();
     for (const p of params) {
       newParams.set(p.paramId, {
@@ -440,7 +452,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
         originalValue: p.paramValue,
         defaultValue: p.defaultValue,
         isModified: false,
-        isReadOnly: isReadOnlyParameter(p.paramId),
+        isReadOnly: isReadOnlyParameter(p.paramId) || (metadata?.[p.paramId]?.readOnly === true),
       });
     }
     set({

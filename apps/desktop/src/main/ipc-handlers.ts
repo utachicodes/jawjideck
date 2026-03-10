@@ -6022,6 +6022,9 @@ function parseParameterXml(xml: string): ParameterMetadataStore {
         case 'RebootRequired':
           param.rebootRequired = value.toLowerCase() === 'true';
           break;
+        case 'ReadOnly':
+          param.readOnly = value.toLowerCase() === 'true';
+          break;
       }
     }
 
