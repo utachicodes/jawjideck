@@ -12,7 +12,7 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const { connectionState } = useConnectionStore();
+  const { connectionState, disconnect } = useConnectionStore();
   const { currentVersion, status, fetchVersion } = useUpdateStore();
   const setView = useNavigationStore((s) => s.setView);
 
@@ -49,33 +49,39 @@ export function AppShell({ children }: AppShellProps) {
           <ArmDisarmButton />
 
           {/* Connection status */}
-          <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-gray-800/50 border ${
-            connectionState.isConnected
-              ? 'border-emerald-500/30'
-              : connectionState.isWaitingForHeartbeat
-              ? 'border-yellow-500/30'
-              : 'border-gray-700/50'
-          }`}>
-            {connectionState.isWaitingForHeartbeat ? (
-              <svg className="w-2.5 h-2.5 text-yellow-400 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          {connectionState.isConnected ? (
+            <button
+              onClick={disconnect}
+              title="Click to disconnect"
+              className="group flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-gray-800/50 border border-emerald-500/30 hover:border-red-500/50 transition-colors cursor-pointer"
+            >
+              <div className="status-dot status-dot-connected group-hover:bg-red-400" />
+              <span className="text-sm font-medium text-gray-300 group-hover:text-red-300 transition-colors">
+                {connectionState.transport}
+              </span>
+              <svg className="w-3 h-3 text-gray-500 opacity-0 group-hover:opacity-100 group-hover:text-red-400 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
-            ) : (
-              <div
-                className={`status-dot ${
-                  connectionState.isConnected ? 'status-dot-connected' : 'status-dot-disconnected'
-                }`}
-              />
-            )}
-            <span className="text-sm font-medium text-gray-300">
-              {connectionState.isConnected
-                ? connectionState.transport
-                : connectionState.isWaitingForHeartbeat
-                ? 'Waiting...'
-                : 'Disconnected'}
-            </span>
-          </div>
+            </button>
+          ) : (
+            <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-gray-800/50 border ${
+              connectionState.isWaitingForHeartbeat
+                ? 'border-yellow-500/30'
+                : 'border-gray-700/50'
+            }`}>
+              {connectionState.isWaitingForHeartbeat ? (
+                <svg className="w-2.5 h-2.5 text-yellow-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <div className="status-dot status-dot-disconnected" />
+              )}
+              <span className="text-sm font-medium text-gray-300">
+                {connectionState.isWaitingForHeartbeat ? 'Waiting...' : 'Disconnected'}
+              </span>
+            </div>
+          )}
         </div>
       </header>
 

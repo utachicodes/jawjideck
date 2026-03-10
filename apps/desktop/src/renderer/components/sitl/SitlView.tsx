@@ -86,7 +86,7 @@ export default function SitlView() {
   const { setPendingSitlSwitch } = useSettingsStore();
   const ardupilotSitlStore = useArduPilotSitlStore();
   const outputRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<SitlTab>('inav');
+  const [activeTab, setActiveTab] = useState<SitlTab>('ardupilot');
   const [showNewProfile, setShowNewProfile] = useState(false);
   const [newProfileName, setNewProfileName] = useState('');
   const [newProfileDesc, setNewProfileDesc] = useState('');
@@ -198,33 +198,35 @@ export default function SitlView() {
           </div>
         </div>
 
-        {/* Tab switcher */}
-        <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
-          <button
-            onClick={() => setActiveTab('inav')}
-            disabled={ardupilotSitlStore.isRunning}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              activeTab === 'inav'
-                ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
-            title={ardupilotSitlStore.isRunning ? 'Stop ArduPilot SITL first' : undefined}
-          >
-            iNav (MSP)
-          </button>
-          <button
-            onClick={() => setActiveTab('ardupilot')}
-            disabled={isRunning}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              activeTab === 'ardupilot'
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
-            title={isRunning ? 'Stop iNav SITL first' : undefined}
-          >
-            ArduPilot (MAVLink)
-          </button>
-        </div>
+        {/* Tab switcher - ArduPilot tab only in dev builds */}
+        {window.electronAPI.isDev && (
+          <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
+            <button
+              onClick={() => setActiveTab('inav')}
+              disabled={ardupilotSitlStore.isRunning}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                activeTab === 'inav'
+                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              title={ardupilotSitlStore.isRunning ? 'Stop ArduPilot SITL first' : undefined}
+            >
+              iNav (MSP)
+            </button>
+            <button
+              onClick={() => setActiveTab('ardupilot')}
+              disabled={isRunning}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                activeTab === 'ardupilot'
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              title={isRunning ? 'Stop iNav SITL first' : undefined}
+            >
+              ArduPilot (MAVLink)
+            </button>
+          </div>
+        )}
 
         {/* Status indicator */}
         <div className="flex items-center gap-3">
@@ -245,8 +247,8 @@ export default function SitlView() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-y-auto p-4 gap-4">
-        {/* ArduPilot SITL Tab */}
-        {activeTab === 'ardupilot' && <ArduPilotSitlTab />}
+        {/* ArduPilot SITL Tab - dev only */}
+        {window.electronAPI.isDev && activeTab === 'ardupilot' && <ArduPilotSitlTab />}
 
         {/* iNav SITL Tab */}
         {activeTab === 'inav' && (

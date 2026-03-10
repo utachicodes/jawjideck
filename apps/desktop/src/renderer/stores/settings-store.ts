@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type { TelemetrySpeed } from '../../shared/ipc-channels.js';
+import type { FirmwareSource } from '../../shared/firmware-types.js';
 
 /**
  * Vehicle type for visualization
@@ -189,6 +190,9 @@ interface SettingsStore {
   // SITL preferences
   defaultSitlType: DefaultSitlType;
 
+  // Firmware preferences
+  preferredFirmwareSource: FirmwareSource;
+
   // Telemetry stream rate
   telemetrySpeed: TelemetrySpeed;
 
@@ -234,6 +238,9 @@ interface SettingsStore {
 
   // Actions - SITL preferences
   setDefaultSitlType: (type: DefaultSitlType) => void;
+
+  // Actions - Firmware preferences
+  setPreferredFirmwareSource: (source: FirmwareSource) => void;
 
   // Actions - Telemetry
   setTelemetrySpeed: (speed: TelemetrySpeed) => void;
@@ -558,7 +565,8 @@ export const useSettingsStore = create<SettingsStore>()(
   activeVehicleId: 'default',
   flightStats: { ...DEFAULT_FLIGHT_STATS },
   connectionMemory: { ...DEFAULT_CONNECTION_MEMORY },
-  defaultSitlType: 'inav',
+  defaultSitlType: 'ardupilot',
+  preferredFirmwareSource: 'ardupilot' as FirmwareSource,
   telemetrySpeed: 'normal' as TelemetrySpeed,
   displayUnits: 'small' as DisplayUnits,
   experienceLevel: null as ExperienceLevel | null,
@@ -625,7 +633,8 @@ export const useSettingsStore = create<SettingsStore>()(
           activeVehicleId: settings.activeVehicleId || settings.vehicles?.[0]?.id || 'default',
           flightStats: settings.flightStats || { ...DEFAULT_FLIGHT_STATS },
           connectionMemory: settings.connectionMemory || { ...DEFAULT_CONNECTION_MEMORY },
-          defaultSitlType: (settings as unknown as Record<string, unknown>).defaultSitlType as DefaultSitlType || 'inav',
+          defaultSitlType: (settings as unknown as Record<string, unknown>).defaultSitlType as DefaultSitlType || 'ardupilot',
+          preferredFirmwareSource: ((settings as unknown as Record<string, unknown>).preferredFirmwareSource as FirmwareSource) || 'ardupilot',
           telemetrySpeed: ((settings as unknown as Record<string, unknown>).telemetrySpeed as TelemetrySpeed) || 'normal',
           displayUnits: ((settings as unknown as Record<string, unknown>).displayUnits as DisplayUnits) || 'small',
           experienceLevel: ((settings as unknown as Record<string, unknown>).experienceLevel as ExperienceLevel) || null,
@@ -659,6 +668,7 @@ export const useSettingsStore = create<SettingsStore>()(
         flightStats: state.flightStats,
         connectionMemory: state.connectionMemory,
         defaultSitlType: state.defaultSitlType,
+        preferredFirmwareSource: state.preferredFirmwareSource,
         telemetrySpeed: state.telemetrySpeed,
         displayUnits: state.displayUnits,
         ...(state.experienceLevel ? { experienceLevel: state.experienceLevel } : {}),
@@ -767,6 +777,11 @@ export const useSettingsStore = create<SettingsStore>()(
     set({ defaultSitlType: type });
   },
 
+  // Actions - Firmware preferences
+  setPreferredFirmwareSource: (source) => {
+    set({ preferredFirmwareSource: source });
+  },
+
   // Actions - Telemetry
   setTelemetrySpeed: (speed) => {
     set({ telemetrySpeed: speed });
@@ -808,7 +823,8 @@ export const useSettingsStore = create<SettingsStore>()(
       activeVehicleId: 'default',
       flightStats: { ...DEFAULT_FLIGHT_STATS },
       connectionMemory: { ...DEFAULT_CONNECTION_MEMORY },
-      defaultSitlType: 'inav',
+      defaultSitlType: 'ardupilot',
+      preferredFirmwareSource: 'ardupilot',
       telemetrySpeed: 'normal',
     });
   },
@@ -831,6 +847,7 @@ useSettingsStore.subscribe(
     flightStats: state.flightStats,
     connectionMemory: state.connectionMemory,
     defaultSitlType: state.defaultSitlType,
+    preferredFirmwareSource: state.preferredFirmwareSource,
     telemetrySpeed: state.telemetrySpeed,
     displayUnits: state.displayUnits,
     experienceLevel: state.experienceLevel,
@@ -849,6 +866,7 @@ useSettingsStore.subscribe(
         curr.flightStats !== prev.flightStats ||
         curr.connectionMemory !== prev.connectionMemory ||
         curr.defaultSitlType !== prev.defaultSitlType ||
+        curr.preferredFirmwareSource !== prev.preferredFirmwareSource ||
         curr.telemetrySpeed !== prev.telemetrySpeed ||
         curr.displayUnits !== prev.displayUnits ||
         curr.experienceLevel !== prev.experienceLevel ||

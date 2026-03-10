@@ -9,6 +9,7 @@ import type {
   ReleaseType,
 } from '../../shared/firmware-types';
 import { findMatchingInavBoard } from '../../shared/board-mappings';
+import { useSettingsStore } from './settings-store';
 
 /**
  * Board info from manifest
@@ -187,8 +188,8 @@ const initialState = {
   // Vehicle selection
   selectedVehicleType: 'copter' as FirmwareVehicleType,
 
-  // Firmware source
-  selectedSource: 'ardupilot' as FirmwareSource,
+  // Firmware source - use persisted preference from settings
+  selectedSource: (useSettingsStore.getState().preferredFirmwareSource || 'ardupilot') as FirmwareSource,
   sourceExplicitlySet: false,
 
   // Board selection
@@ -505,8 +506,9 @@ export const useFirmwareStore = create<FirmwareStore>((set, get) => ({
       versionGroups: [],
       customFirmwarePath: null,
     });
-    // Fetch boards for new source (unless custom)
+    // Persist the user's choice so it survives app restart
     if (source !== 'custom') {
+      useSettingsStore.getState().setPreferredFirmwareSource(source);
       get().fetchBoards();
     }
   },
