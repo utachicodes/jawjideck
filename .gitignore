@@ -88,6 +88,11 @@ MissionPlanner-ref/
 # Electron store data
 %APPDATA%/ardudeck/
 
+# MAVLink logs and parameter dumps
+*.tlog
+*.tlog.raw
+*.parm
+
 # Debug
 .debug/
 inav-configurator
