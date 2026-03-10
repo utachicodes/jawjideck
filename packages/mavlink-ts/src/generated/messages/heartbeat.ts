@@ -1,7 +1,7 @@
 /**
  * The heartbeat message shows that a system or component is present and responding. The type and autopilot fields (along with the message component id), allow the receiving system to treat further messages from this system appropriately (e.g. by laying out the user interface based on the autopilot). This microservice is documented at https://mavlink.io/en/services/heartbeat.html
  * Message ID: 0
- * CRC Extra: 239
+ * CRC Extra: 50
  */
 export interface Heartbeat {
   /** Vehicle or component type. For a flight controller component the vehicle type (quadrotor, helicopter, etc.). For other components the component type (e.g. camera, gimbal, etc.). This should be used in preference to component id for identifying the component type. */
@@ -19,7 +19,7 @@ export interface Heartbeat {
 }
 
 export const HEARTBEAT_ID = 0;
-export const HEARTBEAT_CRC_EXTRA = 239;
+export const HEARTBEAT_CRC_EXTRA = 50;
 export const HEARTBEAT_MIN_LENGTH = 9;
 export const HEARTBEAT_MAX_LENGTH = 9;
 

@@ -254,7 +254,16 @@ function autoLoadSigningKey(): void {
   signingKey = loadSigningKey();
   if (signingKey) {
     signingLinkId = signingStore.get('linkId') ?? 0;
-    console.log('[MAVLink Signing] Key loaded from storage at startup');
+    // If key was previously sent to FC, enable signing immediately.
+    // This ensures outgoing packets are signed from the first packet,
+    // matching Mission Planner behavior and preventing mavproxy crashes
+    // when it tries to re-sign unsigned packets for a signed FC link.
+    if (signingSentToFc) {
+      signingEnabled = true;
+      console.log('[MAVLink Signing] Key loaded + signing enabled at startup (previously sent to FC)');
+    } else {
+      console.log('[MAVLink Signing] Key loaded from storage at startup');
+    }
   }
 }
 
@@ -1774,9 +1783,10 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
               connectionState.fcSigning = true;
               sendLog(mainWindow, 'info', 'FC is sending signed packets - MAVLink signing is active on the vehicle');
 
-              // Auto-enable signing if we have a key that verifies against the FC's signed packets
-              // Must await so signing is enabled BEFORE subsequent packets (heartbeat, AUTOPILOT_VERSION) are sent
-              if (signingKey && !signingEnabled && packet.signature) {
+              // Verify our key against the FC's signed packets on EVERY new connection.
+              // This catches key mismatches when a proxy (mavproxy) overwrites the FC's key.
+              // Must await so signing state is resolved BEFORE subsequent packets are sent.
+              if (signingKey && packet.signature) {
                 try {
                   const packetDataWithoutSig = packet.buffer.slice(0, packet.buffer.length - MAVLINK_SIGNATURE_BLOCK_LEN);
                   const isValid = await verifySignature(signingKey, packetDataWithoutSig, packet.signature, true);
@@ -1788,14 +1798,18 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
                     sendLog(mainWindow, 'info', `MAVLink signing auto-enabled (key ${fingerprint}... verified against FC)`);
                     safeSend(mainWindow, IPC_CHANNELS.MAVLINK_SIGNING_STATUS, getSigningStatus());
                   } else {
+                    // Key mismatch - DISABLE signing to prevent sending wrongly-signed packets.
+                    // Wrongly-signed packets crash mavproxy's pymavlink serializer.
+                    signingEnabled = false;
                     signingKeyMismatch = true;
+                    connectionState.signingEnabled = false;
                     const isNetwork = connectionState.connectionType === 'tcp' || connectionState.connectionType === 'udp';
                     const proxyHint = isNetwork
-                      ? ' When using a proxy (mavproxy/UDPproxy), the proxy may have overwritten the FC\'s signing key with its own passphrase.'
+                      ? ' When using a proxy (mavproxy/UDPproxy), the proxy may have overwritten the FC\'s signing key with its own passphrase. Use the same passphrase in ArduDeck as in the proxy\'s "signing setup" command.'
                       : '';
                     sendLog(mainWindow, 'warn',
-                      'Signing key mismatch - your key does not match the vehicle\'s key.',
-                      `Ensure ArduDeck uses the same passphrase as your flight controller or proxy.${proxyHint}`
+                      'Signing key mismatch - disabling signing to prevent proxy errors.',
+                      `Your key does not match the vehicle/proxy key. Update your passphrase in Safety > MAVLink Signing.${proxyHint}`
                     );
                     safeSend(mainWindow, IPC_CHANNELS.MAVLINK_SIGNING_STATUS, getSigningStatus());
                   }
@@ -1803,7 +1817,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
                   // Non-critical - signing verification failed, continue without signing
                 }
               } else if (!signingKey) {
-                sendLog(mainWindow, 'warn', 'Vehicle requires MAVLink signing but no key is configured. Go to Settings to set a signing passphrase.');
+                sendLog(mainWindow, 'warn', 'Vehicle requires MAVLink signing but no key is configured. Go to Safety > MAVLink Signing to set a signing passphrase.');
               }
 
               sendConnectionState(mainWindow);
