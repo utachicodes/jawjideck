@@ -566,7 +566,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
 
   // File compare actions
   loadFileForCompare: (fileParams, fileVehicleType) => {
-    const { parameters } = get();
+    const { parameters, metadata } = get();
     const diffs: FileParamDiff[] = [];
     const skippedList: Array<{ id: string; value: number }> = [];
 
@@ -576,7 +576,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
         skippedList.push({ id: fp.id, value: fp.value });
         continue;
       }
-      if (existing.isReadOnly) continue;
+      if (existing.isReadOnly || metadata?.[fp.id]?.readOnly) continue;
 
       // Only include if values actually differ (float32-aware)
       if (!f32Equal(existing.value, fp.value)) {
@@ -705,7 +705,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
         stillPending.push(pending);
         continue;
       }
-      if (existing.isReadOnly) continue;
+      if (existing.isReadOnly || metadata?.[pending.id]?.readOnly) continue;
 
       if (f32Equal(existing.value, pending.value)) {
         appliedParamIds.push(pending.id);
