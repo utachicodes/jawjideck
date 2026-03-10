@@ -8,6 +8,7 @@ interface SigningStore {
   sentToFc: boolean;
   keyFingerprint: string | null;
   keyBase64: string | null;
+  keyMismatch: boolean;
   loading: boolean;
   error: string | null;
 
@@ -27,6 +28,7 @@ export const useSigningStore = create<SigningStore>((set, get) => ({
   sentToFc: false,
   keyFingerprint: null,
   keyBase64: null,
+  keyMismatch: false,
   loading: false,
   error: null,
 
@@ -40,6 +42,7 @@ export const useSigningStore = create<SigningStore>((set, get) => ({
           sentToFc: status.sentToFc,
           keyFingerprint: status.keyFingerprint ?? null,
           keyBase64: status.keyBase64 ?? null,
+          keyMismatch: status.keyMismatch ?? false,
         });
       }
     } catch {
@@ -122,6 +125,7 @@ export const useSigningStore = create<SigningStore>((set, get) => ({
       sentToFc: status.sentToFc,
       keyFingerprint: status.keyFingerprint ?? null,
       keyBase64: status.keyBase64 ?? null,
+      keyMismatch: status.keyMismatch ?? false,
     });
   },
 }));

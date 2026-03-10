@@ -337,8 +337,8 @@ export function ConnectionPanel() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-5">
-        {/* SITL Quick Start - only show when not connected */}
-        {!connectionState.isConnected && !connectionState.isWaitingForHeartbeat && (
+        {/* SITL Quick Start - only show when not connected and in dev builds */}
+        {window.electronAPI.isDev && !connectionState.isConnected && !connectionState.isWaitingForHeartbeat && (
           <div className="space-y-2">
             <button
               onClick={anySitlRunning ? handleSitlConnect : handleSitlQuickStart}

@@ -41,6 +41,9 @@ import type { SerialPortInfo, ScanResult } from '@ardudeck/comms';
  * Exposed API for renderer process
  */
 const api = {
+  // App environment — matches main process isDev logic
+  isDev: process.env.NODE_ENV === 'development',
+
   // Port management
   listPorts: (): Promise<SerialPortInfo[]> =>
     ipcRenderer.invoke(IPC_CHANNELS.COMMS_LIST_PORTS),

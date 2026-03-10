@@ -441,6 +441,8 @@ export interface ConnectionState {
   mavlinkVersion?: number;
   /** Unique board identifier from AUTOPILOT_VERSION uid/uid2 (hex string) */
   boardUid?: string;
+  /** Connection type for transport-aware logic (signing, reconnect, etc.) */
+  connectionType?: 'serial' | 'tcp' | 'udp';
   // MAVLink signing
   signingEnabled?: boolean;
   /** True when we detect the FC is sending signed packets back */
@@ -921,6 +923,8 @@ export interface SigningStatus {
   keyFingerprint?: string;
   /** Full key as Base64 (matches Mission Planner display format) */
   keyBase64?: string;
+  /** True when our key doesn't match the FC's signing key */
+  keyMismatch?: boolean;
 }
 
 export interface AppUpdateInfo {

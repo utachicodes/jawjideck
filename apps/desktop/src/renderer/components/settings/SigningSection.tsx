@@ -10,6 +10,7 @@ export function SigningSection() {
     sentToFc,
     keyFingerprint,
     keyBase64,
+    keyMismatch,
     loading,
     error,
     setKey,
@@ -138,6 +139,29 @@ export function SigningSection() {
         </div>
       )}
 
+      {/* Key mismatch warning */}
+      {!isV1Only && keyMismatch && (
+        <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2.5">
+          <p className="text-xs text-red-400 font-medium mb-1">Signing key mismatch</p>
+          <p className="text-xs text-zinc-400">
+            Your signing key doesn't match the vehicle's key. If using a proxy
+            (mavproxy, UDPproxy), ensure you use the same passphrase that was
+            used in the proxy's signing setup.
+          </p>
+        </div>
+      )}
+
+      {/* Network connection info */}
+      {!isV1Only && (connectionState.connectionType === 'tcp' || connectionState.connectionType === 'udp') && (
+        <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2.5">
+          <p className="text-xs text-zinc-400">
+            Connected over {connectionState.connectionType === 'tcp' ? 'TCP' : 'UDP'}.
+            If using a proxy with its own signing, ensure ArduDeck uses the same passphrase.
+            Setting up signing via direct serial connection is most reliable.
+          </p>
+        </div>
+      )}
+
       {/* Setup steps */}
       {!isV1Only && (<>
       <div className="space-y-3">
@@ -235,11 +259,18 @@ export function SigningSection() {
               </button>
             )}
           </div>
-          <p className="text-xs text-zinc-500 ml-7 mt-1">
-            {sentToFc
-              ? 'Both GCS and flight controller share the signing key. Signing is active.'
-              : 'Sends the key to the FC and enables signing. Both sides must share the same key.'}
-          </p>
+          <div className="ml-7 mt-1">
+            <p className="text-xs text-zinc-500">
+              {sentToFc
+                ? 'Both GCS and flight controller share the signing key. Signing is active.'
+                : 'Sends the key to the FC and enables signing. Both sides must share the same key.'}
+            </p>
+            {(connectionState.connectionType === 'tcp' || connectionState.connectionType === 'udp') && (
+              <p className="text-[10px] text-zinc-600 mt-0.5">
+                May not work through proxies. Use direct serial if it fails.
+              </p>
+            )}
+          </div>
         </div>
       </div>
 

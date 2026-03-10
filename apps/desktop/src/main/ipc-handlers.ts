@@ -243,6 +243,7 @@ let signingEnabled = false;
 let signingKey: Uint8Array | null = null;
 let signingLinkId = 0;
 let signingSentToFc = signingStore.get('sentToFc') ?? false;
+let signingKeyMismatch = false;
 
 /**
  * Auto-load signing key from encrypted storage.
@@ -316,6 +317,7 @@ function getSigningStatus(): SigningStatus {
     keyBase64: signingKey
       ? Buffer.from(signingKey).toString('base64')
       : undefined,
+    keyMismatch: signingKeyMismatch,
   };
 }
 
@@ -1780,11 +1782,22 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
                   const isValid = await verifySignature(signingKey, packetDataWithoutSig, packet.signature, true);
                   if (isValid) {
                     signingEnabled = true;
+                    signingKeyMismatch = false;
                     connectionState.signingEnabled = true;
-                    sendLog(mainWindow, 'info', 'MAVLink signing auto-enabled (key verified against FC)');
+                    const fingerprint = Array.from(signingKey.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join('');
+                    sendLog(mainWindow, 'info', `MAVLink signing auto-enabled (key ${fingerprint}... verified against FC)`);
                     safeSend(mainWindow, IPC_CHANNELS.MAVLINK_SIGNING_STATUS, getSigningStatus());
                   } else {
-                    sendLog(mainWindow, 'warn', 'Stored signing key does not match the vehicle. Check your passphrase in Settings.');
+                    signingKeyMismatch = true;
+                    const isNetwork = connectionState.connectionType === 'tcp' || connectionState.connectionType === 'udp';
+                    const proxyHint = isNetwork
+                      ? ' When using a proxy (mavproxy/UDPproxy), the proxy may have overwritten the FC\'s signing key with its own passphrase.'
+                      : '';
+                    sendLog(mainWindow, 'warn',
+                      'Signing key mismatch - your key does not match the vehicle\'s key.',
+                      `Ensure ArduDeck uses the same passphrase as your flight controller or proxy.${proxyHint}`
+                    );
+                    safeSend(mainWindow, IPC_CHANNELS.MAVLINK_SIGNING_STATUS, getSigningStatus());
                   }
                 } catch {
                   // Non-critical - signing verification failed, continue without signing
@@ -2093,6 +2106,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
               isReconnecting: false,
               protocol: 'msp',
               transport: 'serial',
+              connectionType: 'serial',
               portPath: pendingReconnect.portPath,
               fcVariant: mspInfo.fcVariant,
               fcVersion: mspInfo.fcVersion,
@@ -2151,6 +2165,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
               isReconnecting: false,
               protocol: 'msp',
               transport: 'tcp',
+              connectionType: 'tcp',
               fcVariant: mspInfo.fcVariant,
               fcVersion: mspInfo.fcVersion,
               boardId: mspInfo.boardId,
@@ -2276,8 +2291,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     }
 
     // Store connection info for reconnection
-    // Note: transport is a descriptive string like "TCP 127.0.0.1:5760" or "/dev/ttyUSB0 @ 115200"
-    const isTcpConnection = connectionState.transport?.toLowerCase().startsWith('tcp') || connectionState.isSitl;
+    const isTcpConnection = connectionState.connectionType === 'tcp' || connectionState.isSitl;
     pendingReconnect = {
       reason,
       portPath: connectionState.portPath,
@@ -2465,6 +2479,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
           isConnected: false,
           isWaitingForHeartbeat: false,
           transport: transportName,
+          connectionType: options.type,
           packetsReceived: 0,
           packetsSent: 0,
         };
@@ -2490,6 +2505,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
             protocol: 'msp',
             transport: transportName,
             portPath: options.port, // Store port path for reconnection
+            connectionType: options.type,
             fcVariant: mspInfo.fcVariant,
             fcVersion: mspInfo.fcVersion,
             boardId: mspInfo.boardId,
@@ -2542,6 +2558,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
                     isWaitingForHeartbeat: false,
                     protocol: 'msp',
                     transport: 'tcp',
+                    connectionType: 'tcp',
                     fcVariant: newMspInfo.fcVariant,
                     fcVersion: newMspInfo.fcVersion,
                     boardId: newMspInfo.boardId,
@@ -2583,6 +2600,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         isWaitingForHeartbeat: true,
         transport: transportName,
         portPath: options.port, // Store port path for reconnection after reboot
+        connectionType: options.type,
         packetsReceived: 0,
         packetsSent: 0,
       };
@@ -2763,6 +2781,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         ftpClient.cleanup().catch(() => {});
         ftpClient = null;
       }
+      signingKeyMismatch = false;
       connectionState = {
         isConnected: false,
         signingEnabled,
@@ -2866,6 +2885,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       signingLinkId = signingStore.get('linkId') ?? 0;
       saveSigningKey(key);
       signingSentToFc = false;
+      signingKeyMismatch = false;
       signingStore.set('sentToFc', false);
       sendLog(mainWindow, 'info', 'MAVLink signing key set from passphrase');
       safeSend(mainWindow, IPC_CHANNELS.MAVLINK_SIGNING_STATUS, getSigningStatus());
@@ -2951,13 +2971,42 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       connectionState.packetsSent++;
 
       signingSentToFc = true;
+      signingKeyMismatch = false;
 
       // Auto-enable signing after sending to FC (matches Mission Planner)
       signingEnabled = true;
       connectionState.signingEnabled = true;
       signingStore.set('sentToFc', true);
+
+      const isNetwork = connectionState.connectionType === 'tcp' || connectionState.connectionType === 'udp';
+      if (isNetwork) {
+        sendLog(mainWindow, 'info', `SETUP_SIGNING sent to FC over network (sys=${targetSys}, comp=${targetComp})`,
+          'If using a proxy, consider setting up signing via direct serial connection for reliability.');
+      } else {
+        sendLog(mainWindow, 'info', `SETUP_SIGNING sent to FC (sys=${targetSys}, comp=${targetComp})`);
+      }
+
+      // Verify delivery: wait up to 3 seconds for FC to respond with signed packets
+      if (isNetwork && !connectionState.fcSigning) {
+        const delivered = await new Promise<boolean>((resolve) => {
+          const checkInterval = setInterval(() => {
+            if (connectionState.fcSigning) {
+              clearInterval(checkInterval);
+              resolve(true);
+            }
+          }, 200);
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            resolve(false);
+          }, 3000);
+        });
+        if (!delivered) {
+          sendLog(mainWindow, 'warn', 'SETUP_SIGNING may not have reached the FC.',
+            'No signed response received. Retry or configure signing via direct serial connection.');
+        }
+      }
+
       safeSend(mainWindow, IPC_CHANNELS.MAVLINK_SIGNING_STATUS, getSigningStatus());
-      sendLog(mainWindow, 'info', `SETUP_SIGNING sent to FC (sys=${targetSys}, comp=${targetComp})`);
       return { success: true };
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
