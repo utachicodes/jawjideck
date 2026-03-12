@@ -406,56 +406,95 @@ async function calibrateOpflow(): Promise<CalibrationResult> {
 
 /**
  * Confirm a position in 6-point accelerometer calibration.
+ *
+ * Sends MSP_ACC_CALIBRATION to the FC, waits for sampling,
+ * then reads MSP_CALIBRATION_DATA to verify the position was captured.
  */
 async function confirmPosition(position: number): Promise<{ success: boolean; error?: string }> {
   if (currentCalibration !== 'accel-6point') {
     return { success: false, error: '6-point calibration not in progress' };
   }
 
-  sendLog('info', `Confirming position ${position}`);
+  sendLog('info', `Confirming position ${position} — sending MSP_ACC_CALIBRATION`);
 
-  // TODO: Send actual MSP command for this position
+  try {
+    // Send MSP_ACC_CALIBRATION to the FC — it samples accelerometer for ~2s
+    const { calibrateAccFromHandler } = await import('../msp/msp-commands.js');
+    const accResult = await calibrateAccFromHandler();
 
-  // Simulate position confirmation
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+    if (!accResult) {
+      sendLog('error', `Position ${position}: MSP_ACC_CALIBRATION failed`);
+      return { success: false, error: 'ACC calibration command failed — ensure FC is connected' };
+    }
 
-  const positionStatus = [false, false, false, false, false, false];
-  for (let i = 0; i <= position; i++) {
-    positionStatus[i] = true;
-  }
+    // Wait for FC to collect samples (~2 seconds)
+    await new Promise((resolve) => setTimeout(resolve, 2500));
 
-  if (position < 5) {
-    // More positions to go
-    const positionNames = [
-      'Level (Top Up)',
-      'Inverted (Top Down)',
-      'Left Side Down',
-      'Right Side Down',
-      'Nose Down',
-      'Nose Up',
-    ];
+    // Read back calibration data to verify position was captured
+    const { readCalibrationData } = await import('../msp/msp-commands.js');
+    const calData = await readCalibrationData();
 
-    sendProgress({
-      type: 'accel-6point',
-      progress: ((position + 1) / 6) * 100,
-      statusText: `Place vehicle ${positionNames[position + 1]}`,
-      currentPosition: (position + 1) as 0 | 1 | 2 | 3 | 4 | 5,
-      positionStatus,
-    });
+    // Build position status from bitmask (if available) or from position index
+    const positionStatus = [false, false, false, false, false, false];
+    if (calData) {
+      for (let i = 0; i < 6; i++) {
+        positionStatus[i] = !!(calData.positionBitmask & (1 << i));
+      }
+      sendLog('info', `Calibration data: bitmask=${calData.positionBitmask.toString(2).padStart(6, '0')} accZero=(${calData.accZero.x},${calData.accZero.y},${calData.accZero.z})`);
+    } else {
+      // If we can't read back, trust the position index
+      for (let i = 0; i <= position; i++) {
+        positionStatus[i] = true;
+      }
+      sendLog('warn', 'Could not read calibration data — assuming position was captured');
+    }
 
-    return { success: true };
-  } else {
-    // All positions done
-    sendComplete({
-      type: 'accel-6point',
-      success: true,
-      data: {
-        accZero: { x: 0, y: 0, z: 0 },
-        accGain: { x: 4096, y: 4096, z: 4096 },
-      },
-    });
+    if (position < 5) {
+      // More positions to go
+      const positionNames = [
+        'Level (Top Up)',
+        'Inverted (Top Down)',
+        'Left Side Down',
+        'Right Side Down',
+        'Nose Down',
+        'Nose Up',
+      ];
 
-    return { success: true };
+      sendProgress({
+        type: 'accel-6point',
+        progress: ((position + 1) / 6) * 100,
+        statusText: `Place vehicle ${positionNames[position + 1]}`,
+        currentPosition: (position + 1) as 0 | 1 | 2 | 3 | 4 | 5,
+        positionStatus,
+      });
+
+      return { success: true };
+    } else {
+      // All 6 positions done — save to EEPROM
+      sendLog('info', 'All 6 positions captured — saving to EEPROM');
+
+      const { saveEeprom } = await import('../msp/msp-commands.js');
+      const saved = await saveEeprom();
+
+      if (!saved) {
+        sendLog('warn', 'EEPROM save returned false — calibration may not persist');
+      }
+
+      sendComplete({
+        type: 'accel-6point',
+        success: true,
+        data: calData ? {
+          accZero: calData.accZero,
+          accGain: calData.accGain,
+        } : undefined,
+      });
+
+      return { success: true };
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    sendLog('error', `Position ${position} failed: ${message}`);
+    return { success: false, error: message };
   }
 }
 

@@ -4,7 +4,7 @@
  * saveEeprom, calibrate, reboot, resetMspCliFlags, resetSitlAutoConfig.
  */
 
-import { MSP } from '@ardudeck/msp-ts';
+import { MSP, deserializeCalibrationData, type MSPCalibrationData } from '@ardudeck/msp-ts';
 import { ctx } from './msp-context.js';
 import { sendMspRequest, withConfigLock } from './msp-transport.js';
 import { stopMspTelemetry } from './msp-telemetry.js';
@@ -177,6 +177,18 @@ export async function calibrateMag(): Promise<boolean> {
 
 export const calibrateAccFromHandler = calibrateAcc;
 export const calibrateMagFromHandler = calibrateMag;
+
+export async function readCalibrationData(): Promise<MSPCalibrationData | null> {
+  if (!ctx.currentTransport?.isOpen) return null;
+
+  try {
+    const payload = await sendMspRequest(MSP.CALIBRATION_DATA, 2000);
+    return deserializeCalibrationData(payload);
+  } catch (error) {
+    console.error('[MSP] Read calibration data failed:', error);
+    return null;
+  }
+}
 
 export async function reboot(autoReconnect = true): Promise<boolean> {
   if (!ctx.currentTransport?.isOpen) return false;

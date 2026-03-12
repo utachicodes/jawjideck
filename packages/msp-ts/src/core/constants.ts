@@ -55,6 +55,12 @@ export const MSP = {
   SET_NAME: 11,
 
   // -------------------------------------------------------------------------
+  // Calibration Data Commands (14-15) - iNav
+  // -------------------------------------------------------------------------
+  CALIBRATION_DATA: 14,       // Read acc/mag calibration data + 6-point position bitmask
+  SET_CALIBRATION_DATA: 15,   // Write acc/mag calibration data
+
+  // -------------------------------------------------------------------------
   // Waypoint/Navigation Commands (16-22)
   // -------------------------------------------------------------------------
   WP_MISSION_LOAD: 18,   // Load mission from NVRAM

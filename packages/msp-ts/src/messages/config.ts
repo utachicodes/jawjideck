@@ -2740,3 +2740,28 @@ export function serializeRcDeadband(config: MSPRcDeadband): Uint8Array {
   builder.writeU16(config.deadbandThrottle);
   return builder.build();
 }
+
+// =============================================================================
+// Calibration Data (MSP 14/15) - iNav
+// =============================================================================
+
+export interface MSPCalibrationData {
+  /** Bitmask of completed 6-point positions (bits 0-5) */
+  positionBitmask: number;
+  accZero: { x: number; y: number; z: number };
+  accGain: { x: number; y: number; z: number };
+  magZero: { x: number; y: number; z: number };
+  magGain: { x: number; y: number; z: number };
+  opflowScale: number;
+}
+
+export function deserializeCalibrationData(payload: Uint8Array): MSPCalibrationData {
+  const reader = new PayloadReader(payload);
+  const positionBitmask = reader.readU8();
+  const accZero = { x: reader.readS16(), y: reader.readS16(), z: reader.readS16() };
+  const accGain = { x: reader.readS16(), y: reader.readS16(), z: reader.readS16() };
+  const magZero = { x: reader.readS16(), y: reader.readS16(), z: reader.readS16() };
+  const opflowScale = reader.readS16() / 256.0;
+  const magGain = { x: reader.readS16(), y: reader.readS16(), z: reader.readS16() };
+  return { positionBitmask, accZero, accGain, magZero, magGain, opflowScale };
+}
