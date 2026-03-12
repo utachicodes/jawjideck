@@ -924,7 +924,7 @@ function getModeName(boxId: number): string {
     [BOX_ID.NAV_CRUISE]: 'NAV CRUISE',
     [BOX_ID.PREARM]: 'PREARM',
     [BOX_ID.TURTLE]: 'TURTLE',
-    [BOX_ID.NAV_COURSE_HOLD]: 'COURSE HOLD',
+    [BOX_ID.NAV_COURSE_HOLD]: 'NAV COURSE HOLD',
   };
   return names[boxId] || `Mode ${boxId}`;
 }

@@ -51,7 +51,7 @@ export const BOX_ID = {
   OSD_ALT_1: 42,
   OSD_ALT_2: 43,
   OSD_ALT_3: 44,
-  NAV_CRUISE: 45,
+  NAV_COURSE_HOLD: 45,
   MC_BRAKING: 46,
   USER1: 47,
   USER2: 48,
@@ -59,7 +59,7 @@ export const BOX_ID = {
   MSP_RC_OVERRIDE: 50,
   PREARM: 51,
   TURTLE: 52,
-  NAV_COURSE_HOLD: 53,
+  NAV_CRUISE: 53,
   AUTO_LEVEL: 54,
   WP_PLANNER: 55,
   SOARING: 56,
@@ -71,7 +71,10 @@ export const BOX_ID = {
   MIXER_PROFILE_2: 62,
   MIXER_TRANSITION: 63,
   ANGLE_HOLD: 64,
-  VTXPITMODE: 65,
+  GIMBAL_LEVEL_TILT: 65,
+  GIMBAL_LEVEL_ROLL: 66,
+  GIMBAL_CENTER: 67,
+  GIMBAL_HEADTRACKER: 68,
 } as const;
 
 // Mode metadata with beginner-friendly descriptions
@@ -151,19 +154,19 @@ export const MODE_INFO: Record<
     beginner: 'Execute uploaded waypoint mission. Aircraft will fly to each waypoint automatically.',
     essential: true,
   },
+  [BOX_ID.NAV_COURSE_HOLD]: {
+    name: 'NAV COURSE HOLD',
+    icon: Compass,
+    description: 'Hold course',
+    color: 'bg-violet-500',
+    beginner: 'Maintains current heading while allowing altitude control. Good for flying in a straight line.',
+  },
   [BOX_ID.NAV_CRUISE]: {
     name: 'NAV CRUISE',
     icon: Plane,
     description: 'Cruise control',
     color: 'bg-sky-500',
     beginner: 'Fixed-wing cruise mode - Maintains heading and altitude. Perfect for long-range flights.',
-  },
-  [BOX_ID.NAV_COURSE_HOLD]: {
-    name: 'COURSE HOLD',
-    icon: Compass,
-    description: 'Hold course',
-    color: 'bg-violet-500',
-    beginner: 'Maintains current heading while allowing altitude control. Good for flying in a straight line.',
   },
   [BOX_ID.NAV_LAUNCH]: {
     name: 'NAV LAUNCH',
@@ -204,13 +207,13 @@ export const MODE_INFO: Record<
     beginner:
       'LOGGING - Records flight data to the SD card for analysis. Useful for tuning PIDs and reviewing crashes.',
   },
-  [BOX_ID.VTXPITMODE]: {
-    name: 'VTX PIT',
+  [BOX_ID.GIMBAL_LEVEL_TILT]: {
+    name: 'GIMBAL LEVEL TILT',
     icon: Satellite,
-    description: 'Low power video',
+    description: 'Gimbal tilt leveling',
     color: 'bg-indigo-500',
     beginner:
-      'PIT MODE - Puts your video transmitter in low power mode. Required at races before takeoff to avoid interfering with other pilots.',
+      'Keeps gimbal tilt axis level regardless of aircraft attitude. Useful for camera stabilization.',
   },
   [BOX_ID.MANUAL]: {
     name: 'MANUAL',

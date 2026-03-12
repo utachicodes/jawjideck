@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { PRESETS, PRESET_ICONS, type ModePreset } from '../presets/mode-presets';
+import { PRESETS, PRESET_ICONS, MODE_INFO, type ModePreset } from '../presets/mode-presets';
 import { useModesWizardStore } from '../../../stores/modes-wizard-store';
 import { Radio, Settings, Lightbulb, ChevronRight, HelpCircle } from 'lucide-react';
 
@@ -41,7 +41,7 @@ const PresetCard: React.FC<PresetCardProps> = ({ preset, onSelect }) => {
                 key={idx}
                 className="px-2 py-0.5 text-xs bg-white/10 rounded-full text-zinc-300"
               >
-                {boxId === 0 ? 'ARM' : boxId === 1 ? 'ANGLE' : boxId === 2 ? 'HORIZON' : boxId === 7 ? 'GPS RESCUE' : boxId === 13 ? 'BEEPER' : boxId === 28 ? 'AIRMODE' : `Mode ${boxId}`}
+                {MODE_INFO[boxId]?.name ?? `Mode ${boxId}`}
               </span>
             ))}
           </div>
