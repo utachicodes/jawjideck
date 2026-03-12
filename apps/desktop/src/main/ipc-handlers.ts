@@ -85,7 +85,7 @@ import { initAutoUpdater, checkForUpdates, downloadUpdate, installUpdate } from 
 import type { ParamValuePayload, ParameterProgress } from '../shared/parameter-types.js';
 import { PARAMETER_METADATA_URLS, mavTypeToVehicleType, type VehicleType, type ParameterMetadata, type ParameterMetadataStore } from '../shared/parameter-metadata.js';
 import type { AttitudeData, PositionData, GpsData, BatteryData, VfrHudData, FlightState, RcChannelsData } from '../shared/telemetry-types.js';
-import { COPTER_MODES, PLANE_MODES } from '../shared/telemetry-types.js';
+import { COPTER_MODES, PLANE_MODES, ROVER_MODES, SUB_MODES } from '../shared/telemetry-types.js';
 import type { MissionItem, MissionProgress, MavFrame } from '../shared/mission-types.js';
 import { MAV_MISSION_RESULT, MAV_MISSION_TYPE } from '../shared/mission-types.js';
 import type { FenceItem, FenceStatus } from '../shared/fence-types.js';
@@ -882,7 +882,11 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
       if (connectionState.componentId != null && packet.compid !== connectionState.componentId) break;
 
       currentVehicleType = vehicleType;
-      const armed = (baseMode & 0x80) !== 0; // MAV_MODE_FLAG_SAFETY_ARMED
+      const systemStatus = payload[7]!; // MAV_STATE
+      const armedFlag = (baseMode & 0x80) !== 0; // MAV_MODE_FLAG_SAFETY_ARMED
+      // Cross-check: only report armed when system_status >= MAV_STATE_ACTIVE (4)
+      // ArduPilot can briefly set the armed flag during boot while still in STANDBY/CALIBRATING
+      const armed = armedFlag && systemStatus >= 4;
 
       // Get mode name based on vehicle type
       let modeName = `Mode ${customMode}`;
@@ -892,6 +896,12 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
       } else if (vehicleType === 2 || (vehicleType >= 13 && vehicleType <= 15) || vehicleType === 29 || vehicleType === 35) {
         // Rotorcraft types: quad, hex, octo, tri, dodeca, deca
         modeName = COPTER_MODES[customMode] || modeName;
+      } else if (vehicleType === 10 || vehicleType === 11) {
+        // Ground rover and surface boat (boat uses rover modes in ArduPilot)
+        modeName = ROVER_MODES[customMode] || modeName;
+      } else if (vehicleType === 12) {
+        // Submarine
+        modeName = SUB_MODES[customMode] || modeName;
       }
 
       const flight: FlightState = {

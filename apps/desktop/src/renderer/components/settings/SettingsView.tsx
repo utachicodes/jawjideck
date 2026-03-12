@@ -45,7 +45,6 @@ const mavTypeToVehicleType: Record<number, VehicleType> = {
   2: 'copter',    // MAV_TYPE_QUADROTOR
   3: 'copter',    // MAV_TYPE_COAXIAL
   4: 'copter',    // MAV_TYPE_HELICOPTER
-  6: 'rover',     // MAV_TYPE_GCS
   10: 'rover',    // MAV_TYPE_GROUND_ROVER
   11: 'boat',     // MAV_TYPE_SURFACE_BOAT
   12: 'sub',      // MAV_TYPE_SUBMARINE

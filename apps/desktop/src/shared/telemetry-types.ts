@@ -142,6 +142,39 @@ export const PLANE_MODES: Record<number, string> = {
   25: 'Loiter to QLand',
 };
 
+// Flight modes for ArduPilot Rover (also used by Boat)
+export const ROVER_MODES: Record<number, string> = {
+  0: 'Manual',
+  1: 'Acro',
+  3: 'Steering',
+  4: 'Hold',
+  5: 'Loiter',
+  6: 'Follow',
+  7: 'Simple',
+  8: 'Dock',
+  9: 'Circle',
+  10: 'Auto',
+  11: 'RTL',
+  12: 'Smart RTL',
+  15: 'Guided',
+  16: 'Initializing',
+};
+
+// Flight modes for ArduPilot Sub
+export const SUB_MODES: Record<number, string> = {
+  0: 'Stabilize',
+  1: 'Acro',
+  2: 'AltHold',
+  3: 'Auto',
+  4: 'Guided',
+  7: 'Circle',
+  9: 'Surface',
+  16: 'PosHold',
+  19: 'Manual',
+  20: 'MotorDetect',
+  21: 'SurfTrak',
+};
+
 // GPS fix type names
 export const GPS_FIX_TYPES: Record<number, string> = {
   0: 'No GPS',
