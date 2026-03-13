@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { TileCacheCard } from './TileCacheCard';
 import { useSettingsStore, type VehicleProfile, type VehicleType, type DisplayUnits, type ExperienceLevel, type UiVisibility } from '../../stores/settings-store';
 import { useParameterStore } from '../../stores/parameter-store';
 import { useTelemetryStore } from '../../stores/telemetry-store';
@@ -1533,6 +1534,17 @@ export function SettingsView() {
           </div>
         </div>
 
+        {/* ============================================ */}
+        {/* SECTION: Offline Maps */}
+        {/* ============================================ */}
+        <div className="mt-8 mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-1.5 h-5 bg-emerald-500 rounded-full" />
+            <h2 className="text-sm font-medium text-gray-300 uppercase tracking-wider">Offline Maps</h2>
+          </div>
+          <TileCacheCard />
+        </div>
+
         {/* SECTION: Experimental Features */}
         {/* ============================================ */}
         <ExperimentalFeaturesSection />
@@ -1583,7 +1595,7 @@ function ExperimentalFeaturesSection() {
               }`}
             >
               <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${
-                surveyUnlocked ? 'left-4.5' : 'left-0.5'
+                surveyUnlocked ? 'left-[18px]' : 'left-0.5'
               }`} />
             </button>
           </div>

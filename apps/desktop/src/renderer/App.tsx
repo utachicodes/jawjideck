@@ -584,6 +584,9 @@ function App() {
       if (currentView === 'modules') {
         return <ModuleManagerView />;
       }
+      if (currentView === 'settings') {
+        return <SettingsView />;
+      }
       // Default welcome screen for telemetry
       return (
         <div className="h-full flex items-center justify-center p-8">

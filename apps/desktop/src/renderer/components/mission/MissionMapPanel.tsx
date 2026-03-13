@@ -29,6 +29,13 @@ import { SurveyMapOverlay } from '../survey/SurveyMapOverlay';
 import { SurveyConfigPanel } from '../survey/SurveyConfigPanel';
 import { useSurveyStore } from '../../stores/survey-store';
 
+// Offline map download
+import { OfflineAreaDownload } from '../map/OfflineAreaDownload';
+import { LayerIcon } from '../map/LayerIcon';
+
+// Cached area overlay
+import { CachedAreaOverlay } from '../map/CachedAreaOverlay';
+
 // Catmull-Rom spline interpolation between two nav waypoints
 function interpolateSpline(
   navWaypoints: MissionItem[],
@@ -151,49 +158,8 @@ function buildSegmentedPath(allItems: MissionItem[]): PathSegment[] {
   return segments;
 }
 
-// Map layer options
-const MAP_LAYERS = {
-  osm: {
-    name: 'Street',
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 19,
-  },
-  satellite: {
-    name: 'Satellite',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: '&copy; Esri',
-    maxZoom: 18,
-  },
-  // Google Maps satellite - higher zoom for detailed ground views (rovers)
-  googleSat: {
-    name: 'Google Sat',
-    url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-    attribution: '&copy; Google',
-    maxZoom: 21,
-  },
-  // Google Maps hybrid - satellite with road labels (great for rovers)
-  googleHybrid: {
-    name: 'Hybrid',
-    url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-    attribution: '&copy; Google',
-    maxZoom: 21,
-  },
-  terrain: {
-    name: 'Terrain',
-    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; OpenTopoMap',
-    maxZoom: 17,
-  },
-  dark: {
-    name: 'Dark',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; CartoDB',
-    maxZoom: 20,
-  },
-};
-
-type LayerKey = keyof typeof MAP_LAYERS;
+// Shared map layer definitions (centralized)
+import { MAP_LAYERS, type LayerKey } from '../../../shared/map-layers';
 
 // Default center fallback (London) - will be overridden by IP geolocation
 const FALLBACK_CENTER: [number, number] = [51.505, -0.09];
@@ -530,6 +496,28 @@ function ViewportSync() {
   return null;
 }
 
+// Track map bounds for offline download
+function MapBoundsTracker({ onBoundsChange }: { onBoundsChange: (b: { north: number; south: number; east: number; west: number }) => void }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const update = () => {
+      const b = map.getBounds();
+      onBoundsChange({
+        north: b.getNorth(),
+        south: b.getSouth(),
+        east: b.getEast(),
+        west: b.getWest(),
+      });
+    };
+    map.on('moveend', update);
+    update();
+    return () => { map.off('moveend', update); };
+  }, [map, onBoundsChange]);
+
+  return null;
+}
+
 // GPS warning component - checks GPS on mount
 function GpsWarning() {
   const [hasGps, setHasGps] = useState(false);
@@ -695,6 +683,8 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
   const [terrainAutoRange, setTerrainAutoRange] = useState(true);
   const [terrainFixedRange, setTerrainFixedRange] = useState<ElevationRange>({ min: 0, max: 1500 });
   const [terrainRelativeMode, setTerrainRelativeMode] = useState(false);
+  const [mapBounds, setMapBounds] = useState<{ north: number; south: number; east: number; west: number } | null>(null);
+  const handleBoundsChange = useCallback((b: { north: number; south: number; east: number; west: number }) => setMapBounds(b), []);
 
   // Update layer when vehicle type changes (e.g., connecting to a Rover)
   useEffect(() => {
@@ -880,6 +870,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
       >
         <ViewportSync />
         <MapResizeHandler />
+        <MapBoundsTracker onBoundsChange={handleBoundsChange} />
         <MaxZoomUpdater maxZoom={layer.maxZoom} />
         <MapClickHandler
           onMapClick={handleMapClick}
@@ -894,8 +885,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
         <CenterOnVehicle trigger={centerOnVehicleTrigger} />
 
         <TileLayer
-          url={layer.url}
-          attribution={layer.attribution}
+          url={`tile-cache://${activeLayer}/{z}/{x}/{y}.png`}
           maxZoom={layer.maxZoom}
         />
 
@@ -917,6 +907,9 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
             onElevationRangeChange={setElevationRange}
           />
         )}
+
+        {/* Cached area overlay */}
+        <CachedAreaOverlay />
 
         {/* Mission path - colored segments based on active state */}
         {pathSegments.map((seg, i) => (
@@ -1025,31 +1018,37 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
 
       {/* Layer selector */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-1">
-        {(Object.keys(MAP_LAYERS) as LayerKey[]).map((key) => (
+        {(Object.keys(MAP_LAYERS) as LayerKey[]).filter((k) => k !== 'dem').map((key) => (
           <button
             key={key}
             onClick={() => setActiveLayer(key)}
-            className={`px-2 py-1 text-xs rounded transition-colors ${
+            className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1.5 ${
               activeLayer === key
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
             }`}
           >
+            <LayerIcon layerKey={key} />
             {MAP_LAYERS[key].name}
           </button>
         ))}
         <div className="border-t border-gray-700/50 my-0.5" />
         <button
           onClick={() => setShowTerrain(!showTerrain)}
-          className={`px-2 py-1 text-xs rounded transition-colors ${
+          className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1.5 ${
             showTerrain
               ? 'bg-blue-600 text-white'
               : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
           }`}
           title="Toggle terrain elevation heatmap"
         >
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-4 3 3 4-6 7 7" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 17h18" />
+          </svg>
           Height
         </button>
+        <OfflineAreaDownload bounds={mapBounds} activeLayer={activeLayer} />
       </div>
 
       {/* Elevation legend */}

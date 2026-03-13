@@ -18,31 +18,24 @@ import { RallyMapOverlay } from '../rally/RallyMapOverlay';
 import { TerrainOverlayLayer, type ElevationRange } from '../map/TerrainOverlayLayer';
 import { ElevationLegend } from '../map/ElevationLegend';
 
-// Map layer definitions
-const MAP_LAYERS = {
-  osm: {
-    name: 'Street',
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    maxZoom: 19,
-  },
-  satellite: {
-    name: 'Satellite',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    maxZoom: 18,
-  },
-  terrain: {
-    name: 'Terrain',
-    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    maxZoom: 17,
-  },
-  dark: {
-    name: 'Dark',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    maxZoom: 19,
-  },
+// Offline map download
+import { OfflineAreaDownload } from '../map/OfflineAreaDownload';
+
+// Cached area overlay
+import { CachedAreaOverlay } from '../map/CachedAreaOverlay';
+
+// Shared map layer definitions (centralized)
+import { MAP_LAYERS, type LayerKey } from '../../../shared/map-layers';
+
+// Telemetry map only uses a subset of layers (no Google layers)
+const TELEMETRY_LAYERS = {
+  osm: MAP_LAYERS.osm,
+  satellite: MAP_LAYERS.satellite,
+  terrain: MAP_LAYERS.terrain,
+  dark: MAP_LAYERS.dark,
 } as const;
 
-type LayerKey = keyof typeof MAP_LAYERS;
+type TelemetryLayerKey = keyof typeof TELEMETRY_LAYERS;
 
 // Calculate distance between two points (Haversine formula)
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -454,8 +447,8 @@ function LayerSwitcher({
   currentLayer,
   onLayerChange,
 }: {
-  currentLayer: LayerKey;
-  onLayerChange: (layer: LayerKey) => void;
+  currentLayer: TelemetryLayerKey;
+  onLayerChange: (layer: TelemetryLayerKey) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -469,14 +462,14 @@ function LayerSwitcher({
         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
         </svg>
-        {MAP_LAYERS[currentLayer].name}
+        {TELEMETRY_LAYERS[currentLayer].name}
       </button>
 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-[999]" onClick={() => setIsOpen(false)} />
           <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700/50 rounded shadow-xl z-[1000] py-1 min-w-[100px]">
-            {(Object.keys(MAP_LAYERS) as LayerKey[]).map((key) => (
+            {(Object.keys(TELEMETRY_LAYERS) as TelemetryLayerKey[]).map((key) => (
               <button
                 key={key}
                 onClick={() => {
@@ -489,7 +482,7 @@ function LayerSwitcher({
                     : 'text-gray-300 hover:bg-gray-700/50'
                 }`}
               >
-                {MAP_LAYERS[key].name}
+                {TELEMETRY_LAYERS[key].name}
               </button>
             ))}
           </div>
@@ -545,6 +538,28 @@ function formatDistance(meters: number): string {
     return `${Math.round(meters)}m`;
   }
   return `${(meters / 1000).toFixed(2)}km`;
+}
+
+// Track map bounds for offline download
+function MapBoundsTracker({ onBoundsChange }: { onBoundsChange: (b: { north: number; south: number; east: number; west: number }) => void }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const update = () => {
+      const b = map.getBounds();
+      onBoundsChange({
+        north: b.getNorth(),
+        south: b.getSouth(),
+        east: b.getEast(),
+        west: b.getWest(),
+      });
+    };
+    map.on('moveend', update);
+    update();
+    return () => { map.off('moveend', update); };
+  }, [map, onBoundsChange]);
+
+  return null;
 }
 
 // Sync telemetry map viewport to shared store (for 2D↔3D switch)
@@ -705,55 +720,121 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
   }, [vehicleLngLat]);
 
   // Toolbar toggle helper
-  const toggleBtn = useCallback((label: string, active: boolean, onClick: () => void, title: string) => (
+  const toggleBtn = useCallback((label: string, active: boolean, onClick: () => void, title: string, icon?: React.ReactNode) => (
     <button
       key={label}
       onClick={onClick}
-      className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
+      className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
         active ? 'bg-blue-600 text-white' : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
       }`}
       title={title}
-    >{label}</button>
+    >{icon}{label}</button>
   ), []);
+
+  // Reusable icon elements for 3D toolbar
+  const icons = useMemo(() => ({
+    crosshair: (
+      <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <circle cx="12" cy="12" r="3" />
+        <line x1="12" y1="2" x2="12" y2="6" strokeLinecap="round" />
+        <line x1="12" y1="18" x2="12" y2="22" strokeLinecap="round" />
+        <line x1="2" y1="12" x2="6" y2="12" strokeLinecap="round" />
+        <line x1="18" y1="12" x2="22" y2="12" strokeLinecap="round" />
+      </svg>
+    ),
+    resize: (
+      <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+      </svg>
+    ),
+    compass: (
+      <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <circle cx="12" cy="12" r="10" />
+        <polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+    attitude: (
+      <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <circle cx="12" cy="12" r="10" />
+        <path strokeLinecap="round" d="M4.93 12h14.14" />
+        <path strokeLinecap="round" d="M8 9.5l4-2 4 2" />
+      </svg>
+    ),
+    mission: (
+      <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+      </svg>
+    ),
+    height: (
+      <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-4 3 3 4-6 7 7" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 17h18" />
+      </svg>
+    ),
+    trash: (
+      <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+    ),
+    home: (
+      <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>
+    ),
+    more: (
+      <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <circle cx="12" cy="5" r="1" fill="currentColor" />
+        <circle cx="12" cy="12" r="1" fill="currentColor" />
+        <circle cx="12" cy="19" r="1" fill="currentColor" />
+      </svg>
+    ),
+  }), []);
 
   // Toolbar buttons — compact with overflow toggle
   const toolbarContent = useMemo(() => (
     <>
       <div className="my-0.5 border-t border-gray-600/30" />
-      {toggleBtn(followVehicle ? 'Following' : 'Free', followVehicle, () => setFollowVehicle(f => !f), followVehicle ? 'Following vehicle' : 'Free camera')}
-      {toggleBtn(useRealVehicleSize ? 'Real Size' : 'Auto Size', useRealVehicleSize, () => setUseRealVehicleSize(v => !v), useRealVehicleSize ? 'Vehicle at real profile size' : 'Vehicle auto-scaled to stay visible')}
+      {toggleBtn(followVehicle ? 'Following' : 'Free', followVehicle, () => setFollowVehicle(f => !f), followVehicle ? 'Following vehicle' : 'Free camera', icons.crosshair)}
+      {toggleBtn(useRealVehicleSize ? 'Real Size' : 'Auto Size', useRealVehicleSize, () => setUseRealVehicleSize(v => !v), useRealVehicleSize ? 'Vehicle at real profile size' : 'Vehicle auto-scaled to stay visible', icons.resize)}
       {/* Overflow toggle */}
       <button
         onClick={() => setShowMoreTools(v => !v)}
-        className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
+        className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
           showMoreTools ? 'bg-gray-600 text-white' : 'bg-gray-800/90 text-gray-400 hover:text-gray-200'
         }`}
         title="More options"
       >
+        {icons.more}
         {showMoreTools ? 'Less' : 'More...'}
       </button>
       {showMoreTools && (
         <>
-          {toggleBtn('Compass', showCompass, () => setShowCompass(v => !v), 'Toggle compass')}
-          {toggleBtn('Attitude', showAttitude, () => setShowAttitude(v => !v), 'Toggle attitude indicator')}
-          {toggleBtn('Mission', showMission, () => setShowMission(v => !v), 'Toggle mission overlays')}
-          {toggleBtn('Height', showTerrain, () => setShowTerrain(v => !v), 'Toggle terrain elevation')}
+          {toggleBtn('Compass', showCompass, () => setShowCompass(v => !v), 'Toggle compass', icons.compass)}
+          {toggleBtn('Attitude', showAttitude, () => setShowAttitude(v => !v), 'Toggle attitude indicator', icons.attitude)}
+          {toggleBtn('Mission', showMission, () => setShowMission(v => !v), 'Toggle mission overlays', icons.mission)}
+          {toggleBtn('Height', showTerrain, () => setShowTerrain(v => !v), 'Toggle terrain elevation', icons.height)}
           <div className="my-0.5 border-t border-gray-600/30" />
           <button
             onClick={clearTrail}
-            className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors"
+            className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors flex items-center gap-1.5"
             title="Clear flight trail"
-          >Clear Trail</button>
+          >
+            {icons.trash}
+            Clear Trail
+          </button>
           <button
             onClick={setHome}
             disabled={!hasValidGps}
-            className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             title="Set home to current position"
-          >Set Home</button>
+          >
+            {icons.home}
+            Set Home
+          </button>
         </>
       )}
     </>
-  ), [followVehicle, showCompass, showAttitude, showMission, showTerrain, useRealVehicleSize, showMoreTools, hasValidGps, clearTrail, setHome, toggleBtn]);
+  ), [followVehicle, showCompass, showAttitude, showMission, showTerrain, useRealVehicleSize, showMoreTools, hasValidGps, clearTrail, setHome, toggleBtn, icons]);
 
   return (
     <div className="relative h-full w-full">
@@ -890,8 +971,8 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
   const sharedMapLayer = useEditModeStore((s) => s.mapLayer);
   const setSharedMapLayer = useEditModeStore((s) => s.setMapLayer);
   // Use shared layer if it's a valid 2D key, otherwise fall back to 'osm'
-  const currentLayer: LayerKey = (sharedMapLayer in MAP_LAYERS ? sharedMapLayer : 'osm') as LayerKey;
-  const setCurrentLayer = (layer: LayerKey) => setSharedMapLayer(layer);
+  const currentLayer: TelemetryLayerKey = (sharedMapLayer in TELEMETRY_LAYERS ? sharedMapLayer : 'osm') as TelemetryLayerKey;
+  const setCurrentLayer = (layer: TelemetryLayerKey) => setSharedMapLayer(layer);
   const [showHeadingLine, setShowHeadingLine] = useState(true);
   const [showCompass, setShowCompass] = useState(true);
   const [showAttitude, setShowAttitude] = useState(true);
@@ -902,6 +983,8 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
   const [terrainFixedRange, setTerrainFixedRange] = useState<ElevationRange>({ min: 0, max: 1500 });
   const [terrainRelativeMode, setTerrainRelativeMode] = useState(false);
   const [headingLineLength, setHeadingLineLength] = useState(100); // meters
+  const [mapBounds, setMapBounds] = useState<{ north: number; south: number; east: number; west: number } | null>(null);
+  const handleBoundsChange = useCallback((b: { north: number; south: number; east: number; west: number }) => setMapBounds(b), []);
   const lastUpdateRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -994,7 +1077,7 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
     setFollowVehicle(true);
   }, []);
 
-  const layer = MAP_LAYERS[currentLayer];
+  const layer = TELEMETRY_LAYERS[currentLayer];
 
   return (
     <div ref={containerRef} className="h-full w-full flex flex-col bg-gray-900 relative">
@@ -1004,85 +1087,118 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
         <LayerSwitcher currentLayer={currentLayer} onLayerChange={setCurrentLayer} />
         <button
           onClick={() => setFollowVehicle(!followVehicle)}
-          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
+          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
             followVehicle
               ? 'bg-blue-600 text-white'
               : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
           }`}
           title={followVehicle ? 'Following vehicle' : 'Free camera'}
         >
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <circle cx="12" cy="12" r="3" />
+            <line x1="12" y1="2" x2="12" y2="6" strokeLinecap="round" />
+            <line x1="12" y1="18" x2="12" y2="22" strokeLinecap="round" />
+            <line x1="2" y1="12" x2="6" y2="12" strokeLinecap="round" />
+            <line x1="18" y1="12" x2="22" y2="12" strokeLinecap="round" />
+          </svg>
           {followVehicle ? 'Following' : 'Free'}
         </button>
         <button
           onClick={() => setShowHeadingLine(!showHeadingLine)}
-          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
+          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
             showHeadingLine
               ? 'bg-blue-600 text-white'
               : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
           }`}
           title="Toggle heading line"
         >
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5m0 0l-4 4m4-4l4 4" />
+          </svg>
           HDG Line
         </button>
         <button
           onClick={() => setShowCompass(!showCompass)}
-          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
+          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
             showCompass
               ? 'bg-blue-600 text-white'
               : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
           }`}
           title="Toggle compass"
         >
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <circle cx="12" cy="12" r="10" />
+            <polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88" fill="currentColor" stroke="none" />
+          </svg>
           Compass
         </button>
         <button
           onClick={() => setShowAttitude(!showAttitude)}
-          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
+          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
             showAttitude
               ? 'bg-blue-600 text-white'
               : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
           }`}
           title="Toggle attitude indicator"
         >
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <circle cx="12" cy="12" r="10" />
+            <path strokeLinecap="round" d="M4.93 12h14.14" />
+            <path strokeLinecap="round" d="M8 9.5l4-2 4 2" />
+          </svg>
           Attitude
         </button>
         <button
           onClick={clearTrail}
-          className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors"
+          className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors flex items-center gap-1.5"
           title="Clear flight trail"
         >
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
           Clear Trail
         </button>
         <button
           onClick={setHome}
           disabled={!hasValidGps}
-          className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
           title="Set home to current position"
         >
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
           Set Home
         </button>
         <button
           onClick={() => setShowMission(!showMission)}
-          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
+          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
             showMission
               ? 'bg-blue-600 text-white'
               : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
           }`}
           title="Toggle mission overlays (waypoints, geofence, rally)"
         >
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
           Mission
         </button>
         <button
           onClick={() => setShowTerrain(!showTerrain)}
-          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors ${
+          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
             showTerrain
               ? 'bg-blue-600 text-white'
               : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
           }`}
           title="Toggle terrain elevation heatmap"
         >
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-4 3 3 4-6 7 7" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 17h18" />
+          </svg>
           Height
         </button>
+        <OfflineAreaDownload bounds={mapBounds} activeLayer={currentLayer} />
       </div>
 
       {/* Compass overlay */}
@@ -1200,9 +1316,10 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
         attributionControl={false}
       >
         <TelemetryViewportSync />
+        <MapBoundsTracker onBoundsChange={handleBoundsChange} />
         <TileLayer
           key={currentLayer}
-          url={layer.url}
+          url={`tile-cache://${currentLayer}/{z}/{x}/{y}.png`}
           maxZoom={layer.maxZoom}
         />
 
@@ -1224,6 +1341,9 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
             onElevationRangeChange={setElevationRange}
           />
         )}
+
+        {/* Cached area overlay */}
+        <CachedAreaOverlay />
 
         {/* Map controller for resize handling and following */}
         <MapController

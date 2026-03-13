@@ -368,6 +368,18 @@ export const IPC_CHANNELS = {
   MODULE_CHECK_UPDATES: 'module:check-updates',
   MODULE_PROGRESS: 'module:progress',
 
+  // Tile Cache (offline maps)
+  TILE_CACHE_GET_STATS: 'tile-cache:get-stats',
+  TILE_CACHE_CLEAR: 'tile-cache:clear',
+  TILE_CACHE_DOWNLOAD_REGION: 'tile-cache:download-region',
+  TILE_CACHE_CANCEL_DOWNLOAD: 'tile-cache:cancel-download',
+  TILE_CACHE_DOWNLOAD_PROGRESS: 'tile-cache:download-progress',
+  TILE_CACHE_GET_SETTINGS: 'tile-cache:get-settings',
+  TILE_CACHE_SET_SETTINGS: 'tile-cache:set-settings',
+  TILE_CACHE_CALCULATE_TILES: 'tile-cache:calculate-tiles',
+  TILE_CACHE_GET_REGIONS: 'tile-cache:get-regions',
+  TILE_CACHE_DELETE_REGION: 'tile-cache:delete-region',
+
   // App / Updates
   APP_GET_VERSION: 'app:get-version',
   APP_CHECK_UPDATE: 'app:check-update',
@@ -975,3 +987,39 @@ export interface StatusMessage {
  * Controls MAVLink SET_MESSAGE_INTERVAL rates
  */
 export type TelemetrySpeed = 'eco' | 'normal' | 'max';
+
+// =============================================================================
+// Tile Cache Types (Offline Maps)
+// =============================================================================
+
+export interface TileCacheStats {
+  totalTiles: number;
+  totalSizeBytes: number;
+  layers: Record<string, { tiles: number; bytes: number }>;
+}
+
+export interface TileCacheDownloadProgress {
+  downloadId: string;
+  totalTiles: number;
+  downloadedTiles: number;
+  skippedTiles: number;
+  failedTiles: number;
+  bytesDownloaded: number;
+  status: 'downloading' | 'complete' | 'cancelled';
+}
+
+export interface TileCacheSettings {
+  maxCacheSizeGB: number;
+  enableAutoCache: boolean;
+  maxZoomAutoCache: number;
+}
+
+export interface TileCacheDownloadRegion {
+  id: string;
+  bounds: { north: number; south: number; east: number; west: number };
+  minZoom: number;
+  maxZoom: number;
+  layers: string[];
+  downloadedAt: number;
+  tileCount: number;
+}

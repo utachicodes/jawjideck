@@ -22,43 +22,12 @@ import {
 import { createMissionThreeJsLayer, type MissionThreeJsLayer } from './mission-threejs-layer';
 import { createVehicleThreeJsLayer, type VehicleThreeJsLayer } from './vehicle-threejs-layer';
 
-// ─── Map layers — same as Leaflet 2D panel ───────────────────────────────────
-const MAP_LAYERS = {
-  osm: {
-    name: 'Street',
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    subdomains: ['a', 'b', 'c'],
-  },
-  satellite: {
-    name: 'Satellite',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    subdomains: [] as string[],
-  },
-  googleSat: {
-    name: 'Google Sat',
-    url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-    subdomains: [] as string[],
-  },
-  googleHybrid: {
-    name: 'Hybrid',
-    url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-    subdomains: [] as string[],
-  },
-  terrain: {
-    name: 'Terrain',
-    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    subdomains: ['a', 'b', 'c'],
-  },
-  dark: {
-    name: 'Dark',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-    subdomains: ['a', 'b', 'c'],
-  },
-} as const;
+// Shared map layer definitions (centralized)
+import { MAP_LAYERS, type LayerKey } from '../../../shared/map-layers';
+import { LayerIcon } from '../map/LayerIcon';
 
-type LayerKey = keyof typeof MAP_LAYERS;
-
-const DEM_SOURCE_URL = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png';
+// Exclude 'dem' from the layer picker (it's a data layer, not a base map)
+type BaseLayerKey = Exclude<LayerKey, 'dem'>;
 
 /** Waypoint with computed display altitude (AGL at its location) */
 interface WpDisplay {
@@ -121,12 +90,9 @@ function getCommandShape(cmd: number): string {
   }
 }
 
-/** Resolve tile URL with subdomains */
-function resolveTileUrl(layer: typeof MAP_LAYERS[LayerKey]): string {
-  if (layer.subdomains.length > 0) {
-    return layer.url.replace('{s}', layer.subdomains[0]!);
-  }
-  return layer.url;
+/** Get tile-cache:// URL template for a layer (MapLibre substitutes {z}/{x}/{y}) */
+function getCachedTileUrl(layerKey: BaseLayerKey): string {
+  return `tile-cache://${layerKey}/{z}/{x}/{y}.png`;
 }
 
 /** CSS overrides to dark-theme the MapLibre navigation control */
@@ -387,7 +353,7 @@ export function Mission3DPanel({
       // Terrain DEM
       map.addSource('terrain-dem', {
         type: 'raster-dem',
-        tiles: [DEM_SOURCE_URL],
+        tiles: ['tile-cache://dem/{z}/{x}/{y}.png'],
         tileSize: 256,
         encoding: 'terrarium',
         maxzoom: 15, // Terrarium tiles only available up to zoom 15
@@ -586,7 +552,7 @@ export function Mission3DPanel({
     const map = mapRef.current;
     if (!map || !mapReady) return;
     const source = map.getSource('raster-tiles') as maplibregl.RasterTileSource | undefined;
-    if (source) source.setTiles([resolveTileUrl(MAP_LAYERS[activeLayer])]);
+    if (source) source.setTiles([getCachedTileUrl(activeLayer as BaseLayerKey)]);
   }, [activeLayer, mapReady]);
 
   // Update terrain exaggeration (only when terrain is enabled)
@@ -833,16 +799,17 @@ export function Mission3DPanel({
             >3D</button>
           </div>
         )}
-        {(Object.keys(MAP_LAYERS) as LayerKey[]).map((key) => (
+        {(Object.keys(MAP_LAYERS) as LayerKey[]).filter((k) => k !== 'dem').map((key) => (
           <button
             key={key}
             onClick={() => setActiveLayer(key)}
-            className={`px-2 py-1 text-xs rounded transition-colors ${
+            className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1.5 ${
               activeLayer === key
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
             }`}
           >
+            <LayerIcon layerKey={key} />
             {MAP_LAYERS[key].name}
           </button>
         ))}
@@ -908,13 +875,12 @@ function setSourceData(map: maplibregl.Map, id: string, features: GeoJSON.Featur
 }
 
 function buildStyle(layerKey: LayerKey): maplibregl.StyleSpecification {
-  const layer = MAP_LAYERS[layerKey];
   return {
     version: 8,
     sources: {
       'raster-tiles': {
         type: 'raster',
-        tiles: [resolveTileUrl(layer)],
+        tiles: [getCachedTileUrl(layerKey as BaseLayerKey)],
         tileSize: 256,
       },
     },

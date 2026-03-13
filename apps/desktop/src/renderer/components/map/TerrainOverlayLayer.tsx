@@ -8,7 +8,7 @@ import {
   type ColorLookupTable,
 } from '../../utils/terrain-colors';
 
-const TERRAIN_TILE_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
+const TERRAIN_TILE_URL = 'tile-cache://dem/{z}/{x}/{y}.png';
 
 /** Elevation range reported per visible tile set */
 export interface ElevationRange {

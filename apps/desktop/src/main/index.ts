@@ -8,6 +8,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { setupIpcHandlers, cleanupOnShutdown } from './ipc-handlers.js';
 import { setupModuleIpc } from './modules/module-ipc.js';
+import { registerTileCacheScheme, setupTileCacheProtocol, setupTileCacheHandlers } from './tile-cache.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -53,6 +54,9 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 // Set app name early to ensure consistent userData path in dev mode
 // This ensures electron-store saves to %APPDATA%/ardudeck/ instead of %APPDATA%/Electron/
 app.name = 'ardudeck';
+
+// Register tile-cache:// scheme BEFORE app.ready (Electron requirement)
+registerTileCacheScheme();
 
 function createWindow(): BrowserWindow {
   // Get the icon path based on platform
@@ -117,11 +121,15 @@ app.whenReady().then(() => {
     app.dock.setIcon(join(resourcesPath, 'icon.png'));
   }
 
+  // Setup tile cache protocol handler (must be after app.ready)
+  setupTileCacheProtocol();
+
   const mainWindow = createWindow();
 
   // Setup IPC handlers
   setupIpcHandlers(mainWindow);
   setupModuleIpc(mainWindow);
+  setupTileCacheHandlers(mainWindow);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -4,7 +4,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type SettingsStoreSchema, type MSPConnectOptions, type MSPConnectionState, type MSPTelemetryData, type SitlConfig, type SitlStatus, type SitlExitData, type VirtualRCState, type ArduPilotSitlConfig, type ArduPilotSitlStatus, type ArduPilotSitlExitData, type ArduPilotSitlDownloadProgress, type ArduPilotSitlBinaryInfo, type ArduPilotVehicleType, type ArduPilotReleaseTrack, type AppUpdateInfo, type SigningStatus, type TelemetrySpeed, type StatusMessage } from '../shared/ipc-channels.js';
+import { IPC_CHANNELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type SettingsStoreSchema, type MSPConnectOptions, type MSPConnectionState, type MSPTelemetryData, type SitlConfig, type SitlStatus, type SitlExitData, type VirtualRCState, type ArduPilotSitlConfig, type ArduPilotSitlStatus, type ArduPilotSitlExitData, type ArduPilotSitlDownloadProgress, type ArduPilotSitlBinaryInfo, type ArduPilotVehicleType, type ArduPilotReleaseTrack, type AppUpdateInfo, type SigningStatus, type TelemetrySpeed, type StatusMessage, type TileCacheStats, type TileCacheDownloadProgress, type TileCacheSettings, type TileCacheDownloadRegion } from '../shared/ipc-channels.js';
 import type { InstalledModule, ModuleProgress, UpdateAvailable } from '../shared/module-types.js';
 import type { ParamChange, ParamCheckpoint } from '../shared/param-history-types.js';
 import type { AttitudeData, PositionData, GpsData, BatteryData, VfrHudData, FlightState, RcChannelsData } from '../shared/telemetry-types.js';
@@ -1307,6 +1307,54 @@ const api = {
 
   luaGraphExportLua: (code: string, name: string): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.LUA_GRAPH_EXPORT_LUA, code, name),
+
+  // =============================================================================
+  // Tile Cache (Offline Maps)
+  // =============================================================================
+
+  tileCacheGetStats: (): Promise<TileCacheStats> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TILE_CACHE_GET_STATS),
+
+  tileCacheClear: (layerKey?: string): Promise<{ success: boolean }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TILE_CACHE_CLEAR, layerKey),
+
+  tileCacheDownloadRegion: (params: {
+    bounds: { north: number; south: number; east: number; west: number };
+    minZoom: number;
+    maxZoom: number;
+    layers: string[];
+    forceRefresh?: boolean;
+  }): Promise<{ downloadId: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TILE_CACHE_DOWNLOAD_REGION, params),
+
+  tileCacheCancelDownload: (downloadId: string): Promise<{ success: boolean }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TILE_CACHE_CANCEL_DOWNLOAD, downloadId),
+
+  onTileCacheDownloadProgress: (callback: (progress: TileCacheDownloadProgress) => void) => {
+    const handler = (_: unknown, progress: TileCacheDownloadProgress) => callback(progress);
+    ipcRenderer.on(IPC_CHANNELS.TILE_CACHE_DOWNLOAD_PROGRESS, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.TILE_CACHE_DOWNLOAD_PROGRESS, handler);
+  },
+
+  tileCacheGetSettings: (): Promise<TileCacheSettings> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TILE_CACHE_GET_SETTINGS),
+
+  tileCacheSetSettings: (settings: Partial<TileCacheSettings>): Promise<{ success: boolean }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TILE_CACHE_SET_SETTINGS, settings),
+
+  tileCacheCalculateTiles: (params: {
+    bounds: { north: number; south: number; east: number; west: number };
+    minZoom: number;
+    maxZoom: number;
+    layerCount: number;
+  }): Promise<{ tileCount: number }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TILE_CACHE_CALCULATE_TILES, params),
+
+  tileCacheGetRegions: (): Promise<TileCacheDownloadRegion[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TILE_CACHE_GET_REGIONS),
+
+  tileCacheDeleteRegion: (id: string): Promise<{ success: boolean }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TILE_CACHE_DELETE_REGION, id),
 
   // =============================================================================
   // Module Manager
