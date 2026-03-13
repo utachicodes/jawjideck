@@ -19,10 +19,18 @@ export function CalibrationCompleteStep() {
     isSaving,
     saveSuccess,
     saveError,
+    isSavingPersistent,
+    savePersistentSuccess,
+    savePersistentError,
+    fcVariant,
     setStep,
     saveCalibrationData,
+    saveCalibrationPersistent,
     selectCalibrationType,
   } = useCalibrationStore();
+
+  const isInav = fcVariant?.toUpperCase().includes('INAV');
+  const isMavlink = !isInav; // ArduPilot or other MAVLink-based FC
 
   const calTypeInfo = calibrationType
     ? CALIBRATION_TYPES.find((t) => t.id === calibrationType)
@@ -38,15 +46,14 @@ export function CalibrationCompleteStep() {
     setStep('select');
   };
 
-  // Auto-redirect to select screen after successful save
+  // Auto-redirect to select screen after persistent save completes
+  // After normal save, we show the persistent storage option instead of auto-redirecting
   useEffect(() => {
-    if (saveSuccess) {
-      const timer = setTimeout(() => {
-        setStep('select');
-      }, 2000);
+    if (savePersistentSuccess) {
+      const timer = setTimeout(() => setStep('select'), 2000);
       return () => clearTimeout(timer);
     }
-  }, [saveSuccess, setStep]);
+  }, [savePersistentSuccess, setStep]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
@@ -162,15 +169,87 @@ export function CalibrationCompleteStep() {
         </div>
       </div>
 
+      {/* Persistent Storage Option */}
+      {saveSuccess && !savePersistentSuccess && (
+        <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+              <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-gray-200 mb-1">Save to Persistent Storage</h4>
+              <p className="text-xs text-gray-400 mb-3">
+                {isMavlink
+                  ? 'Write calibration parameters to flash. This ensures calibration data survives firmware updates.'
+                  : 'Save calibration data to the bootloader partition. This data will survive firmware updates.'}
+              </p>
+
+              {savePersistentError && (
+                <p className="text-xs text-red-400 mb-3">{savePersistentError}</p>
+              )}
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={saveCalibrationPersistent}
+                  disabled={isSavingPersistent}
+                  className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 disabled:bg-amber-500/10 disabled:cursor-not-allowed rounded-lg text-amber-400 text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  {isSavingPersistent ? (
+                    <>
+                      <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
+                      </svg>
+                      Save to Persistent Storage
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setStep('select')}
+                  disabled={isSavingPersistent}
+                  className="text-xs text-gray-500 hover:text-gray-400 transition-colors"
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {savePersistentSuccess && (
+        <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 flex items-center gap-3">
+          <svg className="w-4 h-4 text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          <p className="text-sm text-green-400">Calibration saved to persistent storage. Data will survive firmware updates.</p>
+        </div>
+      )}
+
       {/* Info note */}
       {calibrationSuccess && !saveSuccess && (
         <p className="text-center text-xs text-gray-500">
           Calibration data has been applied. Click "Save to FC" to persist changes to flash memory.
         </p>
       )}
-      {saveSuccess && (
+      {saveSuccess && !savePersistentSuccess && (
         <p className="text-center text-xs text-green-500/70">
-          Calibration saved to flash memory. Returning to calibration menu...
+          Calibration saved to flash memory. You can also save to persistent storage above to survive firmware updates.
+        </p>
+      )}
+      {savePersistentSuccess && (
+        <p className="text-center text-xs text-green-500/70">
+          All saved. Returning to calibration menu...
         </p>
       )}
     </div>

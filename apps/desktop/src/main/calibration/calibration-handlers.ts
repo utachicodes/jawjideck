@@ -542,6 +542,18 @@ export function initCalibrationHandlers(window: BrowserWindow): void {
   );
   ipcMain.handle(IPC_CHANNELS.CALIBRATION_CANCEL, async () => cancelCalibration());
 
+  // Persistent storage (MSP/INAV) - saves calibration to bootloader partition via CLI `cali_save`
+  // For MAVLink/ArduPilot, the renderer uses writeParamsToFlash() directly (MAV_CMD_PREFLIGHT_STORAGE)
+  ipcMain.handle(IPC_CHANNELS.CALIBRATION_SAVE_PERSISTENT, async () => {
+    try {
+      const { saveCalibrationPersistent } = await import('../msp/msp-commands.js');
+      return await saveCalibrationPersistent();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, error: message };
+    }
+  });
+
   console.log('[Calibration] Handlers initialized');
 }
 
@@ -552,6 +564,7 @@ export function cleanupCalibrationHandlers(): void {
   ipcMain.removeHandler(IPC_CHANNELS.CALIBRATION_START);
   ipcMain.removeHandler(IPC_CHANNELS.CALIBRATION_CONFIRM_POSITION);
   ipcMain.removeHandler(IPC_CHANNELS.CALIBRATION_CANCEL);
+  ipcMain.removeHandler(IPC_CHANNELS.CALIBRATION_SAVE_PERSISTENT);
 
   // Cancel any active calibration
   cancelCalibration();

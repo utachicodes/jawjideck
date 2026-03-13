@@ -1220,6 +1220,10 @@ const api = {
   calibrationCancel: (): Promise<void> =>
     ipcRenderer.invoke(IPC_CHANNELS.CALIBRATION_CANCEL),
 
+  /** Save calibration to bootloader persistent storage (INAV only, survives firmware updates) */
+  calibrationSavePersistent: (): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.CALIBRATION_SAVE_PERSISTENT),
+
   /** Listen for calibration progress updates */
   onCalibrationProgress: (callback: (progress: CalibrationProgressEvent) => void) => {
     const handler = (_: unknown, progress: unknown) => callback(progress as CalibrationProgressEvent);

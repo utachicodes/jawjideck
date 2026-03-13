@@ -62,6 +62,11 @@ export interface CalibrationState {
   saveSuccess: boolean;
   saveError: string | null;
 
+  // Persistent storage save state (INAV only - survives firmware updates)
+  isSavingPersistent: boolean;
+  savePersistentSuccess: boolean;
+  savePersistentError: string | null;
+
   // Track completed calibrations this session (arming flags may not clear until reboot)
   completedCalibrations: Set<CalibrationTypeId>;
 
@@ -80,6 +85,7 @@ export interface CalibrationState {
   loadSensorConfig: () => Promise<void>;
   loadCalibrationData: () => Promise<void>;
   saveCalibrationData: () => Promise<void>;
+  saveCalibrationPersistent: () => Promise<void>;
 
   // Progress updates (called from IPC events)
   handleProgressUpdate: (progress: number, statusText: string, position?: AccelPosition, positionStatus?: boolean[], countdown?: number, compassProgress?: number[]) => void;
@@ -138,6 +144,10 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
   saveSuccess: false,
   saveError: null,
 
+  isSavingPersistent: false,
+  savePersistentSuccess: false,
+  savePersistentError: null,
+
   completedCalibrations: new Set(),
 
   // ============================================================================
@@ -169,6 +179,9 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
       isSaving: false,
       saveSuccess: false,
       saveError: null,
+      isSavingPersistent: false,
+      savePersistentSuccess: false,
+      savePersistentError: null,
     });
 
     // Load sensor config
@@ -228,6 +241,9 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
       isSaving: false,
       saveSuccess: false,
       saveError: null,
+      isSavingPersistent: false,
+      savePersistentSuccess: false,
+      savePersistentError: null,
     });
   },
 
@@ -411,6 +427,33 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
     }
   },
 
+  saveCalibrationPersistent: async () => {
+    const { protocol } = get();
+    set({ isSavingPersistent: true, savePersistentError: null, savePersistentSuccess: false });
+
+    try {
+      let result: { success: boolean; error?: string } | undefined;
+
+      if (protocol === 'mavlink') {
+        // ArduPilot: write all parameters (including calibration offsets) to flash
+        // Uses MAV_CMD_PREFLIGHT_STORAGE (245) which persists across firmware updates
+        result = await window.electronAPI?.writeParamsToFlash();
+      } else {
+        // MSP (INAV): use CLI `cali_save` to write to bootloader partition
+        result = await window.electronAPI?.calibrationSavePersistent();
+      }
+
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to save to persistent storage');
+      }
+
+      set({ isSavingPersistent: false, savePersistentSuccess: true });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to save to persistent storage';
+      set({ isSavingPersistent: false, savePersistentError: message, savePersistentSuccess: false });
+    }
+  },
+
   // ============================================================================
   // Progress Updates (from IPC events)
   // ============================================================================
@@ -464,6 +507,9 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
       isSaving: false,
       saveSuccess: false,
       saveError: null,
+      isSavingPersistent: false,
+      savePersistentSuccess: false,
+      savePersistentError: null,
       completedCalibrations: new Set(),
     });
   },

@@ -9,6 +9,7 @@ import { ctx } from './msp-context.js';
 import { sendMspRequest, withConfigLock } from './msp-transport.js';
 import { stopMspTelemetry } from './msp-telemetry.js';
 import { cleanupMspConnection } from './msp-cleanup.js';
+import { enterCliMode, isCliModeActive } from '../cli/cli-handlers.js';
 
 export function resetMspCliFlags(): void {
   console.log('[MSP] Resetting all CLI mode flags');
@@ -187,6 +188,103 @@ export async function readCalibrationData(): Promise<MSPCalibrationData | null> 
   } catch (error) {
     console.error('[MSP] Read calibration data failed:', error);
     return null;
+  }
+}
+
+/**
+ * Save calibration data to bootloader persistent storage (INAV only).
+ * Uses CLI command `cali_save` which writes to a special flash partition
+ * that survives firmware updates.
+ *
+ * Flow: enter CLI -> send `cali_save` -> read response -> exit CLI (reboots board)
+ */
+export async function saveCalibrationPersistent(): Promise<{ success: boolean; error?: string }> {
+  if (!ctx.currentTransport?.isOpen) {
+    return { success: false, error: 'Not connected' };
+  }
+
+  const wasInCliMode = isCliModeActive();
+
+  try {
+    // Enter CLI mode if not already
+    if (!wasInCliMode) {
+      const entered = await enterCliMode();
+      if (!entered) {
+        return { success: false, error: 'Failed to enter CLI mode' };
+      }
+    }
+
+    // Use the same pattern as getCliDump: temporarily capture transport data
+    // enterCliMode sets up its own listener that forwards to renderer, so we
+    // need to intercept at the transport level to read the response
+    let response = '';
+    let lastDataTime = Date.now();
+    const responseListener = (data: Uint8Array) => {
+      response += new TextDecoder().decode(data);
+      lastDataTime = Date.now();
+    };
+
+    if (!ctx.currentTransport?.isOpen) {
+      return { success: false, error: 'Transport closed during CLI setup' };
+    }
+
+    // Add a second listener (CLI handler's listener still runs for terminal display)
+    ctx.currentTransport.on('data', responseListener);
+
+    // Send cali_save command
+    await ctx.currentTransport.write(new TextEncoder().encode('cali_save\n'));
+
+    // Wait for response (cali_save is quick)
+    const startTime = Date.now();
+    const maxWait = 5000;
+    const idleTimeout = 500;
+
+    while (Date.now() - startTime < maxWait) {
+      await new Promise(r => setTimeout(r, 200));
+      if (Date.now() - lastDataTime > idleTimeout && response.length > 0) {
+        break;
+      }
+    }
+
+    // Remove our listener
+    if (ctx.currentTransport?.isOpen) {
+      ctx.currentTransport.off('data', responseListener as (...args: unknown[]) => void);
+    }
+
+    // Check for error in response
+    const responseLower = response.toLowerCase();
+    if (responseLower.includes('unknown command') || responseLower.includes('invalid')) {
+      // Exit CLI if we entered it
+      if (!wasInCliMode) {
+        const { exitCliMode } = await import('../cli/cli-handlers.js');
+        await exitCliMode();
+      }
+      return { success: false, error: 'Board does not support cali_save — persistent storage may not be available on this board' };
+    }
+
+    // Exit CLI mode if we entered it (sends 'exit' which reboots)
+    if (!wasInCliMode) {
+      const { exitCliMode } = await import('../cli/cli-handlers.js');
+      await exitCliMode();
+    }
+
+    ctx.sendLog('info', 'Calibration saved to persistent storage');
+    return { success: true };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    ctx.sendLog('error', 'Failed to save calibration to persistent storage', msg);
+
+    // Try to exit CLI mode on error
+    if (!wasInCliMode && isCliModeActive()) {
+      try {
+        const { exitCliMode } = await import('../cli/cli-handlers.js');
+        await exitCliMode();
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+
+    return { success: false, error: msg };
   }
 }
 

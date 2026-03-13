@@ -341,6 +341,7 @@ export const IPC_CHANNELS = {
   CALIBRATION_START: 'calibration:start',
   CALIBRATION_CONFIRM_POSITION: 'calibration:confirm-position',
   CALIBRATION_CANCEL: 'calibration:cancel',
+  CALIBRATION_SAVE_PERSISTENT: 'calibration:save-persistent', // Save to bootloader persistent storage (INAV only)
   CALIBRATION_PROGRESS: 'calibration:progress', // Event from main
   CALIBRATION_COMPLETE: 'calibration:complete', // Event from main
 
