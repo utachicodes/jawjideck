@@ -6,6 +6,7 @@ import { useArduPilotSitlStore } from '../../stores/ardupilot-sitl-store';
 import type { SerialPortInfo } from '@ardudeck/comms';
 import { formatPortDisplayName } from '../../utils/usb-device-names';
 import { DriverAssistant } from './DriverAssistant';
+import { MessagesPanel } from '../panels/MessagesPanel';
 
 const BAUD_RATES = [1500000, 921600, 460800, 230400, 115200, 57600, 38400, 19200, 9600];
 
@@ -739,6 +740,13 @@ export function ConnectionPanel() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Messages panel - show when connected via MAVLink/ArduPilot */}
+        {connectionState.isConnected && connectionState.protocol === 'mavlink' && (
+          <div className="h-64">
+            <MessagesPanel />
           </div>
         )}
 
