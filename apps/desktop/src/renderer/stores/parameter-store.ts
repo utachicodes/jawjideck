@@ -186,10 +186,17 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
       params = params.filter(p => p.isModified);
     }
 
-    // Then filter by search query
+    // Then filter by search query (supports regex patterns like `serial[56]_baud`)
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      params = params.filter(p => p.id.toLowerCase().includes(query));
+      let regex: RegExp;
+      try {
+        regex = new RegExp(searchQuery, 'i');
+      } catch {
+        // If the query isn't valid regex, escape it and match as literal string
+        const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        regex = new RegExp(escaped, 'i');
+      }
+      params = params.filter(p => regex.test(p.id));
     }
 
     // Sort

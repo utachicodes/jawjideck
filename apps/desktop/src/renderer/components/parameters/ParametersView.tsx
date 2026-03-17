@@ -504,7 +504,7 @@ export function ParametersView() {
               type="text"
               value={searchQuery}
               onChange={handleSearch}
-              placeholder="Search parameters..."
+              placeholder="Search parameters... (regex supported)"
               className="w-full max-w-md px-4 py-2 pl-10 bg-gray-800/50 border border-gray-700/50 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500/50"
             />
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
