@@ -71,12 +71,10 @@ export function validateParameterValue(
   if (metadata.values && Object.keys(metadata.values).length > 0) {
     const allowedValues = Object.keys(metadata.values).map(Number);
     if (!allowedValues.includes(value)) {
-      const options = Object.entries(metadata.values)
-        .map(([k, v]) => `${k}=${v}`)
-        .join(', ');
+      // Warn but don't block - ArduPilot may accept values not in metadata
       return {
-        valid: false,
-        error: `Value must be one of: ${options}`,
+        valid: true,
+        warning: `Value ${value} is not in the known values list`,
       };
     }
     return { valid: true };

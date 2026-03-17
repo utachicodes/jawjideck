@@ -6027,7 +6027,7 @@ function parseParameterXml(xml: string): ParameterMetadataStore {
   const paramRegex = /<param\s+([^>]+)>([\s\S]*?)<\/param>/g;
   const attrRegex = /(\w+)="([^"]*)"/g;
   const fieldRegex = /<field\s+name="([^"]*)">([\s\S]*?)<\/field>/g;
-  const valueRegex = /<value\s+code="(\d+)"[^>]*>([^<]*)<\/value>/g;
+  const valueRegex = /<value\s+code="(-?\d+)"[^>]*>([^<]*)<\/value>/g;
   const bitRegex = /<bit\s+code="(\d+)"[^>]*>([^<]*)<\/bit>/g;
 
   let match;
