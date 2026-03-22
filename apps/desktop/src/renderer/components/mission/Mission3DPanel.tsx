@@ -23,7 +23,7 @@ import { createMissionThreeJsLayer, type MissionThreeJsLayer } from './mission-t
 import { createVehicleThreeJsLayer, type VehicleThreeJsLayer } from './vehicle-threejs-layer';
 
 // Shared map layer definitions (centralized)
-import { MAP_LAYERS, type LayerKey } from '../../../shared/map-layers';
+import { MAP_LAYERS, type LayerKey, type MapLayer } from '../../../shared/map-layers';
 import { LayerIcon } from '../map/LayerIcon';
 
 // Exclude 'dem' from the layer picker (it's a data layer, not a base map)
@@ -875,6 +875,7 @@ function setSourceData(map: maplibregl.Map, id: string, features: GeoJSON.Featur
 }
 
 function buildStyle(layerKey: LayerKey): maplibregl.StyleSpecification {
+  const layer = MAP_LAYERS[layerKey];
   return {
     version: 8,
     sources: {
@@ -882,6 +883,7 @@ function buildStyle(layerKey: LayerKey): maplibregl.StyleSpecification {
         type: 'raster',
         tiles: [getCachedTileUrl(layerKey as BaseLayerKey)],
         tileSize: 256,
+        maxzoom: (layer as MapLayer).maxNativeZoom ?? layer.maxZoom,
       },
     },
     layers: [{ id: 'raster-layer', type: 'raster', source: 'raster-tiles' }],

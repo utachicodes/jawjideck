@@ -36,10 +36,10 @@ import { LayerIcon } from '../map/LayerIcon';
 // Cached area overlay
 import { CachedAreaOverlay } from '../map/CachedAreaOverlay';
 
-// Map overlays (weather radar, airspace, airports)
+// Map overlays (weather radar, aviation, airspace zones)
 import { WeatherRadarOverlay } from '../map/overlays/WeatherRadarOverlay';
+import { OpenAipOverlay } from '../map/overlays/OpenAipOverlay';
 import { AirspaceOverlay } from '../map/overlays/AirspaceOverlay';
-import { AirportOverlay } from '../map/overlays/AirportOverlay';
 import { AirspaceLegend } from '../map/overlays/AirspaceLegend';
 import { OverlayToggles } from '../map/overlays/OverlayToggles';
 import { ApiKeyDialog } from '../map/overlays/ApiKeyDialog';
@@ -168,7 +168,7 @@ function buildSegmentedPath(allItems: MissionItem[]): PathSegment[] {
 }
 
 // Shared map layer definitions (centralized)
-import { MAP_LAYERS, type LayerKey } from '../../../shared/map-layers';
+import { MAP_LAYERS, type LayerKey, type MapLayer } from '../../../shared/map-layers';
 
 // Default center fallback (London) - will be overridden by IP geolocation
 const FALLBACK_CENTER: [number, number] = [51.505, -0.09];
@@ -349,12 +349,12 @@ function MapResizeHandler() {
   return null;
 }
 
-// Fetch overlay data (radar, airspace, airports) when map moves or overlays change
+// Fetch overlay data (radar meta, airspace zones, API key check)
 function OverlayFetcher() {
   const map = useMap();
   const activeOverlays = useOverlayStore((s) => s.activeOverlays);
-  const fetchOverlayData = useOverlayStore((s) => s.fetchOverlayData);
   const fetchRadarMeta = useOverlayStore((s) => s.fetchRadarMeta);
+  const fetchAirspaceData = useOverlayStore((s) => s.fetchAirspaceData);
 
   useEffect(() => {
     if (activeOverlays.has('radar')) {
@@ -368,21 +368,44 @@ function OverlayFetcher() {
     useOverlayStore.getState().checkApiKey();
   }, []);
 
+  useEffect(() => {
+    if (activeOverlays.has('airspace')) {
+      const center = map.getCenter();
+      fetchAirspaceData(center.lat, center.lng, map.getZoom());
+    }
+  }, [activeOverlays, fetchAirspaceData, map]);
+
   useMapEvents({
     moveend: () => {
-      const center = map.getCenter();
-      fetchOverlayData(center.lat, center.lng, map.getZoom());
+      if (useOverlayStore.getState().activeOverlays.has('airspace')) {
+        const center = map.getCenter();
+        fetchAirspaceData(center.lat, center.lng, map.getZoom());
+      }
     },
   });
 
-  useEffect(() => {
-    if (activeOverlays.has('airspace') || activeOverlays.has('airports')) {
-      const center = map.getCenter();
-      fetchOverlayData(center.lat, center.lng, map.getZoom());
-    }
-  }, [activeOverlays, fetchOverlayData, map]);
-
   return null;
+}
+
+// Overlay layers rendered inside MapContainer — owns its own store subscription
+// so overlay state changes don't trigger parent re-renders (which would recreate terrain)
+function MapOverlayLayers({ baseLayer }: { baseLayer: string }) {
+  const activeOverlays = useOverlayStore((s) => s.activeOverlays);
+  return (
+    <>
+      <OverlayFetcher />
+      {activeOverlays.has('airspace') && <AirspaceOverlay />}
+      {activeOverlays.has('radar') && <WeatherRadarOverlay baseLayer={baseLayer} />}
+      {activeOverlays.has('openaip') && <OpenAipOverlay />}
+    </>
+  );
+}
+
+// Airspace legend — owns its own subscription
+function AirspaceLegendWrapper() {
+  const hasAirspace = useOverlayStore((s) => s.activeOverlays.has('airspace'));
+  if (!hasAirspace) return null;
+  return <AirspaceLegend />;
 }
 
 // Update map maxZoom when layer changes (MapContainer maxZoom is immutable after mount)
@@ -789,9 +812,6 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
   const rallyAddMode = useRallyStore((state) => state.addMode);
   const setRallyAddMode = useRallyStore((state) => state.setAddMode);
 
-  // Map overlays
-  const activeOverlays = useOverlayStore((s) => s.activeOverlays);
-
   // Survey state
   const surveyUnlocked = useSettingsStore((s) => s.surveyUnlocked);
   const surveyIsActive = useSurveyStore((s) => s.isActive);
@@ -936,7 +956,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
           key={activeLayer}
           url={`tile-cache://${activeLayer}/{z}/{x}/{y}.png`}
           maxZoom={layer.maxZoom}
-          maxNativeZoom={layer.maxNativeZoom ?? layer.maxZoom}
+          maxNativeZoom={(layer as MapLayer).maxNativeZoom ?? layer.maxZoom}
         />
 
         {/* Terrain elevation heatmap overlay */}
@@ -1054,11 +1074,8 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
         {/* Rally point overlays - always visible */}
         <RallyMapOverlay readOnly={readOnly} />
 
-        {/* Map overlays */}
-        <OverlayFetcher />
-        {activeOverlays.has('airspace') && <AirspaceOverlay />}
-        {activeOverlays.has('radar') && <WeatherRadarOverlay />}
-        {activeOverlays.has('airports') && <AirportOverlay />}
+        {/* Map overlays (self-subscribed to avoid re-rendering terrain) */}
+        <MapOverlayLayers baseLayer={activeLayer} />
 
         {/* Survey grid overlay */}
         {surveyIsActive && (
@@ -1074,7 +1091,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
 
       {/* Layer selector */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-1">
-        {(Object.keys(MAP_LAYERS) as LayerKey[]).filter((k) => k !== 'dem' && k !== 'radar').map((key) => (
+        {(Object.keys(MAP_LAYERS) as LayerKey[]).filter((k) => k !== 'dem' && k !== 'radar' && k !== 'openaip').map((key) => (
           <button
             key={key}
             onClick={() => setActiveLayer(key)}
@@ -1110,7 +1127,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
       </div>
 
       {/* Airspace legend */}
-      {activeOverlays.has('airspace') && <AirspaceLegend />}
+      <AirspaceLegendWrapper />
 
       {/* API key dialog */}
       <ApiKeyDialog />
