@@ -36,6 +36,15 @@ import { LayerIcon } from '../map/LayerIcon';
 // Cached area overlay
 import { CachedAreaOverlay } from '../map/CachedAreaOverlay';
 
+// Map overlays (weather radar, airspace, airports)
+import { WeatherRadarOverlay } from '../map/overlays/WeatherRadarOverlay';
+import { AirspaceOverlay } from '../map/overlays/AirspaceOverlay';
+import { AirportOverlay } from '../map/overlays/AirportOverlay';
+import { AirspaceLegend } from '../map/overlays/AirspaceLegend';
+import { OverlayToggles } from '../map/overlays/OverlayToggles';
+import { ApiKeyDialog } from '../map/overlays/ApiKeyDialog';
+import { useOverlayStore } from '../../stores/overlay-store';
+
 // Catmull-Rom spline interpolation between two nav waypoints
 function interpolateSpline(
   navWaypoints: MissionItem[],
@@ -336,6 +345,42 @@ function MapResizeHandler() {
       observer.disconnect();
     };
   }, [map]);
+
+  return null;
+}
+
+// Fetch overlay data (radar, airspace, airports) when map moves or overlays change
+function OverlayFetcher() {
+  const map = useMap();
+  const activeOverlays = useOverlayStore((s) => s.activeOverlays);
+  const fetchOverlayData = useOverlayStore((s) => s.fetchOverlayData);
+  const fetchRadarMeta = useOverlayStore((s) => s.fetchRadarMeta);
+
+  useEffect(() => {
+    if (activeOverlays.has('radar')) {
+      fetchRadarMeta();
+      const interval = setInterval(fetchRadarMeta, 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [activeOverlays, fetchRadarMeta]);
+
+  useEffect(() => {
+    useOverlayStore.getState().checkApiKey();
+  }, []);
+
+  useMapEvents({
+    moveend: () => {
+      const center = map.getCenter();
+      fetchOverlayData(center.lat, center.lng, map.getZoom());
+    },
+  });
+
+  useEffect(() => {
+    if (activeOverlays.has('airspace') || activeOverlays.has('airports')) {
+      const center = map.getCenter();
+      fetchOverlayData(center.lat, center.lng, map.getZoom());
+    }
+  }, [activeOverlays, fetchOverlayData, map]);
 
   return null;
 }
@@ -744,6 +789,9 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
   const rallyAddMode = useRallyStore((state) => state.addMode);
   const setRallyAddMode = useRallyStore((state) => state.setAddMode);
 
+  // Map overlays
+  const activeOverlays = useOverlayStore((s) => s.activeOverlays);
+
   // Survey state
   const surveyUnlocked = useSettingsStore((s) => s.surveyUnlocked);
   const surveyIsActive = useSurveyStore((s) => s.isActive);
@@ -885,8 +933,10 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
         <CenterOnVehicle trigger={centerOnVehicleTrigger} />
 
         <TileLayer
+          key={activeLayer}
           url={`tile-cache://${activeLayer}/{z}/{x}/{y}.png`}
           maxZoom={layer.maxZoom}
+          maxNativeZoom={layer.maxNativeZoom ?? layer.maxZoom}
         />
 
         {/* Terrain elevation heatmap overlay */}
@@ -1004,6 +1054,12 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
         {/* Rally point overlays - always visible */}
         <RallyMapOverlay readOnly={readOnly} />
 
+        {/* Map overlays */}
+        <OverlayFetcher />
+        {activeOverlays.has('airspace') && <AirspaceOverlay />}
+        {activeOverlays.has('radar') && <WeatherRadarOverlay />}
+        {activeOverlays.has('airports') && <AirportOverlay />}
+
         {/* Survey grid overlay */}
         {surveyIsActive && (
           <>
@@ -1018,7 +1074,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
 
       {/* Layer selector */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-1">
-        {(Object.keys(MAP_LAYERS) as LayerKey[]).filter((k) => k !== 'dem').map((key) => (
+        {(Object.keys(MAP_LAYERS) as LayerKey[]).filter((k) => k !== 'dem' && k !== 'radar').map((key) => (
           <button
             key={key}
             onClick={() => setActiveLayer(key)}
@@ -1048,8 +1104,16 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
           </svg>
           Height
         </button>
+        <div className="border-t border-gray-700/50 my-0.5" />
+        <OverlayToggles />
         <OfflineAreaDownload bounds={mapBounds} activeLayer={activeLayer} />
       </div>
+
+      {/* Airspace legend */}
+      {activeOverlays.has('airspace') && <AirspaceLegend />}
+
+      {/* API key dialog */}
+      <ApiKeyDialog />
 
       {/* Elevation legend */}
       {showTerrain && elevationRange.max > 0 && (
