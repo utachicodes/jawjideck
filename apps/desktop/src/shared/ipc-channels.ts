@@ -141,6 +141,22 @@ export const IPC_CHANNELS = {
   FIRMWARE_QUERY_MSP: 'firmware:query-msp',
   FIRMWARE_AUTO_DETECT: 'firmware:auto-detect',
 
+  // ESP32 flashing
+  ESP32_DETECT: 'esp32:detect',
+  ESP32_FLASH: 'esp32:flash',
+  ESP32_CHECK_ESPTOOL: 'esp32:check-esptool',
+
+  // DroneBridge ESP32
+  DRONEBRIDGE_DETECT: 'dronebridge:detect',
+  DRONEBRIDGE_DETECTED: 'dronebridge:detected',
+  DRONEBRIDGE_GET_INFO: 'dronebridge:get-info',
+  DRONEBRIDGE_GET_STATS: 'dronebridge:get-stats',
+  DRONEBRIDGE_GET_SETTINGS: 'dronebridge:get-settings',
+  DRONEBRIDGE_UPDATE_SETTINGS: 'dronebridge:update-settings',
+  DRONEBRIDGE_GET_CLIENTS: 'dronebridge:get-clients',
+  DRONEBRIDGE_ADD_UDP_CLIENT: 'dronebridge:add-udp-client',
+  DRONEBRIDGE_CLEAR_UDP_CLIENTS: 'dronebridge:clear-udp-clients',
+
   // MSP Connection (Betaflight/iNav/Cleanflight)
   MSP_CONNECT: 'msp:connect',
   MSP_DISCONNECT: 'msp:disconnect',
@@ -429,6 +445,13 @@ export const IPC_CHANNELS = {
   COMPANION_EXTENSIONS: 'companion:extensions',
   COMPANION_EXTENSION_INSTALL: 'companion:extension-install',
   COMPANION_EXTENSION_REMOVE: 'companion:extension-remove',
+
+  // Map overlays
+  OVERLAY_GET_RADAR_META: 'overlay:get-radar-meta',
+  OVERLAY_GET_AIRSPACE: 'overlay:get-airspace',
+  OVERLAY_GET_AIRPORTS: 'overlay:get-airports',
+  OVERLAY_GET_API_KEY: 'overlay:get-api-key',
+  OVERLAY_SET_API_KEY: 'overlay:set-api-key',
 } as const;
 
 export type IpcChannels = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];
