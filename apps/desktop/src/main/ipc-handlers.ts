@@ -18,6 +18,8 @@ import {
   type ScanResult,
 } from '@ardudeck/comms';
 import { registerCompanionIpcHandlers } from './companion/companion-ipc-handlers.js';
+import { registerDroneBridgeIpcHandlers } from './dronebridge/dronebridge-ipc-handlers.js';
+import { setupOverlayHandlers } from './overlays/overlay-ipc-handlers.js';
 import {
   MAVLinkParser,
   type MAVLinkPacket,
@@ -5394,6 +5396,26 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     return { success: false, error: 'No compatible firmware detected' };
   });
 
+  // ESP32 flashing via esptool
+  ipcMain.handle(IPC_CHANNELS.ESP32_CHECK_ESPTOOL, async () => {
+    const { isEsptoolAvailable } = await import('./firmware/esp32-flasher.js');
+    return isEsptoolAvailable();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.ESP32_DETECT, async (_event, port: string) => {
+    const { detectEsp32Chip } = await import('./firmware/esp32-flasher.js');
+    return detectEsp32Chip(port);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.ESP32_FLASH, async (
+    _event,
+    options: { port: string; chip: string; firmwarePath: string; flashOffset?: string; baudRate?: number; eraseAll?: boolean },
+  ) => {
+    const { flashEsp32 } = await import('./firmware/esp32-flasher.js');
+    firmwareAbortController = new AbortController();
+    return flashEsp32(options, mainWindow, firmwareAbortController);
+  });
+
   // Register MSP handlers for Betaflight/iNav/Cleanflight support
   registerMspHandlers(mainWindow);
 
@@ -6028,6 +6050,12 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   // Companion computer (agent WebSocket)
   registerCompanionIpcHandlers(mainWindow);
+
+  // DroneBridge ESP32 (REST API)
+  registerDroneBridgeIpcHandlers(mainWindow);
+
+  // Map overlays (RainViewer radar, OpenAIP airspace/airports)
+  setupOverlayHandlers();
 }
 
 /**

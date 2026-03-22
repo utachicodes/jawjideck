@@ -17,6 +17,7 @@ import type { RallyItem } from '../shared/rally-types.js';
 import type { DetectedBoard, FirmwareVersion, FlashProgress, FlashResult, FirmwareSource, FirmwareVehicleType, FirmwareManifest, FlashOptions } from '../shared/firmware-types.js';
 import type { CalibrationData, CalibrationProgressEvent, CalibrationCompleteEvent } from '../shared/calibration-types.js';
 import type { MissionSummary, StoredMission, SaveMissionPayload, FlightLog, MissionListFilter, MissionSortOptions } from '../shared/mission-library-types.js';
+import type { DroneBridgeInfo, DroneBridgeStats, DroneBridgeSettings, DroneBridgeClients, DroneBridgeDetected } from '../shared/dronebridge-types.js';
 
 type TelemetryUpdate =
   | { type: 'attitude'; data: AttitudeData }
@@ -540,6 +541,37 @@ const api = {
     error?: string;
   }> =>
     ipcRenderer.invoke(IPC_CHANNELS.FIRMWARE_AUTO_DETECT, port),
+
+  // ESP32 flashing
+  esp32CheckEsptool: (): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.ESP32_CHECK_ESPTOOL),
+  esp32Detect: (port: string): Promise<{ chip: string; mac: string } | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.ESP32_DETECT, port),
+  esp32Flash: (options: { port: string; chip: string; firmwarePath: string; flashOffset?: string; baudRate?: number; eraseAll?: boolean }): Promise<FlashResult> =>
+    ipcRenderer.invoke(IPC_CHANNELS.ESP32_FLASH, options),
+
+  // DroneBridge ESP32
+  dronebridgeDetect: (ip?: string): Promise<DroneBridgeDetected | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.DRONEBRIDGE_DETECT, ip),
+  dronebridgeGetInfo: (ip: string): Promise<DroneBridgeInfo | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.DRONEBRIDGE_GET_INFO, ip),
+  dronebridgeGetStats: (ip: string): Promise<DroneBridgeStats | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.DRONEBRIDGE_GET_STATS, ip),
+  dronebridgeGetSettings: (ip: string): Promise<DroneBridgeSettings | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.DRONEBRIDGE_GET_SETTINGS, ip),
+  dronebridgeUpdateSettings: (ip: string, settings: Partial<DroneBridgeSettings>): Promise<{ status: string; msg: string } | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.DRONEBRIDGE_UPDATE_SETTINGS, ip, settings),
+  dronebridgeGetClients: (ip: string): Promise<DroneBridgeClients | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.DRONEBRIDGE_GET_CLIENTS, ip),
+  dronebridgeAddUdpClient: (ip: string, clientIp: string, clientPort: number): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.DRONEBRIDGE_ADD_UDP_CLIENT, ip, clientIp, clientPort),
+  dronebridgeClearUdpClients: (ip: string): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.DRONEBRIDGE_CLEAR_UDP_CLIENTS, ip),
+  onDroneBridgeDetected: (callback: (data: DroneBridgeDetected) => void) => {
+    const handler = (_: unknown, data: DroneBridgeDetected) => callback(data);
+    ipcRenderer.on(IPC_CHANNELS.DRONEBRIDGE_DETECTED, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.DRONEBRIDGE_DETECTED, handler);
+  },
 
   // Firmware event listeners
   onFlashProgress: (callback: (progress: FlashProgress) => void) => {
@@ -1492,6 +1524,18 @@ const api = {
     ipcRenderer.on(IPC_CHANNELS.COMPANION_STATUSTEXT, handler);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.COMPANION_STATUSTEXT, handler);
   },
+
+  // Map overlays
+  getRadarMeta: (): Promise<unknown> =>
+    ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_GET_RADAR_META),
+  getAirspace: (params: { lat: number; lon: number; zoom: number }): Promise<unknown> =>
+    ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_GET_AIRSPACE, params),
+  getAirports: (params: { lat: number; lon: number; zoom: number }): Promise<unknown> =>
+    ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_GET_AIRPORTS, params),
+  getApiKey: (service: string): Promise<{ hasKey: boolean; key: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_GET_API_KEY, service),
+  setApiKey: (service: string, key: string): Promise<{ success: boolean }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_SET_API_KEY, service, key),
 };
 
 // Expose to renderer
