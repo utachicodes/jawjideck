@@ -41,7 +41,7 @@ export async function startMcpServer(): Promise<{ port: number }> {
     { region: z.object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() }).optional() },
     async (params) => {
       const base64 = await screenshot(params as any);
-      return { content: [{ type: 'image', data: base64, mimeType: 'image/png' }] };
+      return { content: [{ type: 'image', data: base64, mimeType: 'image/jpeg' }] };
     }
   );
 

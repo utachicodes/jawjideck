@@ -51,8 +51,20 @@ export async function screenshot(params?: { region?: { x: number; y: number; wid
     ? { x: params.region.x, y: params.region.y, width: params.region.width, height: params.region.height }
     : undefined;
 
-  const image = await mainWindow.webContents.capturePage(rect);
-  return image.toPNG().toString('base64');
+  let image = await mainWindow.webContents.capturePage(rect);
+
+  // Resize to max 1024px wide to keep payload small (Retina displays produce 2-4x pixels)
+  const size = image.getSize();
+  if (size.width > 1024) {
+    const scale = 1024 / size.width;
+    image = image.resize({
+      width: Math.round(size.width * scale),
+      height: Math.round(size.height * scale),
+    });
+  }
+
+  // JPEG at 70% quality — ~10-20x smaller than PNG
+  return image.toJPEG(70).toString('base64');
 }
 
 export async function findElementsTool(params: { query: string; by?: string }): Promise<any> {
