@@ -3,79 +3,95 @@
  * Stdio-to-SSE bridge for the ArduDeck test driver MCP server.
  *
  * Claude Code spawns this as a child process (stdio transport).
- * It reads the discovery file from /tmp/ardudeck-mcp.json to find the
+ * It reads ~/.ardudeck/mcp.json on each connection attempt to find the
  * dynamic SSE port, then proxies MCP messages between stdio and SSE.
  *
- * If ArduDeck isn't running, exits with an error message.
+ * Reconnects automatically when ArduDeck restarts (new port in discovery file).
  */
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
 const DISCOVERY_PATH = join(homedir(), '.ardudeck', 'mcp.json');
+const RETRY_INTERVAL = 2000;
 
-let discovery;
-try {
-  discovery = JSON.parse(readFileSync(DISCOVERY_PATH, 'utf-8'));
-} catch {
-  process.stderr.write('[ardudeck-mcp-bridge] ArduDeck is not running in dev mode (no discovery file)\n');
-  process.exit(1);
-}
-
-const sseUrl = discovery.sseUrl;
-const messagesUrl = discovery.messagesUrl;
-
-if (!sseUrl) {
-  process.stderr.write('[ardudeck-mcp-bridge] Invalid discovery file — no sseUrl\n');
-  process.exit(1);
-}
-
-// Connect to SSE endpoint
 let sessionUrl = null;
+let connected = false;
+
+function readDiscovery() {
+  try {
+    return JSON.parse(readFileSync(DISCOVERY_PATH, 'utf-8'));
+  } catch {
+    return null;
+  }
+}
 
 async function connectSSE() {
-  const response = await fetch(sseUrl, {
-    headers: { 'Accept': 'text/event-stream' },
-  });
-
-  if (!response.ok) {
-    process.stderr.write(`[ardudeck-mcp-bridge] SSE connection failed: ${response.status}\n`);
-    process.exit(1);
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
   while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+    sessionUrl = null;
+    connected = false;
 
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-
-    let eventType = null;
-    for (const line of lines) {
-      if (line.startsWith('event: ')) {
-        eventType = line.slice(7).trim();
-      } else if (line.startsWith('data: ')) {
-        const data = line.slice(6);
-        if (eventType === 'endpoint') {
-          // First message: the endpoint URL with session ID
-          sessionUrl = new URL(data, discovery.url).href;
-          process.stderr.write(`[ardudeck-mcp-bridge] Connected, session: ${sessionUrl}\n`);
-        } else if (eventType === 'message') {
-          // MCP response from server — write to stdout
-          process.stdout.write(data + '\n');
-        }
-        eventType = null;
-      }
+    const discovery = readDiscovery();
+    if (!discovery?.sseUrl) {
+      process.stderr.write('[ardudeck-mcp-bridge] Waiting for ArduDeck (no discovery file)...\n');
+      await new Promise(r => setTimeout(r, RETRY_INTERVAL));
+      continue;
     }
+
+    try {
+      const response = await fetch(discovery.sseUrl, {
+        headers: { 'Accept': 'text/event-stream' },
+      });
+
+      if (!response.ok) {
+        process.stderr.write(`[ardudeck-mcp-bridge] SSE ${response.status}, retrying...\n`);
+        await new Promise(r => setTimeout(r, RETRY_INTERVAL));
+        continue;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          process.stderr.write('[ardudeck-mcp-bridge] SSE stream ended, reconnecting...\n');
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        let eventType = null;
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (eventType === 'endpoint') {
+              sessionUrl = new URL(data, discovery.url).href;
+              connected = true;
+              process.stderr.write(`[ardudeck-mcp-bridge] Connected: ${sessionUrl}\n`);
+            } else if (eventType === 'message') {
+              process.stdout.write(data + '\n');
+            }
+            eventType = null;
+          }
+        }
+      }
+    } catch (err) {
+      process.stderr.write(`[ardudeck-mcp-bridge] Connection error: ${err.message}, retrying...\n`);
+    }
+
+    await new Promise(r => setTimeout(r, RETRY_INTERVAL));
   }
 }
 
-// Read stdin for MCP requests, forward to HTTP endpoint
+// Read stdin, forward to MCP server. Queue messages if not connected.
+const pendingMessages = [];
+
 async function readStdin() {
   const decoder = new TextDecoder();
   let buffer = '';
@@ -88,34 +104,39 @@ async function readStdin() {
     for (const line of lines) {
       if (!line.trim()) continue;
 
-      // Wait for session URL
-      while (!sessionUrl) {
-        await new Promise(r => setTimeout(r, 50));
+      if (!connected || !sessionUrl) {
+        pendingMessages.push(line);
+        continue;
       }
 
-      // Forward to MCP server via POST
-      try {
-        const resp = await fetch(sessionUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: line,
-        });
-        if (!resp.ok) {
-          process.stderr.write(`[ardudeck-mcp-bridge] POST failed: ${resp.status} ${await resp.text()}\n`);
-        }
-      } catch (err) {
-        process.stderr.write(`[ardudeck-mcp-bridge] POST error: ${err.message}\n`);
-      }
+      await sendMessage(line);
     }
   }
 }
 
-connectSSE().catch(err => {
-  process.stderr.write(`[ardudeck-mcp-bridge] SSE error: ${err.message}\n`);
-  process.exit(1);
-});
+async function sendMessage(line) {
+  try {
+    const resp = await fetch(sessionUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: line,
+    });
+    if (!resp.ok) {
+      process.stderr.write(`[ardudeck-mcp-bridge] POST ${resp.status}\n`);
+    }
+  } catch (err) {
+    process.stderr.write(`[ardudeck-mcp-bridge] POST error: ${err.message}\n`);
+  }
+}
 
-readStdin().catch(err => {
-  process.stderr.write(`[ardudeck-mcp-bridge] stdin error: ${err.message}\n`);
-  process.exit(1);
-});
+// Drain pending messages when connection establishes
+setInterval(async () => {
+  if (connected && sessionUrl && pendingMessages.length > 0) {
+    while (pendingMessages.length > 0) {
+      await sendMessage(pendingMessages.shift());
+    }
+  }
+}, 100);
+
+connectSSE();
+readStdin().catch(() => process.exit(0));
