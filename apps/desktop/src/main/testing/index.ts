@@ -2,11 +2,15 @@
 import { BrowserWindow, app } from 'electron';
 import { writeFileSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
-import { tmpdir } from 'os';
+import { homedir } from 'os';
+import { mkdirSync } from 'fs';
 import { setMainWindow } from './tools';
 import { startMcpServer, stopMcpServer } from './mcp-server';
 
-const DISCOVERY_FILE = 'ardudeck-mcp.json';
+// Fixed well-known path: ~/.ardudeck/mcp.json
+// Predictable for all consumers (orchestrator, bridge script, Claude Code).
+const DISCOVERY_DIR = join(homedir(), '.ardudeck');
+const DISCOVERY_FILE = 'mcp.json';
 
 let discoveryPath: string | null = null;
 
@@ -16,8 +20,9 @@ export async function initTestingMcp(mainWindow: BrowserWindow): Promise<void> {
   try {
     const { port } = await startMcpServer();
 
-    // Write discovery file to OS temp dir — never inside the repo.
-    discoveryPath = join(tmpdir(), DISCOVERY_FILE);
+    // Write discovery file to ~/.ardudeck/mcp.json
+    mkdirSync(DISCOVERY_DIR, { recursive: true });
+    discoveryPath = join(DISCOVERY_DIR, DISCOVERY_FILE);
 
     const discoveryContent = {
       transport: 'sse',
