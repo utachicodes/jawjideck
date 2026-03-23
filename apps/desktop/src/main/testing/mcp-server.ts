@@ -37,11 +37,11 @@ export async function startMcpServer(): Promise<{ port: number }> {
 
   server.tool(
     'screenshot',
-    'Capture a screenshot of the ArduDeck window. Returns base64 PNG.',
+    'Capture a screenshot of the ArduDeck window. Saves JPEG to ~/.ardudeck/screenshots/ and returns the file path. Use the Read tool to view the image.',
     { region: z.object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() }).optional() },
     async (params) => {
-      const base64 = await screenshot(params as any);
-      return { content: [{ type: 'image', data: base64, mimeType: 'image/jpeg' }] };
+      const filePath = await screenshot(params as any);
+      return { content: [{ type: 'text', text: filePath }] };
     }
   );
 

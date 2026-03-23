@@ -1,7 +1,13 @@
 // apps/desktop/src/main/testing/tools.ts
 import { BrowserWindow, ipcMain } from 'electron';
 import { randomUUID } from 'crypto';
+import { writeFileSync, mkdirSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
 import { TESTING_CHANNELS } from '../../shared/testing-channels';
+
+const SCREENSHOT_DIR = join(homedir(), '.ardudeck', 'screenshots');
+mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -53,7 +59,7 @@ export async function screenshot(params?: { region?: { x: number; y: number; wid
 
   let image = await mainWindow.webContents.capturePage(rect);
 
-  // Resize to max 1024px wide to keep payload small (Retina displays produce 2-4x pixels)
+  // Resize to max 1024px wide (Retina displays produce 2-4x pixels)
   const size = image.getSize();
   if (size.width > 1024) {
     const scale = 1024 / size.width;
@@ -63,8 +69,10 @@ export async function screenshot(params?: { region?: { x: number; y: number; wid
     });
   }
 
-  // JPEG at 70% quality — ~10-20x smaller than PNG
-  return image.toJPEG(70).toString('base64');
+  // Save to file, return path — no base64 over the wire
+  const filePath = join(SCREENSHOT_DIR, `screenshot-${Date.now()}.jpg`);
+  writeFileSync(filePath, image.toJPEG(80));
+  return filePath;
 }
 
 export async function findElementsTool(params: { query: string; by?: string }): Promise<any> {
