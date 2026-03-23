@@ -2,10 +2,11 @@
 import { BrowserWindow, app } from 'electron';
 import { writeFileSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
+import { tmpdir } from 'os';
 import { setMainWindow } from './tools';
 import { startMcpServer, stopMcpServer } from './mcp-server';
 
-const DISCOVERY_FILE = '.ardudeck-mcp.json';
+const DISCOVERY_FILE = 'ardudeck-mcp.json';
 
 let discoveryPath: string | null = null;
 
@@ -15,10 +16,8 @@ export async function initTestingMcp(mainWindow: BrowserWindow): Promise<void> {
   try {
     const { port } = await startMcpServer();
 
-    // Write discovery file to monorepo root.
-    // In dev mode, process.cwd() is the monorepo root (where pnpm dev runs from).
-    // In packaged mode this code never runs (isDev guard), so cwd() is safe.
-    discoveryPath = join(process.cwd(), DISCOVERY_FILE);
+    // Write discovery file to OS temp dir — never inside the repo.
+    discoveryPath = join(tmpdir(), DISCOVERY_FILE);
 
     const discoveryContent = {
       transport: 'sse',
