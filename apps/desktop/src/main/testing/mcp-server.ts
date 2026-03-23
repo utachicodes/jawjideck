@@ -279,7 +279,7 @@ export async function startMcpServer(): Promise<{ port: number }> {
         return;
       }
 
-      if (req.url === '/messages' && req.method === 'POST') {
+      if (req.url?.startsWith('/messages') && req.method === 'POST') {
         if (transport) {
           await transport.handlePostMessage(req, res);
         } else {
