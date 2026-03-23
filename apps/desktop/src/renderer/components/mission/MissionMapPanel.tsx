@@ -853,17 +853,17 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
       return;
     }
 
-    // For MAVLink boards, require home position to be set first
-    // For MSP boards (iNav/Betaflight), home is auto-set on arm + GPS lock, so allow waypoints without it
-    if (!isMspProtocol && !homePosition) {
-      return;
+    // Auto-set home on first waypoint click if not already set.
+    // Home is a planning reference (FC sets its own home on arm via GPS).
+    if (!homePosition) {
+      setHomePosition(lat, lng, 0);
     }
 
     // Get default altitude from last waypoint or 100m
     const lastWp = missionItems[missionItems.length - 1];
     const alt = lastWp?.altitude ?? 100;
     addWaypoint(lat, lng, alt);
-  }, [isSettingHome, homePosition, missionItems, setHomePosition, addWaypoint, isMspProtocol]);
+  }, [isSettingHome, homePosition, missionItems, setHomePosition, addWaypoint]);
 
   // Toggle set home mode
   const handleToggleSetHome = useCallback(() => {
@@ -1157,23 +1157,19 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
             {/* GPS warning for first waypoint - only show when adding mode is active */}
             {!readOnly && isAddingWaypoint && missionItems.length === 0 && <GpsWarning />}
 
-            {/* Add WP button - hidden in readOnly mode, disabled without home */}
+            {/* Add WP button - hidden in readOnly mode */}
             {!readOnly && (
               <button
                 onClick={() => {
-                  if (!homePosition) return; // Can't add without home
                   setIsAddingWaypoint(!isAddingWaypoint);
                   setIsSettingHome(false); // Exit home mode if entering add mode
                 }}
-                disabled={!homePosition}
                 className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                  !homePosition
-                    ? 'bg-gray-800/50 text-gray-600 cursor-not-allowed'
-                    : isAddingWaypoint
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+                  isAddingWaypoint
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
                 }`}
-                title={!homePosition ? 'Set Home position first' : isAddingWaypoint ? 'Click on map to add waypoints' : 'Enter waypoint adding mode'}
+                title={isAddingWaypoint ? 'Click on map to add waypoints' : 'Enter waypoint adding mode'}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -1183,7 +1179,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
             )}
 
             {/* Hint for Shift+click - show when NOT in add mode (as a shortcut hint) */}
-            {!readOnly && !isAddingWaypoint && !isSettingHome && homePosition && (
+            {!readOnly && !isAddingWaypoint && !isSettingHome && (
               <span className="text-xs text-gray-500 bg-gray-800/90 px-2.5 py-1.5 rounded">
                 <kbd className="bg-gray-700 px-1 rounded text-gray-400">Shift</kbd>+click to add
               </span>
@@ -1436,14 +1432,9 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
                 <div className="text-emerald-400 text-sm mb-2">Click anywhere on the map</div>
                 <div className="text-gray-500 text-xs">to set your Home position</div>
               </>
-            ) : !homePosition ? (
-              <>
-                <div className="text-gray-400 text-sm mb-2">Set Home position first</div>
-                <div className="text-gray-500 text-xs">Click "Set Home" then click on the map</div>
-              </>
             ) : (
               <>
-                <div className="text-blue-400 text-sm mb-2">Now select Takeoff location</div>
+                <div className="text-blue-400 text-sm mb-2">Click to add first waypoint</div>
                 <div className="text-gray-500 text-xs">
                   Click "Add WP" or <kbd className="bg-gray-700 px-1.5 py-0.5 rounded text-gray-400 text-[10px]">Shift</kbd>+click
                 </div>

@@ -546,10 +546,14 @@ const api = {
   // ESP32 flashing
   esp32CheckEsptool: (): Promise<boolean> =>
     ipcRenderer.invoke(IPC_CHANNELS.ESP32_CHECK_ESPTOOL),
+  esp32DownloadEsptool: (): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.ESP32_DOWNLOAD_ESPTOOL),
   esp32Detect: (port: string): Promise<{ chip: string; mac: string } | null> =>
     ipcRenderer.invoke(IPC_CHANNELS.ESP32_DETECT, port),
   esp32Flash: (options: { port: string; chip: string; firmwarePath: string; flashOffset?: string; baudRate?: number; eraseAll?: boolean }): Promise<FlashResult> =>
     ipcRenderer.invoke(IPC_CHANNELS.ESP32_FLASH, options),
+  esp32FlashTemplate: (options: { templateId: string; port: string; detectedChip?: string; eraseAll?: boolean }): Promise<FlashResult> =>
+    ipcRenderer.invoke(IPC_CHANNELS.ESP32_FLASH_TEMPLATE, options),
 
   // DroneBridge ESP32
   dronebridgeDetect: (ip?: string): Promise<DroneBridgeDetected | null> =>
@@ -568,6 +572,10 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.DRONEBRIDGE_ADD_UDP_CLIENT, ip, clientIp, clientPort),
   dronebridgeClearUdpClients: (ip: string): Promise<void> =>
     ipcRenderer.invoke(IPC_CHANNELS.DRONEBRIDGE_CLEAR_UDP_CLIENTS, ip),
+  dronebridgeReadSerial: (port: string): Promise<{ settings: Record<string, unknown> | null; apIp: string | null; ssid: string | null; rawLog: string } | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.DRONEBRIDGE_READ_SERIAL, port),
+  dronebridgeReadSerialReset: (port: string): Promise<{ settings: Record<string, unknown> | null; apIp: string | null; ssid: string | null; rawLog: string } | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.DRONEBRIDGE_READ_SERIAL_RESET, port),
   onDroneBridgeDetected: (callback: (data: DroneBridgeDetected) => void) => {
     const handler = (_: unknown, data: DroneBridgeDetected) => callback(data);
     ipcRenderer.on(IPC_CHANNELS.DRONEBRIDGE_DETECTED, handler);

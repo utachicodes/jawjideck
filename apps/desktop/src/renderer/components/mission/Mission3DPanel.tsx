@@ -849,17 +849,8 @@ export function Mission3DPanel({
       {navWaypoints.length === 0 && !isTelemetryMode && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[500]">
           <div className="bg-gray-900/80 backdrop-blur-sm px-6 py-4 rounded-xl text-center">
-            {!homePosition ? (
-              <>
-                <div className="text-gray-400 text-sm mb-2">Set Home position first</div>
-                <div className="text-gray-500 text-xs">Switch to 2D to set home and add waypoints</div>
-              </>
-            ) : (
-              <>
-                <div className="text-gray-400 text-sm mb-2">No waypoints yet</div>
-                <div className="text-gray-500 text-xs">Add waypoints in 2D view to see them in 3D</div>
-              </>
-            )}
+            <div className="text-gray-400 text-sm mb-2">No waypoints yet</div>
+            <div className="text-gray-500 text-xs">Add waypoints in 2D view to see them in 3D</div>
           </div>
         </div>
       )}
