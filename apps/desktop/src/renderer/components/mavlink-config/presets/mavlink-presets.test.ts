@@ -64,3 +64,57 @@ describe('PID Preset acceleration limits', () => {
     expect(PID_PRESETS['cinematic']!.accel).toEqual({ roll: 55000, pitch: 55000, yaw: 14000 });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Preset accel scaling consistency
+// ---------------------------------------------------------------------------
+
+describe('PID Preset accel scaling relationships', () => {
+  it('roll and pitch accel should be symmetric for all presets', () => {
+    for (const [key, preset] of Object.entries(PID_PRESETS)) {
+      expect(preset.accel!.roll, `preset "${key}" roll == pitch`).toBe(preset.accel!.pitch);
+    }
+  });
+
+  it('accel values should follow a reasonable ordering across presets', () => {
+    const order = ['cinematic', 'beginner', 'freestyle', 'racing'];
+    for (let idx = 1; idx < order.length; idx++) {
+      const prev = PID_PRESETS[order[idx - 1]!]!;
+      const curr = PID_PRESETS[order[idx]!]!;
+      expect(curr.accel!.roll, `${order[idx]} roll > ${order[idx - 1]} roll`)
+        .toBeGreaterThan(prev.accel!.roll);
+      expect(curr.accel!.yaw, `${order[idx]} yaw > ${order[idx - 1]} yaw`)
+        .toBeGreaterThan(prev.accel!.yaw);
+    }
+  });
+
+  it('yaw-to-roll ratio should be roughly consistent across presets', () => {
+    // Yaw accel is typically ~25% of roll accel for all presets
+    for (const [key, preset] of Object.entries(PID_PRESETS)) {
+      const ratio = preset.accel!.yaw / preset.accel!.roll;
+      expect(ratio, `preset "${key}" yaw/roll ratio should be 15-30%`).toBeGreaterThanOrEqual(0.15);
+      expect(ratio, `preset "${key}" yaw/roll ratio should be 15-30%`).toBeLessThanOrEqual(0.30);
+    }
+  });
+
+  it('every preset has both PID values and accel values', () => {
+    for (const [key, preset] of Object.entries(PID_PRESETS)) {
+      // PID values
+      expect(preset.values, `preset "${key}" should have PID values`).toBeDefined();
+      expect(preset.values.roll.p, `preset "${key}" roll P`).toBeGreaterThan(0);
+      // Accel values
+      expect(preset.accel, `preset "${key}" should have accel`).toBeDefined();
+      expect(preset.accel!.roll, `preset "${key}" accel roll`).toBeGreaterThan(0);
+    }
+  });
+
+  it('accel values are in cdeg/s² range (not deg/s²)', () => {
+    // Values should be in the thousands-to-hundred-thousands range (cdeg/s²)
+    // If someone accidentally used deg/s², values would be < 2000
+    for (const [key, preset] of Object.entries(PID_PRESETS)) {
+      expect(preset.accel!.roll, `preset "${key}" roll in cdeg/s²`).toBeGreaterThan(10000);
+      expect(preset.accel!.pitch, `preset "${key}" pitch in cdeg/s²`).toBeGreaterThan(10000);
+      expect(preset.accel!.yaw, `preset "${key}" yaw in cdeg/s²`).toBeGreaterThan(10000);
+    }
+  });
+});

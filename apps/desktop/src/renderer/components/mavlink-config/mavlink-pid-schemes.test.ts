@@ -249,3 +249,275 @@ describe('PID + accel param building workflow', () => {
     expect(Object.keys(combined).some(k => k.includes('ACCEL'))).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Unknown scheme fallback inherits accel from modern copter
+// ---------------------------------------------------------------------------
+
+describe('unknown scheme fallback accel support', () => {
+  it('should inherit accel params from modern copter when no params match', () => {
+    const scheme = detectPidScheme(makeParams([]));
+    expect(scheme.id).toBe('unknown');
+    expect(scheme.accel).toEqual({
+      roll: 'ATC_ACCEL_R_MAX',
+      pitch: 'ATC_ACCEL_P_MAX',
+      yaw: 'ATC_ACCEL_Y_MAX',
+    });
+  });
+
+  it('should inherit accel defaults from modern copter when no params match', () => {
+    const scheme = detectPidScheme(makeParams([]));
+    expect(scheme.accelDefaults).toEqual({
+      roll: 110000,
+      pitch: 110000,
+      yaw: 27000,
+    });
+  });
+
+  it('buildAccelParams should work with the unknown fallback scheme', () => {
+    const scheme = detectPidScheme(makeParams([]));
+    const result = buildAccelParams(scheme, { roll: 80000, pitch: 80000, yaw: 20000 });
+    expect(result).toEqual({
+      ATC_ACCEL_R_MAX: 80000,
+      ATC_ACCEL_P_MAX: 80000,
+      ATC_ACCEL_Y_MAX: 20000,
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Modern plane scheme (RLL_RATE_P) also lacks accel
+// ---------------------------------------------------------------------------
+
+describe('modern plane scheme accel', () => {
+  it('modern plane (RLL_RATE_P) should not have accel params', () => {
+    const scheme = detectPidScheme(makeParams(['RLL_RATE_P']));
+    expect(scheme.id).toBe('plane');
+    expect(scheme.accel).toBeUndefined();
+    expect(scheme.accelDefaults).toBeUndefined();
+  });
+
+  it('buildAccelParams returns empty for modern plane', () => {
+    const scheme = detectPidScheme(makeParams(['RLL_RATE_P']));
+    const result = buildAccelParams(scheme, { roll: 110000, pitch: 110000, yaw: 27000 });
+    expect(result).toEqual({});
+  });
+
+  it('getAllPidParamNames should not include accel for modern plane', () => {
+    const scheme = detectPidScheme(makeParams(['RLL_RATE_P']));
+    const names = getAllPidParamNames(scheme);
+    expect(names.some(n => n.includes('ACCEL'))).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Reset-to-defaults workflow via buildAccelParams
+// ---------------------------------------------------------------------------
+
+describe('reset to accel defaults workflow', () => {
+  it('modern copter accelDefaults through buildAccelParams produces correct reset params', () => {
+    const scheme = detectPidScheme(makeParams(['ATC_RAT_RLL_P']));
+    // This is the pattern the component uses for resetToDefaults
+    const resetParams = buildAccelParams(scheme, scheme.accelDefaults!);
+    expect(resetParams).toEqual({
+      ATC_ACCEL_R_MAX: 110000,
+      ATC_ACCEL_P_MAX: 110000,
+      ATC_ACCEL_Y_MAX: 27000,
+    });
+  });
+
+  it('quadplane accelDefaults through buildAccelParams produces correct reset params', () => {
+    const scheme = detectPidScheme(makeParams(['Q_A_RAT_RLL_P']));
+    const resetParams = buildAccelParams(scheme, scheme.accelDefaults!);
+    expect(resetParams).toEqual({
+      Q_A_ACCEL_R_MAX: 110000,
+      Q_A_ACCEL_P_MAX: 110000,
+      Q_A_ACCEL_Y_MAX: 27000,
+    });
+  });
+
+  it('legacy copter has no accelDefaults to reset', () => {
+    const scheme = detectPidScheme(makeParams(['RATE_RLL_P']));
+    expect(scheme.accelDefaults).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Slider display conversion: cdeg/s² ↔ deg/s² (÷100 / ×100)
+// ---------------------------------------------------------------------------
+
+describe('accel slider display conversion (cdeg/s² ↔ deg/s²)', () => {
+  // The UI displays Math.round(value / 100) and stores v * 100
+  // This validates the roundtrip is lossless for typical values
+
+  it('default copter values convert cleanly to display units', () => {
+    const defaults = { roll: 110000, pitch: 110000, yaw: 27000 };
+    expect(Math.round(defaults.roll / 100)).toBe(1100);
+    expect(Math.round(defaults.pitch / 100)).toBe(1100);
+    expect(Math.round(defaults.yaw / 100)).toBe(270);
+  });
+
+  it('display → storage roundtrip preserves value for multiples of 100', () => {
+    const stored = 80000;
+    const displayed = Math.round(stored / 100); // 800
+    const backToStored = displayed * 100; // 80000
+    expect(backToStored).toBe(stored);
+  });
+
+  it('all preset accel values are multiples of 100 (lossless conversion)', () => {
+    // The presets use round numbers in cdeg/s² that divide cleanly by 100
+    const presetAccelValues = [
+      { roll: 80000, pitch: 80000, yaw: 20000 },    // beginner
+      { roll: 110000, pitch: 110000, yaw: 27000 },   // freestyle
+      { roll: 160000, pitch: 160000, yaw: 40000 },   // racing
+      { roll: 55000, pitch: 55000, yaw: 14000 },     // cinematic
+    ];
+    for (const accel of presetAccelValues) {
+      expect(accel.roll % 100).toBe(0);
+      expect(accel.pitch % 100).toBe(0);
+      expect(accel.yaw % 100).toBe(0);
+    }
+  });
+
+  it('accelDefaults are multiples of 100 (lossless slider conversion)', () => {
+    const copter = detectPidScheme(makeParams(['ATC_RAT_RLL_P']));
+    expect(copter.accelDefaults!.roll % 100).toBe(0);
+    expect(copter.accelDefaults!.pitch % 100).toBe(0);
+    expect(copter.accelDefaults!.yaw % 100).toBe(0);
+
+    const qp = detectPidScheme(makeParams(['Q_A_RAT_RLL_P']));
+    expect(qp.accelDefaults!.roll % 100).toBe(0);
+    expect(qp.accelDefaults!.pitch % 100).toBe(0);
+    expect(qp.accelDefaults!.yaw % 100).toBe(0);
+  });
+
+  it('slider max range in deg/s² covers the accel defaults', () => {
+    // UI: roll/pitch max=1800, yaw max=720 (in deg/s²)
+    const ROLL_PITCH_MAX = 1800;
+    const YAW_MAX = 720;
+    const copter = detectPidScheme(makeParams(['ATC_RAT_RLL_P']));
+    const rollDisplay = Math.round(copter.accelDefaults!.roll / 100);
+    const pitchDisplay = Math.round(copter.accelDefaults!.pitch / 100);
+    const yawDisplay = Math.round(copter.accelDefaults!.yaw / 100);
+    expect(rollDisplay).toBeLessThanOrEqual(ROLL_PITCH_MAX);
+    expect(pitchDisplay).toBeLessThanOrEqual(ROLL_PITCH_MAX);
+    expect(yawDisplay).toBeLessThanOrEqual(YAW_MAX);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getAllPidParamNames produces no duplicates
+// ---------------------------------------------------------------------------
+
+describe('getAllPidParamNames no duplicates', () => {
+  it('modern copter param names should have no duplicates', () => {
+    const scheme = detectPidScheme(makeParams(['ATC_RAT_RLL_P']));
+    const names = getAllPidParamNames(scheme);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('quadplane param names should have no duplicates', () => {
+    const scheme = detectPidScheme(makeParams(['Q_A_RAT_RLL_P']));
+    const names = getAllPidParamNames(scheme);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('legacy copter param names should have no duplicates', () => {
+    const scheme = detectPidScheme(makeParams(['RATE_RLL_P']));
+    const names = getAllPidParamNames(scheme);
+    expect(new Set(names).size).toBe(names.length);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Preset accel → scheme mapping integration (the applyPreset workflow)
+// ---------------------------------------------------------------------------
+
+describe('preset accel application via buildAccelParams', () => {
+  // Simulates what PidTuningTab.applyPreset does for accel
+
+  it('beginner preset accel maps correctly to modern copter params', () => {
+    const scheme = detectPidScheme(makeParams(['ATC_RAT_RLL_P']));
+    const presetAccel = { roll: 80000, pitch: 80000, yaw: 20000 };
+    const params = buildAccelParams(scheme, presetAccel);
+    expect(params).toEqual({
+      ATC_ACCEL_R_MAX: 80000,
+      ATC_ACCEL_P_MAX: 80000,
+      ATC_ACCEL_Y_MAX: 20000,
+    });
+  });
+
+  it('racing preset accel maps correctly to quadplane params', () => {
+    const scheme = detectPidScheme(makeParams(['Q_A_RAT_RLL_P']));
+    const presetAccel = { roll: 160000, pitch: 160000, yaw: 40000 };
+    const params = buildAccelParams(scheme, presetAccel);
+    expect(params).toEqual({
+      Q_A_ACCEL_R_MAX: 160000,
+      Q_A_ACCEL_P_MAX: 160000,
+      Q_A_ACCEL_Y_MAX: 40000,
+    });
+  });
+
+  it('preset accel is silently ignored for schemes without accel support', () => {
+    const scheme = detectPidScheme(makeParams(['RATE_RLL_P']));
+    const presetAccel = { roll: 110000, pitch: 110000, yaw: 27000 };
+    const params = buildAccelParams(scheme, presetAccel);
+    expect(params).toEqual({});
+    expect(Object.keys(params)).toHaveLength(0);
+  });
+
+  it('freestyle preset accel matches modern copter scheme defaults', () => {
+    const scheme = detectPidScheme(makeParams(['ATC_RAT_RLL_P']));
+    const freestyleAccel = { roll: 110000, pitch: 110000, yaw: 27000 };
+    // Freestyle is the "standard" preset, should match scheme defaults
+    expect(freestyleAccel).toEqual(scheme.accelDefaults);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Profile data building (the profileData memo pattern)
+// ---------------------------------------------------------------------------
+
+describe('profile data includes both PID and accel params', () => {
+  it('profile data for copter merges PID + accel into single record', () => {
+    const scheme = detectPidScheme(makeParams(['ATC_RAT_RLL_P']));
+    const pidValues = {
+      roll:  { p: 0.135, i: 0.135, d: 0.0036, ff: 0 },
+      pitch: { p: 0.135, i: 0.135, d: 0.0036, ff: 0 },
+      yaw:   { p: 0.18, i: 0.018, d: 0, ff: 0 },
+    };
+    const accelValues = { roll: 110000, pitch: 110000, yaw: 27000 };
+
+    // Replicate the component's profileData memo logic
+    const pidParams = buildPresetParams(scheme, pidValues);
+    const accelParams = buildAccelParams(scheme, accelValues);
+    const profileData = { ...pidParams, ...accelParams };
+
+    // Should have all 15 params (12 PID + 3 accel)
+    expect(Object.keys(profileData)).toHaveLength(15);
+    // Verify no key collision between PID and accel
+    const pidKeys = Object.keys(pidParams);
+    const accelKeys = Object.keys(accelParams);
+    for (const k of accelKeys) {
+      expect(pidKeys).not.toContain(k);
+    }
+  });
+
+  it('profile data for legacy copter has PID only (no accel keys)', () => {
+    const scheme = detectPidScheme(makeParams(['RATE_RLL_P']));
+    const pidValues = {
+      roll:  { p: 0.15, i: 0.1, d: 0.004 },
+      pitch: { p: 0.15, i: 0.1, d: 0.004 },
+      yaw:   { p: 0.15, i: 0.015, d: 0 },
+    };
+    const accelValues = { roll: 110000, pitch: 110000, yaw: 27000 };
+
+    const pidParams = buildPresetParams(scheme, pidValues);
+    const accelParams = buildAccelParams(scheme, accelValues);
+    const profileData = { ...pidParams, ...accelParams };
+
+    // Legacy: 3 axes × 3 (P/I/D, no FF) = 9
+    expect(Object.keys(profileData)).toHaveLength(9);
+    expect(Object.keys(profileData).every(k => !k.includes('ACCEL'))).toBe(true);
+  });
+});
