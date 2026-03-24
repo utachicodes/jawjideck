@@ -1,4 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// Mock lucide-react since it's a renderer dependency not available in Node tests
+vi.mock('lucide-react', () => ({
+  Egg: 'Egg',
+  Drama: 'Drama',
+  Zap: 'Zap',
+  Film: 'Film',
+}));
+
 import { SAFETY_PRESETS } from '../mavlink-presets';
 
 /**
