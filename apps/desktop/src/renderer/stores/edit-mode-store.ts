@@ -34,7 +34,7 @@ export const useEditModeStore = create<EditModeStore>((set) => ({
   activeMode: 'mission',
   mapMode: '2d',
   mapViewport: null,
-  mapLayer: 'osm',
+  mapLayer: 'googleSat',
 
   setActiveMode: (mode) => {
     set({ activeMode: mode });
@@ -53,6 +53,6 @@ export const useEditModeStore = create<EditModeStore>((set) => ({
   },
 
   reset: () => {
-    set({ activeMode: 'mission', mapMode: '2d', mapViewport: null, mapLayer: 'osm' });
+    set({ activeMode: 'mission', mapMode: '2d', mapViewport: null, mapLayer: 'googleSat' });
   },
 }));

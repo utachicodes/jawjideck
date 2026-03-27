@@ -192,8 +192,8 @@ export function Mission3DPanel({
 
   const sharedMapLayer = useEditModeStore((s) => s.mapLayer);
   const setSharedMapLayer = useEditModeStore((s) => s.setMapLayer);
-  // Use shared layer if it's a valid 3D key, otherwise fall back to 'osm'
-  const activeLayer: LayerKey = (sharedMapLayer in MAP_LAYERS ? sharedMapLayer : 'osm') as LayerKey;
+  // Use shared layer if it's a valid 3D key, otherwise fall back to 'googleSat'
+  const activeLayer: LayerKey = (sharedMapLayer in MAP_LAYERS ? sharedMapLayer : 'googleSat') as LayerKey;
   const setActiveLayer = (layer: LayerKey) => setSharedMapLayer(layer);
   const [exaggeration, setExaggeration] = useState(1.0);
   const [mapReady, setMapReady] = useState(false);

@@ -737,7 +737,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
   const isRover = connectionState?.mavType === 10 || connectionState?.mavType === 11;
 
   // Set defaults based on vehicle type - Rovers need higher zoom and hybrid map
-  const defaultLayer: LayerKey = isRover ? 'googleHybrid' : 'osm';
+  const defaultLayer: LayerKey = isRover ? 'googleHybrid' : 'googleSat';
   const defaultZoom = isRover ? DEFAULT_ZOOM_ROVER : DEFAULT_ZOOM_AIRCRAFT;
 
   const [activeLayer, setActiveLayer] = useState<LayerKey>(defaultLayer);

@@ -36,10 +36,11 @@ import { OverlayToggles } from '../map/overlays/OverlayToggles';
 import { ApiKeyDialog } from '../map/overlays/ApiKeyDialog';
 import { useOverlayStore } from '../../stores/overlay-store';
 
-// Telemetry map only uses a subset of layers (no Google layers)
 const TELEMETRY_LAYERS = {
   osm: MAP_LAYERS.osm,
   satellite: MAP_LAYERS.satellite,
+  googleSat: MAP_LAYERS.googleSat,
+  googleHybrid: MAP_LAYERS.googleHybrid,
   terrain: MAP_LAYERS.terrain,
   dark: MAP_LAYERS.dark,
 } as const;
@@ -1038,8 +1039,8 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
   const [homePosition, setHomePosition] = useState<[number, number] | null>(null);
   const sharedMapLayer = useEditModeStore((s) => s.mapLayer);
   const setSharedMapLayer = useEditModeStore((s) => s.setMapLayer);
-  // Use shared layer if it's a valid 2D key, otherwise fall back to 'osm'
-  const currentLayer: TelemetryLayerKey = (sharedMapLayer in TELEMETRY_LAYERS ? sharedMapLayer : 'osm') as TelemetryLayerKey;
+  // Use shared layer if it's a valid 2D key, otherwise fall back to 'googleSat'
+  const currentLayer: TelemetryLayerKey = (sharedMapLayer in TELEMETRY_LAYERS ? sharedMapLayer : 'googleSat') as TelemetryLayerKey;
   const setCurrentLayer = (layer: TelemetryLayerKey) => setSharedMapLayer(layer);
   const [showHeadingLine, setShowHeadingLine] = useState(true);
   const [showCompass, setShowCompass] = useState(true);
