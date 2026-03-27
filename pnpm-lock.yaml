@@ -211,6 +211,9 @@ importers:
       '@types/ws':
         specifier: ^8.5.0
         version: 8.18.1
+      '@vitest/coverage-v8':
+        specifier: ^2.1.9
+        version: 2.1.9(vitest@2.1.9(@types/node@22.19.3))
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -242,6 +245,9 @@ importers:
 
   packages/mavlink-ts:
     devDependencies:
+      '@vitest/coverage-v8':
+        specifier: ^2.1.9
+        version: 2.1.9(vitest@2.1.9(@types/node@22.19.3))
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -251,6 +257,9 @@ importers:
 
   packages/msp-ts:
     devDependencies:
+      '@vitest/coverage-v8':
+        specifier: ^2.1.9
+        version: 2.1.9(vitest@2.1.9(@types/node@22.19.3))
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -5566,6 +5575,24 @@ snapshots:
       test-exclude: 7.0.2
       tinyrainbow: 1.2.0
       vitest: 2.1.9(@types/node@20.19.27)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vitest/coverage-v8@2.1.9(vitest@2.1.9(@types/node@22.19.3))':
+    dependencies:
+      '@ampproject/remapping': 2.3.0
+      '@bcoe/v8-coverage': 0.2.3
+      debug: 4.4.3
+      istanbul-lib-coverage: 3.2.2
+      istanbul-lib-report: 3.0.1
+      istanbul-lib-source-maps: 5.0.6
+      istanbul-reports: 3.2.0
+      magic-string: 0.30.21
+      magicast: 0.3.5
+      std-env: 3.10.0
+      test-exclude: 7.0.2
+      tinyrainbow: 1.2.0
+      vitest: 2.1.9(@types/node@22.19.3)
     transitivePeerDependencies:
       - supports-color
 
