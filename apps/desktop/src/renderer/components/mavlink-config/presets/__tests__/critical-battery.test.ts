@@ -123,11 +123,11 @@ describe('getCellVoltages - critical voltage calculations', () => {
 
 describe('SAFETY_PRESETS - critical vs low battery action consistency', () => {
   // BATT_FS_CRT_ACT: 0=Disabled, 1=Land Immediately, 2=RTL
-  // FS_BATT_ENABLE:  0=Disabled, 1=Land, 2=RTL
+  // BATT_FS_LOW_ACT: 0=Disabled, 1=Land, 2=RTL
 
   it('if low battery is disabled, critical battery is also disabled', () => {
     for (const [key, preset] of Object.entries(SAFETY_PRESETS)) {
-      const lowAction = preset.params['FS_BATT_ENABLE'] ?? 0;
+      const lowAction = preset.params['BATT_FS_LOW_ACT'] ?? 0;
       const critAction = preset.params['BATT_FS_CRT_ACT'] ?? 0;
       if (lowAction === 0) {
         expect(
@@ -140,7 +140,7 @@ describe('SAFETY_PRESETS - critical vs low battery action consistency', () => {
 
   it('critical action is at least as aggressive as low battery action in maximum preset', () => {
     const preset = SAFETY_PRESETS['maximum']!;
-    const lowAction = preset.params['FS_BATT_ENABLE']!;
+    const lowAction = preset.params['BATT_FS_LOW_ACT']!;
     const critAction = preset.params['BATT_FS_CRT_ACT']!;
 
     // Both enabled
@@ -157,13 +157,13 @@ describe('SAFETY_PRESETS - critical vs low battery action consistency', () => {
 
   it('balanced preset has both battery failsafe levels enabled', () => {
     const preset = SAFETY_PRESETS['balanced']!;
-    expect(preset.params['FS_BATT_ENABLE']).toBeGreaterThan(0);
+    expect(preset.params['BATT_FS_LOW_ACT']).toBeGreaterThan(0);
     expect(preset.params['BATT_FS_CRT_ACT']).toBeGreaterThan(0);
   });
 
   it('minimal preset has both battery failsafe levels disabled', () => {
     const preset = SAFETY_PRESETS['minimal']!;
-    expect(preset.params['FS_BATT_ENABLE']).toBe(0);
+    expect(preset.params['BATT_FS_LOW_ACT']).toBe(0);
     expect(preset.params['BATT_FS_CRT_ACT']).toBe(0);
   });
 
