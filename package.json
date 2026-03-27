@@ -36,18 +36,21 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
     "generate": "turbo run generate",
     "clean": "turbo run clean && rm -rf node_modules",
     "sync-version": "node -e \"const r=require('./package.json'),d=require('./apps/desktop/package.json');d.version=r.version;require('fs').writeFileSync('./apps/desktop/package.json',JSON.stringify(d,null,2)+'\\n')\"",
-    "package": "pnpm sync-version && pnpm --filter @ardudeck/desktop package"
+    "package": "pnpm sync-version && pnpm --filter @ardudeck/desktop package",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "turbo": "^2.3.3",
-    "typescript": "^5.7.2",
-    "prettier": "^3.4.2",
-    "eslint": "^9.17.0",
     "@typescript-eslint/eslint-plugin": "^8.18.2",
-    "@typescript-eslint/parser": "^8.18.2"
+    "@typescript-eslint/parser": "^8.18.2",
+    "eslint": "^9.17.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
   },
   "packageManager": "pnpm@9.15.1",
   "engines": {

@@ -9,6 +9,7 @@
   <a href="https://reactjs.org/"><img src="https://img.shields.io/badge/React-18-61DAFB?logo=react" alt="React" /></a>
   <a href="https://mavlink.io/"><img src="https://img.shields.io/badge/MAVLink-v1%2Fv2-green" alt="MAVLink" /></a>
   <a href="https://github.com/iNavFlight/inav/wiki/MSP-V2"><img src="https://img.shields.io/badge/MSP-v1%2Fv2-orange" alt="MSP" /></a>
+  <a href="https://codecov.io/gh/rubenCodeforges/ardudeck"><img src="https://codecov.io/gh/rubenCodeforges/ardudeck/branch/master/graph/badge.svg" alt="Coverage" /></a>
   <a href="https://discord.gg/JX2JdVXPPC"><img src="https://img.shields.io/badge/Discord-Join%20Us-5865F2?logo=discord&logoColor=white" alt="Discord" /></a>
   <a href="https://ardudeck.com"><img src="https://img.shields.io/badge/Website-ardudeck.com-22d3ee" alt="Website" /></a>
 </p>

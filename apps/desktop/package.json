@@ -19,7 +19,8 @@
     "package": "electron-builder",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@ardudeck/comms": "workspace:*",
@@ -55,6 +56,7 @@
     "@types/three": "^0.170.0",
     "@types/ws": "^8.5.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/coverage-v8": "2.1.9",
     "autoprefixer": "^10.4.16",
     "electron": "28.3.3",
     "electron-builder": "^26.7.0",
