@@ -1,0 +1,251 @@
+name: Build ArduPilot SITL Binaries
+
+# Builds native SITL binaries for macOS (ARM64 + x64) and Linux (x64).
+# Windows uses Cygwin builds from firmware.ardupilot.org — no build needed.
+#
+# Binaries are uploaded to a GitHub release tagged "sitl-v{version}".
+# ArduDeck downloads from:
+#   https://github.com/rubenCodeforges/ardudeck/releases/download/sitl-v{version}/{binary}
+
+on:
+  workflow_dispatch:
+    inputs:
+      ardupilot_ref:
+        description: 'ArduPilot git ref (tag, branch, or SHA). E.g. Copter-4.5.7, master'
+        required: true
+        default: 'Copter-4.5.7'
+      vehicles:
+        description: 'Vehicles to build (comma-separated: copter,plane,rover,sub)'
+        required: true
+        default: 'copter,plane,rover,sub'
+  schedule:
+    # Rebuild weekly on Monday at 06:00 UTC to stay current with stable releases
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: write
+
+env:
+  # Default ref for scheduled builds — update when new stable releases come out
+  DEFAULT_ARDUPILOT_REF: 'Copter-4.5.7'
+
+jobs:
+  # ─── macOS ARM64 (Apple Silicon) ──────────────────────────────────────
+  build-macos-arm64:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout ArduPilot
+        uses: actions/checkout@v4
+        with:
+          repository: ArduPilot/ardupilot
+          ref: ${{ inputs.ardupilot_ref || env.DEFAULT_ARDUPILOT_REF }}
+          submodules: recursive
+          path: ardupilot
+
+      - name: Install build dependencies
+        run: |
+          brew install gawk coreutils ccache
+          python3 -m pip install --break-system-packages --upgrade pip
+          python3 -m pip install --break-system-packages empy==3.3.4 pexpect setuptools
+
+      - name: Configure SITL
+        working-directory: ardupilot
+        run: ./waf configure --board sitl
+
+      - name: Build vehicles
+        working-directory: ardupilot
+        run: |
+          VEHICLES="${{ inputs.vehicles || 'copter,plane,rover,sub' }}"
+          IFS=',' read -ra VEHICLE_LIST <<< "$VEHICLES"
+          for v in "${VEHICLE_LIST[@]}"; do
+            echo "::group::Building $v"
+            ./waf "$v"
+            echo "::endgroup::"
+          done
+
+      - name: Collect binaries
+        run: |
+          mkdir -p output
+          for f in ardupilot/build/sitl/bin/*; do
+            name=$(basename "$f")
+            # Skip non-binary files
+            [ -x "$f" ] && [ -f "$f" ] && cp "$f" "output/${name}-macos-arm64"
+          done
+          ls -lh output/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sitl-macos-arm64
+          path: output/*
+
+  # ─── macOS x64 (Intel) ───────────────────────────────────────────────
+  build-macos-x64:
+    runs-on: macos-15-intel
+    steps:
+      - name: Checkout ArduPilot
+        uses: actions/checkout@v4
+        with:
+          repository: ArduPilot/ardupilot
+          ref: ${{ inputs.ardupilot_ref || env.DEFAULT_ARDUPILOT_REF }}
+          submodules: recursive
+          path: ardupilot
+
+      - name: Install build dependencies
+        run: |
+          brew install gawk coreutils ccache
+          python3 -m pip install --break-system-packages --upgrade pip
+          python3 -m pip install --break-system-packages empy==3.3.4 pexpect setuptools
+
+      - name: Configure SITL
+        working-directory: ardupilot
+        run: ./waf configure --board sitl
+
+      - name: Build vehicles
+        working-directory: ardupilot
+        run: |
+          VEHICLES="${{ inputs.vehicles || 'copter,plane,rover,sub' }}"
+          IFS=',' read -ra VEHICLE_LIST <<< "$VEHICLES"
+          for v in "${VEHICLE_LIST[@]}"; do
+            echo "::group::Building $v"
+            ./waf "$v"
+            echo "::endgroup::"
+          done
+
+      - name: Collect binaries
+        run: |
+          mkdir -p output
+          for f in ardupilot/build/sitl/bin/*; do
+            name=$(basename "$f")
+            [ -x "$f" ] && [ -f "$f" ] && cp "$f" "output/${name}-macos-x64"
+          done
+          ls -lh output/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sitl-macos-x64
+          path: output/*
+
+  # ─── Linux x64 ───────────────────────────────────────────────────────
+  build-linux-x64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ArduPilot
+        uses: actions/checkout@v4
+        with:
+          repository: ArduPilot/ardupilot
+          ref: ${{ inputs.ardupilot_ref || env.DEFAULT_ARDUPILOT_REF }}
+          submodules: recursive
+          path: ardupilot
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc g++ gawk git make cmake python3-pip ccache
+          python3 -m pip install --upgrade pip
+          python3 -m pip install empy==3.3.4 pexpect setuptools
+
+      - name: Configure SITL
+        working-directory: ardupilot
+        run: ./waf configure --board sitl
+
+      - name: Build vehicles
+        working-directory: ardupilot
+        run: |
+          VEHICLES="${{ inputs.vehicles || 'copter,plane,rover,sub' }}"
+          IFS=',' read -ra VEHICLE_LIST <<< "$VEHICLES"
+          for v in "${VEHICLE_LIST[@]}"; do
+            echo "::group::Building $v"
+            ./waf "$v"
+            echo "::endgroup::"
+          done
+
+      - name: Collect binaries
+        run: |
+          mkdir -p output
+          for f in ardupilot/build/sitl/bin/*; do
+            name=$(basename "$f")
+            [ -x "$f" ] && [ -f "$f" ] && cp "$f" "output/${name}-linux-x64"
+          done
+          ls -lh output/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sitl-linux-x64
+          path: output/*
+
+  # ─── Create / Update Release ──────────────────────────────────────────
+  release:
+    needs: [build-macos-arm64, build-macos-x64, build-linux-x64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine version tag
+        run: |
+          REF="${{ inputs.ardupilot_ref || env.DEFAULT_ARDUPILOT_REF }}"
+          # Normalize: Copter-4.5.7 -> 4.5.7, master -> master-<date>
+          if [[ "$REF" =~ ^[A-Za-z]+-([0-9]+\.[0-9]+.*) ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+          else
+            VERSION="${REF}-$(date +%Y%m%d)"
+          fi
+          echo "SITL_TAG=sitl-v${VERSION}" >> $GITHUB_ENV
+          echo "SITL_VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "ARDUPILOT_REF=${REF}" >> $GITHUB_ENV
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display artifacts
+        run: ls -R artifacts
+
+      - name: Create manifest
+        run: |
+          cat > artifacts/manifest.json << EOF
+          {
+            "ardupilot_ref": "${{ env.ARDUPILOT_REF }}",
+            "version": "${{ env.SITL_VERSION }}",
+            "tag": "${{ env.SITL_TAG }}",
+            "built_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "platforms": {
+              "macos-arm64": { "suffix": "-macos-arm64" },
+              "macos-x64": { "suffix": "-macos-x64" },
+              "linux-x64": { "suffix": "-linux-x64" }
+            },
+            "vehicles": {
+              "copter": "arducopter",
+              "plane": "arduplane",
+              "rover": "ardurover",
+              "sub": "ardusub"
+            }
+          }
+          EOF
+
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Delete existing release if it exists (for rebuilds)
+          gh release delete "${{ env.SITL_TAG }}" --yes --cleanup-tag 2>/dev/null || true
+
+          # Create the release
+          gh release create "${{ env.SITL_TAG }}" \
+            --title "ArduPilot SITL ${{ env.SITL_VERSION }}" \
+            --notes "Pre-built ArduPilot SITL binaries for ArduDeck.
+
+          **ArduPilot ref:** \`${{ env.ARDUPILOT_REF }}\`
+          **Built:** $(date -u +%Y-%m-%d)
+
+          ### Platforms
+          - macOS ARM64 (Apple Silicon)
+          - macOS x64 (Intel)
+          - Linux x64
+
+          Windows uses Cygwin builds from firmware.ardupilot.org." \
+            --prerelease \
+            artifacts/**/*

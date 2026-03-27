@@ -799,7 +799,7 @@ export function Mission3DPanel({
             >3D</button>
           </div>
         )}
-        {(Object.keys(MAP_LAYERS) as LayerKey[]).filter((k) => k !== 'dem').map((key) => (
+        {(Object.keys(MAP_LAYERS) as LayerKey[]).filter((k) => k !== 'dem' && k !== 'openaip' && k !== 'radar').map((key) => (
           <button
             key={key}
             onClick={() => setActiveLayer(key)}

@@ -27,7 +27,6 @@ export default function ArduPilotSitlTab() {
   const {
     platformSupported,
     platformError,
-    usesDocker,
     isRunning,
     isStarting,
     isStopping,
@@ -157,22 +156,7 @@ export default function ArduPilotSitlTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Docker Info Banner (macOS) */}
-      {usesDocker && (
-        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-            </svg>
-            <div>
-              <h3 className="text-sm font-medium text-blue-400">Docker Mode (macOS)</h3>
-              <p className="text-xs text-blue-300/80 mt-1">
-                SITL will run in Docker container. Make sure Docker Desktop is running.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Platform not supported banner */}
 
       {/* Platform Error */}
       {!platformSupported && platformError && (
