@@ -52,37 +52,29 @@ jobs:
           brew install gawk coreutils ccache || true
           pip install empy==3.3.4 pexpect setuptools future dronecan lxml pymavlink
 
-      - name: Configure and build SITL
+      - name: Configure SITL
+        working-directory: ardupilot
+        run: ./waf configure --board sitl -j1
+
+      - name: Pre-generate Lua bindings
+        working-directory: ardupilot
+        timeout-minutes: 5
+        run: |
+          # Build the gen-bindings tool and run it single-threaded before the main build
+          # This avoids a deadlock when WAF tries to build+run gen-bindings in parallel with other tasks
+          ./waf --targets=libraries/AP_Scripting/lua_generated_bindings.cpp -j1 || true
+
+      - name: Build vehicles
         working-directory: ardupilot
         timeout-minutes: 30
         run: |
-          # Try with scripting first; if Lua bindings generator hangs, retry without
-          ./waf configure --board sitl
           VEHICLES="${{ inputs.vehicles || 'copter,plane,rover,sub' }}"
           IFS=',' read -ra VEHICLE_LIST <<< "$VEHICLES"
-
-          BUILD_OK=true
           for v in "${VEHICLE_LIST[@]}"; do
             echo "::group::Building $v"
-            if ! timeout 600 ./waf "$v"; then
-              echo "::warning::Build with scripting failed/timed out for $v, retrying without scripting"
-              BUILD_OK=false
-              break
-            fi
+            ./waf "$v"
             echo "::endgroup::"
           done
-
-          if [ "$BUILD_OK" = false ]; then
-            echo "::group::Reconfiguring without scripting"
-            ./waf distclean
-            ./waf configure --board sitl --disable-scripting
-            echo "::endgroup::"
-            for v in "${VEHICLE_LIST[@]}"; do
-              echo "::group::Building $v (no scripting)"
-              ./waf "$v"
-              echo "::endgroup::"
-            done
-          fi
 
       - name: Collect binaries
         run: |
@@ -122,37 +114,29 @@ jobs:
           brew install gawk coreutils ccache || true
           pip install empy==3.3.4 pexpect setuptools future dronecan lxml pymavlink
 
-      - name: Configure and build SITL
+      - name: Configure SITL
+        working-directory: ardupilot
+        run: ./waf configure --board sitl -j1
+
+      - name: Pre-generate Lua bindings
+        working-directory: ardupilot
+        timeout-minutes: 5
+        run: |
+          # Build the gen-bindings tool and run it single-threaded before the main build
+          # This avoids a deadlock when WAF tries to build+run gen-bindings in parallel with other tasks
+          ./waf --targets=libraries/AP_Scripting/lua_generated_bindings.cpp -j1 || true
+
+      - name: Build vehicles
         working-directory: ardupilot
         timeout-minutes: 30
         run: |
-          # Try with scripting first; if Lua bindings generator hangs, retry without
-          ./waf configure --board sitl
           VEHICLES="${{ inputs.vehicles || 'copter,plane,rover,sub' }}"
           IFS=',' read -ra VEHICLE_LIST <<< "$VEHICLES"
-
-          BUILD_OK=true
           for v in "${VEHICLE_LIST[@]}"; do
             echo "::group::Building $v"
-            if ! timeout 600 ./waf "$v"; then
-              echo "::warning::Build with scripting failed/timed out for $v, retrying without scripting"
-              BUILD_OK=false
-              break
-            fi
+            ./waf "$v"
             echo "::endgroup::"
           done
-
-          if [ "$BUILD_OK" = false ]; then
-            echo "::group::Reconfiguring without scripting"
-            ./waf distclean
-            ./waf configure --board sitl --disable-scripting
-            echo "::endgroup::"
-            for v in "${VEHICLE_LIST[@]}"; do
-              echo "::group::Building $v (no scripting)"
-              ./waf "$v"
-              echo "::endgroup::"
-            done
-          fi
 
       - name: Collect binaries
         run: |
@@ -191,37 +175,29 @@ jobs:
           sudo apt-get install -y gcc g++ gawk git make cmake ccache libxml2-dev libxslt-dev
           pip install empy==3.3.4 pexpect setuptools future dronecan lxml pymavlink
 
-      - name: Configure and build SITL
+      - name: Configure SITL
+        working-directory: ardupilot
+        run: ./waf configure --board sitl -j1
+
+      - name: Pre-generate Lua bindings
+        working-directory: ardupilot
+        timeout-minutes: 5
+        run: |
+          # Build the gen-bindings tool and run it single-threaded before the main build
+          # This avoids a deadlock when WAF tries to build+run gen-bindings in parallel with other tasks
+          ./waf --targets=libraries/AP_Scripting/lua_generated_bindings.cpp -j1 || true
+
+      - name: Build vehicles
         working-directory: ardupilot
         timeout-minutes: 30
         run: |
-          # Try with scripting first; if Lua bindings generator hangs, retry without
-          ./waf configure --board sitl
           VEHICLES="${{ inputs.vehicles || 'copter,plane,rover,sub' }}"
           IFS=',' read -ra VEHICLE_LIST <<< "$VEHICLES"
-
-          BUILD_OK=true
           for v in "${VEHICLE_LIST[@]}"; do
             echo "::group::Building $v"
-            if ! timeout 600 ./waf "$v"; then
-              echo "::warning::Build with scripting failed/timed out for $v, retrying without scripting"
-              BUILD_OK=false
-              break
-            fi
+            ./waf "$v"
             echo "::endgroup::"
           done
-
-          if [ "$BUILD_OK" = false ]; then
-            echo "::group::Reconfiguring without scripting"
-            ./waf distclean
-            ./waf configure --board sitl --disable-scripting
-            echo "::endgroup::"
-            for v in "${VEHICLE_LIST[@]}"; do
-              echo "::group::Building $v (no scripting)"
-              ./waf "$v"
-              echo "::endgroup::"
-            done
-          fi
 
       - name: Collect binaries
         run: |
