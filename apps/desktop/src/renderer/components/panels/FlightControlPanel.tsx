@@ -12,6 +12,8 @@ import { useTelemetryStore } from '../../stores/telemetry-store';
 import { useFlightControlStore } from '../../stores/flight-control-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useMessagesStore } from '../../stores/messages-store';
+import { isPreArmMessage, extractPreArmReason, matchPreArmError } from '../../../shared/prearm-checks';
+import { PreArmParamFix } from '../prearm/PreArmParamFix';
 import { PanelContainer, SectionTitle } from './panel-utils';
 
 // =============================================================================
@@ -445,6 +447,7 @@ function MavlinkFlightControl() {
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'info' | 'error' | 'success' } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isHorizontal, setIsHorizontal] = useState(false);
+  const [expandedPreArm, setExpandedPreArm] = useState<Set<string>>(new Set());
   const prevArmedRef = useRef(flight.armed);
 
   // Detect panel orientation for responsive layout
@@ -480,13 +483,13 @@ function MavlinkFlightControl() {
   const preArmReasons = useMemo(() => {
     if (flight.armed) return [];
     return messages
-      .filter((m) => m.text.includes('PreArm:') || m.text.includes('Arm:'))
+      .filter((m) => isPreArmMessage(m.text))
       .map((m) => {
-        // Extract the reason part after "PreArm:" or "Arm:"
-        const match = m.text.match(/(?:Pre)?Arm:\s*(.+)/);
-        return match ? match[1]!.trim() : m.text;
+        const match = matchPreArmError(m.text);
+        return match ? { reason: match.reason, fix: match.pattern.fix } : null;
       })
-      .filter((reason, i, arr) => arr.indexOf(reason) === i) // deduplicate
+      .filter((x): x is NonNullable<typeof x> => x !== null)
+      .filter((x, i, arr) => arr.findIndex((a) => a.reason === x.reason) === i)
       .slice(0, 10);
   }, [messages, flight.armed]);
 
@@ -624,11 +627,34 @@ function MavlinkFlightControl() {
 
             {/* Pre-arm reasons as compact chips */}
             {!flight.armed && preArmReasons.length > 0 && (
-              <div className="flex flex-wrap items-center justify-center gap-1.5">
-                {preArmReasons.map((reason, i) => (
-                  <span key={i} className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 rounded text-red-300 text-[11px]">
-                    {reason}
-                  </span>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center justify-center gap-1.5">
+                  {preArmReasons.map(({ reason, fix }, i) => {
+                    const hasFixContent = fix.params.length > 0 || fix.action || fix.navigateTo;
+                    return (
+                      <span
+                        key={i}
+                        className={`px-2 py-0.5 bg-red-500/10 border border-red-500/20 rounded text-red-300 text-[11px] ${hasFixContent ? 'cursor-pointer hover:bg-red-500/15' : ''}`}
+                        onClick={hasFixContent ? () => setExpandedPreArm((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(reason)) next.delete(reason);
+                          else next.add(reason);
+                          return next;
+                        }) : undefined}
+                      >
+                        {reason} {hasFixContent && (expandedPreArm.has(reason) ? '▾' : '›')}
+                      </span>
+                    );
+                  })}
+                </div>
+                {preArmReasons.filter(({ reason }) => expandedPreArm.has(reason)).map(({ reason, fix }) => (
+                  <PreArmParamFix
+                    key={reason}
+                    paramIds={fix.params}
+                    hint={fix.hint}
+                    action={fix.action}
+                    navigateTo={fix.navigateTo}
+                  />
                 ))}
               </div>
             )}
@@ -655,17 +681,42 @@ function MavlinkFlightControl() {
             )}
 
             {!flight.armed && preArmReasons.length > 0 && (
-              <div className="mb-4 p-2.5 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <div className="text-red-400 text-[10px] font-medium uppercase tracking-wider mb-1.5">Pre-arm Checks Failed</div>
-                <div className="flex flex-col gap-1">
-                  {preArmReasons.map((reason, i) => (
-                    <div key={i} className="flex items-start gap-1.5">
-                      <svg className="w-3 h-3 text-red-400 mt-px shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                      <span className="text-red-300 text-[11px] leading-tight">{reason}</span>
-                    </div>
-                  ))}
+              <div className="mb-4 bg-red-500/10 border border-red-500/30 rounded-lg overflow-hidden">
+                <div className="text-red-400 text-[10px] font-medium uppercase tracking-wider px-2.5 pt-2.5 pb-1.5">Pre-arm Checks Failed</div>
+                <div className="flex flex-col">
+                  {preArmReasons.map(({ reason, fix }, i) => {
+                    const isExpanded = expandedPreArm.has(reason);
+                    const hasFixContent = fix.params.length > 0 || fix.action || fix.navigateTo;
+                    return (
+                      <div key={i}>
+                        <div
+                          className={`flex items-start gap-1.5 px-2.5 py-1 ${hasFixContent ? 'cursor-pointer hover:bg-red-500/5' : ''} transition-colors`}
+                          onClick={hasFixContent ? () => setExpandedPreArm((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(reason)) next.delete(reason);
+                            else next.add(reason);
+                            return next;
+                          }) : undefined}
+                        >
+                          <svg className="w-3 h-3 text-red-400 mt-px shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          <span className="flex-1 text-red-300 text-[11px] leading-tight">{reason}</span>
+                          {hasFixContent && (
+                            <span className="text-[10px] text-blue-400 shrink-0">{isExpanded ? '▾' : 'Fix ›'}</span>
+                          )}
+                        </div>
+                        {isExpanded && (
+                          <PreArmParamFix
+                            paramIds={fix.params}
+                            hint={fix.hint}
+                            action={fix.action}
+                            navigateTo={fix.navigateTo}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

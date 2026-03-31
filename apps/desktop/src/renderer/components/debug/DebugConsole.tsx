@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useConsoleStore } from '../../stores/console-store';
 import { useMessagesStore } from '../../stores/messages-store';
 import { useConnectionStore } from '../../stores/connection-store';
+import { matchPreArmError } from '../../../shared/prearm-checks';
+import { PreArmParamFix } from '../prearm/PreArmParamFix';
 
 const LOG_COLORS = {
   info: 'text-blue-400',
@@ -62,8 +64,18 @@ export function DebugConsole() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<Tab>('console');
+  const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
 
   const isMavlink = protocol === 'mavlink';
+
+  const toggleExpand = (key: string) => {
+    setExpandedMessages((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   // Auto-scroll to bottom when new logs arrive
   useEffect(() => {
@@ -240,39 +252,64 @@ export function DebugConsole() {
                 <div className="text-gray-600 text-center py-4">No messages from autopilot</div>
               ) : (
                 <div className="divide-y divide-gray-800/50">
-                  {messages.map((msg, i) => (
-                    <div
-                      key={`${msg.text}-${msg.severity}-${i}`}
-                      className="flex items-start gap-2 px-3 py-1.5 hover:bg-gray-800/30 transition-colors"
-                    >
-                      {/* Severity badge */}
-                      <span className={`shrink-0 text-[9px] font-bold px-1 py-0.5 rounded mt-0.5 ${
-                        msg.severity <= 3 ? 'bg-red-500/20 text-red-400'
-                          : msg.severity === 4 ? 'bg-yellow-500/20 text-yellow-400'
-                          : msg.severity === 5 ? 'bg-blue-500/20 text-blue-400'
-                          : 'bg-gray-500/20 text-gray-400'
-                      }`}>
-                        {msg.severityLabel.slice(0, 4)}
-                      </span>
+                  {messages.map((msg, i) => {
+                    const msgKey = `${msg.text}-${msg.severity}-${i}`;
+                    const prearmMatch = matchPreArmError(msg.text);
+                    const isExpanded = expandedMessages.has(msgKey);
 
-                      {/* Message text */}
-                      <span className={`flex-1 leading-relaxed ${severityColor(msg.severity)}`}>
-                        {msg.text}
-                      </span>
+                    return (
+                      <div key={msgKey}>
+                        <div
+                          className={`flex items-start gap-2 px-3 py-1.5 hover:bg-gray-800/30 transition-colors ${prearmMatch ? 'cursor-pointer' : ''}`}
+                          onClick={prearmMatch ? () => toggleExpand(msgKey) : undefined}
+                        >
+                          {/* Severity badge */}
+                          <span className={`shrink-0 text-[9px] font-bold px-1 py-0.5 rounded mt-0.5 ${
+                            msg.severity <= 3 ? 'bg-red-500/20 text-red-400'
+                              : msg.severity === 4 ? 'bg-yellow-500/20 text-yellow-400'
+                              : msg.severity === 5 ? 'bg-blue-500/20 text-blue-400'
+                              : 'bg-gray-500/20 text-gray-400'
+                          }`}>
+                            {msg.severityLabel.slice(0, 4)}
+                          </span>
 
-                      {/* Count badge */}
-                      {msg.count > 1 && (
-                        <span className="shrink-0 text-[9px] bg-gray-700/50 text-gray-400 px-1.5 py-0.5 rounded-full mt-0.5">
-                          x{msg.count}
-                        </span>
-                      )}
+                          {/* Message text */}
+                          <span className={`flex-1 leading-relaxed ${severityColor(msg.severity)}`}>
+                            {msg.text}
+                          </span>
 
-                      {/* Timestamp */}
-                      <span className="shrink-0 text-[10px] text-gray-600 mt-0.5">
-                        {formatTimeShort(msg.timestamp)}
-                      </span>
-                    </div>
-                  ))}
+                          {/* Count badge */}
+                          {msg.count > 1 && (
+                            <span className="shrink-0 text-[9px] bg-gray-700/50 text-gray-400 px-1.5 py-0.5 rounded-full mt-0.5">
+                              x{msg.count}
+                            </span>
+                          )}
+
+                          {/* Expand indicator for pre-arm messages */}
+                          {prearmMatch && (
+                            <span className="shrink-0 text-[10px] text-blue-400 mt-0.5">
+                              {isExpanded ? '▾' : 'Fix ›'}
+                            </span>
+                          )}
+
+                          {/* Timestamp */}
+                          <span className="shrink-0 text-[10px] text-gray-600 mt-0.5">
+                            {formatTimeShort(msg.timestamp)}
+                          </span>
+                        </div>
+
+                        {/* Expandable fix section */}
+                        {prearmMatch && isExpanded && (
+                          <PreArmParamFix
+                            paramIds={prearmMatch.pattern.fix.params}
+                            hint={prearmMatch.pattern.fix.hint}
+                            action={prearmMatch.pattern.fix.action}
+                            navigateTo={prearmMatch.pattern.fix.navigateTo}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

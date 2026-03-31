@@ -1,5 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMessagesStore } from '../../stores/messages-store';
+import { matchPreArmError } from '../../../shared/prearm-checks';
+import { PreArmParamFix } from '../prearm/PreArmParamFix';
 import { PanelContainer } from './panel-utils';
 
 /** Severity → Tailwind color class */
@@ -75,6 +77,16 @@ export function MessagesPanel() {
   const messages = useMessagesStore((s) => s.messages);
   const clear = useMessagesStore((s) => s.clear);
   const listRef = useRef<HTMLDivElement>(null);
+  const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (key: string) => {
+    setExpandedMessages((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   // Auto-scroll to top when new messages arrive (they're prepended)
   useEffect(() => {
@@ -108,34 +120,59 @@ export function MessagesPanel() {
           </div>
         ) : (
           <div className="divide-y divide-gray-800/50">
-            {messages.map((msg, i) => (
-              <div
-                key={`${msg.text}-${msg.severity}-${i}`}
-                className={`flex items-start gap-2 px-3 py-1.5 border-l-2 ${severityBorder(msg.severity)} hover:bg-gray-800/30 transition-colors`}
-              >
-                {/* Severity badge */}
-                <span className={`shrink-0 text-[9px] font-mono font-bold px-1 py-0.5 rounded ${severityBadgeBg(msg.severity)} mt-0.5`}>
-                  {msg.severityLabel.slice(0, 4)}
-                </span>
+            {messages.map((msg, i) => {
+              const msgKey = `${msg.text}-${msg.severity}-${i}`;
+              const prearmMatch = matchPreArmError(msg.text);
+              const isExpanded = expandedMessages.has(msgKey);
 
-                {/* Message text */}
-                <span className={`flex-1 text-xs font-mono leading-relaxed ${severityColor(msg.severity)}`}>
-                  {msg.text}
-                </span>
+              return (
+                <div key={msgKey}>
+                  <div
+                    className={`flex items-start gap-2 px-3 py-1.5 border-l-2 ${severityBorder(msg.severity)} hover:bg-gray-800/30 transition-colors ${prearmMatch ? 'cursor-pointer' : ''}`}
+                    onClick={prearmMatch ? () => toggleExpand(msgKey) : undefined}
+                  >
+                    {/* Severity badge */}
+                    <span className={`shrink-0 text-[9px] font-mono font-bold px-1 py-0.5 rounded ${severityBadgeBg(msg.severity)} mt-0.5`}>
+                      {msg.severityLabel.slice(0, 4)}
+                    </span>
 
-                {/* Count badge (for repeated messages) */}
-                {msg.count > 1 && (
-                  <span className="shrink-0 text-[9px] font-mono bg-gray-700/50 text-gray-400 px-1.5 py-0.5 rounded-full mt-0.5">
-                    x{msg.count}
-                  </span>
-                )}
+                    {/* Message text */}
+                    <span className={`flex-1 text-xs font-mono leading-relaxed ${severityColor(msg.severity)}`}>
+                      {msg.text}
+                    </span>
 
-                {/* Timestamp */}
-                <span className="shrink-0 text-[10px] font-mono text-gray-600 mt-0.5">
-                  {formatTime(msg.timestamp)}
-                </span>
-              </div>
-            ))}
+                    {/* Count badge (for repeated messages) */}
+                    {msg.count > 1 && (
+                      <span className="shrink-0 text-[9px] font-mono bg-gray-700/50 text-gray-400 px-1.5 py-0.5 rounded-full mt-0.5">
+                        x{msg.count}
+                      </span>
+                    )}
+
+                    {/* Expand indicator for pre-arm messages */}
+                    {prearmMatch && (
+                      <span className="shrink-0 text-[10px] text-blue-400 mt-0.5">
+                        {isExpanded ? '▾' : 'Fix ›'}
+                      </span>
+                    )}
+
+                    {/* Timestamp */}
+                    <span className="shrink-0 text-[10px] font-mono text-gray-600 mt-0.5">
+                      {formatTime(msg.timestamp)}
+                    </span>
+                  </div>
+
+                  {/* Expandable fix section */}
+                  {prearmMatch && isExpanded && (
+                    <PreArmParamFix
+                      paramIds={prearmMatch.pattern.fix.params}
+                      hint={prearmMatch.pattern.fix.hint}
+                      action={prearmMatch.pattern.fix.action}
+                      navigateTo={prearmMatch.pattern.fix.navigateTo}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

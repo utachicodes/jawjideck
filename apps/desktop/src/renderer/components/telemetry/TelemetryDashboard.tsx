@@ -29,6 +29,7 @@ import {
   FlightControlPanel,
   MapPanel,
   MessagesPanel,
+  PreflightCheckCard,
   // Mission panels (for monitoring during flight) - MissionMapPanel removed (merged into MapPanel)
   WaypointTablePanel,
   AltitudeProfilePanel,
@@ -55,6 +56,7 @@ const components: Record<string, React.FC<IDockviewPanelProps>> = {
   FlightControlPanel: () => <PanelWrapper component={FlightControlPanel} />,
   MapPanel: () => <PanelWrapper component={MapPanel} />, // Now includes mission overlays
   MessagesPanel: () => <PanelWrapper component={MessagesPanel} />,
+  PreflightCheckCard: () => <PanelWrapper component={PreflightCheckCard} />,
   // Mission panels (for monitoring during flight) - readOnly mode
   // Note: MissionMapPanel removed - mission data now integrated into MapPanel
   WaypointTablePanel: () => <WaypointTablePanel readOnly />,
@@ -432,7 +434,7 @@ function LayoutToolbar({
 const MISSION_PANEL_IDS = ['waypoints', 'altitudeProfile'];
 
 // MAVLink-only panel IDs (STATUSTEXT doesn't exist in MSP)
-const MAVLINK_PANEL_IDS = ['messages'];
+const MAVLINK_PANEL_IDS = ['messages', 'preflightCheck'];
 
 // Add panel dropdown
 function AddPanelDropdown({ onAddPanel, supportsMissionPlanning, isMavlink }: { onAddPanel: (id: string, component: string, title: string) => void; supportsMissionPlanning: boolean; isMavlink: boolean }) {

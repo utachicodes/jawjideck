@@ -14,6 +14,7 @@ import { useTelemetryStore } from '../../stores/telemetry-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useFlightControlStore } from '../../stores/flight-control-store';
 import { useMessagesStore } from '../../stores/messages-store';
+import { isPreArmMessage, extractPreArmReason } from '../../../shared/prearm-checks';
 
 export function ArmDisarmButton() {
   const flight = useTelemetryStore((s) => s.flight);
@@ -74,11 +75,8 @@ export function ArmDisarmButton() {
     if (isArmed || !isConnected) return [];
     if (isMavlink) {
       return messages
-        .filter((m) => m.text.includes('PreArm:') || m.text.includes('Arm:'))
-        .map((m) => {
-          const match = m.text.match(/(?:Pre)?Arm:\s*(.+)/);
-          return match ? match[1]!.trim() : m.text;
-        })
+        .filter((m) => isPreArmMessage(m.text))
+        .map((m) => extractPreArmReason(m.text))
         .filter((reason, i, arr) => arr.indexOf(reason) === i)
         .slice(0, 8);
     }
