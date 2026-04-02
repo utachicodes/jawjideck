@@ -2,6 +2,9 @@
 node_modules/
 .pnpm-store/
 
+# Worktrees
+.worktrees/
+
 # Build outputs
 dist/
 build/
