@@ -197,6 +197,18 @@ select,
   background: #0d0d14;
 }
 
+/* Compact dockview for log explorer */
+.log-explorer-dock .tabs-and-actions-container {
+  height: 26px !important;
+  min-height: 26px !important;
+}
+
+.log-explorer-dock .tab {
+  height: 24px !important;
+  font-size: 11px !important;
+  padding: 0 8px !important;
+}
+
 /* Leaflet map customization */
 .leaflet-container {
   background: #0d0d14;

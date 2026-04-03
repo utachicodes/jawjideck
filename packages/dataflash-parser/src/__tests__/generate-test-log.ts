@@ -134,11 +134,15 @@ for (let t = 0; t < FLIGHT_DURATION_S * 1000; t += SAMPLE_RATE_MS) {
   const timeUs = startTimeUs + t * 1000;
   const tS = t / 1000;
 
-  // Simulate altitude profile: takeoff, cruise at 50m, descent
+  // Simulate altitude profile: takeoff, climb, vary, high pass, descend
   let alt = 0;
-  if (tS < 20) alt = (tS / 20) * 50;
-  else if (tS < 250) alt = 50 + Math.sin(tS / 10) * 3;
-  else alt = Math.max(0, 50 - ((tS - 250) / 50) * 50);
+  if (tS < 20) alt = (tS / 20) * 30;                          // Takeoff to 30m
+  else if (tS < 60) alt = 30 + ((tS - 20) / 40) * 70;        // Climb to 100m
+  else if (tS < 120) alt = 100 + Math.sin(tS / 8) * 20;      // Vary 80-120m
+  else if (tS < 180) alt = 100 + ((tS - 120) / 60) * 50 + Math.sin(tS / 5) * 10; // Climb to 150m
+  else if (tS < 240) alt = 150 - ((tS - 180) / 60) * 80 + Math.sin(tS / 6) * 15; // Descend to 70m
+  else if (tS < 280) alt = 70 - ((tS - 240) / 40) * 60;      // Final descent to 10m
+  else alt = Math.max(0, 10 - ((tS - 280) / 20) * 10);       // Landing
 
   // GPS every 200ms
   if (t % 200 === 0) {
@@ -150,8 +154,12 @@ for (let t = 0; t < FLIGHT_DURATION_S * 1000; t += SAMPLE_RATE_MS) {
     v.setUint16(13, 2300, true); // GWk
     p[15] = tS < 10 ? 8 : (12 + Math.floor(Math.random() * 4)); // NSats: low at start
     v.setInt16(16, Math.floor((tS < 10 ? 2.5 : 0.8 + Math.random() * 0.4) * 100), true); // HDop (centi)
-    v.setInt32(18, Math.floor((-35.3632 + Math.sin(tS / 60) * 0.001) * 1e7), true); // Lat
-    v.setInt32(22, Math.floor((149.1652 + Math.cos(tS / 60) * 0.001) * 1e7), true); // Lng
+    // Figure-8 flight pattern, ~500m radius
+    const phase = tS / 120 * Math.PI * 2;
+    const latOff = Math.sin(phase) * 0.004;              // ~440m N-S
+    const lngOff = Math.sin(phase * 2) * 0.003;          // ~330m E-W (figure-8)
+    v.setInt32(18, Math.floor((-35.3632 + latOff) * 1e7), true); // Lat
+    v.setInt32(22, Math.floor((149.1652 + lngOff) * 1e7), true); // Lng
     v.setInt32(26, Math.floor(alt * 100), true); // Alt (centi, type 'e')
     v.setFloat32(30, 3 + Math.sin(tS / 5) * 2, true); // Spd
     v.setFloat32(34, (tS * 1.2) % 360, true); // GCrs
