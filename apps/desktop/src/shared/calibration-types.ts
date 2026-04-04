@@ -213,6 +213,8 @@ export interface CalibrationStartOptions {
   type: CalibrationTypeId;
   /** For 6-point: which position to calibrate (0-5) */
   position?: AccelPosition;
+  /** Protocol to use — determines MSP vs MAVLink calibration path */
+  protocol?: CalibrationProtocol;
 }
 
 export interface CalibrationResult {

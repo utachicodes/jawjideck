@@ -266,8 +266,8 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
     });
 
     try {
-      // Call the IPC to start calibration
-      const result = await window.electronAPI?.calibrationStart({ type: calibrationType });
+      // Call the IPC to start calibration, passing protocol so handler routes to MSP or MAVLink
+      const result = await window.electronAPI?.calibrationStart({ type: calibrationType, protocol: protocol ?? undefined });
 
       if (!result?.success) {
         throw new Error(result?.error || 'Failed to start calibration');

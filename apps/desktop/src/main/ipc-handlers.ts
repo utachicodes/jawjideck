@@ -19,7 +19,7 @@ import {
 } from '@ardudeck/comms';
 import { registerCompanionIpcHandlers } from './companion/companion-ipc-handlers.js';
 import { registerDroneBridgeIpcHandlers } from './dronebridge/dronebridge-ipc-handlers.js';
-import { setupOverlayHandlers } from './overlays/overlay-ipc-handlers.js';
+import { setupOverlayHandlers, getApiKey } from './overlays/overlay-ipc-handlers.js';
 import {
   MAVLinkParser,
   type MAVLinkPacket,
@@ -97,7 +97,7 @@ import type { DetectedBoard, FirmwareSource, FirmwareVehicleType, FirmwareManife
 import { getBoardInfoFromVersion } from '../shared/board-ids.js';
 import { detectBoards, fetchFirmwareVersions, downloadFirmware, copyCustomFirmware, flashWithDfu, flashWithAvrdude, flashWithSerialBootloader, flashWithArduPilotBootloader, getArduPilotBoards, getArduPilotVersions, getBetaflightBoards, getBetaflightVersions, resolveBetaflightDownloadUrl, getInavBoards, getInavVersions, type BoardInfo, type VersionGroup } from './firmware/index.js';
 import { registerMspHandlers, tryMspDetection, startMspTelemetry, stopMspTelemetry, cleanupMspConnection, exitCliModeIfActive, autoConfigureSitlPlatform, getMspVehicleType, resetSitlAutoConfig } from './msp/index.js';
-import { initCalibrationHandlers, cleanupCalibrationHandlers } from './calibration/index.js';
+import { initCalibrationHandlers, cleanupCalibrationHandlers, handleCalibrationStatusText, handleCalibrationCommandAck, handleIncomingCommandLong, isMavlinkCalibrationActive, type MavlinkCalibrationDeps } from './calibration/index.js';
 import { initMissionLibraryHandlers, cleanupMissionLibraryHandlers } from './mission-library/index.js';
 import { MavlinkFtpClient, parseParamPack, PARAM_PCK_PATH, parseFtpPayload } from './mavlink-ftp/index.js';
 import {
@@ -253,6 +253,12 @@ import type { ParamChange, ParamCheckpoint, BoardParamHistory } from '../shared/
 const paramHistoryStore = new Store<{ boards: Record<string, BoardParamHistory> }>({
   name: 'param-history',
   defaults: { boards: {} },
+});
+
+// AI chat conversation storage keyed by log file path
+const chatStore = new Store<{ conversations: Record<string, { messages: { role: string; content: string }[]; insightCards: unknown[] }> }>({
+  name: 'log-chats',
+  defaults: { conversations: {} },
 });
 
 let signingEnabled = false;
@@ -1214,6 +1220,8 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
         const severityLabel = SEVERITY_LABELS[severity] ?? 'INFO';
         mainWindow.webContents.send(IPC_CHANNELS.MAVLINK_STATUSTEXT, { severity, severityLabel, text });
         pushStatustextHistory(severity, severityLabel, text);
+        // Forward to MAVLink calibration module if calibration is active
+        if (isMavlinkCalibrationActive()) handleCalibrationStatusText(text, severity);
       } else {
         // Multi-chunk message — accumulate and reassemble
         let entry = statustextChunkBuffer.get(chunkId);
@@ -1234,6 +1242,7 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
           const severityLabel = SEVERITY_LABELS[entry.severity] ?? 'INFO';
           mainWindow.webContents.send(IPC_CHANNELS.MAVLINK_STATUSTEXT, { severity: entry.severity, severityLabel, text: fullText });
           pushStatustextHistory(entry.severity, severityLabel, fullText);
+          if (isMavlinkCalibrationActive()) handleCalibrationStatusText(fullText, entry.severity);
           statustextChunkBuffer.delete(chunkId);
         } else {
           // Set timeout to flush incomplete messages after 2s
@@ -1244,6 +1253,7 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
               const severityLabel = SEVERITY_LABELS[buf.severity] ?? 'INFO';
               mainWindow.webContents.send(IPC_CHANNELS.MAVLINK_STATUSTEXT, { severity: buf.severity, severityLabel, text: fullText });
               pushStatustextHistory(buf.severity, severityLabel, fullText);
+              if (isMavlinkCalibrationActive()) handleCalibrationStatusText(fullText, buf.severity);
               statustextChunkBuffer.delete(chunkId);
             }
           }, 2000);
@@ -1269,6 +1279,22 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
         const text = ackResult === 0 ? 'ARM/DISARM accepted' : `ARM/DISARM ${resultName}`;
         mainWindow.webContents.send(IPC_CHANNELS.MAVLINK_STATUSTEXT, { severity, severityLabel, text });
         sendLog(mainWindow, ackResult === 0 ? 'info' : 'warn', text);
+      }
+
+      // Forward calibration-related COMMAND_ACKs (241=PREFLIGHT_CALIBRATION, 42424=ACCELCAL_VEHICLE_POS)
+      if (isMavlinkCalibrationActive() && (ackCommand === 241 || ackCommand === 42424)) {
+        handleCalibrationCommandAck(ackCommand, ackResult);
+      }
+      break;
+    }
+
+    case 76: {
+      // COMMAND_LONG (76) received FROM FC — ArduPilot sends ACCELCAL_VEHICLE_POS during 6-point calibration
+      // Wire layout: param1-7(float32)@0-24, command(U16)@28, targetSystem(U8)@30, targetComponent(U8)@31, confirmation(U8)@32
+      if (isMavlinkCalibrationActive() && payload.length >= 30) {
+        const incomingCommand = readUint16(payload, 28);
+        const incomingParam1 = readFloat(payload, 0);
+        handleIncomingCommandLong(incomingCommand, incomingParam1);
       }
       break;
     }
@@ -5755,8 +5781,31 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   // Register MSP handlers for Betaflight/iNav/Cleanflight support
   registerMspHandlers(mainWindow);
 
-  // Register Calibration handlers
-  initCalibrationHandlers(mainWindow);
+  // Register Calibration handlers with MAVLink deps for ArduPilot calibration support
+  const mavlinkCalibrationDeps: MavlinkCalibrationDeps = {
+    sendCommandLong: async (command, params) => {
+      if (!currentTransport?.isOpen || !connectionState.isConnected) return false;
+      try {
+        const payload = serializeCommandLong({
+          targetSystem: connectionState.systemId ?? 1,
+          targetComponent: 1,
+          command,
+          confirmation: 0,
+          ...params,
+        });
+        const packet = await sendMavlinkPacket(COMMAND_LONG_ID, payload, COMMAND_LONG_CRC_EXTRA);
+        await currentTransport.write(packet);
+        connectionState.packetsSent++;
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    sendLog: (level, message, details) => sendLog(mainWindow, level, `[Calibration] ${message}`, details),
+    sendProgress: (event) => safeSend(mainWindow, IPC_CHANNELS.CALIBRATION_PROGRESS, event),
+    sendComplete: (event) => safeSend(mainWindow, IPC_CHANNELS.CALIBRATION_COMPLETE, event),
+  };
+  initCalibrationHandlers(mainWindow, mavlinkCalibrationDeps);
 
   // Register Mission Library handlers
   initMissionLibraryHandlers();
@@ -6484,6 +6533,122 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       healthResults,
     };
   });
+
+  // ─── AI Flight Log Analysis ─────────────────────────────────────────────────
+
+  ipcMain.handle(IPC_CHANNELS.LOG_AI_ANALYZE, async (_, args: {
+    provider: 'claude' | 'openai' | 'gemini';
+    messages: { role: 'user' | 'assistant'; content: string }[];
+    systemContext: string;
+  }): Promise<{ success: boolean; response?: string; error?: string }> => {
+    const { provider, messages, systemContext } = args;
+
+    const apiKey = getApiKey(`ai-${provider}`);
+    if (!apiKey) {
+      return { success: false, error: `No API key configured for ${provider}. Add it in Settings.` };
+    }
+
+    try {
+      const response = await callAiProvider(provider, apiKey, systemContext, messages);
+      return { success: true, response };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg };
+    }
+  });
+
+  // ─── AI Chat Persistence ────────────────────────────────────────────────────
+
+  ipcMain.handle(IPC_CHANNELS.LOG_CHAT_SAVE, (_, args: {
+    logPath: string;
+    messages: { role: string; content: string }[];
+    insightCards: unknown[];
+  }) => {
+    const conversations = chatStore.get('conversations');
+    conversations[args.logPath] = { messages: args.messages, insightCards: args.insightCards };
+    chatStore.set('conversations', conversations);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.LOG_CHAT_LOAD, (_, logPath: string) => {
+    const conversations = chatStore.get('conversations');
+    return conversations[logPath] ?? null;
+  });
+}
+
+async function callAiProvider(
+  provider: 'claude' | 'openai' | 'gemini',
+  apiKey: string,
+  system: string,
+  messages: { role: 'user' | 'assistant'; content: string }[],
+): Promise<string> {
+  if (provider === 'claude') {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2048,
+        system,
+        messages,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Claude API error ${res.status}: ${body}`);
+    }
+    const json = await res.json() as { content: { type: string; text: string }[] };
+    return json.content.map((c) => c.text).join('');
+  }
+
+  if (provider === 'openai') {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 2048,
+        messages: [{ role: 'system', content: system }, ...messages],
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`OpenAI API error ${res.status}: ${body}`);
+    }
+    const json = await res.json() as { choices: { message: { content: string } }[] };
+    return json.choices[0]?.message?.content ?? '';
+  }
+
+  if (provider === 'gemini') {
+    // Gemini: system instruction + conversation history
+    const contents = messages.map((m) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents,
+        generationConfig: { maxOutputTokens: 2048 },
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Gemini API error ${res.status}: ${body}`);
+    }
+    const json = await res.json() as { candidates: { content: { parts: { text: string }[] } }[] };
+    return json.candidates[0]?.content?.parts?.map((p) => p.text).join('') ?? '';
+  }
+
+  throw new Error(`Unknown provider: ${provider}`);
 }
 
 /**

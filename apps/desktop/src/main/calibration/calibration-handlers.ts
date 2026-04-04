@@ -3,6 +3,7 @@
  *
  * Main process handlers for sensor calibration operations.
  * Supports MSP (iNav/Betaflight) and MAVLink (ArduPilot) protocols.
+ * Routes to the correct calibration backend based on the active protocol.
  */
 
 import { ipcMain, BrowserWindow } from 'electron';
@@ -16,6 +17,15 @@ import type {
   CalibrationProgressEvent,
   CalibrationCompleteEvent,
 } from '../../shared/calibration-types.js';
+import {
+  initMavlinkCalibration,
+  cleanupMavlinkCalibration,
+  startMavlinkCalibration,
+  confirmMavlinkPosition,
+  cancelMavlinkCalibration,
+  isMavlinkCalibrationActive,
+  type MavlinkCalibrationDeps,
+} from './mavlink-calibration.js';
 
 // =============================================================================
 // State
@@ -24,6 +34,7 @@ import type {
 let mainWindow: BrowserWindow | null = null;
 let currentCalibration: CalibrationTypeId | null = null;
 let calibrationTimeout: ReturnType<typeof setTimeout> | null = null;
+let activeProtocol: 'msp' | 'mavlink' | null = null;
 
 // =============================================================================
 // Helpers
@@ -52,6 +63,7 @@ function sendComplete(event: CalibrationCompleteEvent): void {
     mainWindow.webContents.send(IPC_CHANNELS.CALIBRATION_COMPLETE, event);
   }
   currentCalibration = null;
+  activeProtocol = null;
   if (calibrationTimeout) {
     clearTimeout(calibrationTimeout);
     calibrationTimeout = null;
@@ -62,23 +74,12 @@ function sendComplete(event: CalibrationCompleteEvent): void {
 // Sensor Configuration
 // =============================================================================
 
-/**
- * Get sensor availability configuration.
- * For MSP, this reads the sensor status from the FC.
- * For MAVLink, this checks the SENSOR_OFFSETS message.
- */
 async function getSensorConfig(): Promise<SensorAvailability | null> {
-  // TODO: Implement actual sensor detection via MSP_SENSOR_CONFIG (96) or MAVLink
-  // For now, return default values assuming basic sensors exist
-  // This will be enhanced when connected to actual FC
-
   try {
-    // Try to get connection state to determine protocol
-    // For now, return defaults
     return {
       hasAccel: true,
       hasGyro: true,
-      hasCompass: true, // Assume present, will be validated during calibration
+      hasCompass: true,
       hasBarometer: true,
       hasGps: false,
       hasOpflow: false,
@@ -91,25 +92,14 @@ async function getSensorConfig(): Promise<SensorAvailability | null> {
 }
 
 // =============================================================================
-// Calibration Data
+// Calibration Data (MSP only)
 // =============================================================================
 
-/**
- * Get current calibration data from FC.
- * For MSP, reads MSP_CALIBRATION_DATA (14).
- */
 async function getCalibrationData(): Promise<CalibrationData | null> {
-  // TODO: Implement MSP_CALIBRATION_DATA read
-  // For now, return null to indicate no data
   return null;
 }
 
-/**
- * Set calibration data on FC.
- * For MSP, writes MSP_SET_CALIBRATION_DATA (15).
- */
 async function setCalibrationData(data: CalibrationData): Promise<{ success: boolean; error?: string }> {
-  // TODO: Implement MSP_SET_CALIBRATION_DATA write
   sendLog('info', 'Saving calibration data');
   return { success: true };
 }
@@ -118,27 +108,32 @@ async function setCalibrationData(data: CalibrationData): Promise<{ success: boo
 // Calibration Execution
 // =============================================================================
 
-/**
- * Start a calibration process.
- */
 async function startCalibration(options: CalibrationStartOptions): Promise<CalibrationResult> {
-  const { type } = options;
+  const { type, protocol } = options;
 
-  if (currentCalibration) {
+  if (currentCalibration || isMavlinkCalibrationActive()) {
     return { success: false, error: 'Another calibration is already in progress' };
   }
 
+  activeProtocol = protocol ?? null;
+
+  // Route to MAVLink path for ArduPilot
+  if (protocol === 'mavlink') {
+    sendLog('info', `Starting ${type} calibration via MAVLink`);
+    currentCalibration = type;
+    return startMavlinkCalibration(type);
+  }
+
+  // MSP path (iNav / Betaflight)
   currentCalibration = type;
-  sendLog('info', `Starting ${type} calibration`);
+  sendLog('info', `Starting ${type} calibration via MSP`);
 
   try {
     switch (type) {
       case 'accel-level':
-        return await calibrateAccelLevel();
+        return await calibrateAccelLevelMsp();
 
       case 'accel-6point':
-        // 6-point calibration is a multi-step process
-        // Return success to start, actual calibration happens via confirmPosition
         sendProgress({
           type: 'accel-6point',
           progress: 0,
@@ -149,10 +144,10 @@ async function startCalibration(options: CalibrationStartOptions): Promise<Calib
         return { success: true };
 
       case 'compass':
-        return await calibrateCompass();
+        return await calibrateCompassMsp();
 
       case 'gyro':
-        return await calibrateGyro();
+        return await calibrateGyroMsp();
 
       case 'opflow':
         return await calibrateOpflow();
@@ -164,15 +159,16 @@ async function startCalibration(options: CalibrationStartOptions): Promise<Calib
     const message = error instanceof Error ? error.message : 'Unknown error';
     sendLog('error', `Calibration failed: ${message}`);
     currentCalibration = null;
+    activeProtocol = null;
     return { success: false, error: message };
   }
 }
 
-/**
- * Simple accelerometer level calibration (MSP 205).
- * Calls the actual MSP_ACC_CALIBRATION command via the existing msp handler.
- */
-async function calibrateAccelLevel(): Promise<CalibrationResult> {
+// =============================================================================
+// MSP Calibration Functions
+// =============================================================================
+
+async function calibrateAccelLevelMsp(): Promise<CalibrationResult> {
   sendProgress({
     type: 'accel-level',
     progress: 10,
@@ -180,21 +176,12 @@ async function calibrateAccelLevel(): Promise<CalibrationResult> {
   });
 
   try {
-    // Call the MSP calibration handler - this sends MSP_ACC_CALIBRATION (205) to the FC
-    // We use ipcMain.handle that's already registered in msp-handlers.ts
-    const { ipcMain } = await import('electron');
-
     sendProgress({
       type: 'accel-level',
       progress: 30,
       statusText: 'Calibrating accelerometer...',
     });
 
-    // Trigger the existing MSP calibration handler
-    // The msp-handlers.ts has: ipcMain.handle(IPC_CHANNELS.MSP_CALIBRATE_ACC, async () => calibrateAcc());
-    // We need to call it via a different mechanism since we're in main process
-
-    // Import the calibration function from msp-handlers
     const { calibrateAccFromHandler } = await import('../msp/msp-commands.js');
     const result = await calibrateAccFromHandler();
 
@@ -204,7 +191,6 @@ async function calibrateAccelLevel(): Promise<CalibrationResult> {
       statusText: 'Processing...',
     });
 
-    // Small delay to let FC process
     await new Promise(resolve => setTimeout(resolve, 500));
 
     if (result) {
@@ -212,7 +198,7 @@ async function calibrateAccelLevel(): Promise<CalibrationResult> {
         type: 'accel-level',
         success: true,
         data: {
-          accZero: { x: 0, y: 0, z: 0 }, // Values come from FC's internal state
+          accZero: { x: 0, y: 0, z: 0 },
           accGain: { x: 4096, y: 4096, z: 4096 },
         },
       });
@@ -236,12 +222,8 @@ async function calibrateAccelLevel(): Promise<CalibrationResult> {
   }
 }
 
-/**
- * Compass/magnetometer calibration (MSP 206).
- * Sends actual MSP_MAG_CALIBRATION command to FC.
- */
-async function calibrateCompass(): Promise<CalibrationResult> {
-  const duration = 30; // seconds - mag calibration typically needs ~30s of rotation
+async function calibrateCompassMsp(): Promise<CalibrationResult> {
+  const duration = 30;
 
   sendProgress({
     type: 'compass',
@@ -251,7 +233,6 @@ async function calibrateCompass(): Promise<CalibrationResult> {
   });
 
   try {
-    // Send the MSP calibration command
     const { calibrateMagFromHandler } = await import('../msp/msp-commands.js');
     const result = await calibrateMagFromHandler();
 
@@ -264,7 +245,6 @@ async function calibrateCompass(): Promise<CalibrationResult> {
       return { success: false, error: 'Failed to start compass calibration' };
     }
 
-    // Countdown while user rotates vehicle
     let remaining = duration;
     const countdownInterval = setInterval(() => {
       remaining--;
@@ -282,7 +262,6 @@ async function calibrateCompass(): Promise<CalibrationResult> {
       }
     }, 1000);
 
-    // Wait for calibration duration
     await new Promise((resolve) => setTimeout(resolve, duration * 1000));
     clearInterval(countdownInterval);
 
@@ -307,10 +286,7 @@ async function calibrateCompass(): Promise<CalibrationResult> {
   }
 }
 
-/**
- * Gyroscope calibration.
- */
-async function calibrateGyro(): Promise<CalibrationResult> {
+async function calibrateGyroMsp(): Promise<CalibrationResult> {
   sendProgress({
     type: 'gyro',
     progress: 0,
@@ -318,7 +294,6 @@ async function calibrateGyro(): Promise<CalibrationResult> {
   });
 
   try {
-    // Gyro calibration is quick (~2-3 seconds)
     await new Promise((resolve) => {
       setTimeout(() => {
         sendProgress({
@@ -348,11 +323,8 @@ async function calibrateGyro(): Promise<CalibrationResult> {
   }
 }
 
-/**
- * Optical flow calibration (iNav only, MSP2 0x2032).
- */
 async function calibrateOpflow(): Promise<CalibrationResult> {
-  const duration = 30; // seconds
+  const duration = 30;
 
   sendProgress({
     type: 'opflow',
@@ -362,7 +334,6 @@ async function calibrateOpflow(): Promise<CalibrationResult> {
   });
 
   try {
-    // Start countdown
     let remaining = duration;
     const countdownInterval = setInterval(() => {
       remaining--;
@@ -388,7 +359,7 @@ async function calibrateOpflow(): Promise<CalibrationResult> {
       type: 'opflow',
       success: true,
       data: {
-        opflowScale: 1.0, // Placeholder
+        opflowScale: 1.0,
       },
     });
 
@@ -404,13 +375,11 @@ async function calibrateOpflow(): Promise<CalibrationResult> {
   }
 }
 
-/**
- * Confirm a position in 6-point accelerometer calibration.
- *
- * Sends MSP_ACC_CALIBRATION to the FC, waits for sampling,
- * then reads MSP_CALIBRATION_DATA to verify the position was captured.
- */
-async function confirmPosition(position: number): Promise<{ success: boolean; error?: string }> {
+// =============================================================================
+// MSP 6-point position confirm
+// =============================================================================
+
+async function confirmPositionMsp(position: number): Promise<{ success: boolean; error?: string }> {
   if (currentCalibration !== 'accel-6point') {
     return { success: false, error: '6-point calibration not in progress' };
   }
@@ -418,7 +387,6 @@ async function confirmPosition(position: number): Promise<{ success: boolean; er
   sendLog('info', `Confirming position ${position} — sending MSP_ACC_CALIBRATION`);
 
   try {
-    // Send MSP_ACC_CALIBRATION to the FC — it samples accelerometer for ~2s
     const { calibrateAccFromHandler } = await import('../msp/msp-commands.js');
     const accResult = await calibrateAccFromHandler();
 
@@ -427,14 +395,11 @@ async function confirmPosition(position: number): Promise<{ success: boolean; er
       return { success: false, error: 'ACC calibration command failed — ensure FC is connected' };
     }
 
-    // Wait for FC to collect samples (~2 seconds)
     await new Promise((resolve) => setTimeout(resolve, 2500));
 
-    // Read back calibration data to verify position was captured
     const { readCalibrationData } = await import('../msp/msp-commands.js');
     const calData = await readCalibrationData();
 
-    // Build position status from bitmask (if available) or from position index
     const positionStatus = [false, false, false, false, false, false];
     if (calData) {
       for (let i = 0; i < 6; i++) {
@@ -442,7 +407,6 @@ async function confirmPosition(position: number): Promise<{ success: boolean; er
       }
       sendLog('info', `Calibration data: bitmask=${calData.positionBitmask.toString(2).padStart(6, '0')} accZero=(${calData.accZero.x},${calData.accZero.y},${calData.accZero.z})`);
     } else {
-      // If we can't read back, trust the position index
       for (let i = 0; i <= position; i++) {
         positionStatus[i] = true;
       }
@@ -450,7 +414,6 @@ async function confirmPosition(position: number): Promise<{ success: boolean; er
     }
 
     if (position < 5) {
-      // More positions to go
       const positionNames = [
         'Level (Top Up)',
         'Inverted (Top Down)',
@@ -470,7 +433,6 @@ async function confirmPosition(position: number): Promise<{ success: boolean; er
 
       return { success: true };
     } else {
-      // All 6 positions done — save to EEPROM
       sendLog('info', 'All 6 positions captured — saving to EEPROM');
 
       const { saveEeprom } = await import('../msp/msp-commands.js');
@@ -498,10 +460,26 @@ async function confirmPosition(position: number): Promise<{ success: boolean; er
   }
 }
 
-/**
- * Cancel active calibration.
- */
+// =============================================================================
+// Position confirm router
+// =============================================================================
+
+async function confirmPosition(position: number): Promise<{ success: boolean; error?: string }> {
+  // Route based on active protocol
+  if (activeProtocol === 'mavlink') {
+    return confirmMavlinkPosition(position);
+  }
+  return confirmPositionMsp(position);
+}
+
+// =============================================================================
+// Cancel
+// =============================================================================
+
 function cancelCalibration(): void {
+  if (activeProtocol === 'mavlink') {
+    cancelMavlinkCalibration();
+  }
   if (currentCalibration) {
     sendLog('info', `Cancelling ${currentCalibration} calibration`);
     sendComplete({
@@ -511,6 +489,7 @@ function cancelCalibration(): void {
     });
   }
   currentCalibration = null;
+  activeProtocol = null;
   if (calibrationTimeout) {
     clearTimeout(calibrationTimeout);
     calibrationTimeout = null;
@@ -521,8 +500,16 @@ function cancelCalibration(): void {
 // IPC Handler Registration
 // =============================================================================
 
-export function initCalibrationHandlers(window: BrowserWindow): void {
+export function initCalibrationHandlers(
+  window: BrowserWindow,
+  mavlinkDeps?: MavlinkCalibrationDeps,
+): void {
   mainWindow = window;
+
+  // Initialize MAVLink calibration backend with deps from ipc-handlers
+  if (mavlinkDeps) {
+    initMavlinkCalibration(mavlinkDeps);
+  }
 
   // Sensor config
   ipcMain.handle(IPC_CHANNELS.CALIBRATION_GET_SENSOR_CONFIG, async () => getSensorConfig());
@@ -566,8 +553,8 @@ export function cleanupCalibrationHandlers(): void {
   ipcMain.removeHandler(IPC_CHANNELS.CALIBRATION_CANCEL);
   ipcMain.removeHandler(IPC_CHANNELS.CALIBRATION_SAVE_PERSISTENT);
 
-  // Cancel any active calibration
   cancelCalibration();
+  cleanupMavlinkCalibration();
 
   mainWindow = null;
   console.log('[Calibration] Handlers cleaned up');

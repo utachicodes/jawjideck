@@ -470,6 +470,23 @@ const api = {
   logParse: (data: number[]): Promise<unknown> =>
     ipcRenderer.invoke(IPC_CHANNELS.LOG_PARSE, data),
 
+  logAiAnalyze: (args: {
+    provider: 'claude' | 'openai' | 'gemini';
+    messages: { role: 'user' | 'assistant'; content: string }[];
+    systemContext: string;
+  }): Promise<{ success: boolean; response?: string; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LOG_AI_ANALYZE, args),
+
+  logChatSave: (args: {
+    logPath: string;
+    messages: { role: string; content: string }[];
+    insightCards: unknown[];
+  }): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LOG_CHAT_SAVE, args),
+
+  logChatLoad: (logPath: string): Promise<{ messages: { role: string; content: string }[]; insightCards: unknown[] } | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LOG_CHAT_LOAD, logPath),
+
   onLogDownloadProgress: (callback: (progress: { logId: number; received: number; total: number }) => void) => {
     const handler = (_: unknown, progress: { logId: number; received: number; total: number }) => callback(progress);
     ipcRenderer.on(IPC_CHANNELS.LOG_DOWNLOAD_PROGRESS, handler);
@@ -1285,6 +1302,7 @@ const api = {
   calibrationStart: (options: {
     type: 'accel-level' | 'accel-6point' | 'compass' | 'gyro' | 'opflow';
     position?: number;
+    protocol?: 'msp' | 'mavlink';
   }): Promise<{
     success: boolean;
     error?: string;
