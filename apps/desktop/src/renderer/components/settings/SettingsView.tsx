@@ -1639,6 +1639,10 @@ export function SettingsView() {
         {/* ============================================ */}
         <ConsoleSettingsSection />
 
+        {/* SECTION: AI Analysis */}
+        {/* ============================================ */}
+        <AiAnalysisSection />
+
         {/* SECTION: Experimental Features */}
         {/* ============================================ */}
         <ExperimentalFeaturesSection />
@@ -1734,6 +1738,120 @@ function ConsoleSettingsSection() {
               }`} />
             </button>
           </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AiAnalysisSection() {
+  const aiProvider = useSettingsStore((s) => s.aiProvider);
+  const setAiProvider = useSettingsStore((s) => s.setAiProvider);
+  const [apiKey, setApiKey] = useState('');
+  const [hasKey, setHasKey] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const providers = [
+    { id: 'claude' as const, name: 'Claude', color: 'bg-orange-500' },
+    { id: 'openai' as const, name: 'OpenAI', color: 'bg-emerald-500' },
+    { id: 'gemini' as const, name: 'Gemini', color: 'bg-blue-500' },
+  ];
+
+  // Load existing key status on provider change
+  useEffect(() => {
+    if (!aiProvider) { setHasKey(false); setApiKey(''); return; }
+    window.electronAPI?.getApiKey(`ai-${aiProvider}`).then((res) => {
+      setHasKey(res.hasKey);
+      setApiKey('');
+    });
+  }, [aiProvider]);
+
+  const handleSaveKey = async () => {
+    if (!aiProvider || !apiKey.trim()) return;
+    setSaving(true);
+    await window.electronAPI?.setApiKey(`ai-${aiProvider}`, apiKey.trim());
+    setHasKey(true);
+    setApiKey('');
+    setSaving(false);
+  };
+
+  const handleRemoveKey = async () => {
+    if (!aiProvider) return;
+    await window.electronAPI?.setApiKey(`ai-${aiProvider}`, '');
+    setHasKey(false);
+  };
+
+  return (
+    <div className="mt-8">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-1.5 h-5 bg-purple-500 rounded-full" />
+        <h2 className="text-sm font-medium text-gray-300 uppercase tracking-wider">AI Flight Analysis</h2>
+      </div>
+
+      <section className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-5">
+        <div className="space-y-4">
+          <p className="text-xs text-gray-500">
+            Enable AI-powered analysis of your flight logs. The AI reviews health check results and provides actionable recommendations. Your API key is encrypted and stored locally.
+          </p>
+
+          {/* Provider selection */}
+          <div>
+            <div className="text-xs text-gray-400 mb-2">Provider</div>
+            <div className="flex gap-2">
+              {providers.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setAiProvider(aiProvider === p.id ? null : p.id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
+                    aiProvider === p.id
+                      ? 'border-purple-500/50 bg-purple-500/10 text-white'
+                      : 'border-gray-700/50 bg-gray-900/40 text-gray-400 hover:text-gray-200 hover:border-gray-600'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${aiProvider === p.id ? p.color : 'bg-gray-600'}`} />
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* API key input */}
+          {aiProvider && (
+            <div>
+              <div className="text-xs text-gray-400 mb-2">API Key</div>
+              {hasKey ? (
+                <div className="flex items-center gap-2 bg-gray-900/40 rounded-lg p-3">
+                  <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                  <span className="text-sm text-gray-300 flex-1">Key configured and encrypted</span>
+                  <button
+                    onClick={handleRemoveKey}
+                    className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder={`Enter ${providers.find((p) => p.id === aiProvider)?.name} API key...`}
+                    className="flex-1 bg-gray-900/50 border border-gray-700/50 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-purple-500/50"
+                  />
+                  <button
+                    onClick={handleSaveKey}
+                    disabled={!apiKey.trim() || saving}
+                    className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {saving ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
     </div>

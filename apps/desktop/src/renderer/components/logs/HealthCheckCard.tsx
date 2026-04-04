@@ -49,7 +49,7 @@ function StatusIcon({ status }: { status: CheckStatus }) {
   );
 }
 
-export function HealthCheckCard({ result, onViewData }: { result: HealthCheckResult; onViewData?: () => void }) {
+export function HealthCheckCard({ result, onViewData, onAskAi, aiLabel }: { result: HealthCheckResult; onViewData?: () => void; onAskAi?: () => void; aiLabel?: string }) {
   const style = STATUS_STYLES[result.status]!;
 
   return (
@@ -70,13 +70,25 @@ export function HealthCheckCard({ result, onViewData }: { result: HealthCheckRes
       {result.recommendation && (
         <p className="text-xs text-gray-400 mt-2 pl-3 border-l-2 border-gray-600">{result.recommendation}</p>
       )}
-      {onViewData && result.explorerPreset && result.status !== 'skip' && (
-        <button
-          onClick={onViewData}
-          className="mt-3 text-xs px-3 py-1.5 bg-gray-800/60 hover:bg-gray-700/60 text-gray-300 hover:text-white rounded-md transition-colors"
-        >
-          View Data
-        </button>
+      {(onViewData || onAskAi) && result.status !== 'skip' && (
+        <div className="flex gap-2 mt-3">
+          {onViewData && result.explorerPreset && (
+            <button
+              onClick={onViewData}
+              className="text-xs px-3 py-1.5 bg-gray-800/60 hover:bg-gray-700/60 text-gray-300 hover:text-white rounded-md transition-colors"
+            >
+              View Data
+            </button>
+          )}
+          {onAskAi && (
+            <button
+              onClick={onAskAi}
+              className="text-xs px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 border border-purple-500/20 rounded-md transition-colors"
+            >
+              {aiLabel ?? 'Analyze with AI'}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

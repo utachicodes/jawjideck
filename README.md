@@ -136,6 +136,13 @@ ArduDeck is a next-generation ground control station built with Electron, React,
 - **Config Review** - Preview all changes before writing to board
 - **Legacy Board Support** - Works with both modern MSP and legacy CLI boards
 
+### Flight Log Analysis
+- **DataFlash Log Reader** - Parse ArduPilot .bin blackbox logs directly in the app
+- **Health Check Reports** - Automated diagnostics with pass/warn/fail checks for vibration, GPS, EKF, power, and more
+- **Log Explorer** - Interactive time-series graphs with field picker for any logged parameter
+- **3D Flight Path** - Three-dimensional replay of the flight trajectory
+- **AI-Assisted Analysis** - Chat with your flight log using Claude, GPT, or Gemini to diagnose issues, get tuning recommendations, and apply parameter changes directly
+
 ### Calibration
 - **Accelerometer Calibration** - Level calibration with position diagrams
 - **Compass Calibration** - Live progress tracking with fitness indicators
@@ -619,6 +626,7 @@ Found a bug? We want to hear about it! ArduDeck includes a built-in bug reportin
 - **Survey Grid Planner** - Automated survey patterns (Grid, Crosshatch, Circular) with camera and flight parameter configuration
 - **3D Mission View** - Three-dimensional visualization of mission waypoints and flight paths
 - **MAVLink Signing** - Passphrase-based packet signing for secure vehicle communication
+- **Flight Log Analysis** - DataFlash .bin parser, health checks, log explorer with 3D flight path, and AI-assisted diagnostics
 
 ### Coming Soon
 - **SITL Simulator** - iNav and ArduPilot software-in-the-loop with FlightGear integration (temporarily disabled)

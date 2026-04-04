@@ -470,6 +470,9 @@ export const IPC_CHANNELS = {
   LOG_PARSE_PROGRESS: 'log:parse-progress',
   LOG_PARSE_COMPLETE: 'log:parse-complete',
   LOG_OPEN_FILE: 'log:open-file',
+  LOG_AI_ANALYZE: 'log:ai-analyze',
+  LOG_CHAT_SAVE: 'log:chat-save',
+  LOG_CHAT_LOAD: 'log:chat-load',
 } as const;
 
 export type IpcChannels = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];
@@ -736,6 +739,7 @@ export interface SettingsStoreSchema {
   uiVisibility?: UiVisibilitySettings;
   experimentalLogs?: boolean;
   showDebugLogs?: boolean;
+  aiProvider?: 'claude' | 'openai' | 'gemini' | null;
 }
 
 // =============================================================================

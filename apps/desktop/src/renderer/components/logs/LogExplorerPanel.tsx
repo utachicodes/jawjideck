@@ -674,6 +674,28 @@ function FlightPathPanel() {
           ))}
         </div>
       </div>
+      {/* Center on flight path FAB */}
+      <button
+        onClick={() => {
+          if (!mapRef.current || flightPath.length < 2) return;
+          const lngs = flightPath.map(p => p[1]);
+          const lats = flightPath.map(p => p[0]);
+          mapRef.current.fitBounds(
+            [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+            { padding: 80, pitch: 50, duration: 800 },
+          );
+        }}
+        className="absolute bottom-3 right-3 z-10 w-8 h-8 rounded-full bg-gray-800/90 text-gray-400 hover:text-white hover:bg-gray-700/90 shadow-lg flex items-center justify-center transition-all"
+        title="Center on flight path"
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="4" />
+          <line x1="12" y1="2" x2="12" y2="6" />
+          <line x1="12" y1="18" x2="12" y2="22" />
+          <line x1="2" y1="12" x2="6" y2="12" />
+          <line x1="18" y1="12" x2="22" y2="12" />
+        </svg>
+      </button>
     </div>
   );
 }

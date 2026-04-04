@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useLogStore } from '../../stores/log-store';
+import { useSettingsStore } from '../../stores/settings-store';
 import { HealthCheckCard } from './HealthCheckCard';
-import type { ExplorerPreset } from '@ardudeck/dataflash-parser';
+import type { ExplorerPreset, HealthCheckResult } from '@ardudeck/dataflash-parser';
 
 function computeFlightStats(log: ReturnType<typeof useLogStore.getState>['currentLog']) {
   if (!log) return null;
@@ -47,8 +48,72 @@ export function HealthReportPanel() {
   const healthResults = useLogStore((s) => s.healthResults);
   const currentLog = useLogStore((s) => s.currentLog);
   const currentLogPath = useLogStore((s) => s.currentLogPath);
+  const aiProvider = useSettingsStore((s) => s.aiProvider);
+  const aiInsightCards = useLogStore((s) => s.aiInsightCards);
+  const isAiInsightLoading = useLogStore((s) => s.isAiInsightLoading);
+  const aiInsightError = useLogStore((s) => s.aiInsightError);
 
   const flightStats = useMemo(() => computeFlightStats(currentLog), [currentLog]);
+
+  const handleAiAnalyze = useCallback(async () => {
+    if (!aiProvider || !currentLog || !healthResults) return;
+    const store = useLogStore.getState();
+    store.setIsAiInsightLoading(true);
+    store.setAiInsightError(null);
+
+    const stats = computeFlightStats(currentLog) ?? { maxAlt: 0, maxSpd: 0, totalDist: 0, totalMah: 0 };
+    const meta = currentLog.metadata;
+    const dS = (currentLog.timeRange.endUs - currentLog.timeRange.startUs) / 1_000_000;
+    const dist = stats.totalDist > 1000 ? `${(stats.totalDist / 1000).toFixed(2)} km` : `${stats.totalDist.toFixed(0)} m`;
+
+    const systemContext = `You are a flight log analyst for ArduPilot vehicles. Analyze this flight and return ONLY a JSON array of insight cards. No other text.
+
+## This Flight
+- Vehicle: ${meta.vehicleType || 'Unknown'} running ${meta.firmwareString || meta.firmwareVersion || 'Unknown firmware'}
+- Duration: ${(dS / 60).toFixed(1)} minutes
+- Max Altitude: ${stats.maxAlt.toFixed(1)} m | Max Speed: ${stats.maxSpd.toFixed(1)} m/s
+- Distance: ${dist} | Battery Used: ${stats.totalMah.toFixed(0)} mAh
+
+## Automated Health Check Results
+${JSON.stringify(healthResults, null, 2)}
+
+## Response Format
+Return a JSON array of objects with these fields:
+- "id": unique string identifier (e.g. "ai-battery-analysis")
+- "name": short card title (e.g. "Battery Deep Dive")
+- "status": one of "fail", "warn", "info", "pass"
+- "summary": one-line finding
+- "details": supporting data/numbers
+- "recommendation": actionable advice with ArduPilot parameter names where applicable
+
+Focus on insights the automated checks might miss:
+- Correlations between issues (e.g. vibration causing GPS problems)
+- Parameter tuning suggestions with specific values
+- Flight pattern analysis and efficiency
+- Predictive maintenance concerns
+- Overall flight safety assessment
+
+Return 3-6 cards. Most important issues first.`;
+
+    const result = await window.electronAPI?.logAiAnalyze({
+      provider: aiProvider,
+      messages: [{ role: 'user', content: 'Analyze this flight log and generate insight cards.' }],
+      systemContext,
+    });
+
+    store.setIsAiInsightLoading(false);
+    if (result?.success && result.response) {
+      try {
+        const jsonStr = result.response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const parsed = JSON.parse(jsonStr) as HealthCheckResult[];
+        store.setAiInsightCards(parsed);
+      } catch {
+        store.setAiInsightError('Failed to parse AI response');
+      }
+    } else {
+      store.setAiInsightError(result?.error ?? 'AI analysis failed');
+    }
+  }, [aiProvider, currentLog, healthResults]);
 
   if (!healthResults || !currentLog) {
     return (
@@ -69,6 +134,12 @@ export function HealthReportPanel() {
     else if (r.status === 'pass') passCount++;
     else if (r.status === 'skip') skipCount++;
   }
+
+  const handleAskAi = (question: string) => {
+    const store = useLogStore.getState();
+    store.addAiMessage({ role: 'user', content: question });
+    store.setActiveTab('ai');
+  };
 
   return (
     <div className="h-full overflow-y-auto p-4 space-y-4">
@@ -136,9 +207,88 @@ export function HealthReportPanel() {
             </div>
           </div>
         )}
+
+        {/* AI Analyze button */}
+        {aiProvider && (
+          <div className="mt-4 pt-4 border-t border-gray-700/30">
+            {aiInsightCards.length > 0 ? (
+              <button
+                onClick={handleAiAnalyze}
+                disabled={isAiInsightLoading}
+                className="text-xs px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 border border-purple-500/20 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {isAiInsightLoading ? 'Re-analyzing...' : 'Re-analyze with AI'}
+              </button>
+            ) : (
+              <button
+                onClick={handleAiAnalyze}
+                disabled={isAiInsightLoading}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/25 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {isAiInsightLoading ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm">Analyzing flight...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                    </svg>
+                    <span className="text-sm">Analyze log with AI</span>
+                  </>
+                )}
+              </button>
+            )}
+            {aiInsightError && (
+              <p className="text-xs text-red-400 mt-2">{aiInsightError}</p>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Health check cards */}
+      {/* AI insight cards (above automated checks) */}
+      {(aiInsightCards.length > 0 || isAiInsightLoading) && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+            </svg>
+            <h3 className="text-sm font-semibold text-purple-300">AI Insights</h3>
+          </div>
+          {isAiInsightLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="bg-purple-500/5 rounded-xl border border-purple-500/15 p-4 animate-pulse">
+                  <div className="h-4 bg-purple-500/10 rounded w-1/3 mb-3" />
+                  <div className="h-3 bg-purple-500/10 rounded w-full mb-2" />
+                  <div className="h-3 bg-purple-500/10 rounded w-2/3" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {aiInsightCards.map((card) => (
+                <HealthCheckCard
+                  key={card.id}
+                  result={card}
+                  aiLabel="Ask AI"
+                  onAskAi={aiProvider
+                    ? () => handleAskAi(`Regarding the "${card.name}" finding: ${card.summary}${card.details ? `\nDetails: ${card.details}` : ''}${card.recommendation ? `\nRecommendation was: ${card.recommendation}` : ''}\n\nCan you explain this further and suggest specific steps to address it?`)
+                    : undefined}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Automated health check cards */}
+      {(aiInsightCards.length > 0 || isAiInsightLoading) && (
+        <div className="flex items-center gap-2 mb-0">
+          <h3 className="text-sm font-semibold text-gray-400">Automated Checks</h3>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {healthResults
           .filter((r) => r.status !== 'skip')
@@ -159,6 +309,9 @@ export function HealthReportPanel() {
                 }
                 store.setActiveTab('explorer');
               } : undefined}
+              onAskAi={aiProvider && (result.status === 'fail' || result.status === 'warn')
+                ? () => handleAskAi(`Analyze the ${result.name} issue in detail:\nStatus: ${result.status}\nSummary: ${result.summary}${result.details ? `\nDetails: ${result.details}` : ''}${result.recommendation ? `\nRecommendation: ${result.recommendation}` : ''}\n\nWhat's the likely cause and how do I fix it?`)
+                : undefined}
             />
           ))}
       </div>
