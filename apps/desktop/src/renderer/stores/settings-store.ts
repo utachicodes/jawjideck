@@ -217,6 +217,10 @@ interface SettingsStore {
   showDebugLogs: boolean;
   setShowDebugLogs: (enabled: boolean) => void;
 
+  // AI Analysis
+  aiProvider: 'claude' | 'openai' | 'gemini' | null;
+  setAiProvider: (provider: 'claude' | 'openai' | 'gemini' | null) => void;
+
   // Mission defaults
   missionDefaults: MissionDefaults;
 
@@ -628,6 +632,11 @@ export const useSettingsStore = create<SettingsStore>()(
     set({ showDebugLogs: enabled });
   },
 
+  aiProvider: null,
+  setAiProvider: (provider) => {
+    set({ aiProvider: provider });
+  },
+
   // Initial state (will be replaced by loadSettings)
   missionDefaults: { ...DEFAULT_MISSION_DEFAULTS },
   vehicles: [{ ...DEFAULT_VEHICLE }],
@@ -716,6 +725,7 @@ export const useSettingsStore = create<SettingsStore>()(
           companionUnlocked: !!((settings as unknown as Record<string, unknown>).companionUnlocked),
           experimentalLogs: !!((settings as unknown as Record<string, unknown>).experimentalLogs),
           showDebugLogs: !!((settings as unknown as Record<string, unknown>).showDebugLogs),
+          aiProvider: ((settings as unknown as Record<string, unknown>).aiProvider as 'claude' | 'openai' | 'gemini' | null) ?? null,
           _isInitialized: true,
         });
       } else {
@@ -750,6 +760,7 @@ export const useSettingsStore = create<SettingsStore>()(
         companionUnlocked: state.companionUnlocked,
         experimentalLogs: state.experimentalLogs,
         showDebugLogs: state.showDebugLogs,
+        aiProvider: state.aiProvider,
       };
       await window.electronAPI?.saveSettings(payload);
     } catch (error) {
@@ -846,20 +857,20 @@ export const useSettingsStore = create<SettingsStore>()(
       return activeProfile.id;
     }
 
-    // 3. Active profile has a different boardUid → clone it as template for a new profile
-    const template = activeProfile || state.vehicles[0];
+    // 3. Active profile has a different boardUid → create a blank profile for the new board
     const newId = `vehicle-${Date.now()}`;
     const displayName = boardName || boardId || 'New Board';
     const newVehicle: VehicleProfile = {
-      ...(template ? { ...template } : { type: 'copter' as VehicleType, weight: 500, batteryCells: 4, batteryCapacity: 1500 }),
       id: newId,
       name: displayName,
+      type: 'copter' as VehicleType,
+      weight: 500,
+      batteryCells: 4,
+      batteryCapacity: 1500,
       boardUid,
       boardId,
       boardName,
       lastConnected: now,
-      boardStats: undefined,
-      notes: template ? `Cloned from "${template.name}"` : undefined,
     };
     set((s) => ({
       vehicles: [...s.vehicles, newVehicle],
@@ -1034,6 +1045,7 @@ useSettingsStore.subscribe(
     companionUnlocked: state.companionUnlocked,
     experimentalLogs: state.experimentalLogs,
     showDebugLogs: state.showDebugLogs,
+    aiProvider: state.aiProvider,
   }),
   (curr, prev) => {
     // Only save if initialized and something changed
@@ -1055,7 +1067,8 @@ useSettingsStore.subscribe(
         curr.surveyUnlocked !== prev.surveyUnlocked ||
         curr.companionUnlocked !== prev.companionUnlocked ||
         curr.experimentalLogs !== prev.experimentalLogs ||
-        curr.showDebugLogs !== prev.showDebugLogs
+        curr.showDebugLogs !== prev.showDebugLogs ||
+        curr.aiProvider !== prev.aiProvider
       ) {
         debouncedSave();
       }
