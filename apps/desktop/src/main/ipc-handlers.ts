@@ -226,6 +226,8 @@ const settingsStore = new Store<SettingsStoreSchema>({
 
 let currentTransport: Transport | null = null;
 let currentVehicleType = 0; // 1=plane, 2=copter, etc.
+// Tracks last armed state reported to renderer so we only log on transitions
+let lastReportedArmed: boolean | null = null;
 let mavlinkParser: MAVLinkParser | null = null;
 let heartbeatTimeout: NodeJS.Timeout | null = null;
 let heartbeatWatchdog: NodeJS.Timeout | null = null;
@@ -764,6 +766,7 @@ function resetMavlinkDiagCache(): void {
   cachedHeartbeat = null;
   cachedAutopilotVersion = null;
   statustextHistory = [];
+  lastReportedArmed = null;
   resetRcChannelState();
 }
 
@@ -1046,9 +1049,27 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
       currentVehicleType = vehicleType;
       const systemStatus = payload[7]!; // MAV_STATE
       const armedFlag = (baseMode & 0x80) !== 0; // MAV_MODE_FLAG_SAFETY_ARMED
-      // Cross-check: only report armed when system_status >= MAV_STATE_ACTIVE (4)
-      // ArduPilot can briefly set the armed flag during boot while still in STANDBY/CALIBRATING
-      const armed = armedFlag && systemStatus >= 4;
+      // Reject the armed flag only during the truly transient boot states
+      // (UNINIT=0, BOOT=1, CALIBRATING=2). This preserves the #43 fix
+      // (Pixhawk 6C false-positive during boot) while accepting STANDBY (3)
+      // and above — ArduPilot legitimately reports armed=1 in STANDBY for a
+      // brief window after the user arms before transitioning to ACTIVE.
+      // Issue #84: the previous `>= 4` check was too strict and caused the
+      // toolbar to miss legitimate armed states.
+      const armed = armedFlag && systemStatus >= 3;
+
+      // Log armed-state transitions so any future bug reports come with the
+      // exact heartbeat values that were observed. Diagnostic only — does not
+      // affect behavior.
+      if (armed !== lastReportedArmed) {
+        sendLog(
+          mainWindow,
+          'info',
+          `Armed state: ${lastReportedArmed === null ? 'init' : lastReportedArmed} → ${armed}`,
+          `base_mode=0x${baseMode.toString(16)} system_status=${systemStatus} armed_flag=${armedFlag} sysid=${packet.sysid} compid=${packet.compid}`
+        );
+        lastReportedArmed = armed;
+      }
 
       // Get mode name based on vehicle type
       let modeName = `Mode ${customMode}`;
