@@ -9,6 +9,7 @@ import type { SystemInfo, NetworkInfo, MetricsData, ProcessInfo, LogEntry, FileE
 import type { InstalledModule, ModuleProgress, UpdateAvailable } from '../shared/module-types.js';
 import type { ParamChange, ParamCheckpoint } from '../shared/param-history-types.js';
 import type { AttitudeData, PositionData, GpsData, BatteryData, VfrHudData, FlightState, RcChannelsData } from '../shared/telemetry-types.js';
+import type { MotorTestStartRequest, MotorTestResponse } from '../shared/motor-test-types.js';
 import type { ParamValuePayload, ParameterProgress } from '../shared/parameter-types.js';
 import type { ParameterMetadataStore } from '../shared/parameter-metadata.js';
 import type { MissionItem, MissionProgress } from '../shared/mission-types.js';
@@ -86,6 +87,12 @@ const api = {
 
   mavlinkArmDisarm: (arm: boolean, force?: boolean): Promise<boolean> =>
     ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_ARM_DISARM, arm, force),
+
+  // Motor Test
+  motorTestStart: (request: MotorTestStartRequest): Promise<MotorTestResponse> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MOTOR_TEST_START, request),
+  motorTestStop: (motorCount: number): Promise<MotorTestResponse> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MOTOR_TEST_STOP, motorCount),
 
   // MAVLink Signing
   signingSetKey: (passphrase: string): Promise<{ success: boolean; error?: string }> =>

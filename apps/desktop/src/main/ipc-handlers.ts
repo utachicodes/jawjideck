@@ -94,6 +94,7 @@ import { MAV_MISSION_RESULT, MAV_MISSION_TYPE } from '../shared/mission-types.js
 import type { FenceItem, FenceStatus } from '../shared/fence-types.js';
 import type { RallyItem } from '../shared/rally-types.js';
 import type { DetectedBoard, FirmwareSource, FirmwareVehicleType, FirmwareManifest, FirmwareVersion, FlashResult, FlashOptions } from '../shared/firmware-types.js';
+import type { MotorTestStartRequest, MotorTestResponse, EscTelemetryData, EscMotorTelemetry } from '../shared/motor-test-types.js';
 import { getBoardInfoFromVersion } from '../shared/board-ids.js';
 import { detectBoards, fetchFirmwareVersions, downloadFirmware, copyCustomFirmware, flashWithDfu, flashWithAvrdude, flashWithSerialBootloader, flashWithArduPilotBootloader, getArduPilotBoards, getArduPilotVersions, getBetaflightBoards, getBetaflightVersions, resolveBetaflightDownloadUrl, getInavBoards, getInavVersions, type BoardInfo, type VersionGroup } from './firmware/index.js';
 import { registerMspHandlers, tryMspDetection, startMspTelemetry, stopMspTelemetry, cleanupMspConnection, exitCliModeIfActive, autoConfigureSitlPlatform, getMspVehicleType, resetSitlAutoConfig } from './msp/index.js';
@@ -597,6 +598,10 @@ async function sendStreamRateRequests(mainWindow: BrowserWindow, speed: Telemetr
     { msgId: 36, hz: rates.other },     // SERVO_OUTPUT_RAW
     { msgId: 27, hz: rates.other },     // RAW_IMU
     { msgId: 29, hz: rates.other },     // SCALED_PRESSURE
+    { msgId: 241, hz: rates.other },    // VIBRATION (for motor test view)
+    { msgId: 11030, hz: rates.other },  // ESC_TELEMETRY_1_TO_4
+    { msgId: 11031, hz: rates.other },  // ESC_TELEMETRY_5_TO_8
+    { msgId: 11032, hz: rates.other },  // ESC_TELEMETRY_9_TO_12
   ];
 
   let sent = 0;
@@ -976,6 +981,13 @@ const MSG_MISSION_ITEM_INT = 73;
 // Autopilot version (for UID extraction)
 const MSG_AUTOPILOT_VERSION = 148;
 
+// Vibration and ESC telemetry (for motor test view)
+const MSG_VIBRATION = 241;
+const MSG_SERVO_OUTPUT_RAW = 36;
+const MSG_ESC_TELEMETRY_1_TO_4 = 11030;
+const MSG_ESC_TELEMETRY_5_TO_8 = 11031;
+const MSG_ESC_TELEMETRY_9_TO_12 = 11032;
+
 // FTP message ID
 const MSG_FILE_TRANSFER_PROTOCOL = 110;
 
@@ -1146,6 +1158,85 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
 
       const vfrHud: VfrHudData = { airspeed, groundspeed, heading, throttle, alt, climb };
       queueMavlinkTelemetry(mainWindow, { vfrHud });
+      break;
+    }
+
+    case MSG_VIBRATION: {
+      // VIBRATION (241) wire order: time_usec(8), vibration_x(4), vibration_y(4),
+      //   vibration_z(4), clipping_0(4), clipping_1(4), clipping_2(4)
+      if (payload.length >= 32) {
+        const x = readFloat(payload, 8);
+        const y = readFloat(payload, 12);
+        const z = readFloat(payload, 16);
+        const clip0 = readUint32(payload, 20);
+        const clip1 = readUint32(payload, 24);
+        const clip2 = readUint32(payload, 28);
+        queueMavlinkTelemetry(mainWindow, {
+          vibration: { x, y, z, clip0, clip1, clip2, timestamp: Date.now() },
+        });
+      }
+      break;
+    }
+
+    case MSG_SERVO_OUTPUT_RAW: {
+      // SERVO_OUTPUT_RAW (36) wire order: time_usec(4 U32), servo1-8(2 U16 each),
+      //   port(1 U8), servo9-16(2 U16 each, v2 extension fields)
+      // Min length is 21 (port included), max is 37 (all 16 servos).
+      // We only care about port 0 (MAIN outputs) where the motors live.
+      if (payload.length >= 21) {
+        const port = payload[20] ?? 0;
+        if (port === 0) {
+          const outputs: number[] = [];
+          // Servos 1-8 always present
+          for (let i = 0; i < 8; i++) {
+            outputs.push(readUint16(payload, 4 + i * 2));
+          }
+          // Servos 9-16 only present in v2 extension (offset 21+)
+          if (payload.length >= 37) {
+            for (let i = 0; i < 8; i++) {
+              outputs.push(readUint16(payload, 21 + i * 2));
+            }
+          }
+          queueMavlinkTelemetry(mainWindow, {
+            servoOutput: { outputs, timestamp: Date.now() },
+          });
+        }
+      }
+      break;
+    }
+
+    case MSG_ESC_TELEMETRY_1_TO_4:
+    case MSG_ESC_TELEMETRY_5_TO_8:
+    case MSG_ESC_TELEMETRY_9_TO_12: {
+      // ESC_TELEMETRY_N_TO_M wire order (size-sorted):
+      //   voltage[4] U16, current[4] U16, totalcurrent[4] U16, rpm[4] U16, count[4] U16, temperature[4] U8
+      // Total: 44 bytes. Voltage in cV, current in cA, rpm in eRPM.
+      if (payload.length >= 44) {
+        const baseMotorIndex =
+          msgid === MSG_ESC_TELEMETRY_1_TO_4 ? 0 :
+          msgid === MSG_ESC_TELEMETRY_5_TO_8 ? 4 : 8;
+
+        // Build a sparse motors array preserving any previously-received groups
+        const existingEsc = (mavlinkTelemetryBatch.escTelemetry as EscTelemetryData | undefined)?.motors ?? [];
+        const motors: Array<EscMotorTelemetry | undefined> = existingEsc.slice();
+        while (motors.length < baseMotorIndex + 4) motors.push(undefined);
+
+        for (let i = 0; i < 4; i++) {
+          const voltageCv = readUint16(payload, 0 + i * 2);
+          const currentCa = readUint16(payload, 8 + i * 2);
+          const rpm = readUint16(payload, 24 + i * 2);
+          const tempC = payload[40 + i] ?? 0;
+          motors[baseMotorIndex + i] = {
+            rpm,
+            tempC,
+            voltageV: voltageCv / 100,
+            currentA: currentCa / 100,
+          };
+        }
+        queueMavlinkTelemetry(mainWindow, {
+          escTelemetry: { motors, timestamp: Date.now() } as EscTelemetryData,
+        });
+      }
       break;
     }
 
@@ -1703,9 +1794,21 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
             sendLog(mainWindow, 'info', `Board UID: ${boardUid}`);
           }
 
+          // Decode and log firmware version
+          // ArduPilot packs flight_sw_version as: major(8) | minor(8) | patch(8) | type(8)
+          const flightSwVersion = view.getUint32(16, true);
+          if (flightSwVersion > 0) {
+            const major = (flightSwVersion >> 24) & 0xFF;
+            const minor = (flightSwVersion >> 16) & 0xFF;
+            const patch = (flightSwVersion >> 8) & 0xFF;
+            const vType = flightSwVersion & 0xFF;
+            const typeLabel = vType === 255 ? 'official' : vType >= 192 ? `rc${vType - 191}` : vType >= 128 ? `beta${vType - 127}` : vType >= 64 ? `alpha` : 'dev';
+            sendLog(mainWindow, 'info', `Firmware: ${connectionState.vehicleType ?? 'ArduPilot'} v${major}.${minor}.${patch} (${typeLabel})`);
+          }
+
           // Cache for bug report diagnostics
           cachedAutopilotVersion = {
-            flight_sw_version: view.getUint32(16, true),
+            flight_sw_version: flightSwVersion,
             board_version: view.getUint32(28, true),
             capabilities: view.getUint32(0, true), // lower 32 bits of capabilities u64
           };
@@ -3972,6 +4075,85 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       const message = error instanceof Error ? error.message : 'Unknown error';
       sendLog(mainWindow, 'error', `Failed to ${arm ? 'arm' : 'disarm'}`, message);
       return false;
+    }
+  });
+
+  // Motor Test via MAV_CMD_DO_MOTOR_TEST (command 209)
+  // Spins a single motor (or sequences through N motors) at the requested throttle.
+  // ArduPilot refuses the command if the vehicle is armed.
+  ipcMain.handle(IPC_CHANNELS.MOTOR_TEST_START, async (_, request: MotorTestStartRequest): Promise<MotorTestResponse> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return { success: false, error: 'Not connected' };
+    }
+    if (connectionState.protocol !== 'mavlink') {
+      return { success: false, error: 'Motor test requires MAVLink connection' };
+    }
+
+    try {
+      // MOTOR_TEST_THROTTLE_TYPE: 0=PERCENT, 1=PWM
+      const throttleType = request.throttleType === 'pwm' ? 1 : 0;
+
+      const payload = serializeCommandLong({
+        targetSystem: connectionState.systemId ?? 1,
+        targetComponent: 1,
+        command: 209, // MAV_CMD_DO_MOTOR_TEST
+        confirmation: 0,
+        param1: request.motor,             // Motor number (1-based)
+        param2: throttleType,              // Throttle type
+        param3: request.throttle,          // Throttle value (% or PWM)
+        param4: request.duration,          // Duration (seconds)
+        param5: request.motorCount ?? 0,   // Motor count for sequence (0 = single motor)
+        param6: 0,                         // Test order (0 = default)
+        param7: 0,
+      });
+
+      const packet = await sendMavlinkPacket(COMMAND_LONG_ID, payload, COMMAND_LONG_CRC_EXTRA);
+      await currentTransport.write(packet);
+      connectionState.packetsSent++;
+
+      sendLog(mainWindow, 'info',
+        `Motor test: motor ${request.motor}, ${request.throttle}${request.throttleType === 'pwm' ? ' PWM' : '%'}, ${request.duration}s${request.motorCount ? ` (seq ${request.motorCount})` : ''}`);
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      sendLog(mainWindow, 'error', 'Failed to send motor test command', message);
+      return { success: false, error: message };
+    }
+  });
+
+  // Stop all motors by sending DO_MOTOR_TEST with throttle=0 to every motor.
+  // ArduPilot's motor test auto-stops on its duration timer, but this gives
+  // a user-triggered immediate stop.
+  ipcMain.handle(IPC_CHANNELS.MOTOR_TEST_STOP, async (_, motorCount: number): Promise<MotorTestResponse> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return { success: false, error: 'Not connected' };
+    }
+
+    try {
+      for (let motor = 1; motor <= motorCount; motor++) {
+        const payload = serializeCommandLong({
+          targetSystem: connectionState.systemId ?? 1,
+          targetComponent: 1,
+          command: 209, // MAV_CMD_DO_MOTOR_TEST
+          confirmation: 0,
+          param1: motor,
+          param2: 0, // percent
+          param3: 0, // 0% throttle
+          param4: 0, // 0 seconds
+          param5: 0,
+          param6: 0,
+          param7: 0,
+        });
+        const packet = await sendMavlinkPacket(COMMAND_LONG_ID, payload, COMMAND_LONG_CRC_EXTRA);
+        await currentTransport.write(packet);
+        connectionState.packetsSent++;
+      }
+      sendLog(mainWindow, 'info', `Motor test STOP sent to ${motorCount} motors`);
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      sendLog(mainWindow, 'error', 'Failed to stop motors', message);
+      return { success: false, error: message };
     }
   });
 

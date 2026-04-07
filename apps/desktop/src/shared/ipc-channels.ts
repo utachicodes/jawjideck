@@ -365,6 +365,10 @@ export const IPC_CHANNELS = {
   CALIBRATION_PROGRESS: 'calibration:progress', // Event from main
   CALIBRATION_COMPLETE: 'calibration:complete', // Event from main
 
+  // Motor Test
+  MOTOR_TEST_START: 'motor-test:start',
+  MOTOR_TEST_STOP: 'motor-test:stop',
+
   // Mission Library (offline storage)
   MISSION_LIBRARY_LIST: 'mission-library:list',
   MISSION_LIBRARY_GET: 'mission-library:get',

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { TelemetryState, AttitudeData, PositionData, GpsData, BatteryData, VfrHudData, FlightState, RcChannelsData } from '../../shared/telemetry-types';
+import type { VibrationData, EscTelemetryData, ServoOutputData } from '../../shared/motor-test-types';
 
 /** Batch telemetry update - all fields optional */
 export interface TelemetryBatch {
@@ -10,6 +11,9 @@ export interface TelemetryBatch {
   vfrHud?: VfrHudData;
   flight?: FlightState;
   rcChannels?: RcChannelsData;
+  vibration?: VibrationData;
+  escTelemetry?: EscTelemetryData;
+  servoOutput?: ServoOutputData;
 }
 
 interface TelemetryStore extends TelemetryState {
@@ -32,6 +36,9 @@ const initialState: TelemetryState = {
   lastBattery: 0,
   lastVfrHud: 0,
   lastRcChannels: 0,
+  lastVibration: 0,
+  lastEscTelemetry: 0,
+  lastServoOutput: 0,
 
   attitude: { roll: 0, pitch: 0, yaw: 0, rollSpeed: 0, pitchSpeed: 0, yawSpeed: 0 },
   position: { lat: 0, lon: 0, alt: 0, relativeAlt: 0, vx: 0, vy: 0, vz: 0 },
@@ -40,6 +47,9 @@ const initialState: TelemetryState = {
   vfrHud: { airspeed: 0, groundspeed: 0, heading: 0, throttle: 0, alt: 0, climb: 0 },
   flight: { mode: 'Unknown', modeNum: 0, armed: false, isFlying: false },
   rcChannels: { channels: [], chancount: 0, rssi: 0 },
+  vibration: null,
+  escTelemetry: null,
+  servoOutput: null,
 };
 
 export const useTelemetryStore = create<TelemetryStore>((set) => ({
@@ -85,6 +95,18 @@ export const useTelemetryStore = create<TelemetryStore>((set) => ({
     if (batch.rcChannels) {
       updates.rcChannels = batch.rcChannels;
       updates.lastRcChannels = now;
+    }
+    if (batch.vibration) {
+      updates.vibration = batch.vibration;
+      updates.lastVibration = now;
+    }
+    if (batch.escTelemetry) {
+      updates.escTelemetry = batch.escTelemetry;
+      updates.lastEscTelemetry = now;
+    }
+    if (batch.servoOutput) {
+      updates.servoOutput = batch.servoOutput;
+      updates.lastServoOutput = now;
     }
 
     set(updates);

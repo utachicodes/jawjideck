@@ -36,6 +36,7 @@ import {
   RotateCw,
   History,
   AlertTriangle,
+  Fan,
 } from 'lucide-react';
 import { useParameterStore } from '../../stores/parameter-store';
 import { useConnectionStore } from '../../stores/connection-store';
@@ -51,6 +52,7 @@ import RoverTuningTab from './RoverTuningTab';
 import ReceiverTab from './ReceiverTab';
 import SerialPortsTab from './SerialPortsTab';
 import ParamHistoryModal from './ParamHistoryModal';
+import { MotorTestTab } from './motor-test/MotorTestTab';
 
 // Toast notification state
 type ToastType = 'success' | 'error' | 'info';
@@ -59,7 +61,7 @@ interface Toast {
   type: ToastType;
 }
 
-type TabId = 'pid' | 'rates' | 'modes' | 'receiver' | 'serial-ports' | 'safety' | 'sensors' | 'tuning' | 'battery' | 'parameters' | 'rover-tuning' | 'rover-nav';
+type TabId = 'pid' | 'rates' | 'modes' | 'receiver' | 'serial-ports' | 'safety' | 'sensors' | 'tuning' | 'battery' | 'parameters' | 'rover-tuning' | 'rover-nav' | 'motor-test';
 
 interface Tab {
   id: TabId;
@@ -96,6 +98,7 @@ const AIRCRAFT_TABS: Tab[] = [
   { id: 'serial-ports', name: 'Serial Ports', Icon: Cable, color: 'text-sky-400', description: 'Configure serial port protocols and baud rates' },
   { id: 'safety', name: 'Safety', Icon: Shield, color: 'text-amber-400', description: 'Failsafes, arming checks, geofence' },
   { id: 'sensors', name: 'Sensors', Icon: Cpu, color: 'text-cyan-400', description: 'Live telemetry and sensor health' },
+  { id: 'motor-test', name: 'Motor Test', Icon: Fan, color: 'text-yellow-400', description: 'Spin individual motors with live vibration monitoring' },
   { id: 'tuning', name: 'Tuning', Icon: Sliders, color: 'text-emerald-400', description: 'Performance presets and basic tuning' },
   { id: 'battery', name: 'Battery', Icon: Battery, color: 'text-orange-400', description: 'Battery monitor configuration' },
   { id: 'parameters', name: 'All Parameters', Icon: Table, color: 'text-zinc-400', description: 'Full parameter list for experts', badge: 'Expert' },
@@ -262,6 +265,8 @@ export const MavlinkConfigView: React.FC = () => {
         return <SafetyTab />;
       case 'sensors':
         return <SensorsTab />;
+      case 'motor-test':
+        return <MotorTestTab />;
       case 'battery':
         return <BatteryTab />;
       case 'parameters':

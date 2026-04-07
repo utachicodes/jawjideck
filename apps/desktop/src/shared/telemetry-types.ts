@@ -2,6 +2,9 @@
  * Telemetry data types for vehicle state
  */
 
+import type { VibrationData, EscTelemetryData, ServoOutputData } from './motor-test-types';
+export type { VibrationData, EscTelemetryData, EscMotorTelemetry, ServoOutputData } from './motor-test-types';
+
 export interface AttitudeData {
   roll: number;      // degrees
   pitch: number;     // degrees
@@ -74,6 +77,9 @@ export interface TelemetryState {
   lastBattery: number;
   lastVfrHud: number;
   lastRcChannels: number;
+  lastVibration: number;
+  lastEscTelemetry: number;
+  lastServoOutput: number;
 
   // Data
   attitude: AttitudeData;
@@ -83,6 +89,9 @@ export interface TelemetryState {
   vfrHud: VfrHudData;
   flight: FlightState;
   rcChannels: RcChannelsData;
+  vibration: VibrationData | null;
+  escTelemetry: EscTelemetryData | null;
+  servoOutput: ServoOutputData | null;
 }
 
 // Flight modes for ArduPilot Copter
