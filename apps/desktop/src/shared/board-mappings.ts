@@ -58,6 +58,23 @@ export function hasInavF3Support(boardId: string): boolean {
   return INAV_SUPPORTED_F3_BOARDS.some(b => upper.includes(b) || upper === b);
 }
 
+/**
+ * Returns true if the given ArduPilot board has storage that reliably persists
+ * parameters across firmware updates. F4 boards typically use main-flash sector
+ * storage that gets erased on reflash, so even though MAV_CMD_PREFLIGHT_STORAGE
+ * succeeds the params don't actually survive an upgrade. F7/H7 boards have
+ * dataflash chips or larger flash regions where the param area is preserved.
+ *
+ * Strict whitelist: boardId must contain "F7" or "H7". This intentionally
+ * excludes boards like Pixhawk4 / CubeOrange whose names don't carry the MCU
+ * family — users with those boards can still write params via the params view.
+ */
+export function boardSupportsPersistentParamSave(boardId: string | null | undefined): boolean {
+  if (!boardId) return false;
+  const upper = boardId.toUpperCase();
+  return /F7|H7/.test(upper);
+}
+
 // Betaflight target -> iNav target (or array of possible matches)
 export const BETAFLIGHT_TO_INAV: Record<string, string | string[]> = {
   // Matek boards (most are identical)

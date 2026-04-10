@@ -1,4 +1,4 @@
-export { initCalibrationHandlers, cleanupCalibrationHandlers } from './calibration-handlers.js';
+export { initCalibrationHandlers, cleanupCalibrationHandlers, cancelCalibration } from './calibration-handlers.js';
 export {
   handleCalibrationStatusText,
   handleCalibrationCommandAck,

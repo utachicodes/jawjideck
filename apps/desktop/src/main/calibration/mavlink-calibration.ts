@@ -18,7 +18,7 @@ import type {
 // =============================================================================
 
 const MAV_CMD_PREFLIGHT_CALIBRATION = 241;
-const MAV_CMD_ACCELCAL_VEHICLE_POS = 42424;
+const MAV_CMD_ACCELCAL_VEHICLE_POS = 42429;
 
 // ACCELCAL_VEHICLE_POS enum values (ArduPilot)
 const ACCELCAL_POS = {
@@ -94,6 +94,13 @@ let positionStatus = [false, false, false, false, false, false];
 // (in case AP's "Calibration successful" STATUSTEXT is dropped or never sent)
 let sixPointFallbackTimerId: ReturnType<typeof setTimeout> | null = null;
 
+// Hard timeout for synchronous one-shot calibrations (accel-level/gyro).
+// AP runs these in <2s and either returns COMMAND_ACK or emits a failure
+// STATUSTEXT. If neither arrives within this window the FC has gone silent
+// (USB stall, FC reboot mid-cal, etc.) and we should fail rather than hang.
+let oneShotTimeoutId: ReturnType<typeof setTimeout> | null = null;
+const ONE_SHOT_TIMEOUT_MS = 15000;
+
 // =============================================================================
 // Init
 // =============================================================================
@@ -144,6 +151,16 @@ export async function confirmMavlinkPosition(position: number): Promise<{ succes
   const arduPos = INDEX_TO_ARDU_POS[position];
   if (arduPos === undefined) return { success: false, error: `Invalid position index: ${position}` };
 
+  // ArduPilot only accepts position confirmations when its AccelCal state
+  // machine is in WAITING_FOR_ORIENTATION. AP signals readiness by sending
+  // a COMMAND_LONG with ACCELCAL_VEHICLE_POS to the GCS (handled by
+  // handleIncomingCommandLong, which sets expectedPosition). If we send a
+  // confirmation before AP asks for it, AP returns MAV_RESULT_FAILED.
+  // Mission Planner also waits for this request before enabling the button.
+  if (expectedPosition === -1) {
+    return { success: false, error: 'Waiting for flight controller to request a position. Keep the vehicle still.' };
+  }
+
   deps.sendLog('info', `Confirming position ${position} (${POSITION_NAMES[position]}) — sending ACCELCAL_VEHICLE_POS`);
 
   const sent = await deps.sendCommandLong(MAV_CMD_ACCELCAL_VEHICLE_POS, {
@@ -156,8 +173,13 @@ export async function confirmMavlinkPosition(position: number): Promise<{ succes
     return { success: false, error: 'Failed to send position confirmation — ensure FC is connected' };
   }
 
-  // Mark this position as captured locally
+  // Mark this position as captured locally and reset expectedPosition so
+  // we wait for AP to request the NEXT position before allowing another
+  // confirm. AP re-enters COLLECTING_SAMPLE after each confirmation and
+  // won't accept the next position until it transitions back to
+  // WAITING_FOR_ORIENTATION (signalled by a new COMMAND_LONG request).
   positionStatus[position] = true;
+  expectedPosition = -1;
 
   // After the LAST position is confirmed, arm a fallback timer in case the
   // FC's "Calibration successful" STATUSTEXT is dropped or never sent.
@@ -189,9 +211,33 @@ export function cancelMavlinkCalibration(): void {
     clearTimeout(sixPointFallbackTimerId);
     sixPointFallbackTimerId = null;
   }
+  if (oneShotTimeoutId) {
+    clearTimeout(oneShotTimeoutId);
+    oneShotTimeoutId = null;
+  }
   activeCalType = null;
   expectedPosition = -1;
   positionStatus = [false, false, false, false, false, false];
+}
+
+/**
+ * Arm the safety-net timer for accel-level and gyro. If the FC neither
+ * ACKs nor emits a recognizable STATUSTEXT, we fail the cal so the UI
+ * doesn't hang at "Calibrating..." forever.
+ */
+function armOneShotTimeout(type: 'accel-level' | 'gyro'): void {
+  if (oneShotTimeoutId) clearTimeout(oneShotTimeoutId);
+  oneShotTimeoutId = setTimeout(() => {
+    oneShotTimeoutId = null;
+    if (!deps || activeCalType !== type) return;
+    deps.sendLog('error', `${type} calibration timed out — no response from flight controller after ${ONE_SHOT_TIMEOUT_MS / 1000}s`);
+    deps.sendComplete({
+      type,
+      success: false,
+      error: 'Flight controller did not respond. Check the connection and try again.',
+    });
+    cancelMavlinkCalibration();
+  }, ONE_SHOT_TIMEOUT_MS);
 }
 
 // =============================================================================
@@ -226,6 +272,31 @@ export function handleCalibrationStatusText(text: string, severity: number): voi
     cancelMavlinkCalibration();
     return;
   }
+
+  // ArduPilot accel-level failure: AP_InertialSensor::calibrate_trim() emits
+  // "trim over maximum of 10 degrees" and returns false when the vehicle is
+  // tilted more than 10° from horizontal. AP also returns MAV_RESULT_FAILED
+  // afterward, but the COMMAND_ACK can be missed if the FC reinitializes,
+  // so this STATUSTEXT match is the reliable signal.
+  if (activeCalType === 'accel-level' && (lower.includes('trim over') || lower.includes('trim failed'))) {
+    deps.sendLog('error', `Level calibration rejected: ${text}`);
+    deps.sendComplete({
+      type: 'accel-level',
+      success: false,
+      error: 'Vehicle is tilted more than 10° from level. Place the flight controller on a flat surface and try again.',
+    });
+    cancelMavlinkCalibration();
+    return;
+  }
+
+  // Note: we previously detected "Initialising ArduPilot" STATUSTEXT as a
+  // mid-cal reboot signal, but this caused false aborts: AP sends the boot
+  // message on connect and it can arrive seconds later (buffered/delayed),
+  // racing with a cal command that already got COMMAND_ACK ACCEPTED. Now
+  // that the COMMAND_ACK parser is fixed (command@0, result@2 regardless
+  // of v1/v2), the ACK path is the reliable signal and the 15s safety-net
+  // timeout catches genuinely unresponsive FCs. No need for "Initialising"
+  // detection.
 
   // "Trim OK: ..." is what AP emits after a successful level/trim cal — but
   // for accel-level we already complete on COMMAND_ACK ACCEPTED above.
@@ -322,10 +393,23 @@ export function handleCalibrationCommandAck(command: number, result: number): vo
       const names = ['ACCEPTED', 'TEMPORARILY_REJECTED', 'DENIED', 'UNSUPPORTED', 'FAILED', 'IN_PROGRESS'];
       const name = names[result] ?? `UNKNOWN(${result})`;
       deps.sendLog('error', `Calibration command rejected: ${name}`);
+
+      // Provide human-readable errors for known rejection codes.
+      // TEMPORARILY_REJECTED (1) for level/gyro means a prerequisite isn't
+      // met — AP checks ins.calibrated() before accepting trim cal, which
+      // requires a prior 6-point accel calibration.
+      let userError: string;
+      if (result === 1 && activeCalType === 'accel-level') {
+        userError = 'Accelerometer not yet calibrated. Run a 6-point accelerometer calibration first, then try level calibration again.';
+      } else if (result === 1) {
+        userError = 'Flight controller is not ready. Wait a few seconds after connecting and try again.';
+      } else {
+        userError = `Flight controller rejected calibration: ${name}`;
+      }
       deps.sendComplete({
         type: activeCalType,
         success: false,
-        error: `Flight controller rejected calibration: ${name}`,
+        error: userError,
       });
       cancelMavlinkCalibration();
     }
@@ -421,11 +505,13 @@ async function startAccelLevel(): Promise<{ success: boolean; error?: string }> 
     return { success: false, error: 'Failed to send calibration command — ensure FC is connected' };
   }
 
+  deps.sendLog('info', '[CAL DIAG] level command written to transport, waiting for COMMAND_ACK from FC...');
   deps.sendProgress({
     type: 'accel-level',
     progress: 30,
     statusText: 'Calibrating... keep vehicle level and still',
   });
+  armOneShotTimeout('accel-level');
 
   return { success: true };
 }
@@ -497,6 +583,7 @@ async function startGyro(): Promise<{ success: boolean; error?: string }> {
     progress: 30,
     statusText: 'Calibrating gyroscope... keep vehicle still',
   });
+  armOneShotTimeout('gyro');
 
   return { success: true };
 }

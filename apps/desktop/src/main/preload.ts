@@ -208,6 +208,14 @@ const api = {
     error?: string;
   }> => ipcRenderer.invoke(IPC_CHANNELS.PARAM_SET_BATCH, params),
 
+  // Read a batch of params by name (forces fresh values from FC, bypasses cache)
+  readParameterBatch: (paramIds: string[]): Promise<{
+    success: boolean;
+    values: Record<string, number>;
+    missing: string[];
+    error?: string;
+  }> => ipcRenderer.invoke(IPC_CHANNELS.PARAM_READ_BATCH, paramIds),
+
   onParamValue: (callback: (param: ParamValuePayload) => void) => {
     const handler = (_: unknown, param: ParamValuePayload) => callback(param);
     ipcRenderer.on(IPC_CHANNELS.PARAM_VALUE, handler);

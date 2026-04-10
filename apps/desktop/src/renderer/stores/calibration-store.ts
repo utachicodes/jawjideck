@@ -14,9 +14,14 @@ import {
   type SensorAvailability,
   type AccelPosition,
   type CalibrationProtocol,
+  type CalibrationVerification,
+  type ParamReadResult,
   CALIBRATION_TYPES,
   ACCEL_6POINT_POSITIONS,
+  MAVLINK_CALIBRATION_PARAMS,
+  CALIBRATION_DIFF_EPSILON,
 } from '../../shared/calibration-types';
+import { useParameterStore } from './parameter-store';
 
 // ============================================================================
 // Types
@@ -41,6 +46,11 @@ export interface CalibrationState {
 
   // Calibration state
   isCalibrating: boolean;
+  // True after the user confirms the LAST 6-point position, while we wait
+  // for the FC's "Calibration successful" message (or the 8s safety-net
+  // fallback). Used to swap the calibrating UI into a "finalizing" state
+  // so the user doesn't see a Cancel button next to all-green positions.
+  isFinalizing: boolean;
   progress: number; // 0-100
   currentPosition: AccelPosition; // For 6-point (0-5)
   positionStatus: boolean[]; // [false, false, false, false, false, false]
@@ -69,6 +79,14 @@ export interface CalibrationState {
 
   // Track completed calibrations this session (arming flags may not clear until reboot)
   completedCalibrations: Set<CalibrationTypeId>;
+
+  // Pre-cal snapshot of MAVLink params we'll diff against on completion.
+  // Captured when the user clicks Start; cleared on reset.
+  paramSnapshot: Record<string, number> | null;
+
+  // Result of the post-cal param re-read + diff. Populated by handleCalibrationComplete
+  // for MAVLink calibrations only. See CalibrationVerification in calibration-types.ts.
+  verification: CalibrationVerification | null;
 
   // Actions
   open: () => void;
@@ -128,6 +146,7 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
   sensorsError: null,
 
   isCalibrating: false,
+  isFinalizing: false,
   progress: 0,
   currentPosition: 0,
   positionStatus: [false, false, false, false, false, false],
@@ -149,6 +168,9 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
   savePersistentError: null,
 
   completedCalibrations: new Set(),
+
+  paramSnapshot: null,
+  verification: null,
 
   // ============================================================================
   // View Actions
@@ -244,6 +266,9 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
       isSavingPersistent: false,
       savePersistentSuccess: false,
       savePersistentError: null,
+      // Reset prior verification result
+      paramSnapshot: null,
+      verification: null,
     });
   },
 
@@ -258,11 +283,54 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
       return;
     }
 
+    // Snapshot the params we'll diff against on completion. Only meaningful
+    // for MAVLink (the verification feature is ArduPilot-only). We use an
+    // explicit PARAM_READ_BATCH instead of reading from the parameter-store
+    // cache because:
+    //   1. The cache might not have the INS_*/AHRS_TRIM_* params loaded yet
+    //      if the user clicks Start before the initial bulk param fetch
+    //      finishes (common on slow links / SITL TCP).
+    //   2. Reading from the FC right now guarantees the snapshot keys match
+    //      whatever the post-cal read returns, so the diff can never silently
+    //      compare against an empty snapshot.
+    // Cost is one round-trip (~1-2s for ~18 params in parallel).
+    let paramSnapshot: Record<string, number> | null = null;
+    if (protocol === 'mavlink') {
+      const trackedParams = MAVLINK_CALIBRATION_PARAMS[calibrationType];
+      if (trackedParams && trackedParams.length > 0) {
+        try {
+          const result = await window.electronAPI?.readParameterBatch([...trackedParams]);
+          if (result?.success && Object.keys(result.values).length > 0) {
+            paramSnapshot = result.values;
+          } else {
+            // Fall back to the cache so we still try to verify if the live
+            // read failed for some reason. Better than nothing.
+            paramSnapshot = {};
+            const cache = useParameterStore.getState().parameters;
+            for (const id of trackedParams) {
+              const p = cache.get(id);
+              if (p) paramSnapshot[id] = p.value;
+            }
+          }
+        } catch (err) {
+          console.warn('[Calibration] Pre-cal snapshot read failed, falling back to cache:', err);
+          paramSnapshot = {};
+          const cache = useParameterStore.getState().parameters;
+          for (const id of trackedParams) {
+            const p = cache.get(id);
+            if (p) paramSnapshot[id] = p.value;
+          }
+        }
+      }
+    }
+
     set({
       isCalibrating: true,
       currentStep: 'calibrating',
       error: null,
       progress: 0,
+      paramSnapshot,
+      verification: null,
     });
 
     try {
@@ -299,23 +367,32 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
         throw new Error(result?.error || 'Failed to confirm position');
       }
 
-      // Update position status
+      // Mark position as captured. Do NOT advance currentPosition or set
+      // statusText to "Place vehicle X" — that's driven by AP's progress
+      // events (handleIncomingCommandLong → handleProgressUpdate). If we
+      // advance here, the renderer shows the confirm button before AP is
+      // ready, the main process rejects, and the user sees a confusing
+      // "skipped" position. Let AP drive the state machine.
       const newStatus = [...get().positionStatus];
       newStatus[currentPosition] = true;
 
-      // Move to next position or complete
       if (currentPosition < 5) {
         set({
-          currentPosition: (currentPosition + 1) as AccelPosition,
           positionStatus: newStatus,
-          statusText: `Place vehicle ${ACCEL_6POINT_POSITIONS[currentPosition + 1]}`,
+          statusText: 'Waiting for flight controller...',
           progress: ((currentPosition + 1) / 6) * 100,
         });
       } else {
-        // All positions done
+        // All positions done — flip into finalizing state. The MAVLink
+        // backend has armed an 8s safety-net timer; until then we're
+        // waiting for AP's "Calibration successful" STATUSTEXT or the
+        // ACCELCAL_VEHICLE_POS=SUCCESS COMMAND_LONG. Surface that wait
+        // explicitly so the UI doesn't look stuck.
         set({
           positionStatus: newStatus,
           progress: 100,
+          isFinalizing: true,
+          statusText: 'Finalizing calibration on flight controller...',
         });
       }
     } catch (err) {
@@ -328,6 +405,7 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
     window.electronAPI?.calibrationCancel?.();
     set({
       isCalibrating: false,
+      isFinalizing: false,
       currentStep: 'prepare',
       progress: 0,
       statusText: '',
@@ -470,14 +548,62 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
   },
 
   handleCalibrationComplete: (success, data, error) => {
+    const { calibrationType, protocol, paramSnapshot } = get();
+
+    // Decide up front whether we'll run verification, so the initial state
+    // transition can include `verification: pending` atomically. Without
+    // this the UI would briefly flash a green "Complete!" banner before
+    // flipping to the cyan "Verifying…" banner on the next set().
+    const willVerify = !!(
+      success &&
+      protocol === 'mavlink' &&
+      calibrationType &&
+      paramSnapshot &&
+      MAVLINK_CALIBRATION_PARAMS[calibrationType]
+    );
+
     set({
       isCalibrating: false,
+      isFinalizing: false,
       currentStep: 'complete',
       calibrationSuccess: success,
       calibrationData: data || null,
       error: error || null,
       progress: success ? 100 : get().progress,
+      verification: willVerify ? { status: 'pending', results: [] } : null,
     });
+
+    // Post-cal verification: only on success, MAVLink, and only when we
+    // actually captured a snapshot at start time. Skipped types (MSP, opflow)
+    // and missing snapshots fall through to verification: null which the UI
+    // treats as "not applicable".
+    if (willVerify && calibrationType && paramSnapshot) {
+      void verifyCalibrationParams(calibrationType, paramSnapshot)
+        .then((result) => {
+          // Verification is the source of truth. If the tracked params
+          // didn't move, the FC silently failed (or the 8s fallback fired
+          // optimistically while AP never actually wrote anything). The
+          // post-cal param state is the only reliable witness, so override
+          // the optimistic success and flip to failed. This converts the
+          // confusing "green banner + yellow warning" UI into a single
+          // unambiguous outcome the user can act on.
+          if (result.status === 'unchanged') {
+            set({
+              verification: result,
+              calibrationSuccess: false,
+              error: 'Flight controller reported success, but the calibration parameters did not change. The calibration silently failed — please try again.',
+            });
+          } else {
+            set({ verification: result });
+          }
+        })
+        .catch((err) => {
+          const message = err instanceof Error ? err.message : 'Verification failed';
+          set({ verification: { status: 'error', results: [], error: message } });
+        });
+    } else if (success && protocol === 'mavlink' && calibrationType && !MAVLINK_CALIBRATION_PARAMS[calibrationType]) {
+      set({ verification: { status: 'skipped', results: [] } });
+    }
   },
 
   // ============================================================================
@@ -495,6 +621,7 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
       isSensorsLoading: false,
       sensorsError: null,
       isCalibrating: false,
+      isFinalizing: false,
       progress: 0,
       currentPosition: 0,
       positionStatus: [false, false, false, false, false, false],
@@ -511,9 +638,79 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
       savePersistentSuccess: false,
       savePersistentError: null,
       completedCalibrations: new Set(),
+      paramSnapshot: null,
+      verification: null,
     });
   },
 }));
+
+// ============================================================================
+// MAVLink calibration verification helper
+// ============================================================================
+
+/**
+ * Re-fetch the params we snapshotted before the calibration ran and diff
+ * them. Returns:
+ *   - 'verified'  if at least one tracked param moved beyond the epsilon
+ *   - 'unchanged' if every tracked param that exists on the FC is identical
+ *                 (the FC reported success but didn't actually write anything)
+ *   - 'error'     if the param re-read failed entirely
+ *
+ * Params present in the snapshot but missing from the post-cal read are
+ * treated as "doesn't exist on this FC" and ignored (e.g. INS_ACC3* on a
+ * single-IMU board) — they don't count toward changed or unchanged.
+ */
+async function verifyCalibrationParams(
+  calType: CalibrationTypeId,
+  snapshot: Record<string, number>,
+): Promise<CalibrationVerification> {
+  const tracked = MAVLINK_CALIBRATION_PARAMS[calType];
+  if (!tracked) {
+    return { status: 'skipped', results: [] };
+  }
+
+  const epsilon = CALIBRATION_DIFF_EPSILON[calType] ?? 1e-4;
+
+  const result = await window.electronAPI?.readParameterBatch([...tracked]);
+  if (!result || !result.success) {
+    return {
+      status: 'error',
+      results: [],
+      error: result?.error ?? 'Failed to read calibration parameters',
+    };
+  }
+
+  const results: ParamReadResult[] = [];
+  let changedCount = 0;
+  let comparedCount = 0;
+
+  for (const paramId of tracked) {
+    const before = snapshot[paramId];
+    const after = result.values[paramId];
+    // Skip params that weren't present on this FC (or weren't in snapshot —
+    // possibly because the param store didn't have them at start time).
+    if (before === undefined || after === undefined) continue;
+
+    const changed = Math.abs(after - before) > epsilon;
+    results.push({ paramId, before, after, changed });
+    comparedCount++;
+    if (changed) changedCount++;
+  }
+
+  if (comparedCount === 0) {
+    // Couldn't actually compare anything — treat as error so the UI flags it
+    return {
+      status: 'error',
+      results,
+      error: 'No tracked parameters could be read from the flight controller',
+    };
+  }
+
+  return {
+    status: changedCount > 0 ? 'verified' : 'unchanged',
+    results,
+  };
+}
 
 // ============================================================================
 // Helpers

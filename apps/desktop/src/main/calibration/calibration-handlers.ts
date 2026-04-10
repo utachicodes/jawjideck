@@ -476,16 +476,16 @@ async function confirmPosition(position: number): Promise<{ success: boolean; er
 // Cancel
 // =============================================================================
 
-function cancelCalibration(): void {
+export function cancelCalibration(reason: string = 'Cancelled by user'): void {
   if (activeProtocol === 'mavlink') {
     cancelMavlinkCalibration();
   }
   if (currentCalibration) {
-    sendLog('info', `Cancelling ${currentCalibration} calibration`);
+    sendLog('info', `Cancelling ${currentCalibration} calibration: ${reason}`);
     sendComplete({
       type: currentCalibration,
       success: false,
-      error: 'Cancelled by user',
+      error: reason,
     });
   }
   currentCalibration = null;
@@ -506,9 +506,26 @@ export function initCalibrationHandlers(
 ): void {
   mainWindow = window;
 
-  // Initialize MAVLink calibration backend with deps from ipc-handlers
+  // Initialize MAVLink calibration backend with deps from ipc-handlers.
+  // We wrap sendComplete so that whenever the MAVLink module finishes a
+  // calibration it ALSO clears this module's local state. Without the wrap,
+  // currentCalibration stays set forever after the first MAVLink calibration
+  // and every subsequent start fails with "Another calibration is already in
+  // progress" — see issue #15 follow-up.
   if (mavlinkDeps) {
-    initMavlinkCalibration(mavlinkDeps);
+    const wrappedDeps: MavlinkCalibrationDeps = {
+      ...mavlinkDeps,
+      sendComplete: (event) => {
+        mavlinkDeps.sendComplete(event);
+        currentCalibration = null;
+        activeProtocol = null;
+        if (calibrationTimeout) {
+          clearTimeout(calibrationTimeout);
+          calibrationTimeout = null;
+        }
+      },
+    };
+    initMavlinkCalibration(wrappedDeps);
   }
 
   // Sensor config

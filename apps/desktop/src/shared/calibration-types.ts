@@ -222,3 +222,75 @@ export interface CalibrationResult {
   error?: string;
   data?: CalibrationData;
 }
+
+// ============================================================================
+// Post-Calibration Verification (MAVLink / ArduPilot only)
+// ============================================================================
+
+/**
+ * ArduPilot parameters that should change after each calibration type.
+ * Snapshot before, re-read after, diff to verify the FC actually wrote
+ * something. The "secondary" entries (INS_ACC2*, INS_GYR3*, COMPASS_OFS3*)
+ * may not exist on boards with fewer IMUs/compasses — those are silently
+ * ignored during diff.
+ */
+export const MAVLINK_CALIBRATION_PARAMS: Partial<Record<CalibrationTypeId, readonly string[]>> = {
+  'accel-level': [
+    'AHRS_TRIM_X',
+    'AHRS_TRIM_Y',
+    'AHRS_TRIM_Z',
+  ],
+  'accel-6point': [
+    'INS_ACCOFFS_X', 'INS_ACCOFFS_Y', 'INS_ACCOFFS_Z',
+    'INS_ACCSCAL_X', 'INS_ACCSCAL_Y', 'INS_ACCSCAL_Z',
+    'INS_ACC2OFFS_X', 'INS_ACC2OFFS_Y', 'INS_ACC2OFFS_Z',
+    'INS_ACC2SCAL_X', 'INS_ACC2SCAL_Y', 'INS_ACC2SCAL_Z',
+    'INS_ACC3OFFS_X', 'INS_ACC3OFFS_Y', 'INS_ACC3OFFS_Z',
+    'INS_ACC3SCAL_X', 'INS_ACC3SCAL_Y', 'INS_ACC3SCAL_Z',
+  ],
+  'gyro': [
+    'INS_GYROFFS_X', 'INS_GYROFFS_Y', 'INS_GYROFFS_Z',
+    'INS_GYR2OFFS_X', 'INS_GYR2OFFS_Y', 'INS_GYR2OFFS_Z',
+    'INS_GYR3OFFS_X', 'INS_GYR3OFFS_Y', 'INS_GYR3OFFS_Z',
+  ],
+  'compass': [
+    'COMPASS_OFS_X', 'COMPASS_OFS_Y', 'COMPASS_OFS_Z',
+    'COMPASS_OFS2_X', 'COMPASS_OFS2_Y', 'COMPASS_OFS2_Z',
+    'COMPASS_OFS3_X', 'COMPASS_OFS3_Y', 'COMPASS_OFS3_Z',
+  ],
+} as const;
+
+/**
+ * Per-cal-type epsilon for "did this value actually move". A real cal
+ * always produces changes well above these thresholds; anything smaller
+ * is rounding noise. Compass uses milligauss-scale offsets so its epsilon
+ * is much larger than the angular/accel ones.
+ */
+export const CALIBRATION_DIFF_EPSILON: Record<CalibrationTypeId, number> = {
+  'accel-level': 1e-4,   // radians (trim is typically 0.001 - 0.1 rad)
+  'accel-6point': 1e-4,  // m/s² for offsets, dimensionless ~1.0 for scale
+  'gyro': 1e-5,          // rad/s
+  'compass': 1.0,        // mGauss
+  'opflow': 0,           // not applicable (MSP only)
+};
+
+export interface ParamReadResult {
+  paramId: string;
+  before: number | null;
+  after: number | null;
+  changed: boolean;
+}
+
+export type CalibrationVerificationStatus =
+  | 'idle'        // No verification attempted yet
+  | 'pending'     // Re-fetch in flight
+  | 'verified'    // At least one tracked param moved
+  | 'unchanged'   // All present params identical to snapshot — likely silent failure
+  | 'skipped'     // Cal type doesn't support verification (MSP, opflow, etc.)
+  | 'error';      // Re-fetch failed (timeout, disconnect, no params returned)
+
+export interface CalibrationVerification {
+  status: CalibrationVerificationStatus;
+  results: ParamReadResult[]; // Only params that exist on this FC
+  error?: string;
+}

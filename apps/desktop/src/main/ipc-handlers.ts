@@ -50,6 +50,9 @@ import {
   SETUP_SIGNING_CRC_EXTRA,
   PARAM_REQUEST_LIST_ID,
   PARAM_REQUEST_LIST_CRC_EXTRA,
+  PARAM_REQUEST_READ_ID,
+  PARAM_REQUEST_READ_CRC_EXTRA,
+  serializeParamRequestRead,
   PARAM_SET_ID,
   PARAM_SET_CRC_EXTRA,
   COMMAND_LONG_ID,
@@ -98,7 +101,7 @@ import type { MotorTestStartRequest, MotorTestResponse, EscTelemetryData, EscMot
 import { getBoardInfoFromVersion } from '../shared/board-ids.js';
 import { detectBoards, fetchFirmwareVersions, downloadFirmware, copyCustomFirmware, flashWithDfu, flashWithAvrdude, flashWithSerialBootloader, flashWithArduPilotBootloader, getArduPilotBoards, getArduPilotVersions, getBetaflightBoards, getBetaflightVersions, resolveBetaflightDownloadUrl, getInavBoards, getInavVersions, type BoardInfo, type VersionGroup } from './firmware/index.js';
 import { registerMspHandlers, tryMspDetection, startMspTelemetry, stopMspTelemetry, cleanupMspConnection, exitCliModeIfActive, autoConfigureSitlPlatform, getMspVehicleType, resetSitlAutoConfig } from './msp/index.js';
-import { initCalibrationHandlers, cleanupCalibrationHandlers, handleCalibrationStatusText, handleCalibrationCommandAck, handleIncomingCommandLong, isMavlinkCalibrationActive, type MavlinkCalibrationDeps } from './calibration/index.js';
+import { initCalibrationHandlers, cleanupCalibrationHandlers, handleCalibrationStatusText, handleCalibrationCommandAck, handleIncomingCommandLong, isMavlinkCalibrationActive, cancelCalibration, type MavlinkCalibrationDeps } from './calibration/index.js';
 import { initMissionLibraryHandlers, cleanupMissionLibraryHandlers } from './mission-library/index.js';
 import { MavlinkFtpClient, parseParamPack, PARAM_PCK_PATH, parseFtpPayload } from './mavlink-ftp/index.js';
 import {
@@ -751,6 +754,13 @@ let ftpClient: MavlinkFtpClient | null = null;
 let paramRequestInFlight = false; // Guard against concurrent param download requests
 let logDownloadManager: LogDownloadManager | null = null;
 
+// In-flight one-shot PARAM_REQUEST_READ callbacks keyed by paramId. The
+// MSG_PARAM_VALUE handler invokes the matching callback when the FC's
+// response arrives, then deletes it. Used by PARAM_READ_BATCH for
+// post-calibration verification reads where we need a fresh value (the
+// receivedParams cache might still hold the pre-cal value).
+const pendingParamReads = new Map<string, (value: number, type: number) => void>();
+
 // STATUSTEXT chunk reassembly buffer (for multi-chunk messages >50 chars)
 const statustextChunkBuffer = new Map<number, { severity: number; chunks: string[]; timer: NodeJS.Timeout | null }>();
 
@@ -1375,11 +1385,24 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
     }
 
     case MSG_COMMAND_ACK: {
-      // v1 wire order (3 bytes): command(U16)@0, result(U8)@2
-      // v2 wire order (up to 10 bytes): resultParam2(I32)@0, command(U16)@4, result(U8)@6, progress(U8)@7, targetSystem(U8)@8, targetComponent(U8)@9
-      const isV2Payload = payload.length >= 6;
-      const ackCommand = isV2Payload ? readUint16(payload, 4) : readUint16(payload, 0);
-      const ackResult = isV2Payload ? (payload[6] ?? 0) : (payload[2] ?? 0);
+      // COMMAND_ACK wire layout (verified against pymavlink/common.xml):
+      //   command       (uint16) @ 0
+      //   result        (uint8)  @ 2
+      //   progress      (uint8)  @ 3   (extension)
+      //   result_param2 (int32)  @ 4   (extension, NOT reordered)
+      //   target_system (uint8)  @ 8   (extension)
+      //   target_component (uint8) @ 9 (extension)
+      //
+      // Non-extension fields are at fixed offsets in BOTH v1 and v2; v2
+      // simply appends extension fields after them. The previous "v2 puts
+      // result_param2 at offset 0" interpretation was incorrect — extension
+      // fields are NEVER reordered, only non-extensions get size-sorted.
+      // Result of the bug: COMMAND_ACK from any standard MAVLink sender
+      // (SITL, real ArduPilot, Mission Planner, etc) was misparsed and the
+      // actual command/result were silently dropped, breaking calibration
+      // ACK detection for level/gyro and the wider command-tracking layer.
+      const ackCommand = readUint16(payload, 0);
+      const ackResult = payload[2] ?? 0;
       // MAV_RESULT: 0=ACCEPTED, 1=TEMPORARILY_REJECTED, 2=DENIED, 3=UNSUPPORTED, 4=FAILED, 5=IN_PROGRESS
       const MAV_RESULT_NAMES = ['ACCEPTED', 'TEMPORARILY_REJECTED', 'DENIED', 'UNSUPPORTED', 'FAILED', 'IN_PROGRESS'];
       const resultName = MAV_RESULT_NAMES[ackResult] ?? `UNKNOWN(${ackResult})`;
@@ -1394,8 +1417,12 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
       }
 
       // Forward calibration-related COMMAND_ACKs (241=PREFLIGHT_CALIBRATION, 42424=ACCELCAL_VEHICLE_POS)
-      if (isMavlinkCalibrationActive() && (ackCommand === 241 || ackCommand === 42424)) {
-        handleCalibrationCommandAck(ackCommand, ackResult);
+      if (ackCommand === 241 || ackCommand === 42429) {
+        const calActive = isMavlinkCalibrationActive();
+        sendLog(mainWindow, 'info', `[CAL DIAG] COMMAND_ACK cmd=${ackCommand} result=${resultName} calActive=${calActive}`);
+        if (calActive) {
+          handleCalibrationCommandAck(ackCommand, ackResult);
+        }
       }
       break;
     }
@@ -1403,10 +1430,15 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
     case 76: {
       // COMMAND_LONG (76) received FROM FC — ArduPilot sends ACCELCAL_VEHICLE_POS during 6-point calibration
       // Wire layout: param1-7(float32)@0-24, command(U16)@28, targetSystem(U8)@30, targetComponent(U8)@31, confirmation(U8)@32
-      if (isMavlinkCalibrationActive() && payload.length >= 30) {
+      if (payload.length >= 30) {
         const incomingCommand = readUint16(payload, 28);
         const incomingParam1 = readFloat(payload, 0);
-        handleIncomingCommandLong(incomingCommand, incomingParam1);
+        sendLog(mainWindow, 'info', `[CAL DIAG] Incoming COMMAND_LONG cmd=${incomingCommand} param1=${incomingParam1} calActive=${isMavlinkCalibrationActive()}`);
+        if (isMavlinkCalibrationActive()) {
+          handleIncomingCommandLong(incomingCommand, incomingParam1);
+        }
+      } else {
+        sendLog(mainWindow, 'warn', `[CAL DIAG] Incoming COMMAND_LONG too short: ${payload.length} bytes (need 30)`);
       }
       break;
     }
@@ -1418,6 +1450,21 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
       // Track received parameters
       receivedParams.set(param.paramId, param);
       expectedParamCount = param.paramCount;
+
+      // Resolve any pending one-shot read for this paramId (PARAM_READ_BATCH).
+      // Wrapped in try/catch because parseTelemetry runs inside a for-await
+      // loop with no top-level error boundary — a thrown error here would
+      // skip every subsequent packet in the same chunk, including the
+      // COMMAND_ACK that completes a level/gyro calibration.
+      try {
+        const pendingRead = pendingParamReads.get(param.paramId);
+        if (pendingRead) {
+          pendingParamReads.delete(param.paramId);
+          pendingRead(param.paramValue, param.paramType);
+        }
+      } catch (err) {
+        console.error('[ipc-handlers] pending param read callback threw', err);
+      }
 
       // Reset timeout on each received param
       if (paramDownloadTimeout) {
@@ -2503,6 +2550,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       }
       // Unexpected close (e.g. physical USB disconnect) - full cleanup
       // so port watcher can restart and detect reconnected devices
+      cancelCalibration('Flight controller disconnected');
       cleanupMspConnection();
       cleanupTransportListeners();
       if (gcsHeartbeatInterval) {
@@ -2774,6 +2822,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
       // Unexpected close (e.g. physical USB disconnect) - full cleanup
       // so port watcher can restart and detect reconnected devices
+      cancelCalibration('Flight controller disconnected');
       cleanupMspConnection();
       cleanupTransportListeners();
       if (gcsHeartbeatInterval) {
@@ -2971,6 +3020,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
         // Unexpected close (e.g. physical USB disconnect) - full cleanup
         // so port watcher can restart and detect reconnected devices
+        cancelCalibration('Flight controller disconnected');
         cleanupMspConnection();
         cleanupTransportListeners();
         if (mavlinkBatchTimer) {
@@ -3238,6 +3288,11 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     if (pendingReconnect || reconnectTimer) {
       cancelReconnect('User disconnected');
     }
+
+    // Tear down any in-flight calibration so its module-scope state can't
+    // survive into the next connection (otherwise the next start would fail
+    // with "Another calibration is already in progress").
+    cancelCalibration('User disconnected');
 
     try {
       // Exit CLI mode first (sends 'exit' command to leave board in MSP mode)
@@ -3910,6 +3965,81 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       confirmed,
       failed,
     };
+  });
+
+  // Read a batch of specific params by name. Used by post-calibration
+  // verification to fetch FRESH values from the FC (the renderer's param
+  // cache may still hold pre-cal values for INS_* and friends because
+  // the FC doesn't broadcast PARAM_VALUE on internal cal saves).
+  //
+  // Sends one PARAM_REQUEST_READ per name in parallel and waits for the
+  // matching PARAM_VALUE responses via the pendingParamReads map. Each
+  // read is bounded by a 1500ms timeout so a missing-on-this-board param
+  // (e.g. INS_ACC3* on a single-IMU board) doesn't block the whole batch.
+  ipcMain.handle(IPC_CHANNELS.PARAM_READ_BATCH, async (_, paramIds: string[]): Promise<{
+    success: boolean;
+    values: Record<string, number>;
+    missing: string[];
+    error?: string;
+  }> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return { success: false, values: {}, missing: paramIds, error: 'Not connected' };
+    }
+    if (!Array.isArray(paramIds) || paramIds.length === 0) {
+      return { success: true, values: {}, missing: [] };
+    }
+
+    const targetSystem = connectionState.systemId ?? 1;
+    const targetComponent = 1;
+    const PER_PARAM_TIMEOUT_MS = 1500;
+
+    const readOne = (paramId: string): Promise<number | null> => new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        if (pendingParamReads.get(paramId)) {
+          pendingParamReads.delete(paramId);
+        }
+        resolve(null); // missing — treat as "param not on this FC"
+      }, PER_PARAM_TIMEOUT_MS);
+
+      pendingParamReads.set(paramId, (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      });
+
+      // Fire the PARAM_REQUEST_READ. Errors during send fall through to
+      // the timeout — we don't want a single bad param to crash the batch.
+      (async () => {
+        try {
+          const reqPayload = serializeParamRequestRead({
+            targetSystem,
+            targetComponent,
+            paramId,
+            paramIndex: -1,
+          });
+          const packet = await sendMavlinkPacket(PARAM_REQUEST_READ_ID, reqPayload, PARAM_REQUEST_READ_CRC_EXTRA);
+          await currentTransport!.write(packet);
+          connectionState.packetsSent++;
+        } catch {
+          clearTimeout(timer);
+          pendingParamReads.delete(paramId);
+          resolve(null);
+        }
+      })();
+    });
+
+    const results = await Promise.all(paramIds.map(readOne));
+    const values: Record<string, number> = {};
+    const missing: string[] = [];
+    paramIds.forEach((id, i) => {
+      const v = results[i];
+      if (v === null || v === undefined) {
+        missing.push(id);
+      } else {
+        values[id] = v;
+      }
+    });
+
+    return { success: true, values, missing };
   });
 
   // Fetch parameter metadata from ArduPilot

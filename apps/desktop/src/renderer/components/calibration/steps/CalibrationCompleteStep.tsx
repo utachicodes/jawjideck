@@ -5,9 +5,11 @@
  * Auto-redirects to select screen after successful save.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useCalibrationStore } from '../../../stores/calibration-store';
-import { CALIBRATION_TYPES } from '../../../../shared/calibration-types';
+import { useConnectionStore } from '../../../stores/connection-store';
+import { CALIBRATION_TYPES, type CalibrationVerification } from '../../../../shared/calibration-types';
+import { boardSupportsPersistentParamSave } from '../../../../shared/board-mappings';
 import { CalibrationResultCard } from '../shared/CalibrationResultCard';
 
 export function CalibrationCompleteStep() {
@@ -23,6 +25,7 @@ export function CalibrationCompleteStep() {
     savePersistentSuccess,
     savePersistentError,
     fcVariant,
+    verification,
     setStep,
     saveCalibrationData,
     saveCalibrationPersistent,
@@ -31,6 +34,13 @@ export function CalibrationCompleteStep() {
 
   const isInav = fcVariant?.toUpperCase().includes('INAV');
   const isMavlink = !isInav; // ArduPilot or other MAVLink-based FC
+
+  // F4-based ArduPilot boards (e.g. SpeedyBee F405 Wing) use main-flash sector
+  // storage that gets erased on firmware update — MAV_CMD_PREFLIGHT_STORAGE
+  // succeeds but params don't actually persist across an upgrade. Only show
+  // the persistent-save button on F7/H7 boards where it does what it claims.
+  const boardId = useConnectionStore((s) => s.connectionState.boardId) ?? null;
+  const showPersistentSave = isMavlink ? boardSupportsPersistentParamSave(boardId) : true;
 
   const calTypeInfo = calibrationType
     ? CALIBRATION_TYPES.find((t) => t.id === calibrationType)
@@ -55,18 +65,35 @@ export function CalibrationCompleteStep() {
     }
   }, [savePersistentSuccess, setStep]);
 
+  // While verification is in flight we don't yet know whether the cal really
+  // applied — the FC's optimistic ACK (or the 8s fallback) might be a lie.
+  // Show a neutral "verifying" banner instead of flashing green→red when the
+  // verification eventually flips success to false.
+  const isVerifying = verification?.status === 'pending';
+  const showSuccess = calibrationSuccess === true && !isVerifying;
+  const showFailure = calibrationSuccess === false;
+
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      {/* Success/Failure Banner */}
+      {/* Success / Failure / Verifying Banner */}
       <div className={`rounded-xl p-6 text-center ${
-        calibrationSuccess
-          ? 'bg-green-500/10 border border-green-500/30'
-          : 'bg-red-500/10 border border-red-500/30'
+        isVerifying
+          ? 'bg-cyan-500/10 border border-cyan-500/30'
+          : showSuccess
+            ? 'bg-green-500/10 border border-green-500/30'
+            : 'bg-red-500/10 border border-red-500/30'
       }`}>
         <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
-          calibrationSuccess ? 'bg-green-500/20' : 'bg-red-500/20'
+          isVerifying
+            ? 'bg-cyan-500/20'
+            : showSuccess ? 'bg-green-500/20' : 'bg-red-500/20'
         }`}>
-          {calibrationSuccess ? (
+          {isVerifying ? (
+            <svg className="w-8 h-8 text-cyan-400 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          ) : showSuccess ? (
             <svg className="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
@@ -78,20 +105,28 @@ export function CalibrationCompleteStep() {
         </div>
 
         <h3 className={`text-xl font-semibold mb-2 ${
-          calibrationSuccess ? 'text-green-400' : 'text-red-400'
+          isVerifying
+            ? 'text-cyan-300'
+            : showSuccess ? 'text-green-400' : 'text-red-400'
         }`}>
-          {calibrationSuccess ? 'Calibration Complete!' : 'Calibration Failed'}
+          {isVerifying
+            ? 'Verifying Calibration…'
+            : showSuccess ? 'Calibration Complete!' : 'Calibration Failed'}
         </h3>
 
         <p className="text-gray-400">
-          {calibrationSuccess
-            ? `${calTypeInfo?.name} calibration was successful.`
-            : error || 'An error occurred during calibration. Please try again.'}
+          {isVerifying
+            ? 'Reading parameters back from the flight controller to confirm the calibration was applied.'
+            : showSuccess
+              ? `${calTypeInfo?.name} calibration was successful.`
+              : error || 'An error occurred during calibration. Please try again.'}
         </p>
       </div>
 
-      {/* Calibration Results */}
-      {calibrationSuccess && calibrationData && (
+      {/* Calibration Results — hidden during verification because the verification
+          may flip success→false, and we don't want to show "Calibration Results"
+          for a calibration that didn't actually apply. */}
+      {showSuccess && calibrationData && (
         <div className="space-y-4">
           <h4 className="text-sm font-medium text-gray-300 uppercase tracking-wide">
             Calibration Results
@@ -101,6 +136,14 @@ export function CalibrationCompleteStep() {
         </div>
       )}
 
+      {/* Parameter verification (MAVLink only) — diff of FC params before/after.
+          Rendered on both success AND failure: if the store flipped success→false
+          because verification status is 'unchanged', the user still needs to see
+          the param table to understand WHY the cal failed. */}
+      {verification && verification.status !== 'skipped' && (
+        <CalibrationVerificationCard verification={verification} />
+      )}
+
       {/* Save Error */}
       {saveError && (
         <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-center">
@@ -108,20 +151,41 @@ export function CalibrationCompleteStep() {
         </div>
       )}
 
-      {/* Action Buttons */}
+      {/* Action Buttons — hidden during verification so the user can't bail
+          out (or save a non-applied cal to flash) before we know the truth. */}
+      {!isVerifying && (
       <div className="flex justify-between items-center pt-4">
-        <button
-          onClick={handleStartNew}
-          className="px-4 py-2.5 text-gray-400 hover:text-gray-300 transition-colors flex items-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-          Cancel
-        </button>
+        {/*
+          On success this is the "I'm done, take me back" exit. On failure
+          it's "give up retrying". Same destination either way (the calibration
+          select screen) but the label needs to match the user's mental model
+          so a successful cal doesn't feel like it has an undo button hanging
+          off the side of the screen.
+        */}
+        {showSuccess ? (
+          <button
+            onClick={handleStartNew}
+            className="px-4 py-2.5 text-gray-300 hover:text-white transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Calibrations
+          </button>
+        ) : (
+          <button
+            onClick={handleStartNew}
+            className="px-4 py-2.5 text-gray-400 hover:text-gray-300 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Cancel
+          </button>
+        )}
 
         <div className="flex gap-3">
-          {!calibrationSuccess && (
+          {showFailure && (
             <button
               onClick={handleRecalibrate}
               className="px-4 py-2.5 bg-yellow-500/20 hover:bg-yellow-500/30 rounded-lg text-yellow-400 transition-colors flex items-center gap-2"
@@ -134,7 +198,7 @@ export function CalibrationCompleteStep() {
           )}
 
           {/* MSP/INAV: separate "Save to FC" step (writes to EEPROM via MSP) */}
-          {calibrationSuccess && !isMavlink && !saveSuccess && (
+          {showSuccess && !isMavlink && !saveSuccess && (
             <button
               onClick={saveCalibrationData}
               disabled={isSaving}
@@ -169,13 +233,14 @@ export function CalibrationCompleteStep() {
           )}
         </div>
       </div>
+      )}
 
       {/* Persistent Storage Option */}
       {/* MSP: shown after "Save to FC" succeeds. */}
-      {/* MAVLink/ArduPilot: shown immediately after a successful calibration —
-          AP automatically commits cal values to params on completion, so the
-          only remaining step is writing params to flash for persistence. */}
-      {calibrationSuccess && (isMavlink ? !savePersistentSuccess : (saveSuccess && !savePersistentSuccess)) && (
+      {/* MAVLink/ArduPilot: shown immediately after a successful calibration on
+          F7/H7 boards. F4 boards are excluded — see showPersistentSave.
+          Hidden during verification because we don't yet know if cal applied. */}
+      {showSuccess && showPersistentSave && (isMavlink ? !savePersistentSuccess : (saveSuccess && !savePersistentSuccess)) && (
         <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
@@ -185,11 +250,11 @@ export function CalibrationCompleteStep() {
             </div>
             <div className="flex-1">
               <h4 className="text-sm font-medium text-gray-200 mb-1">
-                {isMavlink ? 'Save to Bootloader' : 'Save to Persistent Storage'}
+                {isMavlink ? 'Save Calibration to Flash' : 'Save to Persistent Storage'}
               </h4>
               <p className="text-xs text-gray-400 mb-3">
                 {isMavlink
-                  ? 'Calibration is already applied to the flight controller. Write parameters to bootloader flash so they survive a firmware update.'
+                  ? 'Calibration is already applied. Write parameters to the FC\u2019s parameter storage so they persist across reboots.'
                   : 'Save calibration data to the bootloader partition. This data will survive firmware updates.'}
               </p>
 
@@ -216,7 +281,7 @@ export function CalibrationCompleteStep() {
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
                       </svg>
-                      {isMavlink ? 'Save to Bootloader' : 'Save to Persistent Storage'}
+                      {isMavlink ? 'Save Calibration to Flash' : 'Save to Persistent Storage'}
                     </>
                   )}
                 </button>
@@ -239,19 +304,29 @@ export function CalibrationCompleteStep() {
           <svg className="w-4 h-4 text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
-          <p className="text-sm text-green-400">Calibration saved to persistent storage. Data will survive firmware updates.</p>
+          <p className="text-sm text-green-400">
+            {isMavlink
+              ? 'Calibration saved to flight controller storage.'
+              : 'Calibration saved to persistent storage. Data will survive firmware updates.'}
+          </p>
         </div>
       )}
 
-      {/* Info note */}
-      {calibrationSuccess && !saveSuccess && !isMavlink && (
+      {/* Info note — uses showSuccess (not raw calibrationSuccess) so notes
+          stay hidden during the verification window. */}
+      {showSuccess && !saveSuccess && !isMavlink && (
         <p className="text-center text-xs text-gray-500">
           Calibration data has been applied. Click "Save to FC" to persist changes to flash memory.
         </p>
       )}
-      {calibrationSuccess && isMavlink && !savePersistentSuccess && (
+      {showSuccess && isMavlink && showPersistentSave && !savePersistentSuccess && (
         <p className="text-center text-xs text-gray-500">
-          The flight controller already applied the calibration. Use "Save to Bootloader" so it survives firmware updates.
+          The flight controller already applied the calibration. Use "Save Calibration to Flash" so it persists across reboots.
+        </p>
+      )}
+      {showSuccess && isMavlink && !showPersistentSave && (
+        <p className="text-center text-xs text-gray-500">
+          The flight controller has applied and saved the calibration.
         </p>
       )}
       {saveSuccess && !isMavlink && !savePersistentSuccess && (
@@ -264,6 +339,116 @@ export function CalibrationCompleteStep() {
           All saved. Returning to calibration menu...
         </p>
       )}
+    </div>
+  );
+}
+
+// =============================================================================
+// Verification card — shows the post-cal param diff (MAVLink only)
+// =============================================================================
+
+function CalibrationVerificationCard({ verification }: { verification: CalibrationVerification }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (verification.status === 'pending') {
+    return (
+      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-4 flex items-center gap-3">
+        <svg className="w-4 h-4 animate-spin text-cyan-400 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        </svg>
+        <p className="text-sm text-gray-400">Verifying calibration parameters on flight controller…</p>
+      </div>
+    );
+  }
+
+  if (verification.status === 'error') {
+    return (
+      <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
+        <div className="flex items-start gap-3">
+          <svg className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <p className="text-sm font-medium text-amber-300 mb-1">Could not verify calibration</p>
+            <p className="text-xs text-amber-400/80">{verification.error ?? 'Parameter readback failed.'} The flight controller still reported success, but ArduDeck could not confirm the new values were written.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isUnchanged = verification.status === 'unchanged';
+  const palette = isUnchanged
+    ? { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-300', sub: 'text-amber-400/80', icon: 'text-amber-400' }
+    : { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-300', sub: 'text-emerald-400/80', icon: 'text-emerald-400' };
+
+  const changedCount = verification.results.filter(r => r.changed).length;
+  const totalCount = verification.results.length;
+
+  return (
+    <div className={`${palette.bg} border ${palette.border} rounded-xl p-4`}>
+      <div className="flex items-start gap-3">
+        <svg className={`w-5 h-5 ${palette.icon} flex-shrink-0 mt-0.5`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {isUnchanged ? (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          ) : (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          )}
+        </svg>
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm font-medium ${palette.text} mb-1`}>
+            {isUnchanged
+              ? 'Calibration may not have applied'
+              : `Calibration verified - ${changedCount} of ${totalCount} parameter${totalCount === 1 ? '' : 's'} updated`}
+          </p>
+          <p className={`text-xs ${palette.sub}`}>
+            {isUnchanged
+              ? 'The flight controller reported success but the tracked parameters did not change. This usually means the calibration silently failed - try again, and if the values still do not move, check the FC logs.'
+              : 'ArduDeck re-read the relevant parameters from the flight controller and confirmed they changed.'}
+          </p>
+
+          <button
+            onClick={() => setExpanded(e => !e)}
+            className={`mt-2 text-xs ${palette.sub} hover:opacity-100 transition-opacity flex items-center gap-1`}
+          >
+            <svg className={`w-3 h-3 transition-transform ${expanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            {expanded ? 'Hide' : 'Show'} parameter values
+          </button>
+
+          {expanded && (
+            <div className="mt-3 rounded-lg border border-gray-700/40 overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-gray-800/40">
+                  <tr className="text-left text-gray-400">
+                    <th className="px-3 py-2 font-medium">Parameter</th>
+                    <th className="px-3 py-2 font-medium text-right">Before</th>
+                    <th className="px-3 py-2 font-medium text-right">After</th>
+                    <th className="px-3 py-2 font-medium text-right">Delta</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {verification.results.map((r) => {
+                    const delta = (r.after ?? 0) - (r.before ?? 0);
+                    return (
+                      <tr key={r.paramId} className="border-t border-gray-700/30">
+                        <td className="px-3 py-1.5 font-mono text-gray-300">{r.paramId}</td>
+                        <td className="px-3 py-1.5 text-right font-mono text-gray-400">{r.before?.toFixed(6) ?? '-'}</td>
+                        <td className="px-3 py-1.5 text-right font-mono text-gray-300">{r.after?.toFixed(6) ?? '-'}</td>
+                        <td className={`px-3 py-1.5 text-right font-mono ${r.changed ? palette.text : 'text-gray-500'}`}>
+                          {delta >= 0 ? '+' : ''}{delta.toFixed(6)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
