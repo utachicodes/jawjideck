@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { Parameter, ParameterWithMeta, ParameterProgress, ParamValuePayload } from '../../shared/parameter-types.js';
 import { isReadOnlyParameter, generateFallbackDescription } from '../../shared/parameter-types.js';
 import { parameterBelongsToGroup } from '../../shared/parameter-groups.js';
-import { validateParameterValue, type ParameterMetadataStore, type ValidationResult } from '../../shared/parameter-metadata.js';
+import { validateParameterValue, vehicleTypeToMavType, type ParameterMetadataStore, type ValidationResult, type VehicleType } from '../../shared/parameter-metadata.js';
 import { createSearchRegex } from '../../shared/search-utils.js';
 
 export type SortColumn = 'name' | 'status';
@@ -74,6 +74,12 @@ interface ParameterStore {
   // Pending retry params for after reboot
   pendingRetryParams: Array<{ id: string; value: number }>;
 
+  // Offline mode state
+  offlineMode: boolean;
+  offlineFilePath: string | null;
+  offlineVehicleType: string | null;
+  offlineHasUnsavedChanges: boolean;
+
   // Computed
   paramCount: number;
   filteredParameters: () => ParameterWithMeta[];
@@ -110,6 +116,14 @@ interface ParameterStore {
   revertParameter: (paramId: string) => void;
   markAllAsSaved: () => void;
   reset: () => void;
+
+  // Offline mode actions
+  loadOfflineFile: () => Promise<boolean>;
+  saveOfflineFile: () => Promise<boolean>;
+  saveOfflineFileAs: () => Promise<boolean>;
+  setOfflineVehicleType: (vehicleType: string) => Promise<void>;
+  closeOfflineMode: () => void;
+  setOfflineParameter: (paramId: string, value: number) => void;
 
   // File compare actions
   loadFileForCompare: (fileParams: Array<{ id: string; value: number }>, fileVehicleType?: string) => void;
@@ -155,6 +169,12 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
   favourites: loadFavourites(),
   sortColumn: 'name' as SortColumn,
   sortDirection: 'asc' as SortDirection,
+
+  // Offline mode state
+  offlineMode: false,
+  offlineFilePath: null,
+  offlineVehicleType: null,
+  offlineHasUnsavedChanges: false,
 
   // File compare state
   showCompareModal: false,
@@ -364,6 +384,12 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
   },
 
   setParameter: async (paramId, value) => {
+    // In offline mode, just update local state - no IPC
+    if (get().offlineMode) {
+      get().setOfflineParameter(paramId, value);
+      return true;
+    }
+
     const param = get().parameters.get(paramId);
     // Use existing type if known, otherwise default to REAL32 (9) for ArduPilot
     const paramType = param?.type ?? 9;
@@ -463,6 +489,11 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
       progress: null,
       error: null,
       lastRefresh: Date.now(),
+      // Clear offline mode when FC params arrive
+      offlineMode: false,
+      offlineFilePath: null,
+      offlineVehicleType: null,
+      offlineHasUnsavedChanges: false,
     });
   },
 
@@ -565,6 +596,132 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
     });
   },
 
+  // Offline mode actions
+  loadOfflineFile: async () => {
+    const result = await window.electronAPI?.loadParamsFromFile();
+    if (!result?.success || !result.params) return false;
+
+    const filePath = result.filePath ?? null;
+    const vehicleType = result.vehicleType ?? null;
+
+    // Build parameter map from file data
+    const newParams = new Map<string, ParameterWithMeta>();
+    for (const p of result.params) {
+      newParams.set(p.id, {
+        id: p.id,
+        value: p.value,
+        type: 9, // REAL32 - standard ArduPilot param type
+        index: -1,
+        originalValue: p.value,
+        isModified: false,
+        isReadOnly: isReadOnlyParameter(p.id),
+      });
+    }
+
+    set({
+      parameters: newParams,
+      paramCount: newParams.size,
+      offlineMode: true,
+      offlineFilePath: filePath,
+      offlineVehicleType: vehicleType,
+      offlineHasUnsavedChanges: false,
+      isLoading: false,
+      error: null,
+      metadata: null,
+      searchQuery: '',
+      selectedGroup: 'all',
+      showOnlyModified: false,
+    });
+
+    // Auto-fetch metadata if vehicle type is known
+    if (vehicleType) {
+      const mavType = vehicleTypeToMavType(vehicleType);
+      if (mavType !== null) {
+        get().fetchMetadata(mavType);
+      }
+    }
+
+    return true;
+  },
+
+  saveOfflineFile: async () => {
+    const { offlineFilePath, parameters, offlineVehicleType } = get();
+    if (!offlineFilePath) return get().saveOfflineFileAs();
+
+    const params = Array.from(parameters.values()).map(p => ({ id: p.id, value: p.value }));
+    const result = await window.electronAPI?.saveParamsToPath(params, offlineFilePath, offlineVehicleType ?? undefined);
+
+    if (result?.success) {
+      // Reset modification tracking
+      set(state => {
+        const updated = new Map(state.parameters);
+        for (const [id, param] of updated) {
+          if (param.isModified) {
+            updated.set(id, { ...param, originalValue: param.value, isModified: false });
+          }
+        }
+        return { parameters: updated, paramCount: updated.size, offlineHasUnsavedChanges: false };
+      });
+      return true;
+    }
+    return false;
+  },
+
+  saveOfflineFileAs: async () => {
+    const { parameters, offlineVehicleType } = get();
+    const params = Array.from(parameters.values()).map(p => ({ id: p.id, value: p.value }));
+    const result = await window.electronAPI?.saveParamsToFile(params, offlineVehicleType ?? undefined);
+
+    if (result?.success && result.filePath) {
+      // Update file path and reset modification tracking
+      set(state => {
+        const updated = new Map(state.parameters);
+        for (const [id, param] of updated) {
+          if (param.isModified) {
+            updated.set(id, { ...param, originalValue: param.value, isModified: false });
+          }
+        }
+        return {
+          parameters: updated,
+          paramCount: updated.size,
+          offlineFilePath: result.filePath!,
+          offlineHasUnsavedChanges: false,
+        };
+      });
+      return true;
+    }
+    return false;
+  },
+
+  setOfflineVehicleType: async (vehicleType: string) => {
+    set({ offlineVehicleType: vehicleType, metadata: null, isLoadingMetadata: false });
+    const mavType = vehicleTypeToMavType(vehicleType);
+    if (mavType !== null) {
+      await get().fetchMetadata(mavType);
+    }
+  },
+
+  closeOfflineMode: () => {
+    get().reset();
+  },
+
+  setOfflineParameter: (paramId: string, value: number) => {
+    set(state => {
+      const params = new Map(state.parameters);
+      const existing = params.get(paramId);
+      if (!existing) return state;
+
+      const isModified = !f32Equal(existing.originalValue ?? existing.value, value);
+      params.set(paramId, { ...existing, value, isModified });
+
+      return {
+        parameters: params,
+        paramCount: params.size,
+        offlineHasUnsavedChanges: state.offlineHasUnsavedChanges || isModified,
+      };
+    });
+  },
+
   // File compare actions
   loadFileForCompare: (fileParams, fileVehicleType) => {
     const { parameters, metadata } = get();
@@ -629,9 +786,38 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
   },
 
   applySelectedFileParams: async () => {
-    const { fileParamDiffs, fileSkippedParams, metadata } = get();
+    const { fileParamDiffs, fileSkippedParams, metadata, offlineMode } = get();
     const selected = fileParamDiffs.filter(d => d.selected);
     if (selected.length === 0) return { applied: 0, failed: 0, rebootRequired: [], skippedParams: fileSkippedParams };
+
+    // In offline mode, just update local state directly - no FC communication
+    if (offlineMode) {
+      set(state => {
+        const params = new Map(state.parameters);
+        for (const diff of selected) {
+          const existing = params.get(diff.paramId);
+          if (existing) {
+            params.set(diff.paramId, {
+              ...existing,
+              value: diff.fileValue,
+              isModified: !f32Equal(existing.originalValue ?? existing.value, diff.fileValue),
+            });
+          }
+        }
+        return {
+          parameters: params,
+          paramCount: params.size,
+          offlineHasUnsavedChanges: true,
+          showCompareModal: false,
+          fileParamDiffs: [],
+          fileSkippedParams: [],
+          fileSkippedCount: 0,
+          fileTotalCount: 0,
+          fileVehicleType: null,
+        };
+      });
+      return { applied: selected.length, failed: 0, rebootRequired: [], skippedParams: fileSkippedParams };
+    }
 
     set({ isApplyingFileParams: true, applyProgress: { applied: 0, total: selected.length } });
 
@@ -640,7 +826,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
       userModifiedParams.add(diff.paramId);
     }
 
-    // Use batch endpoint — sends all PARAM_SET messages rapidly instead of one-by-one
+    // Use batch endpoint - sends all PARAM_SET messages rapidly instead of one-by-one
     const batchParams = selected.map(d => ({ paramId: d.paramId, value: d.fileValue, type: d.type }));
     const result = await window.electronAPI?.setParameterBatch(batchParams);
 
@@ -777,6 +963,12 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
     // NOTE: favourites are NOT reset - they persist across connections
     sortColumn: 'name',
     sortDirection: 'asc',
+    // Offline mode
+    offlineMode: false,
+    offlineFilePath: null,
+    offlineVehicleType: null,
+    offlineHasUnsavedChanges: false,
+    // File compare
     showCompareModal: false,
     fileParamDiffs: [],
     fileSkippedParams: [],

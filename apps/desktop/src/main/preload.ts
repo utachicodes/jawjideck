@@ -257,8 +257,11 @@ const api = {
   saveParamsToFile: (params: Array<{ id: string; value: number }>, vehicleType?: string): Promise<{ success: boolean; error?: string; filePath?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.PARAM_SAVE_FILE, params, vehicleType),
 
-  loadParamsFromFile: (): Promise<{ success: boolean; error?: string; params?: Array<{ id: string; value: number }>; vehicleType?: string }> =>
+  loadParamsFromFile: (): Promise<{ success: boolean; error?: string; params?: Array<{ id: string; value: number }>; vehicleType?: string; filePath?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.PARAM_LOAD_FILE),
+
+  saveParamsToPath: (params: Array<{ id: string; value: number }>, filePath: string, vehicleType?: string): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.PARAM_SAVE_TO_PATH, params, filePath, vehicleType),
 
   // Parameter history (version control)
   saveParamCheckpoint: (boardUid: string, boardName: string, changes: ParamChange[], vehicleType?: string): Promise<{ success: boolean; checkpointId?: string }> =>

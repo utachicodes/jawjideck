@@ -54,6 +54,22 @@ function SortIndicator({ column, currentColumn, direction }: {
   );
 }
 
+// Static Tailwind color map - dynamic class names get purged so we map them explicitly
+const GROUP_COLOR_CLASSES: Record<string, { active: string; badge: string; icon: string }> = {
+  blue:    { active: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',       badge: 'bg-blue-500/30 text-blue-300',    icon: 'text-blue-400' },
+  green:   { active: 'bg-green-500/20 text-green-400 border border-green-500/30',     badge: 'bg-green-500/30 text-green-300',   icon: 'text-green-400' },
+  orange:  { active: 'bg-orange-500/20 text-orange-400 border border-orange-500/30',   badge: 'bg-orange-500/30 text-orange-300',  icon: 'text-orange-400' },
+  red:     { active: 'bg-red-500/20 text-red-400 border border-red-500/30',       badge: 'bg-red-500/30 text-red-300',    icon: 'text-red-400' },
+  purple:  { active: 'bg-purple-500/20 text-purple-400 border border-purple-500/30',   badge: 'bg-purple-500/30 text-purple-300',  icon: 'text-purple-400' },
+  cyan:    { active: 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30',      badge: 'bg-cyan-500/30 text-cyan-300',    icon: 'text-cyan-400' },
+  emerald: { active: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', badge: 'bg-emerald-500/30 text-emerald-300', icon: 'text-emerald-400' },
+  indigo:  { active: 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30',   badge: 'bg-indigo-500/30 text-indigo-300',  icon: 'text-indigo-400' },
+  teal:    { active: 'bg-teal-500/20 text-teal-400 border border-teal-500/30',      badge: 'bg-teal-500/30 text-teal-300',    icon: 'text-teal-400' },
+  yellow:  { active: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',   badge: 'bg-yellow-500/30 text-yellow-300',  icon: 'text-yellow-400' },
+  sky:     { active: 'bg-sky-500/20 text-sky-400 border border-sky-500/30',       badge: 'bg-sky-500/30 text-sky-300',    icon: 'text-sky-400' },
+  amber:   { active: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',    badge: 'bg-amber-500/30 text-amber-300',   icon: 'text-amber-400' },
+};
+
 export function ParametersView() {
   const { connectionState, platformChangeInProgress } = useConnectionStore();
   const { isOpen: quickSetupOpen, isApplying: quickSetupApplying } = useQuickSetupStore();
@@ -109,6 +125,16 @@ export function ParametersView() {
     selectAllDiffs,
     deselectAllDiffs,
     applySelectedFileParams,
+    // Offline mode
+    offlineMode,
+    offlineFilePath,
+    offlineVehicleType,
+    offlineHasUnsavedChanges,
+    loadOfflineFile,
+    saveOfflineFile,
+    saveOfflineFileAs,
+    setOfflineVehicleType,
+    closeOfflineMode,
   } = useParameterStore();
 
   const [editingParam, setEditingParam] = useState<string | null>(null);
@@ -281,6 +307,35 @@ export function ParametersView() {
     }
   }, [applySelectedFileParams, showToast]);
 
+  // Offline mode handlers
+  const handleOpenOfflineFile = useCallback(async () => {
+    const success = await loadOfflineFile();
+    if (!success) {
+      // Cancelled or failed - no toast needed for cancel
+    }
+  }, [loadOfflineFile]);
+
+  const handleOfflineSave = useCallback(async () => {
+    const success = await saveOfflineFile();
+    if (success) {
+      showToast('Parameters saved to file', 'success');
+    }
+  }, [saveOfflineFile, showToast]);
+
+  const handleOfflineSaveAs = useCallback(async () => {
+    const success = await saveOfflineFileAs();
+    if (success) {
+      showToast('Parameters saved to file', 'success');
+    }
+  }, [saveOfflineFileAs, showToast]);
+
+  const handleOfflineCompare = useCallback(async () => {
+    const result = await window.electronAPI?.loadParamsFromFile();
+    if (result?.success && result.params) {
+      loadFileForCompare(result.params, result.vehicleType);
+    }
+  }, [loadFileForCompare]);
+
   const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   }, [setSearchQuery]);
@@ -361,7 +416,7 @@ export function ParametersView() {
     return <MavlinkConfigView />;
   }
 
-  if (!connectionState.isConnected && !keepViewMounted) {
+  if (!connectionState.isConnected && !keepViewMounted && !offlineMode) {
     return (
       <div className="h-full flex items-center justify-center p-8">
         <div className="text-center max-w-md">
@@ -375,17 +430,27 @@ export function ParametersView() {
             Configuration
           </h2>
           <p className="text-gray-400 mb-6 leading-relaxed">
-            Connect to your flight controller to configure your vehicle.
-            Supports ArduPilot, PX4, Betaflight, and iNav.
+            Connect to your flight controller to configure your vehicle,
+            or open a parameter file to view and edit offline.
           </p>
+
+          <button
+            onClick={handleOpenOfflineFile}
+            className="w-full mb-4 px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 border border-blue-500/20 hover:border-blue-500/30"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
+            </svg>
+            Open Parameter File
+          </button>
 
           <div className="p-4 rounded-xl bg-gray-800/30 border border-gray-700/30 text-left">
             <h3 className="text-sm font-medium text-gray-200 mb-2">What you can do:</h3>
             <ul className="text-xs text-gray-500 space-y-1">
-              <li>• <span className="text-gray-400">ArduPilot/PX4:</span> Full parameter management</li>
-              <li>• <span className="text-gray-400">Betaflight/iNav:</span> PID tuning, rates, flight modes</li>
-              <li>• Search, filter, and edit with validation</li>
-              <li>• Save changes to flight controller</li>
+              <li>- <span className="text-gray-400">ArduPilot/PX4:</span> Full parameter management</li>
+              <li>- <span className="text-gray-400">Betaflight/iNav:</span> PID tuning, rates, flight modes</li>
+              <li>- <span className="text-gray-400">Offline:</span> View, edit, and compare .param files</li>
+              <li>- Search, filter, and edit with validation</li>
             </ul>
           </div>
         </div>
@@ -401,103 +466,188 @@ export function ParametersView() {
 
   return (
     <div className="h-full flex flex-col">
+      {/* Offline mode banner */}
+      {offlineMode && (
+        <div className="shrink-0 px-4 py-2 bg-blue-500/10 border-b border-blue-500/20 flex items-center gap-3">
+          <svg className="w-4 h-4 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
+          </svg>
+          <span className="text-sm text-blue-300 truncate flex-1" title={offlineFilePath ?? undefined}>
+            {offlineFilePath ? offlineFilePath.split('/').pop()?.split('\\').pop() : 'Untitled'}
+            {offlineHasUnsavedChanges && <span className="text-yellow-400 ml-1">*</span>}
+          </span>
+          <select
+            value={offlineVehicleType ?? ''}
+            onChange={(e) => setOfflineVehicleType(e.target.value)}
+            className="text-xs text-gray-300 bg-gray-800/50 border border-gray-700/50 px-2 py-1 rounded cursor-pointer focus:outline-none focus:border-blue-500/50"
+            title="Vehicle type (used for parameter descriptions and validation)"
+          >
+            <option value="">Vehicle Type</option>
+            <option value="Copter">Copter</option>
+            <option value="Plane">Plane</option>
+            <option value="Rover">Rover</option>
+            <option value="Sub">Sub</option>
+            <option value="Tracker">Tracker</option>
+          </select>
+          <button
+            onClick={closeOfflineMode}
+            className="text-xs text-gray-400 hover:text-gray-200 transition-colors"
+            title="Close file"
+          >
+            Close
+          </button>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="shrink-0 px-4 py-3 border-b border-gray-800/50 bg-gray-900/30">
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-gray-700/30 text-blue-400 disabled:text-gray-500 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-            title="Download parameters from flight controller"
-          >
-            <svg className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {isLoading ? 'Downloading...' : 'Refresh'}
-          </button>
-
-          {/* Write to Flash button - only show if there are modified params */}
-          {modified > 0 && (
+          {offlineMode ? (<>
+            {/* Offline toolbar: Save, Save As, Open, Compare */}
             <button
-              onClick={handleWriteToFlashClick}
-              disabled={isWritingFlash}
+              onClick={handleOfflineSave}
+              disabled={!offlineHasUnsavedChanges}
               className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 disabled:bg-gray-700/30 text-green-400 disabled:text-gray-500 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-              title="Save parameters to flight controller's permanent storage (EEPROM)"
+              title="Save to current file"
             >
-              <svg className={`w-4 h-4 ${isWritingFlash ? 'animate-pulse' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
               </svg>
-              {isWritingFlash ? 'Writing...' : 'Write to Flash'}
+              Save
             </button>
-          )}
 
-          <div className="w-px h-6 bg-gray-700/50 mx-1" />
+            <button
+              onClick={handleOfflineSaveAs}
+              className="px-3 py-2 bg-gray-700/30 hover:bg-gray-700/50 text-gray-300 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              title="Save to a new file"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Save As
+            </button>
 
-          {/* File operations — split Save button with dropdown */}
-          <div className="relative" ref={saveDropdownRef}>
-            <div className="flex">
+            <div className="w-px h-6 bg-gray-700/50 mx-1" />
+
+            <button
+              onClick={handleOpenOfflineFile}
+              className="px-3 py-2 bg-gray-700/30 hover:bg-gray-700/50 text-gray-300 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              title="Open another parameter file"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
+              </svg>
+              Open
+            </button>
+
+            <button
+              onClick={handleOfflineCompare}
+              disabled={paramCount === 0}
+              className="px-3 py-2 bg-gray-700/30 hover:bg-gray-700/50 disabled:bg-gray-800/30 text-gray-300 disabled:text-gray-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              title="Compare with another parameter file"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Compare
+            </button>
+          </>) : (<>
+            {/* Connected toolbar */}
+            <button
+              onClick={handleRefresh}
+              disabled={isLoading}
+              className="px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-gray-700/30 text-blue-400 disabled:text-gray-500 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              title="Download parameters from flight controller"
+            >
+              <svg className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {isLoading ? 'Downloading...' : 'Refresh'}
+            </button>
+
+            {/* Write to Flash button - only show if there are modified params */}
+            {modified > 0 && (
               <button
-                onClick={() => handleSaveToFile('all')}
-                disabled={isSavingFile || paramCount === 0}
-                className="px-3 py-2 bg-gray-700/30 hover:bg-gray-700/50 disabled:bg-gray-800/30 text-gray-300 disabled:text-gray-600 rounded-l-lg text-sm font-medium transition-colors flex items-center gap-2"
-                title="Save all parameters to file"
+                onClick={handleWriteToFlashClick}
+                disabled={isWritingFlash}
+                className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 disabled:bg-gray-700/30 text-green-400 disabled:text-gray-500 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                title="Save parameters to flight controller's permanent storage (EEPROM)"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <svg className={`w-4 h-4 ${isWritingFlash ? 'animate-pulse' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                 </svg>
-                {isSavingFile ? 'Saving...' : 'Save'}
+                {isWritingFlash ? 'Writing...' : 'Write to Flash'}
               </button>
-              <button
-                onClick={() => setSaveDropdownOpen(prev => !prev)}
-                disabled={isSavingFile || paramCount === 0}
-                className="px-1.5 py-2 bg-gray-700/30 hover:bg-gray-700/50 disabled:bg-gray-800/30 text-gray-300 disabled:text-gray-600 rounded-r-lg border-l border-gray-600/30 text-sm transition-colors"
-                title="Save options"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            </div>
-            {saveDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-56 bg-gray-800 border border-gray-700/50 rounded-lg shadow-xl z-50 py-1">
+            )}
+
+            <div className="w-px h-6 bg-gray-700/50 mx-1" />
+
+            {/* File operations - split Save button with dropdown */}
+            <div className="relative" ref={saveDropdownRef}>
+              <div className="flex">
                 <button
                   onClick={() => handleSaveToFile('all')}
-                  className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700/50 transition-colors"
+                  disabled={isSavingFile || paramCount === 0}
+                  className="px-3 py-2 bg-gray-700/30 hover:bg-gray-700/50 disabled:bg-gray-800/30 text-gray-300 disabled:text-gray-600 rounded-l-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  title="Save all parameters to file"
                 >
-                  Save All Parameters
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  {isSavingFile ? 'Saving...' : 'Save'}
                 </button>
                 <button
-                  onClick={() => handleSaveToFile('changed')}
-                  disabled={modified === 0}
-                  className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700/50 disabled:text-gray-600 disabled:hover:bg-transparent transition-colors"
+                  onClick={() => setSaveDropdownOpen(prev => !prev)}
+                  disabled={isSavingFile || paramCount === 0}
+                  className="px-1.5 py-2 bg-gray-700/30 hover:bg-gray-700/50 disabled:bg-gray-800/30 text-gray-300 disabled:text-gray-600 rounded-r-lg border-l border-gray-600/30 text-sm transition-colors"
+                  title="Save options"
                 >
-                  Save Changed Only
-                  {modified > 0 && <span className="ml-1 text-xs text-yellow-400">({modified})</span>}
-                </button>
-                <button
-                  onClick={() => handleSaveToFile('nondefault')}
-                  disabled={!hasDefaults}
-                  className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700/50 disabled:text-gray-600 disabled:hover:bg-transparent transition-colors"
-                  title={!hasDefaults ? 'Defaults not available — requires MAVLink FTP' : undefined}
-                >
-                  Save Non-Default Only
-                  {hasDefaults && nonDefaultCount > 0 && <span className="ml-1 text-xs text-purple-400">({nonDefaultCount})</span>}
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </button>
               </div>
-            )}
-          </div>
+              {saveDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-56 bg-gray-800 border border-gray-700/50 rounded-lg shadow-xl z-50 py-1">
+                  <button
+                    onClick={() => handleSaveToFile('all')}
+                    className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700/50 transition-colors"
+                  >
+                    Save All Parameters
+                  </button>
+                  <button
+                    onClick={() => handleSaveToFile('changed')}
+                    disabled={modified === 0}
+                    className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700/50 disabled:text-gray-600 disabled:hover:bg-transparent transition-colors"
+                  >
+                    Save Changed Only
+                    {modified > 0 && <span className="ml-1 text-xs text-yellow-400">({modified})</span>}
+                  </button>
+                  <button
+                    onClick={() => handleSaveToFile('nondefault')}
+                    disabled={!hasDefaults}
+                    className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700/50 disabled:text-gray-600 disabled:hover:bg-transparent transition-colors"
+                    title={!hasDefaults ? 'Defaults not available - requires MAVLink FTP' : undefined}
+                  >
+                    Save Non-Default Only
+                    {hasDefaults && nonDefaultCount > 0 && <span className="ml-1 text-xs text-purple-400">({nonDefaultCount})</span>}
+                  </button>
+                </div>
+              )}
+            </div>
 
-          <button
-            onClick={handleLoadFromFile}
-            disabled={isLoadingFile}
-            className="px-3 py-2 bg-gray-700/30 hover:bg-gray-700/50 disabled:bg-gray-800/30 text-gray-300 disabled:text-gray-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-            title="Load parameters from file"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            {isLoadingFile ? 'Loading...' : 'Load'}
-          </button>
+            <button
+              onClick={handleLoadFromFile}
+              disabled={isLoadingFile}
+              className="px-3 py-2 bg-gray-700/30 hover:bg-gray-700/50 disabled:bg-gray-800/30 text-gray-300 disabled:text-gray-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              title="Load parameters from file"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              {isLoadingFile ? 'Loading...' : 'Load'}
+            </button>
+          </>)}
 
           <div className="flex-1 relative">
             <input
@@ -581,24 +731,25 @@ export function ParametersView() {
               // Don't show groups with 0 parameters (except 'all')
               if (group.id !== 'all' && count === 0) return null;
 
+              const colors = GROUP_COLOR_CLASSES[group.color] ?? GROUP_COLOR_CLASSES.blue!;
               return (
                 <button
                   key={group.id}
                   onClick={() => setSelectedGroup(group.id)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap ${
                     isActive
-                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                      ? colors.active
                       : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
                   }`}
                   title={group.description}
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className={`w-3.5 h-3.5 ${colors.icon}${isActive ? '' : ' opacity-50'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={group.icon} />
                   </svg>
                   {group.name}
                   {count > 0 && (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                      isActive ? 'bg-blue-500/30 text-blue-300' : 'bg-gray-700/50 text-gray-500'
+                      isActive ? colors.badge : 'bg-gray-700/50 text-gray-500'
                     }`}>
                       {count}
                     </span>
@@ -610,8 +761,8 @@ export function ParametersView() {
         </div>
       )}
 
-      {/* Reboot Required Banner */}
-      {rebootRequiredParams.length > 0 && (
+      {/* Reboot Required Banner - only when connected to FC */}
+      {!offlineMode && rebootRequiredParams.length > 0 && (
         <div className={`shrink-0 px-4 py-2.5 border-b flex items-center justify-between ${
           rebooting
             ? 'bg-blue-500/10 border-blue-500/30'
@@ -835,14 +986,19 @@ export function ParametersView() {
             <span>Group: {PARAMETER_GROUPS.find(g => g.id === selectedGroup)?.name}</span>
           </>
         )}
-        <span className="text-gray-700">|</span>
-        <span>System ID: {connectionState.systemId ?? '-'}</span>
-        {lastRefresh > 0 && (
-          <>
-            <span className="text-gray-700">|</span>
-            <span>Last refresh: {new Date(lastRefresh).toLocaleTimeString()}</span>
-          </>
-        )}
+        {offlineMode ? (<>
+          <span className="text-gray-700">|</span>
+          <span className="text-blue-400">Offline</span>
+        </>) : (<>
+          <span className="text-gray-700">|</span>
+          <span>System ID: {connectionState.systemId ?? '-'}</span>
+          {lastRefresh > 0 && (
+            <>
+              <span className="text-gray-700">|</span>
+              <span>Last refresh: {new Date(lastRefresh).toLocaleTimeString()}</span>
+            </>
+          )}
+        </>)}
       </div>
 
       {/* Write to Flash Confirmation Modal */}
@@ -918,12 +1074,12 @@ export function ParametersView() {
               <h3 className="text-lg font-semibold text-white">Compare Parameters</h3>
               <p className="text-sm text-gray-400 mt-1">
                 {fileParamDiffs.length === 0
-                  ? 'No differences found - all file parameters match the vehicle.'
-                  : `${fileParamDiffs.length} parameter${fileParamDiffs.length !== 1 ? 's' : ''} differ between file and vehicle. Select which to apply.`
+                  ? `No differences found - all file parameters match ${offlineMode ? 'the current file' : 'the vehicle'}.`
+                  : `${fileParamDiffs.length} parameter${fileParamDiffs.length !== 1 ? 's' : ''} differ between files. Select which to apply.`
                 }
               </p>
               {(() => {
-                const currentVehicle = connectionState.vehicleType || connectionState.fcVariant;
+                const currentVehicle = offlineMode ? offlineVehicleType : (connectionState.vehicleType || connectionState.fcVariant);
                 return fileVehicleType && currentVehicle && fileVehicleType !== currentVehicle ? (
                   <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
                     <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
@@ -968,9 +1124,9 @@ export function ParametersView() {
                       <tr className="text-left text-xs text-gray-500 uppercase">
                         <th className="pb-2 w-8"></th>
                         <th className="pb-2">Parameter</th>
-                        <th className="pb-2 text-right">Vehicle</th>
+                        <th className="pb-2 text-right">{offlineMode ? 'Current' : 'Vehicle'}</th>
                         <th className="pb-2 text-center w-8"></th>
-                        <th className="pb-2">File</th>
+                        <th className="pb-2">Compare</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800/50">

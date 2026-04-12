@@ -65,6 +65,8 @@ export const IPC_CHANNELS = {
   PARAM_WRITE_FLASH: 'param:write-flash',
   PARAM_SAVE_FILE: 'param:save-file',
   PARAM_LOAD_FILE: 'param:load-file',
+  PARAM_SAVE_TO_PATH: 'param:save-to-path',  // Save params to a specific file path (offline mode)
+  PARAM_SAVE_AS_FILE: 'param:save-as-file',  // Save params via Save As dialog (offline mode)
 
   // Parameter history (version control)
   PARAM_HISTORY_SAVE: 'param:history-save',

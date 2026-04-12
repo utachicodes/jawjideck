@@ -105,6 +105,29 @@ export function validateParameterValue(
   return { valid: true };
 }
 
+// Map vehicle type string (from file header) to a representative MAV_TYPE number for metadata fetching
+export function vehicleTypeToMavType(vehicleType: string): number | null {
+  switch (vehicleType.toLowerCase()) {
+    case 'copter':
+    case 'arducopter':
+      return 2; // MAV_TYPE_QUADROTOR
+    case 'plane':
+    case 'arduplane':
+      return 1; // MAV_TYPE_FIXED_WING
+    case 'rover':
+    case 'ardurover':
+      return 10; // MAV_TYPE_GROUND_ROVER
+    case 'sub':
+    case 'ardusub':
+      return 12; // MAV_TYPE_SUBMARINE
+    case 'tracker':
+    case 'antennatracker':
+      return 5; // MAV_TYPE_ANTENNA_TRACKER
+    default:
+      return null;
+  }
+}
+
 // Map MAVLink MAV_TYPE to our VehicleType
 export function mavTypeToVehicleType(mavType: number): VehicleType | null {
   // MAV_TYPE values from MAVLink

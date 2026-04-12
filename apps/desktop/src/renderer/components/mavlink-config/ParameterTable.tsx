@@ -32,21 +32,7 @@ function formatParamValue(value: number): string {
   return String(parseFloat(value.toPrecision(7)));
 }
 
-/** Group color map for filter tabs */
-const GROUP_COLORS: Record<string, string> = {
-  all: 'blue',
-  arming: 'emerald',
-  battery: 'orange',
-  failsafe: 'red',
-  flight_modes: 'purple',
-  tuning: 'blue',
-  gps: 'cyan',
-  compass: 'pink',
-  rc: 'teal',
-  motors: 'amber',
-  navigation: 'indigo',
-  logging: 'zinc',
-};
+// Group colors now come from PARAMETER_GROUPS[].color
 
 // Sort indicator component
 function SortIndicator({ column, currentColumn, direction }: {
@@ -654,7 +640,7 @@ const ParameterTable: React.FC = () => {
               const count = groupCounts().get(group.id) ?? 0;
               const isActive = selectedGroup === group.id;
               if (group.id !== 'all' && count === 0) return null;
-              const c = GROUP_COLORS[group.id] ?? 'zinc';
+              const c = group.color;
 
               return (
                 <button

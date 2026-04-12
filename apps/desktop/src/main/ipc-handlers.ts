@@ -4358,7 +4358,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   });
 
   // Load parameters from file
-  ipcMain.handle(IPC_CHANNELS.PARAM_LOAD_FILE, async (): Promise<{ success: boolean; error?: string; params?: Array<{ id: string; value: number }>; vehicleType?: string }> => {
+  ipcMain.handle(IPC_CHANNELS.PARAM_LOAD_FILE, async (): Promise<{ success: boolean; error?: string; params?: Array<{ id: string; value: number }>; vehicleType?: string; filePath?: string }> => {
     try {
       const result = await dialog.showOpenDialog(mainWindow, {
         title: 'Load Parameters',
@@ -4414,10 +4414,39 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       }
 
       sendLog(mainWindow, 'info', `Loaded ${params.length} parameters from ${filePath}${vehicleType ? ` (${vehicleType})` : ''}`);
-      return { success: true, params, vehicleType };
+      return { success: true, params, vehicleType, filePath };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       sendLog(mainWindow, 'error', 'Failed to load parameters', message);
+      return { success: false, error: message };
+    }
+  });
+
+  // Save parameters to a specific file path (offline mode - Save)
+  ipcMain.handle(IPC_CHANNELS.PARAM_SAVE_TO_PATH, async (_, params: Array<{ id: string; value: number }>, filePath: string, vehicleType?: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const header = [
+        `# ArduDeck Parameter File`,
+        vehicleType ? `# Vehicle: ${vehicleType}` : null,
+        `# Date: ${new Date().toISOString()}`,
+        `# Parameters: ${params.length}`,
+        '',
+      ].filter(Boolean).join('\n');
+
+      const formatValue = (value: number): string => {
+        if (Number.isInteger(value)) return String(value);
+        return String(parseFloat(value.toPrecision(6)));
+      };
+      const content = header + '\n\n' + params.map(p => `${p.id},${formatValue(p.value)}`).join('\n');
+
+      const fs = await import('fs/promises');
+      await fs.writeFile(filePath, content, 'utf-8');
+
+      sendLog(mainWindow, 'info', `Saved ${params.length} parameters to ${filePath}`);
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      sendLog(mainWindow, 'error', 'Failed to save parameters', message);
       return { success: false, error: message };
     }
   });
