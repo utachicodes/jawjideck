@@ -158,25 +158,31 @@ export function ConnectionPanel() {
     }
   };
 
-  // Handle connecting to already-running SITL
+  // Handle connecting to already-running SITL (with retry - TCP may not be ready yet)
   const handleSitlConnect = async () => {
     setError(null);
-    try {
-      // Determine protocol based on which SITL is running
-      const protocol = ardupilotIsRunning ? 'mavlink' : 'msp';
-      const success = await connect({ type: 'tcp', host: '127.0.0.1', tcpPort: 5760, protocol });
-      if (success) {
-        updateConnectionMemory({
-          lastTcpHost: '127.0.0.1',
-          lastTcpPort: 5760,
-          lastConnectionType: 'tcp',
-        });
-      } else {
-        setError('Could not connect to SITL. Make sure it is running on TCP port 5760.');
+    const protocol = ardupilotIsRunning ? 'mavlink' : 'msp';
+
+    for (let attempt = 1; attempt <= 8; attempt++) {
+      try {
+        const success = await connect({ type: 'tcp', host: '127.0.0.1', tcpPort: 5760, protocol });
+        if (success) {
+          updateConnectionMemory({
+            lastTcpHost: '127.0.0.1',
+            lastTcpPort: 5760,
+            lastConnectionType: 'tcp',
+          });
+          return;
+        }
+      } catch { /* retry */ }
+
+      if (attempt < 8) {
+        await new Promise(r => setTimeout(r, 1500));
+        if (useConnectionStore.getState().connectionState.isConnected) return;
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect to SITL');
     }
+
+    setError('Could not connect to SITL. Make sure it is running on TCP port 5760.');
   };
 
   // Respond to SITL starting - switch to TCP and auto-connect with retry
@@ -190,8 +196,8 @@ export function ConnectionPanel() {
 
       // Auto-connect with retry - SITL may take a moment to start TCP server
       const autoConnectWithRetry = async () => {
-        const maxRetries = 10;
-        const retryDelayMs = 1000;
+        const maxRetries = 20;
+        const retryDelayMs = 1500;
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
           console.log(`[ConnectionPanel] SITL auto-connect attempt ${attempt}/${maxRetries}...`);
@@ -214,7 +220,8 @@ export function ConnectionPanel() {
             return;
           }
 
-          const success = await connect({ type: 'tcp', host: '127.0.0.1', tcpPort: 5760 });
+          const protocol = ardupilotStillRunning ? 'mavlink' : 'msp';
+          const success = await connect({ type: 'tcp', host: '127.0.0.1', tcpPort: 5760, protocol });
           if (success) {
             console.log('[ConnectionPanel] SITL auto-connect successful!');
             updateConnectionMemory({

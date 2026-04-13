@@ -505,6 +505,15 @@ const api = {
   logChatLoad: (logPath: string): Promise<{ messages: { role: string; content: string }[]; insightCards: unknown[] } | null> =>
     ipcRenderer.invoke(IPC_CHANNELS.LOG_CHAT_LOAD, logPath),
 
+  logRecentGet: (): Promise<{ path: string; name: string; size: number; openedAt: number }[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LOG_RECENT_GET),
+
+  logRecentAdd: (entry: { path: string; name: string; size: number }): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LOG_RECENT_ADD, entry),
+
+  logReadFile: (filePath: string): Promise<{ path: string; data: number[] } | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LOG_READ_FILE, filePath),
+
   onLogDownloadProgress: (callback: (progress: { logId: number; received: number; total: number }) => void) => {
     const handler = (_: unknown, progress: { logId: number; received: number; total: number }) => callback(progress);
     ipcRenderer.on(IPC_CHANNELS.LOG_DOWNLOAD_PROGRESS, handler);

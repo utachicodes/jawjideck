@@ -270,7 +270,7 @@ Return 3-6 cards. Most important issues first.`;
       </div>
 
       {/* AI insight cards (above automated checks) */}
-      {(aiInsightCards.length > 0 || isAiInsightLoading) && (
+      {aiProvider && (aiInsightCards.length > 0 || isAiInsightLoading) && (
         <div>
           <div className="flex items-center gap-2 mb-3">
             <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -307,7 +307,7 @@ Return 3-6 cards. Most important issues first.`;
       )}
 
       {/* Automated health check cards */}
-      {(aiInsightCards.length > 0 || isAiInsightLoading) && (
+      {aiProvider && (aiInsightCards.length > 0 || isAiInsightLoading) && (
         <div className="flex items-center gap-2 mb-0">
           <h3 className="text-sm font-semibold text-gray-400">Automated Checks</h3>
         </div>

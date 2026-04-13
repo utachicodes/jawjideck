@@ -267,6 +267,13 @@ const chatStore = new Store<{ conversations: Record<string, { messages: { role: 
   defaults: { conversations: {} },
 });
 
+// Recent log files
+interface RecentLogEntry { path: string; name: string; size: number; openedAt: number }
+const recentLogsStore = new Store<{ logs: RecentLogEntry[] }>({
+  name: 'recent-logs',
+  defaults: { logs: [] },
+});
+
 let signingEnabled = false;
 let signingKey: Uint8Array | null = null;
 let signingLinkId = 0;
@@ -6867,8 +6874,16 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
     if (result.canceled || !result.filePaths[0]) return null;
 
-    const data = await readFile(result.filePaths[0]);
-    return { path: result.filePaths[0], data: Array.from(data) };
+    const filePath = result.filePaths[0];
+    const data = await readFile(filePath);
+
+    // Add to recent logs
+    const name = filePath.split(/[\\/]/).pop() ?? filePath;
+    const logs = recentLogsStore.get('logs').filter((l) => l.path !== filePath);
+    logs.unshift({ path: filePath, name, size: data.length, openedAt: Date.now() });
+    recentLogsStore.set('logs', logs.slice(0, 20));
+
+    return { path: filePath, data: Array.from(data) };
   });
 
   ipcMain.handle(IPC_CHANNELS.LOG_PARSE, async (_, data: number[]): Promise<unknown> => {
@@ -6934,6 +6949,27 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle(IPC_CHANNELS.LOG_CHAT_LOAD, (_, logPath: string) => {
     const conversations = chatStore.get('conversations');
     return conversations[logPath] ?? null;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.LOG_RECENT_GET, () => {
+    return recentLogsStore.get('logs');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.LOG_RECENT_ADD, (_, entry: { path: string; name: string; size: number }) => {
+    const logs = recentLogsStore.get('logs').filter((l) => l.path !== entry.path);
+    logs.unshift({ ...entry, openedAt: Date.now() });
+    recentLogsStore.set('logs', logs.slice(0, 20));
+  });
+
+  ipcMain.handle(IPC_CHANNELS.LOG_READ_FILE, async (_, filePath: string): Promise<{ path: string; data: number[] } | null> => {
+    if (!existsSync(filePath)) {
+      // Remove stale entry from recent logs
+      const logs = recentLogsStore.get('logs').filter((l) => l.path !== filePath);
+      recentLogsStore.set('logs', logs);
+      return null;
+    }
+    const data = await readFile(filePath);
+    return { path: filePath, data: Array.from(data) };
   });
 }
 

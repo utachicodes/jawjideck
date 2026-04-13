@@ -367,33 +367,46 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
         throw new Error(result?.error || 'Failed to confirm position');
       }
 
-      // Mark position as captured. Do NOT advance currentPosition or set
-      // statusText to "Place vehicle X" — that's driven by AP's progress
-      // events (handleIncomingCommandLong → handleProgressUpdate). If we
-      // advance here, the renderer shows the confirm button before AP is
-      // ready, the main process rejects, and the user sees a confusing
-      // "skipped" position. Let AP drive the state machine.
       const newStatus = [...get().positionStatus];
       newStatus[currentPosition] = true;
+      const { protocol } = get();
 
       if (currentPosition < 5) {
-        set({
-          positionStatus: newStatus,
-          statusText: 'Waiting for flight controller...',
-          progress: ((currentPosition + 1) / 6) * 100,
-        });
+        if (protocol === 'mavlink') {
+          // MAVLink: do NOT advance position — AP drives the state machine
+          // via COMMAND_LONG (handleIncomingCommandLong → handleProgressUpdate).
+          set({
+            positionStatus: newStatus,
+            statusText: 'Waiting for flight controller...',
+            progress: ((currentPosition + 1) / 6) * 100,
+          });
+        } else {
+          // MSP: FC doesn't send position updates, advance immediately
+          set({
+            currentPosition: (currentPosition + 1) as AccelPosition,
+            positionStatus: newStatus,
+            statusText: `Place vehicle ${ACCEL_6POINT_POSITIONS[currentPosition + 1]}`,
+            progress: ((currentPosition + 1) / 6) * 100,
+          });
+        }
       } else {
-        // All positions done — flip into finalizing state. The MAVLink
-        // backend has armed an 8s safety-net timer; until then we're
-        // waiting for AP's "Calibration successful" STATUSTEXT or the
-        // ACCELCAL_VEHICLE_POS=SUCCESS COMMAND_LONG. Surface that wait
-        // explicitly so the UI doesn't look stuck.
-        set({
-          positionStatus: newStatus,
-          progress: 100,
-          isFinalizing: true,
-          statusText: 'Finalizing calibration on flight controller...',
-        });
+        if (protocol === 'mavlink') {
+          // MAVLink: wait for AP's "Calibration successful" STATUSTEXT
+          set({
+            positionStatus: newStatus,
+            progress: 100,
+            isFinalizing: true,
+            statusText: 'Finalizing calibration on flight controller...',
+          });
+        } else {
+          // MSP: all positions done, complete event comes from main process
+          set({
+            positionStatus: newStatus,
+            progress: 100,
+            isFinalizing: true,
+            statusText: 'Saving calibration...',
+          });
+        }
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';

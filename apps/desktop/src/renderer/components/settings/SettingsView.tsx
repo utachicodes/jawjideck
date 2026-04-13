@@ -1779,6 +1779,7 @@ function AiAnalysisSection() {
     if (!aiProvider) return;
     await window.electronAPI?.setApiKey(`ai-${aiProvider}`, '');
     setHasKey(false);
+    setAiProvider(null);
   };
 
   return (

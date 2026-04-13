@@ -85,8 +85,8 @@ export function layoutToSvgPositions(layout: FrameLayout, size: number, pad = 40
     number: m.Number,
     testOrder: m.TestOrder,
     rotation: m.Rotation,
-    // Roll → X. +Roll = right side of vehicle = +X in SVG.
-    cx: center + (m.Roll / maxExtent) * radius,
+    // Roll → X. Roll is a torque factor: -Roll = right side of vehicle = +X in SVG.
+    cx: center - (m.Roll / maxExtent) * radius,
     // Pitch → Y. +Pitch = forward = top of SVG = -Y, so we subtract.
     cy: center - (m.Pitch / maxExtent) * radius,
   }));

@@ -480,6 +480,9 @@ export const IPC_CHANNELS = {
   LOG_AI_ANALYZE: 'log:ai-analyze',
   LOG_CHAT_SAVE: 'log:chat-save',
   LOG_CHAT_LOAD: 'log:chat-load',
+  LOG_RECENT_GET: 'log:recent-get',
+  LOG_RECENT_ADD: 'log:recent-add',
+  LOG_READ_FILE: 'log:read-file',
 } as const;
 
 export type IpcChannels = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];
