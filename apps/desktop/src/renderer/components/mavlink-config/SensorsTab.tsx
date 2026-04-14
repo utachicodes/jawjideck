@@ -41,7 +41,7 @@ function SensorStatus({
   const colors = {
     healthy: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400',
     unhealthy: 'bg-red-500/20 border-red-500/30 text-red-400',
-    disabled: 'bg-zinc-800/50 border-zinc-700/30 text-zinc-500',
+    disabled: 'bg-surface border-subtle text-content-secondary',
   };
   const StatusIcon = status === 'healthy' ? CheckCircle : status === 'unhealthy' ? XCircle : AlertTriangle;
 
@@ -80,9 +80,9 @@ function TelemetryValue({
     <div className="text-center">
       <div className={`font-mono ${color} ${sizeClasses[size]}`}>
         {typeof value === 'number' ? value.toFixed(1) : value}
-        {unit && <span className="text-xs text-zinc-500 ml-1">{unit}</span>}
+        {unit && <span className="text-xs text-content-secondary ml-1">{unit}</span>}
       </div>
-      <div className="text-xs text-zinc-500 mt-1">{label}</div>
+      <div className="text-xs text-content-secondary mt-1">{label}</div>
     </div>
   );
 }
@@ -143,13 +143,13 @@ const SensorsTab: React.FC = () => {
       {/* Connection status */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Activity className={`w-5 h-5 ${lastUpdate ? 'text-emerald-400 animate-pulse' : 'text-zinc-500'}`} />
-          <span className="text-sm text-zinc-400">
+          <Activity className={`w-5 h-5 ${lastUpdate ? 'text-emerald-400 animate-pulse' : 'text-content-secondary'}`} />
+          <span className="text-sm text-content-secondary">
             {lastUpdate ? `Last update: ${lastUpdate.toLocaleTimeString()}` : 'Waiting for telemetry...'}
           </span>
         </div>
         {heartbeat && (
-          <div className="flex items-center gap-2 text-sm text-zinc-400">
+          <div className="flex items-center gap-2 text-sm text-content-secondary">
             <Wifi className="w-4 h-4" />
             <span>{heartbeat.autopilot || 'Unknown'}</span>
           </div>
@@ -159,14 +159,14 @@ const SensorsTab: React.FC = () => {
       {/* Main telemetry grid */}
       <div className="grid grid-cols-2 gap-4">
         {/* Attitude Card */}
-        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4 space-y-4">
+        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
               <Compass className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-white">Attitude</h3>
-              <p className="text-xs text-zinc-500">Aircraft orientation</p>
+              <h3 className="text-sm font-medium text-content">Attitude</h3>
+              <p className="text-xs text-content-secondary">Aircraft orientation</p>
             </div>
           </div>
 
@@ -192,7 +192,7 @@ const SensorsTab: React.FC = () => {
           </div>
 
           {/* Visual attitude indicator placeholder */}
-          <div className="h-24 bg-zinc-800/50 rounded-lg flex items-center justify-center">
+          <div className="h-24 bg-surface rounded-lg flex items-center justify-center">
             <div
               className="w-16 h-16 border-2 border-blue-400 rounded"
               style={{
@@ -210,14 +210,14 @@ const SensorsTab: React.FC = () => {
         </div>
 
         {/* GPS Card */}
-        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4 space-y-4">
+        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
               <Satellite className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-white">GPS Status</h3>
-              <p className="text-xs text-zinc-500">Position and fix quality</p>
+              <h3 className="text-sm font-medium text-content">GPS Status</h3>
+              <p className="text-xs text-content-secondary">Position and fix quality</p>
             </div>
           </div>
 
@@ -240,28 +240,28 @@ const SensorsTab: React.FC = () => {
           </div>
 
           {gps && (
-            <div className="bg-zinc-800/50 rounded-lg p-3 space-y-1">
+            <div className="bg-surface rounded-lg p-3 space-y-1">
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Latitude</span>
-                <span className="font-mono text-zinc-300">{gps.lat?.toFixed(6) ?? 'N/A'}</span>
+                <span className="text-content-secondary">Latitude</span>
+                <span className="font-mono text-content">{gps.lat?.toFixed(6) ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Longitude</span>
-                <span className="font-mono text-zinc-300">{gps.lon?.toFixed(6) ?? 'N/A'}</span>
+                <span className="text-content-secondary">Longitude</span>
+                <span className="font-mono text-content">{gps.lon?.toFixed(6) ?? 'N/A'}</span>
               </div>
             </div>
           )}
         </div>
 
         {/* Battery Card */}
-        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4 space-y-4">
+        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
               <Battery className="w-5 h-5 text-amber-400" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-white">Battery</h3>
-              <p className="text-xs text-zinc-500">Power status</p>
+              <h3 className="text-sm font-medium text-content">Battery</h3>
+              <p className="text-xs text-content-secondary">Power status</p>
             </div>
           </div>
 
@@ -288,7 +288,7 @@ const SensorsTab: React.FC = () => {
 
           {/* Battery bar */}
           <div className="space-y-1">
-            <div className="h-3 bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-3 bg-surface-tooltip rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${
                   (battery?.remaining ?? 0) > 50
@@ -300,7 +300,7 @@ const SensorsTab: React.FC = () => {
                 style={{ width: `${battery?.remaining ?? 0}%` }}
               />
             </div>
-            <div className="flex justify-between text-[10px] text-zinc-600">
+            <div className="flex justify-between text-[10px] text-content-tertiary">
               <span>0%</span>
               <span>100%</span>
             </div>
@@ -308,14 +308,14 @@ const SensorsTab: React.FC = () => {
         </div>
 
         {/* Altitude & Speed Card */}
-        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4 space-y-4">
+        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
               <Gauge className="w-5 h-5 text-purple-400" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-white">Flight Data</h3>
-              <p className="text-xs text-zinc-500">Altitude and speed</p>
+              <h3 className="text-sm font-medium text-content">Flight Data</h3>
+              <p className="text-xs text-content-secondary">Altitude and speed</p>
             </div>
           </div>
 
@@ -363,8 +363,8 @@ const SensorsTab: React.FC = () => {
       </div>
 
       {/* Sensor Health */}
-      <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4 space-y-4">
-        <h3 className="text-sm font-medium text-white">Sensor Health</h3>
+      <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+        <h3 className="text-sm font-medium text-content">Sensor Health</h3>
         <div className="grid grid-cols-6 gap-3">
           <SensorStatus name="Gyro" healthy={sensorHealth.gyro} enabled={sensorEnabled.gyro} icon={Activity} />
           <SensorStatus name="Accel" healthy={sensorHealth.accel} enabled={sensorEnabled.accel} icon={Navigation} />
@@ -377,7 +377,7 @@ const SensorsTab: React.FC = () => {
 
       {/* No data warning */}
       {!attitude && !gps && !battery && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3">
+        <div className="bg-amber-500/10 border-amber-500/30 rounded-xl p-4 flex items-center gap-3">
           <AlertTriangle className="w-5 h-5 text-amber-400" />
           <p className="text-sm text-amber-400">
             No telemetry data received. Make sure you're connected to the flight controller.

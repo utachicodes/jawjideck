@@ -364,7 +364,7 @@ function PresetSelector<T extends Record<string, { name: string; description: st
   if (!showQuickPresets) return null;
 
   return (
-    <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/5 rounded-xl border border-indigo-500/20 p-4">
+    <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/5 rounded-xl border-indigo-500/20 p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center">
@@ -372,7 +372,7 @@ function PresetSelector<T extends Record<string, { name: string; description: st
           </div>
           <div>
             <p className="text-indigo-300 font-medium">{label}</p>
-            <p className="text-xs text-gray-500">Click to apply a tuning style</p>
+            <p className="text-xs text-content-secondary">Click to apply a tuning style</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -386,7 +386,7 @@ function PresetSelector<T extends Record<string, { name: string; description: st
                 title={preset.description}
               >
                 <IconComponent className={`w-4 h-4 ${preset.iconColor}`} />
-                <span className="text-sm text-gray-200 group-hover:text-white">{preset.name}</span>
+                <span className="text-sm text-content group-hover:text-content">{preset.name}</span>
               </button>
             );
           })}
@@ -544,14 +544,14 @@ function CombinedRatesCurve({ rcTuning }: { rcTuning: MSPRcTuning }) {
   }, [globalMax]);
 
   return (
-    <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+    <div className="bg-surface rounded-xl border-subtle p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-400">Rates Preview</h3>
+        <h3 className="text-sm font-medium text-content-secondary">Rates Preview</h3>
         <div className="flex items-center gap-4">
           {curves.map(c => (
             <div key={c.label} className="flex items-center gap-1.5">
               <div className="w-3 h-0.5 rounded" style={{ backgroundColor: c.color }} />
-              <span className="text-xs text-gray-400">{c.label}</span>
+              <span className="text-xs text-content-secondary">{c.label}</span>
               <span className="text-xs font-medium" style={{ color: c.color }}>{c.maxRate}°/s</span>
             </div>
           ))}
@@ -640,10 +640,10 @@ function RateCurve({
   }, [rcRate, superRate, ratesType]);
 
   return (
-    <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-800">
-      <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+    <div className="bg-surface rounded-lg p-3 border-subtle">
+      <div className="flex items-center justify-between text-xs text-content-secondary mb-2">
         <span>Response Curve</span>
-        <span className="text-gray-400">Max: <span style={{ color }}>{maxRate}°/s</span></span>
+        <span className="text-content-secondary">Max: <span style={{ color }}>{maxRate}°/s</span></span>
       </div>
       <svg viewBox="0 0 100 100" className="w-full h-24">
         {/* Grid */}
@@ -748,13 +748,13 @@ function RatesTab({
     <div className="max-w-full px-4 space-y-6">
       {/* Info card */}
       {showInfoCards && (
-        <div className="bg-blue-500/10 rounded-xl border border-blue-500/30 p-4 flex items-center gap-4">
+        <div className="bg-blue-500/10 rounded-xl border-blue-500/30 p-4 flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
             <Info className="w-5 h-5 text-blue-400" />
           </div>
           <div>
             <p className="text-blue-400 font-medium">What are rates?</p>
-            <p className="text-sm text-gray-400">Rates control how fast your quad spins when you move the sticks. Higher = faster rotation.</p>
+            <p className="text-sm text-content-secondary">Rates control how fast your quad spins when you move the sticks. Higher = faster rotation.</p>
           </div>
         </div>
       )}
@@ -768,7 +768,7 @@ function RatesTab({
 
       {/* Rate Type Selector (Betaflight only) */}
       {!isInav && (
-        <div className="bg-gradient-to-r from-orange-500/10 to-amber-500/5 rounded-xl border border-orange-500/30 p-4">
+        <div className="bg-gradient-to-r from-orange-500/10 to-amber-500/5 rounded-xl border-orange-500/30 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
@@ -776,7 +776,7 @@ function RatesTab({
               </div>
               <div>
                 <p className="text-orange-300 font-medium">Rate Profile Type</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-content-secondary">
                   {RATE_TYPES.find(t => t.value === rcTuning.ratesType)?.description || 'Select curve algorithm'}
                 </p>
               </div>
@@ -786,7 +786,7 @@ function RatesTab({
               onChange={(e) => {
                 updateRcTuning('ratesType', parseInt(e.target.value, 10));
               }}
-              className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500 cursor-pointer"
+              className="px-4 py-2 bg-surface-tooltip border rounded-lg text-content text-sm focus:outline-none focus:border-orange-500 cursor-pointer"
             >
               {RATE_TYPES.map((type) => (
                 <option key={type.value} value={type.value}>
@@ -799,13 +799,13 @@ function RatesTab({
       )}
 
       {/* My Custom Profiles */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-4">
+      <div className="bg-surface rounded-xl border-subtle p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h4 className="text-sm font-medium text-gray-400">My Profiles</h4>
+            <h4 className="text-sm font-medium text-content-secondary">My Profiles</h4>
             <button
               onClick={resetToDefaults}
-              className="px-2 py-1 text-xs rounded bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1"
+              className="px-2 py-1 text-xs rounded bg-surface-raised hover:bg-surface-raised text-content-secondary hover:text-content transition-colors flex items-center gap-1"
               title="Reset to factory defaults"
             >
               <RotateCcw className="w-3 h-3" />
@@ -814,29 +814,29 @@ function RatesTab({
           </div>
           <div className="flex flex-wrap gap-2 items-center">
             {Object.entries(customProfiles).map(([id, profile]) => (
-              <div key={id} className="flex items-center gap-1 bg-gray-700/50 rounded-lg overflow-hidden">
+              <div key={id} className="flex items-center gap-1 bg-surface-raised rounded-lg overflow-hidden">
                 <button
                   onClick={() => loadProfile(id)}
-                  className="px-3 py-1.5 text-sm text-gray-300 hover:text-white hover:bg-gray-600/50 transition-colors"
+                  className="px-3 py-1.5 text-sm text-content hover:text-content hover:bg-surface-raised transition-colors"
                 >
                   {profile.name}
                 </button>
                 <button
                   onClick={() => deleteProfile(id)}
-                  className="px-2 py-1.5 text-gray-500 hover:text-red-400 hover:bg-gray-600/50 transition-colors"
+                  className="px-2 py-1.5 text-content-secondary hover:text-red-400 hover:bg-surface-raised transition-colors"
                 >
                   ×
                 </button>
               </div>
             ))}
             {showSaveDialog ? (
-              <div className="flex items-center gap-1 bg-gray-700/50 rounded-lg overflow-hidden">
+              <div className="flex items-center gap-1 bg-surface-raised rounded-lg overflow-hidden">
                 <input
                   type="text"
                   value={profileName}
                   onChange={(e) => setProfileName(e.target.value)}
                   placeholder="Name..."
-                  className="w-24 px-2 py-1.5 bg-transparent text-white text-sm focus:outline-none"
+                  className="w-24 px-2 py-1.5 bg-transparent text-content text-sm focus:outline-none"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') saveProfile();
@@ -846,13 +846,13 @@ function RatesTab({
                 <button
                   onClick={saveProfile}
                   disabled={!profileName.trim()}
-                  className="px-2 py-1.5 text-emerald-400 hover:text-emerald-300 disabled:text-gray-600 transition-colors"
+                  className="px-2 py-1.5 text-emerald-400 hover:text-emerald-300 disabled:text-content-tertiary transition-colors"
                 >
                   <Check className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setShowSaveDialog(false)}
-                  className="px-2 py-1.5 text-gray-500 hover:text-gray-300 transition-colors"
+                  className="px-2 py-1.5 text-content-secondary hover:text-content transition-colors"
                 >
                   ×
                 </button>
@@ -860,7 +860,7 @@ function RatesTab({
             ) : (
               <button
                 onClick={() => setShowSaveDialog(true)}
-                className="px-3 py-1.5 text-sm rounded-lg bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1"
+                className="px-3 py-1.5 text-sm rounded-lg bg-surface-raised hover:bg-surface-raised text-content-secondary hover:text-content transition-colors flex items-center gap-1"
                 title="Save current settings as a profile"
               >
                 <span>+</span> Save
@@ -877,8 +877,8 @@ function RatesTab({
           { axis: 'Pitch', Icon: MoveVertical, color: '#10B981', rcRate: 'rcPitchRate' as const, superRate: 'pitchRate' as const, expo: 'rcPitchExpo' as const },
           { axis: 'Yaw', Icon: RefreshCw, color: '#F97316', rcRate: 'rcYawRate' as const, superRate: 'yawRate' as const, expo: 'rcYawExpo' as const },
         ].map(({ axis, Icon, color, rcRate, superRate, expo }) => (
-          <div key={axis} className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
-            <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+          <div key={axis} className="bg-surface rounded-xl border-subtle p-5">
+            <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
               <Icon className="w-5 h-5" style={{ color }} /> {axis}
             </h3>
             <div className="space-y-4">
@@ -1011,13 +1011,13 @@ function PidTuningTab({
       />
 
       {/* My Custom Profiles */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-4">
+      <div className="bg-surface rounded-xl border-subtle p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h4 className="text-sm font-medium text-gray-400">My Profiles</h4>
+            <h4 className="text-sm font-medium text-content-secondary">My Profiles</h4>
             <button
               onClick={resetToDefaults}
-              className="px-2 py-1 text-xs rounded bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1"
+              className="px-2 py-1 text-xs rounded bg-surface-raised hover:bg-surface-raised text-content-secondary hover:text-content transition-colors flex items-center gap-1"
               title="Reset to factory defaults"
             >
               <RotateCcw className="w-3 h-3" />
@@ -1026,29 +1026,29 @@ function PidTuningTab({
           </div>
           <div className="flex flex-wrap gap-2 items-center">
             {Object.entries(customProfiles).map(([id, profile]) => (
-              <div key={id} className="flex items-center gap-1 bg-gray-700/50 rounded-lg overflow-hidden">
+              <div key={id} className="flex items-center gap-1 bg-surface-raised rounded-lg overflow-hidden">
                 <button
                   onClick={() => loadProfile(id)}
-                  className="px-3 py-1.5 text-sm text-gray-300 hover:text-white hover:bg-gray-600/50 transition-colors"
+                  className="px-3 py-1.5 text-sm text-content hover:text-content hover:bg-surface-raised transition-colors"
                 >
                   {profile.name}
                 </button>
                 <button
                   onClick={() => deleteProfile(id)}
-                  className="px-2 py-1.5 text-gray-500 hover:text-red-400 hover:bg-gray-600/50 transition-colors"
+                  className="px-2 py-1.5 text-content-secondary hover:text-red-400 hover:bg-surface-raised transition-colors"
                 >
                   ×
                 </button>
               </div>
             ))}
             {showSaveDialog ? (
-              <div className="flex items-center gap-1 bg-gray-700/50 rounded-lg overflow-hidden">
+              <div className="flex items-center gap-1 bg-surface-raised rounded-lg overflow-hidden">
                 <input
                   type="text"
                   value={profileName}
                   onChange={(e) => setProfileName(e.target.value)}
                   placeholder="Name..."
-                  className="w-24 px-2 py-1.5 bg-transparent text-white text-sm focus:outline-none"
+                  className="w-24 px-2 py-1.5 bg-transparent text-content text-sm focus:outline-none"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') saveProfile();
@@ -1058,13 +1058,13 @@ function PidTuningTab({
                 <button
                   onClick={saveProfile}
                   disabled={!profileName.trim()}
-                  className="px-2 py-1.5 text-emerald-400 hover:text-emerald-300 disabled:text-gray-600 transition-colors"
+                  className="px-2 py-1.5 text-emerald-400 hover:text-emerald-300 disabled:text-content-tertiary transition-colors"
                 >
                   <Check className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setShowSaveDialog(false)}
-                  className="px-2 py-1.5 text-gray-500 hover:text-gray-300 transition-colors"
+                  className="px-2 py-1.5 text-content-secondary hover:text-content transition-colors"
                 >
                   ×
                 </button>
@@ -1072,7 +1072,7 @@ function PidTuningTab({
             ) : (
               <button
                 onClick={() => setShowSaveDialog(true)}
-                className="px-3 py-1.5 text-sm rounded-lg bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1"
+                className="px-3 py-1.5 text-sm rounded-lg bg-surface-raised hover:bg-surface-raised text-content-secondary hover:text-content transition-colors flex items-center gap-1"
                 title="Save current settings as a profile"
               >
                 <span>+</span> Save
@@ -1085,14 +1085,14 @@ function PidTuningTab({
       {/* PID Sliders */}
       <div className="grid grid-cols-3 gap-5">
         {/* Roll */}
-        <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-xl border border-blue-500/20 p-5">
+        <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-xl border-blue-500/20 p-5">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
               <MoveHorizontal className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-white">Roll</h3>
-              <p className="text-xs text-gray-500">Left/right tilt</p>
+              <h3 className="text-lg font-medium text-content">Roll</h3>
+              <p className="text-xs text-content-secondary">Left/right tilt</p>
             </div>
           </div>
           <div className="space-y-5">
@@ -1103,14 +1103,14 @@ function PidTuningTab({
         </div>
 
         {/* Pitch */}
-        <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 rounded-xl border border-emerald-500/20 p-5">
+        <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 rounded-xl border-emerald-500/20 p-5">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
               <MoveVertical className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-white">Pitch</h3>
-              <p className="text-xs text-gray-500">Forward/back tilt</p>
+              <h3 className="text-lg font-medium text-content">Pitch</h3>
+              <p className="text-xs text-content-secondary">Forward/back tilt</p>
             </div>
           </div>
           <div className="space-y-5">
@@ -1121,14 +1121,14 @@ function PidTuningTab({
         </div>
 
         {/* Yaw */}
-        <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 rounded-xl border border-orange-500/20 p-5">
+        <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 rounded-xl border-orange-500/20 p-5">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
               <RefreshCw className="w-5 h-5 text-orange-400" />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-white">Yaw</h3>
-              <p className="text-xs text-gray-500">Rotation</p>
+              <h3 className="text-lg font-medium text-content">Yaw</h3>
+              <p className="text-xs text-content-secondary">Rotation</p>
             </div>
           </div>
           <div className="space-y-5">
@@ -1141,22 +1141,22 @@ function PidTuningTab({
 
       {/* Help card */}
       {showExplanationCards && (
-        <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
-          <h4 className="font-medium text-gray-300 mb-3 flex items-center gap-2">
+        <div className="bg-surface rounded-xl border-subtle p-5">
+          <h4 className="font-medium text-content mb-3 flex items-center gap-2">
             <Lightbulb className="w-4 h-4 text-yellow-400" /> What do these numbers mean?
           </h4>
           <div className="grid grid-cols-3 gap-6 text-sm">
             <div>
               <span className="text-blue-400 font-medium">P (Response)</span>
-              <p className="text-gray-500 mt-1">How quickly your quad reacts. Too high = oscillation/vibration. Too low = mushy feeling.</p>
+              <p className="text-content-secondary mt-1">How quickly your quad reacts. Too high = oscillation/vibration. Too low = mushy feeling.</p>
             </div>
             <div>
               <span className="text-emerald-400 font-medium">I (Stability)</span>
-              <p className="text-gray-500 mt-1">Keeps your quad on target. Helps fight wind and drift. Too high = slow wobbles.</p>
+              <p className="text-content-secondary mt-1">Keeps your quad on target. Helps fight wind and drift. Too high = slow wobbles.</p>
             </div>
             <div>
               <span className="text-purple-400 font-medium">D (Smoothness)</span>
-              <p className="text-gray-500 mt-1">Dampens overshooting. Too high = hot motors and noise. Too low = bouncy stops.</p>
+              <p className="text-content-secondary mt-1">Dampens overshooting. Too high = hot motors and noise. Too low = bouncy stops.</p>
             </div>
           </div>
         </div>
@@ -1195,7 +1195,7 @@ function ModeChannelIndicator({
     <div className={`rounded-xl border p-4 transition-all ${
       isActive
         ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/10 border-emerald-500/50 shadow-lg shadow-emerald-500/10'
-        : 'bg-gray-800/30 border-gray-700/30'
+        : 'bg-surface border-subtle'
     }`}>
       <div className="flex items-center gap-3 mb-3">
         <div className={`w-10 h-10 rounded-lg ${info.color}/20 flex items-center justify-center`}>
@@ -1203,25 +1203,25 @@ function ModeChannelIndicator({
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-white">{info.name}</span>
+            <span className="font-medium text-content">{info.name}</span>
             {isActive && (
               <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-500/30 text-emerald-400">
                 ACTIVE
               </span>
             )}
           </div>
-          <p className="text-xs text-gray-400">{info.beginner}</p>
+          <p className="text-xs text-content-secondary">{info.beginner}</p>
         </div>
         <div className="text-right">
-          <div className="text-sm text-gray-400">AUX {mode.auxChannel + 1}</div>
-          <div className={`text-xs ${isActive ? 'text-emerald-400' : 'text-gray-500'}`}>
+          <div className="text-sm text-content-secondary">AUX {mode.auxChannel + 1}</div>
+          <div className={`text-xs ${isActive ? 'text-emerald-400' : 'text-content-secondary'}`}>
             {mode.rangeStart} - {mode.rangeEnd}
           </div>
         </div>
       </div>
 
       {/* Channel bar with live indicator */}
-      <div className="relative h-6 bg-gray-900 rounded-full overflow-hidden">
+      <div className="relative h-6 bg-surface rounded-full overflow-hidden">
         {/* Range highlight */}
         <div
           className={`absolute h-full transition-all ${isActive ? 'bg-emerald-500/40' : 'bg-blue-500/30'}`}
@@ -1233,7 +1233,7 @@ function ModeChannelIndicator({
           style={{ left: `${Math.min(100, Math.max(0, rcPosition))}%` }}
         />
         {/* Scale markers */}
-        <div className="absolute inset-0 flex justify-between px-1 items-center text-[8px] text-gray-600">
+        <div className="absolute inset-0 flex justify-between px-1 items-center text-[8px] text-content-tertiary">
           <span>900</span>
           <span>1500</span>
           <span>2100</span>
@@ -1241,7 +1241,7 @@ function ModeChannelIndicator({
       </div>
 
       {/* Current value */}
-      <div className="mt-2 text-center text-xs text-gray-500">
+      <div className="mt-2 text-center text-xs text-content-secondary">
         Current: <span className={isActive ? 'text-emerald-400' : 'text-yellow-400'}>{rcValue}</span>
       </div>
     </div>
@@ -1282,19 +1282,19 @@ function SensorCard({
         ? 'bg-emerald-500/10 border-emerald-500/30'
         : featureEnabled
           ? 'bg-yellow-500/10 border-yellow-500/30' // Feature ON but no hardware
-          : 'bg-gray-800/30 border-gray-700/30'
+          : 'bg-surface border-subtle'
     }`}>
       <div className="flex items-center gap-3">
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-          hardwareDetected ? 'bg-emerald-500/20' : featureEnabled ? 'bg-yellow-500/20' : 'bg-gray-800'
+          hardwareDetected ? 'bg-emerald-500/20' : featureEnabled ? 'bg-yellow-500/20' : 'bg-surface-tooltip'
         }`}>
-          <Icon className={`w-5 h-5 ${hardwareDetected ? 'text-emerald-400' : featureEnabled ? 'text-yellow-400' : 'text-gray-500'}`} />
+          <Icon className={`w-5 h-5 ${hardwareDetected ? 'text-emerald-400' : featureEnabled ? 'text-yellow-400' : 'text-content-secondary'}`} />
         </div>
         <div className="flex-1">
-          <div className={`font-medium ${hardwareDetected ? 'text-emerald-400' : featureEnabled ? 'text-yellow-400' : 'text-gray-400'}`}>
+          <div className={`font-medium ${hardwareDetected ? 'text-emerald-400' : featureEnabled ? 'text-yellow-400' : 'text-content-secondary'}`}>
             {name}
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-content-secondary">
             {!hardwareDetected && featureEnabled
               ? 'Feature enabled but hardware not detected'
               : description}
@@ -1302,9 +1302,9 @@ function SensorCard({
         </div>
         {/* Live value display */}
         {liveValue != null && hardwareDetected && (
-          <div className="px-3 py-1.5 rounded-lg font-mono text-sm bg-gray-800/50 text-gray-300">
+          <div className="px-3 py-1.5 rounded-lg font-mono text-sm bg-surface text-content">
             {typeof liveValue === 'number' ? liveValue.toFixed(1) : liveValue}
-            {unit && <span className="text-xs text-gray-500 ml-1">{unit}</span>}
+            {unit && <span className="text-xs text-content-secondary ml-1">{unit}</span>}
           </div>
         )}
         {/* Feature toggle switch */}
@@ -1327,7 +1327,7 @@ function SensorCard({
             ? 'bg-emerald-500/20 text-emerald-400'
             : featureEnabled
               ? 'bg-yellow-500/20 text-yellow-400'
-              : 'bg-gray-800 text-gray-500'
+              : 'bg-surface-tooltip text-content-secondary'
         }`}>
           {hardwareDetected ? 'OK' : featureEnabled ? 'ON' : 'OFF'}
         </div>
@@ -1347,19 +1347,19 @@ function TelemetryCard({
   values: Array<{ label: string; value: number | string; unit?: string }>;
 }) {
   return (
-    <div className="p-4 rounded-xl border bg-gray-800/30 border-gray-700/30">
+    <div className="p-4 rounded-xl border bg-surface border-subtle">
       <div className="flex items-center gap-2 mb-3">
         <Icon className="w-5 h-5 text-cyan-400" />
-        <span className="font-medium text-gray-300">{title}</span>
+        <span className="font-medium text-content">{title}</span>
       </div>
       <div className="grid grid-cols-3 gap-3">
         {values.map(({ label, value, unit }) => (
           <div key={label} className="text-center">
             <div className="text-lg font-mono text-cyan-400">
               {typeof value === 'number' ? value.toFixed(1) : value}
-              {unit && <span className="text-xs text-gray-500 ml-1">{unit}</span>}
+              {unit && <span className="text-xs text-content-secondary ml-1">{unit}</span>}
             </div>
-            <div className="text-xs text-gray-500">{label}</div>
+            <div className="text-xs text-content-secondary">{label}</div>
           </div>
         ))}
       </div>
@@ -1458,7 +1458,7 @@ function MspSensorsTabContent({
 
       {/* Live Telemetry Section */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Live Telemetry</h3>
+        <h3 className="text-sm font-medium text-content-secondary uppercase tracking-wider">Live Telemetry</h3>
         <div className="grid grid-cols-2 gap-4">
           {/* Attitude Card */}
           <TelemetryCard
@@ -1495,27 +1495,27 @@ function MspSensorsTabContent({
                 <div className="text-lg font-mono text-cyan-400">
                   {(gps?.lat || 0).toFixed(6)}
                 </div>
-                <div className="text-xs text-gray-500">Latitude</div>
+                <div className="text-xs text-content-secondary">Latitude</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-mono text-cyan-400">
                   {(gps?.lon || 0).toFixed(6)}
                 </div>
-                <div className="text-xs text-gray-500">Longitude</div>
+                <div className="text-xs text-content-secondary">Longitude</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-mono text-cyan-400">
                   {(gps?.alt || 0).toFixed(1)}
-                  <span className="text-xs text-gray-500 ml-1">m</span>
+                  <span className="text-xs text-content-secondary ml-1">m</span>
                 </div>
-                <div className="text-xs text-gray-500">GPS Alt</div>
+                <div className="text-xs text-content-secondary">GPS Alt</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-mono text-cyan-400">
                   {(vfrHud?.groundspeed || 0).toFixed(1)}
-                  <span className="text-xs text-gray-500 ml-1">m/s</span>
+                  <span className="text-xs text-content-secondary ml-1">m/s</span>
                 </div>
-                <div className="text-xs text-gray-500">Speed</div>
+                <div className="text-xs text-content-secondary">Speed</div>
               </div>
             </div>
           </div>
@@ -1523,12 +1523,12 @@ function MspSensorsTabContent({
       </div>
 
       {!sensors.gps && (
-        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+        <div className="bg-yellow-500/10 border-yellow-500/30 rounded-xl p-4">
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-6 h-6 text-yellow-400" />
             <div>
               <h4 className="font-medium text-yellow-400">GPS Not Connected</h4>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-content-secondary">
                 To use GPS Rescue (automatic return home), connect a GPS module to your flight controller.
               </p>
             </div>
@@ -1537,24 +1537,24 @@ function MspSensorsTabContent({
       )}
 
       {isInav ? (
-        <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
+        <div className="bg-green-500/10 border-green-500/30 rounded-xl p-4">
           <div className="flex items-center gap-3">
             <Map className="w-6 h-6 text-green-400" />
             <div>
               <h4 className="font-medium text-green-400">iNav - Mission Planning Available!</h4>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-content-secondary">
                 Your board runs iNav which supports autonomous waypoint missions. Check Mission Planning in the navigation.
               </p>
             </div>
           </div>
         </div>
       ) : (
-        <div className="bg-gray-800/30 border border-gray-700/30 rounded-xl p-4">
+        <div className="bg-surface border-subtle rounded-xl p-4">
           <div className="flex items-center gap-3">
-            <Info className="w-6 h-6 text-gray-400" />
+            <Info className="w-6 h-6 text-content-secondary" />
             <div>
-              <h4 className="font-medium text-gray-300">Betaflight - FPV Racing & Freestyle</h4>
-              <p className="text-sm text-gray-500">
+              <h4 className="font-medium text-content">Betaflight - FPV Racing & Freestyle</h4>
+              <p className="text-sm text-content-secondary">
                 Betaflight is optimized for manual flight. For autonomous missions and GPS navigation, consider flashing iNav firmware.
               </p>
             </div>
@@ -1626,7 +1626,7 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
 
       {/* Header with view toggle */}
       <div className="flex items-center justify-between">
-        <div className="bg-gradient-to-br from-purple-500/15 to-fuchsia-600/10 rounded-xl border border-purple-500/30 p-4 flex items-center gap-4 flex-1 mr-4">
+        <div className="bg-gradient-to-br from-purple-500/15 to-fuchsia-600/10 rounded-xl border-purple-500/30 p-4 flex items-center gap-4 flex-1 mr-4">
           <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
             <Radio className="w-6 h-6 text-purple-400" />
           </div>
@@ -1642,13 +1642,13 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
 
         {/* View toggle */}
         <div className="flex items-center gap-2">
-          <div className="flex rounded-lg bg-zinc-800 p-0.5">
+          <div className="flex rounded-lg bg-surface-tooltip p-0.5">
             <button
               onClick={() => setViewMode('wizard')}
               className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
                 viewMode === 'wizard'
                   ? 'bg-blue-600 text-white'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  : 'text-content-secondary hover:text-content'
               }`}
             >
               Simple
@@ -1658,7 +1658,7 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
               className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
                 viewMode === 'advanced'
                   ? 'bg-blue-600 text-white'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  : 'text-content-secondary hover:text-content'
               }`}
             >
               Advanced
@@ -1674,16 +1674,16 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
           {isLoading ? (
             <div className="text-center py-8">
               <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto" />
-              <p className="text-sm text-zinc-500 mt-2">Loading modes from flight controller...</p>
+              <p className="text-sm text-content-secondary mt-2">Loading modes from flight controller...</p>
             </div>
           ) : originalModes.length === 0 ? (
             /* No modes configured - show wizard prompt */
-            <div className="text-center py-12 bg-gradient-to-br from-zinc-800/50 to-zinc-900/30 rounded-xl border border-zinc-700/50">
+            <div className="text-center py-12 bg-gradient-to-br from-zinc-800/50 to-zinc-900/30 rounded-xl border-subtle">
               <div className="w-16 h-16 rounded-2xl bg-purple-500/20 flex items-center justify-center mx-auto mb-4">
                 <Radio className="w-8 h-8 text-purple-400" />
               </div>
-              <h3 className="text-lg font-medium text-zinc-300 mb-2">No Modes Configured</h3>
-              <p className="text-sm text-zinc-500 max-w-md mx-auto mb-6">
+              <h3 className="text-lg font-medium text-content mb-2">No Modes Configured</h3>
+              <p className="text-sm text-content-secondary max-w-md mx-auto mb-6">
                 Your flight controller doesn't have any modes set up yet.
                 Use the wizard to configure recommended modes for your flying style.
               </p>
@@ -1700,7 +1700,7 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
             <div className="space-y-4">
               {/* Helper tip for newbies */}
               {showSectionDescriptions && (
-                <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <div className="flex items-start gap-3 p-3 bg-blue-500/10 border-blue-500/20 rounded-lg">
                   <HelpCircle className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
                   <p className="text-sm text-blue-200/80">
                     <strong>How this works:</strong> Each mode is triggered by a switch on your transmitter.
@@ -1754,7 +1754,7 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
                       className={`p-4 rounded-xl border transition-all ${
                         isActive
                           ? 'bg-gradient-to-r from-green-500/10 to-transparent border-green-500/50 shadow-lg shadow-green-500/10'
-                          : 'bg-zinc-800/50 border-zinc-700/50 hover:border-zinc-600/50'
+                          : 'bg-surface border-subtle hover:border'
                       }`}
                     >
                       {/* Top row: Icon, Name, Status */}
@@ -1764,8 +1764,8 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
                             <IconComponent className={`w-5 h-5 ${info.color.replace('bg-', 'text-')}`} />
                           </div>
                           <div>
-                            <div className="font-medium text-zinc-100">{info.name}</div>
-                            <div className="text-xs text-zinc-400">
+                            <div className="font-medium text-content">{info.name}</div>
+                            <div className="text-xs text-content-secondary">
                               {modeInfo?.beginner || modeInfo?.description || 'Flight mode'}
                             </div>
                           </div>
@@ -1787,7 +1787,7 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
                               ACTIVE
                             </span>
                           ) : (
-                            <span className="px-3 py-1 text-xs bg-zinc-700/50 text-zinc-500 rounded-full">
+                            <span className="px-3 py-1 text-xs bg-surface-raised text-content-secondary rounded-full">
                               INACTIVE
                             </span>
                           )}
@@ -1796,13 +1796,13 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
 
                       {/* Visual range bar */}
                       <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-xs text-zinc-500">
+                        <div className="flex items-center justify-between text-xs text-content-secondary">
                           <span>{switchName}</span>
-                          <span className={isActive ? 'text-green-400' : 'text-zinc-400'}>
+                          <span className={isActive ? 'text-green-400' : 'text-content-secondary'}>
                             Position: {rcValue < 1300 ? 'Low' : rcValue < 1700 ? 'Mid' : 'High'}
                           </span>
                         </div>
-                        <div className="relative h-4 bg-zinc-700/50 rounded-full overflow-hidden">
+                        <div className="relative h-4 bg-surface-raised rounded-full overflow-hidden">
                           {/* Active zone highlight */}
                           <div
                             className={`absolute top-0 bottom-0 rounded-full ${isActive ? 'bg-green-500/40' : 'bg-blue-500/20'}`}
@@ -1819,13 +1819,13 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
                             style={{ left: `calc(${currentPercent}% - 3px)` }}
                           />
                           {/* Low/Mid/High labels */}
-                          <div className="absolute inset-0 flex items-center justify-between px-2 text-[10px] text-zinc-500 pointer-events-none">
+                          <div className="absolute inset-0 flex items-center justify-between px-2 text-[10px] text-content-secondary pointer-events-none">
                             <span>Low</span>
                             <span>Mid</span>
                             <span>High</span>
                           </div>
                         </div>
-                        <div className="text-[10px] text-zinc-600 text-center">
+                        <div className="text-[10px] text-content-tertiary text-center">
                           Activates when {switchName} is in {positionDescription}
                         </div>
                       </div>
@@ -1838,7 +1838,7 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
               <div className="flex justify-center pt-4">
                 <button
                   onClick={openWizard}
-                  className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-lg text-sm transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-surface-raised hover:bg-surface-raised text-content rounded-lg text-sm transition-colors flex items-center gap-2"
                 >
                   <Wand2 className="w-4 h-4" />
                   Reconfigure with Wizard
@@ -2352,21 +2352,21 @@ export function MspConfigView() {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-950">
+      <div className="h-full flex items-center justify-center bg-surface-base">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <div className="text-gray-400">Loading your settings...</div>
+          <div className="text-content-secondary">Loading your settings...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-950">
+    <div className="h-full flex flex-col bg-surface-base">
       {/* Platform Change Overlay */}
       {platformChangeState !== 'idle' && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-8 max-w-md mx-4 shadow-2xl text-center">
+          <div className="bg-surface border rounded-xl p-8 max-w-md mx-4 shadow-2xl text-center">
             {/* Icon based on state */}
             {platformChangeState === 'error' ? (
               <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
@@ -2381,7 +2381,7 @@ export function MspConfigView() {
             )}
 
             {/* Title */}
-            <h3 className="text-lg font-semibold text-white mb-2">
+            <h3 className="text-lg font-semibold text-content mb-2">
               {platformChangeState === 'changing' && `Changing to ${platformChangeTarget}`}
               {platformChangeState === 'saving' && 'Saving Configuration'}
               {platformChangeState === 'rebooting' && 'Rebooting Board'}
@@ -2390,7 +2390,7 @@ export function MspConfigView() {
             </h3>
 
             {/* Message */}
-            <p className="text-sm text-zinc-400 mb-4">
+            <p className="text-sm text-content-secondary mb-4">
               {platformChangeState === 'changing' && 'Sending platform change command...'}
               {platformChangeState === 'saving' && 'Writing to EEPROM...'}
               {platformChangeState === 'rebooting' && 'Waiting for board to reboot...'}
@@ -2400,7 +2400,7 @@ export function MspConfigView() {
 
             {/* Progress indicator for non-terminal states */}
             {(platformChangeState === 'changing' || platformChangeState === 'saving' || platformChangeState === 'rebooting' || platformChangeState === 'reconnecting') && (
-              <div className="flex items-center justify-center gap-2 text-xs text-zinc-500">
+              <div className="flex items-center justify-center gap-2 text-xs text-content-secondary">
                 <div className="flex gap-1">
                   <div className={`w-2 h-2 rounded-full ${platformChangeState === 'changing' ? 'bg-blue-500' : 'bg-zinc-600'}`} />
                   <div className={`w-2 h-2 rounded-full ${platformChangeState === 'saving' ? 'bg-blue-500' : 'bg-zinc-600'}`} />
@@ -2413,7 +2413,7 @@ export function MspConfigView() {
             {platformChangeState === 'error' && (
               <button
                 onClick={clearPlatformChangeState}
-                className="mt-4 px-6 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-sm transition-colors"
+                className="mt-4 px-6 py-2 bg-surface-raised hover:bg-surface-raised text-content rounded-lg text-sm transition-colors"
               >
                 Dismiss
               </button>
@@ -2423,7 +2423,7 @@ export function MspConfigView() {
       )}
 
       {/* Header */}
-      <div className="shrink-0 px-6 py-4 border-b border-gray-800/50 bg-gradient-to-r from-gray-900/90 to-gray-900/50">
+      <div className="shrink-0 px-6 py-4 border-b border-subtle bg-gradient-to-r from-surface to-surface">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg overflow-hidden ${
@@ -2438,10 +2438,10 @@ export function MspConfigView() {
               />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-xl font-bold text-content">
                 {connectionState.fcVariant === 'BTFL' ? 'Betaflight' : connectionState.fcVariant === 'INAV' ? 'iNav' : connectionState.fcVariant} Tuning
               </h2>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 text-sm text-content-secondary">
                 <span className="text-blue-400">{connectionState.fcVersion}</span>
                 {connectionState.vehicleType && isInav && (
                   <>
@@ -2462,7 +2462,7 @@ export function MspConfigView() {
                         </svg>
                       </button>
                       {showPlatformDropdown && (
-                        <div className="absolute top-full left-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50 min-w-[140px]">
+                        <div className="absolute top-full left-0 mt-1 bg-surface-tooltip border rounded-lg shadow-xl z-50 min-w-[140px]">
                           {PLATFORM_OPTIONS.map((opt) => (
                             <button
                               key={opt.value}
@@ -2471,10 +2471,10 @@ export function MspConfigView() {
                                 handlePlatformChange(opt.value);
                               }}
                               disabled={connectionState.vehicleType === opt.label}
-                              className={`w-full px-3 py-2 text-left text-sm hover:bg-zinc-700 first:rounded-t-lg last:rounded-b-lg ${
+                              className={`w-full px-3 py-2 text-left text-sm hover:bg-surface-raised first:rounded-t-lg last:rounded-b-lg ${
                                 connectionState.vehicleType === opt.label
                                   ? 'text-emerald-400 bg-emerald-500/10'
-                                  : 'text-gray-300'
+                                  : 'text-content'
                               }`}
                             >
                               {opt.label}
@@ -2508,14 +2508,14 @@ export function MspConfigView() {
             </button>
 
             {modified && (
-              <span className="px-3 py-1 text-sm rounded-lg bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+              <span className="px-3 py-1 text-sm rounded-lg bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
                 Unsaved
               </span>
             )}
             <button
               onClick={loadConfig}
               disabled={loading}
-              className="px-4 py-2 text-sm rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700"
+              className="px-4 py-2 text-sm rounded-lg bg-surface-tooltip hover:bg-surface-raised text-content border"
             >
               Refresh
             </button>
@@ -2524,8 +2524,8 @@ export function MspConfigView() {
               disabled={rebooting}
               className={`px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-all ${
                 rebootNeeded
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 animate-pulse'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700'
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30 animate-pulse'
+                  : 'bg-surface-tooltip hover:bg-surface-raised text-content border'
               }`}
               title={rebootNeeded ? 'Settings changed - reboot to apply' : 'Reboot flight controller'}
             >
@@ -2538,7 +2538,7 @@ export function MspConfigView() {
               className={`px-5 py-2 text-sm font-medium rounded-lg shadow-lg transition-all ${
                 modified
                   ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-emerald-500/25'
-                  : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                  : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
               }`}
             >
               {saving ? <><Save className="w-4 h-4 inline mr-1" />Saving...</> : <><Save className="w-4 h-4 inline mr-1" />Save All Changes</>}
@@ -2562,8 +2562,8 @@ export function MspConfigView() {
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
                 className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
                   isActive
-                    ? 'bg-gray-800 text-white shadow-lg'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                    ? 'bg-surface-tooltip text-content shadow-lg'
+                    : 'text-content-secondary hover:text-content hover:bg-surface'
                 }`}
               >
                 <Icon className={`w-4 h-4 ${isActive ? tab.color : `${tab.color} opacity-50`}`} />
@@ -2577,8 +2577,8 @@ export function MspConfigView() {
             onClick={() => setActiveTab('receiver')}
             className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
               activeTab === 'receiver'
-                ? 'bg-gray-800 text-white shadow-lg'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                ? 'bg-surface-tooltip text-content shadow-lg'
+                : 'text-content-secondary hover:text-content hover:bg-surface'
             }`}
           >
             <Radio className={`w-4 h-4 ${activeTab === 'receiver' ? 'text-teal-400' : 'text-teal-400 opacity-50'}`} />
@@ -2590,8 +2590,8 @@ export function MspConfigView() {
             onClick={() => setActiveTab('ports')}
             className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
               activeTab === 'ports'
-                ? 'bg-gray-800 text-white shadow-lg'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                ? 'bg-surface-tooltip text-content shadow-lg'
+                : 'text-content-secondary hover:text-content hover:bg-surface'
             }`}
           >
             <Cable className={`w-4 h-4 ${activeTab === 'ports' ? 'text-sky-400' : 'text-sky-400 opacity-50'}`} />
@@ -2608,8 +2608,8 @@ export function MspConfigView() {
                 }}
                 className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
                   ['servo-tuning', 'servo-mixer', 'motor-mixer'].includes(activeTab)
-                    ? 'bg-gray-800 text-white shadow-lg'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                    ? 'bg-surface-tooltip text-content shadow-lg'
+                    : 'text-content-secondary hover:text-content hover:bg-surface'
                 }`}
               >
                 <Layers className={`w-4 h-4 ${
@@ -2625,7 +2625,7 @@ export function MspConfigView() {
                 <ChevronDown className={`w-3 h-3 transition-transform ${showMixingDropdown ? 'rotate-180' : ''}`} />
               </button>
               {showMixingDropdown && (
-                <div className="absolute top-full left-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50 min-w-[180px] py-1">
+                <div className="absolute top-full left-0 mt-1 bg-surface-tooltip border rounded-lg shadow-xl z-50 min-w-[180px] py-1">
                   {[
                     { id: 'servo-tuning', label: 'Servo Tuning', icon: SlidersHorizontal, color: 'text-orange-400', desc: 'Endpoints' },
                     { id: 'servo-mixer', label: 'Servo Mixer', icon: Shuffle, color: 'text-cyan-400', desc: 'Surfaces' },
@@ -2641,14 +2641,14 @@ export function MspConfigView() {
                           setActiveTab(item.id as typeof activeTab);
                           setShowMixingDropdown(false);
                         }}
-                        className={`w-full px-3 py-2 text-left flex items-center gap-3 hover:bg-zinc-700 transition-colors ${
-                          isActive ? 'bg-zinc-700/50' : ''
+                        className={`w-full px-3 py-2 text-left flex items-center gap-3 hover:bg-surface-raised transition-colors ${
+                          isActive ? 'bg-surface-raised' : ''
                         }`}
                       >
                         <Icon className={`w-4 h-4 ${item.color}`} />
                         <div className="flex-1">
-                          <div className={`text-sm ${isActive ? 'text-white' : 'text-gray-300'}`}>{item.label}</div>
-                          <div className="text-xs text-gray-500">{item.desc}</div>
+                          <div className={`text-sm ${isActive ? 'text-content' : 'text-content'}`}>{item.label}</div>
+                          <div className="text-xs text-content-secondary">{item.desc}</div>
                         </div>
                         {isActive && <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />}
                       </button>
@@ -2665,8 +2665,8 @@ export function MspConfigView() {
               onClick={() => setActiveTab('navigation')}
               className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
                 activeTab === 'navigation'
-                  ? 'bg-gray-800 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                  ? 'bg-surface-tooltip text-content shadow-lg'
+                  : 'text-content-secondary hover:text-content hover:bg-surface'
               }`}
             >
               <Compass className={`w-4 h-4 ${activeTab === 'navigation' ? 'text-amber-400' : 'text-amber-400 opacity-50'}`} />
@@ -2680,8 +2680,8 @@ export function MspConfigView() {
               onClick={() => setActiveTab('auto-launch')}
               className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
                 activeTab === 'auto-launch'
-                  ? 'bg-gray-800 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                  ? 'bg-surface-tooltip text-content shadow-lg'
+                  : 'text-content-secondary hover:text-content hover:bg-surface'
               }`}
             >
               <PlaneTakeoff className={`w-4 h-4 ${activeTab === 'auto-launch' ? 'text-orange-400' : 'text-orange-400 opacity-50'}`} />
@@ -2695,8 +2695,8 @@ export function MspConfigView() {
               onClick={() => setActiveTab('filters')}
               className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
                 activeTab === 'filters'
-                  ? 'bg-gray-800 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                  ? 'bg-surface-tooltip text-content shadow-lg'
+                  : 'text-content-secondary hover:text-content hover:bg-surface'
               }`}
             >
               <Waves className={`w-4 h-4 ${activeTab === 'filters' ? 'text-purple-400' : 'text-purple-400 opacity-50'}`} />
@@ -2709,8 +2709,8 @@ export function MspConfigView() {
             onClick={() => setActiveTab('vtx')}
             className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
               activeTab === 'vtx'
-                ? 'bg-gray-800 text-white shadow-lg'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                ? 'bg-surface-tooltip text-content shadow-lg'
+                : 'text-content-secondary hover:text-content hover:bg-surface'
             }`}
           >
             <Radio className={`w-4 h-4 ${activeTab === 'vtx' ? 'text-pink-400' : 'text-pink-400 opacity-50'}`} />
@@ -2722,11 +2722,11 @@ export function MspConfigView() {
             <button
               disabled
               title="Coming Soon - Launch Control for race starts"
-              className="px-3 py-2 rounded-lg flex items-center gap-2 text-gray-600 cursor-not-allowed opacity-50"
+              className="px-3 py-2 rounded-lg flex items-center gap-2 text-content-tertiary cursor-not-allowed opacity-50"
             >
               <Rocket className="w-4 h-4 text-cyan-400 opacity-50" />
               <span className="text-sm font-medium">Launch Control</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-500">Soon</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-raised text-content-secondary">Soon</span>
             </button>
           )}
 
@@ -2735,8 +2735,8 @@ export function MspConfigView() {
             onClick={() => setActiveTab('safety')}
             className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
               activeTab === 'safety'
-                ? 'bg-gray-800 text-white shadow-lg'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                ? 'bg-surface-tooltip text-content shadow-lg'
+                : 'text-content-secondary hover:text-content hover:bg-surface'
             }`}
           >
             <Shield className={`w-4 h-4 ${activeTab === 'safety' ? 'text-red-400' : 'text-red-400 opacity-50'}`} />
@@ -2748,8 +2748,8 @@ export function MspConfigView() {
             onClick={() => setActiveTab('sensors')}
             className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
               activeTab === 'sensors'
-                ? 'bg-gray-800 text-white shadow-lg'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                ? 'bg-surface-tooltip text-content shadow-lg'
+                : 'text-content-secondary hover:text-content hover:bg-surface'
             }`}
           >
             <Radio className={`w-4 h-4 ${activeTab === 'sensors' ? 'text-emerald-400' : 'text-emerald-400 opacity-50'}`} />
@@ -2773,7 +2773,7 @@ export function MspConfigView() {
           <span>Settings changed that require a reboot to take effect.</span>
           <button
             onClick={handleReboot}
-            className="ml-auto px-3 py-1 text-xs font-medium rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 transition-colors"
+            className="ml-auto px-3 py-1 text-xs font-medium rounded bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/40 transition-colors"
           >
             Reboot Now
           </button>

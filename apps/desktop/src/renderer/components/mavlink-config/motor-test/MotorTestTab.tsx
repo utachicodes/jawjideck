@@ -181,14 +181,14 @@ export const MotorTestTab: React.FC = () => {
   // Gate: not connected or not MAVLink
   if (!connectionState.isConnected) {
     return (
-      <div className="p-8 text-center text-gray-500">
+      <div className="p-8 text-center text-content-secondary">
         Connect to a flight controller first to run motor tests.
       </div>
     );
   }
   if (connectionState.protocol !== 'mavlink') {
     return (
-      <div className="p-8 text-center text-gray-500">
+      <div className="p-8 text-center text-content-secondary">
         Motor test requires a MAVLink (ArduPilot) connection.
       </div>
     );
@@ -199,19 +199,19 @@ export const MotorTestTab: React.FC = () => {
       {/* Safety confirmation dialog */}
       {showSafetyDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-red-500/40 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+          <div className="bg-surface border-red-500/40 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-red-500/15 border-red-500/30 flex items-center justify-center">
                 <AlertTriangle className="w-6 h-6 text-red-400" />
               </div>
               <div>
-                <div className="text-lg font-semibold text-gray-100">Safety Check</div>
-                <div className="text-xs text-gray-500">Required before motor test</div>
+                <div className="text-lg font-semibold text-content">Safety Check</div>
+                <div className="text-xs text-content-secondary">Required before motor test</div>
               </div>
             </div>
-            <div className="text-sm text-gray-300 mb-5 space-y-2">
+            <div className="text-sm text-content mb-5 space-y-2">
               <p>Before spinning motors you MUST confirm:</p>
-              <ul className="list-disc ml-5 space-y-1 text-gray-400">
+              <ul className="list-disc ml-5 space-y-1 text-content-secondary">
                 <li>Propellers are REMOVED from all motors</li>
                 <li>Frame is secured and cannot tip over</li>
                 <li>Nobody is near the propellers or motors</li>
@@ -235,7 +235,7 @@ export const MotorTestTab: React.FC = () => {
 
       {/* Armed warning banner */}
       {isArmed && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-center gap-3">
+        <div className="bg-red-500/10 border-red-500/30 rounded-lg p-4 flex items-center gap-3">
           <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
           <div className="flex-1">
             <div className="text-sm font-semibold text-red-300">Vehicle is ARMED</div>
@@ -246,7 +246,7 @@ export const MotorTestTab: React.FC = () => {
 
       {/* High-throttle warning banner (soft, non-blocking) */}
       {throttle > HIGH_THROTTLE_WARNING && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center gap-3">
+        <div className="bg-amber-500/10 border-amber-500/30 rounded-lg p-3 flex items-center gap-3">
           <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
           <div className="text-xs text-amber-300">
             High throttle ({throttle}%) — ensure props are removed and the frame is secured.
@@ -256,7 +256,7 @@ export const MotorTestTab: React.FC = () => {
 
       {/* Last error banner */}
       {lastError && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center justify-between gap-3">
+        <div className="bg-red-500/10 border-red-500/30 rounded-lg p-3 flex items-center justify-between gap-3">
           <div className="text-xs text-red-300">{lastError}</div>
           <button
             onClick={() => setLastError(null)}
@@ -270,7 +270,7 @@ export const MotorTestTab: React.FC = () => {
       {/* Main 3-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[auto,1fr,auto] gap-5">
         {/* LEFT: Frame diagram */}
-        <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+        <div className="bg-surface rounded-xl border-subtle p-5">
           <FrameDiagram
             layout={layout}
             activeMotor={activeMotor}
@@ -280,21 +280,21 @@ export const MotorTestTab: React.FC = () => {
         </div>
 
         {/* CENTER: Controls */}
-        <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5 space-y-5">
+        <div className="bg-surface rounded-xl border-subtle p-5 space-y-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-yellow-500/10 border-yellow-500/20 flex items-center justify-center">
               <Zap className="w-5 h-5 text-yellow-400" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-gray-200">Motor Test</div>
-              <div className="text-[11px] text-gray-500">{motorCount} motors · {layout.TypeName}</div>
+              <div className="text-sm font-semibold text-content">Motor Test</div>
+              <div className="text-[11px] text-content-secondary">{motorCount} motors · {layout.TypeName}</div>
             </div>
           </div>
 
           {/* Throttle slider */}
           <div>
             <div className="flex items-baseline justify-between mb-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+              <label className="text-xs font-semibold uppercase tracking-wider text-content-secondary">
                 Throttle
               </label>
               <div className="flex items-baseline gap-1">
@@ -304,9 +304,9 @@ export const MotorTestTab: React.FC = () => {
                   max={100}
                   value={throttle}
                   onChange={(e) => setThrottle(Number(e.target.value))}
-                  className="w-14 px-1 py-0.5 text-sm text-right font-mono bg-gray-900 border border-gray-700 rounded text-gray-200 focus:outline-none focus:border-yellow-500"
+                  className="w-14 px-1 py-0.5 text-sm text-right font-mono bg-surface border rounded text-content focus:outline-none focus:border-yellow-500"
                 />
-                <span className="text-sm text-gray-500">%</span>
+                <span className="text-sm text-content-secondary">%</span>
               </div>
             </div>
             <input
@@ -315,14 +315,14 @@ export const MotorTestTab: React.FC = () => {
               max={100}
               value={throttle}
               onChange={(e) => setThrottle(Number(e.target.value))}
-              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-yellow-500"
+              className="w-full h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer accent-yellow-500"
             />
           </div>
 
           {/* Duration input */}
           <div>
             <div className="flex items-baseline justify-between mb-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+              <label className="text-xs font-semibold uppercase tracking-wider text-content-secondary">
                 Duration
               </label>
               <div className="flex items-baseline gap-1">
@@ -332,16 +332,16 @@ export const MotorTestTab: React.FC = () => {
                   max={60}
                   value={duration}
                   onChange={(e) => setDuration(Number(e.target.value))}
-                  className="w-14 px-1 py-0.5 text-sm text-right font-mono bg-gray-900 border border-gray-700 rounded text-gray-200 focus:outline-none focus:border-yellow-500"
+                  className="w-14 px-1 py-0.5 text-sm text-right font-mono bg-surface border rounded text-content focus:outline-none focus:border-yellow-500"
                 />
-                <span className="text-sm text-gray-500">s</span>
+                <span className="text-sm text-content-secondary">s</span>
               </div>
             </div>
           </div>
 
           {/* Individual motor buttons (sorted by TestOrder) */}
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
+            <div className="text-xs font-semibold uppercase tracking-wider text-content-secondary mb-2">
               Test Individual
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -356,14 +356,14 @@ export const MotorTestTab: React.FC = () => {
                     ${
                       activeMotor === m.Number
                         ? 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300'
-                        : 'bg-gray-900/40 border-gray-700/40 text-gray-300 hover:border-gray-600 hover:bg-gray-800/60'
+                        : 'bg-surface border/40 text-content hover:border hover:bg-surface'
                     }
                   `}
                 >
                   <div className="font-semibold">
-                    {testOrderToLabel(m.TestOrder)} <span className="text-gray-500">·</span> M{m.Number}
+                    {testOrderToLabel(m.TestOrder)} <span className="text-content-secondary">·</span> M{m.Number}
                   </div>
-                  <div className="text-[10px] text-gray-500">{m.Rotation}</div>
+                  <div className="text-[10px] text-content-secondary">{m.Rotation}</div>
                 </button>
               ))}
             </div>
@@ -374,7 +374,7 @@ export const MotorTestTab: React.FC = () => {
             <button
               onClick={testAllInSequence}
               disabled={!canTest || sequenceRunning}
-              className="w-full px-4 py-2.5 bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-semibold text-emerald-300 transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 bg-emerald-500/15 border-emerald-500/30 hover:bg-emerald-500/25 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-semibold text-emerald-300 transition-colors flex items-center justify-center gap-2"
             >
               <Play className="w-4 h-4" />
               Test All In Sequence
@@ -395,7 +395,7 @@ export const MotorTestTab: React.FC = () => {
                 useMotorTestStore.setState({ safetyConfirmed: false });
                 setShowSafetyDialog(true);
               }}
-              className="w-full text-[11px] text-gray-500 hover:text-gray-400 flex items-center justify-center gap-1.5 py-1"
+              className="w-full text-[11px] text-content-secondary hover:text-content-secondary flex items-center justify-center gap-1.5 py-1"
             >
               <Shield className="w-3 h-3" />
               Reset safety confirmation

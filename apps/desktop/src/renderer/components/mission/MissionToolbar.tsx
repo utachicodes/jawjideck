@@ -78,7 +78,7 @@ function MissionModeControls() {
             className={`px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1.5 ${
               !advancedLabels
                 ? 'bg-teal-600/80 text-white'
-                : 'text-gray-500 hover:bg-gray-700/40'
+                : 'text-content-secondary hover:bg-surface-raised'
             }`}
             title="Simplified commands and friendly labels"
           >
@@ -93,7 +93,7 @@ function MissionModeControls() {
             className={`px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1.5 ${
               advancedLabels
                 ? 'bg-amber-600/80 text-white'
-                : 'text-gray-500 hover:bg-gray-700/40'
+                : 'text-content-secondary hover:bg-surface-raised'
             }`}
             title="All commands with standard GCS naming"
           >
@@ -116,7 +116,7 @@ function MissionModeControls() {
             className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
               !isInav
                 ? 'bg-sky-600/80 text-white'
-                : 'text-gray-500 hover:bg-gray-700/40'
+                : 'text-content-secondary hover:bg-surface-raised'
             }`}
             title="ArduPilot mission commands"
           >
@@ -128,7 +128,7 @@ function MissionModeControls() {
             className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
               isInav
                 ? 'bg-violet-600/80 text-white'
-                : 'text-gray-500 hover:bg-gray-700/40'
+                : 'text-content-secondary hover:bg-surface-raised'
             }`}
             title="iNav mission commands (8 waypoint types)"
           >
@@ -310,9 +310,9 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-1.5 bg-gray-800/60 border-b border-gray-700/50 shrink-0">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-1.5 bg-surface border-b border-subtle shrink-0">
       {/* Mode Selector - Segmented Control */}
-      <div className="flex items-center rounded-lg overflow-hidden border border-gray-600/50 shrink-0">
+      <div className="flex items-center rounded-lg overflow-hidden border border-subtle shrink-0">
         <ModeButton
           mode="mission"
           label="Mission"
@@ -321,7 +321,7 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
           color="blue"
           hasModified={missionIsDirty}
         />
-        <div className="w-px h-5 bg-gray-600/50" />
+        <div className="w-px h-5 bg-subtle" />
         <ModeButton
           mode="geofence"
           label="Geofence"
@@ -330,7 +330,7 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
           color="green"
           hasModified={fenceIsDirty}
         />
-        <div className="w-px h-5 bg-gray-600/50" />
+        <div className="w-px h-5 bg-subtle" />
         <ModeButton
           mode="rally"
           label="Rally"
@@ -342,7 +342,7 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
       </div>
 
       {/* Separator */}
-      <div className="w-px h-6 bg-gray-700/50 shrink-0" />
+      <div className="w-px h-6 bg-subtle shrink-0" />
 
       {/* FC Operations */}
       <div className="flex items-center gap-1 shrink-0">
@@ -352,7 +352,7 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
           className={`px-3 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
             isConnected && !isLoading && !fcOpsDisabledForMsp
               ? 'bg-blue-600/80 hover:bg-blue-500/80 text-white'
-              : 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
+              : 'bg-surface-raised text-content-secondary cursor-not-allowed'
           }`}
           title={fcOpsDisabledForMsp ? `${getModeLabel()} not supported on iNav/Betaflight` : isConnected ? `Download ${getModeLabel()} from flight controller` : 'Connect to download'}
         >
@@ -375,7 +375,7 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
           className={`px-3 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
             isConnected && !isLoading && hasItems && !fcOpsDisabledForMsp
               ? 'bg-emerald-600/80 hover:bg-emerald-500/80 text-white'
-              : 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
+              : 'bg-surface-raised text-content-secondary cursor-not-allowed'
           }`}
           title={fcOpsDisabledForMsp ? `${getModeLabel()} not supported on iNav/Betaflight` : !isConnected ? 'Connect to upload' : !hasItems ? `Add ${getModeLabel()} first` : `Upload ${getModeLabel()} to flight controller`}
         >
@@ -398,7 +398,7 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
           className={`px-3 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
             isConnected && !isLoading && !fcOpsDisabledForMsp
               ? 'bg-red-600/80 hover:bg-red-500/80 text-white'
-              : 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
+              : 'bg-surface-raised text-content-secondary cursor-not-allowed'
           }`}
           title={fcOpsDisabledForMsp ? `${getModeLabel()} not supported on iNav/Betaflight` : isConnected ? `Clear ${getModeLabel()} from flight controller` : 'Connect to clear from FC'}
         >
@@ -410,7 +410,7 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
       </div>
 
       {/* Separator */}
-      <div className="w-px h-6 bg-gray-700/50 shrink-0" />
+      <div className="w-px h-6 bg-subtle shrink-0" />
 
       {/* New */}
       <button
@@ -418,8 +418,8 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
         disabled={isLoading || !hasItems}
         className={`px-3 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 shrink-0 ${
           !isLoading && hasItems
-            ? 'bg-gray-700/50 hover:bg-gray-600/50 text-gray-300'
-            : 'bg-gray-700/30 text-gray-500 cursor-not-allowed'
+            ? 'bg-surface-raised hover:bg-surface-raised text-content'
+            : 'bg-surface text-content-secondary cursor-not-allowed'
         }`}
         title={`Clear current ${getModeLabel()} locally`}
       >
@@ -430,7 +430,7 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
       </button>
 
       {/* Separator */}
-      <div className="w-px h-6 bg-gray-700/50 shrink-0" />
+      <div className="w-px h-6 bg-subtle shrink-0" />
 
       {/* File Operations */}
       <div className="flex items-center gap-1 shrink-0">
@@ -439,8 +439,8 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
           disabled={!hasItems}
           className={`px-3 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
             hasItems
-              ? 'bg-gray-700/50 hover:bg-gray-600/50 text-gray-300'
-              : 'bg-gray-700/30 text-gray-500 cursor-not-allowed'
+              ? 'bg-surface-raised hover:bg-surface-raised text-content'
+              : 'bg-surface text-content-secondary cursor-not-allowed'
           }`}
           title={hasItems ? `Save ${getModeLabel()} to file` : 'Nothing to save'}
         >
@@ -452,7 +452,7 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
 
         <button
           onClick={handleLoadFile}
-          className="px-3 py-1.5 rounded text-xs font-medium bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 transition-colors flex items-center gap-1.5"
+          className="px-3 py-1.5 rounded text-xs font-medium bg-surface-raised hover:bg-surface-raised text-content transition-colors flex items-center gap-1.5"
           title={`Load ${getModeLabel()} from file`}
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -465,14 +465,14 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
       {/* Library save button (mission mode only) */}
       {activeMode === 'mission' && (
         <>
-          <div className="w-px h-6 bg-gray-700/50 shrink-0" />
+          <div className="w-px h-6 bg-subtle shrink-0" />
           <button
             onClick={() => setShowSaveLibraryModal(true)}
             disabled={!missionHasItems}
             className={`px-3 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 shrink-0 ${
               missionHasItems
                 ? 'bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30'
-                : 'bg-gray-700/30 text-gray-500 cursor-not-allowed'
+                : 'bg-surface text-content-secondary cursor-not-allowed'
             }`}
             title={missionHasItems ? 'Save mission to library for reuse' : 'Add waypoints first'}
           >
@@ -501,25 +501,25 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
       <MissionModeControls />
 
       {/* 2D/3D Map Toggle */}
-      <div className="flex items-center rounded-lg overflow-hidden border border-gray-600/50 shrink-0">
+      <div className="flex items-center rounded-lg overflow-hidden border border-subtle shrink-0">
         <button
           onClick={() => setMapMode('2d')}
           className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
             mapMode === '2d'
-              ? 'bg-gray-600 text-white'
-              : 'text-gray-500 hover:bg-gray-700/40'
+              ? 'bg-surface-raised text-content'
+              : 'text-content-secondary hover:bg-surface-raised'
           }`}
           title="2D Map"
         >
           2D
         </button>
-        <div className="w-px h-5 bg-gray-600/50" />
+        <div className="w-px h-5 bg-subtle" />
         <button
           onClick={() => setMapMode('3d')}
           className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
             mapMode === '3d'
               ? 'bg-indigo-600 text-white'
-              : 'text-gray-500 hover:bg-gray-700/40'
+              : 'text-content-secondary hover:bg-surface-raised'
           }`}
           title="3D Terrain View"
         >
@@ -530,7 +530,7 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
       {/* Layout controls */}
       <button
         onClick={onResetLayout}
-        className="px-2 py-1 bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 text-xs rounded transition-colors shrink-0"
+        className="px-2 py-1 bg-surface-raised hover:bg-surface-raised text-content-secondary text-xs rounded transition-colors shrink-0"
         title="Reset panel layout"
       >
         Reset Layout
@@ -539,7 +539,7 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
       {/* Collision warning modal */}
       {showCollisionWarning && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg shadow-xl border border-gray-700 p-6 max-w-md mx-4">
+          <div className="bg-surface-tooltip rounded-lg shadow-xl border border-default p-6 max-w-md mx-4">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
                 <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -547,8 +547,8 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white mb-2">Terrain Collision Warning</h3>
-                <p className="text-gray-400 text-sm mb-4">
+                <h3 className="text-lg font-semibold text-content mb-2">Terrain Collision Warning</h3>
+                <p className="text-content-secondary text-sm mb-4">
                   The flight path goes below the safe altitude (terrain + 30m buffer) at one or more points.
                   This could result in a collision with terrain.
                 </p>
@@ -560,7 +560,7 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
             <div className="flex justify-end gap-3 mt-4">
               <button
                 onClick={() => setShowCollisionWarning(false)}
-                className="px-4 py-2 rounded text-sm font-medium bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 transition-colors"
+                className="px-4 py-2 rounded text-sm font-medium bg-surface-raised hover:bg-surface-raised text-content transition-colors"
               >
                 Cancel
               </button>

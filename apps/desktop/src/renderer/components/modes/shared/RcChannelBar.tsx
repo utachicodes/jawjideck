@@ -42,15 +42,15 @@ export const RcChannelBar: React.FC<RcChannelBarProps> = ({
     <div className={`${compact ? 'space-y-1' : 'space-y-2'}`}>
       {/* Range labels */}
       {showLabels && (
-        <div className="flex justify-between text-xs text-zinc-500">
+        <div className="flex justify-between text-xs text-content-secondary">
           <span>{PWM.MIN}</span>
-          <span className="text-zinc-400">{rangeStart} - {rangeEnd}</span>
+          <span className="text-content-secondary">{rangeStart} - {rangeEnd}</span>
           <span>{PWM.MAX}</span>
         </div>
       )}
 
       {/* Bar container */}
-      <div className={`relative ${compact ? 'h-4' : 'h-6'} bg-zinc-800 rounded-full overflow-hidden`}>
+      <div className={`relative ${compact ? 'h-4' : 'h-6'} bg-surface-tooltip rounded-full overflow-hidden`}>
         {/* Active range highlight */}
         <div
           className={`absolute top-0 bottom-0 ${color} ${
@@ -88,15 +88,15 @@ export const RcChannelBar: React.FC<RcChannelBarProps> = ({
 
         {/* Center line indicator */}
         <div
-          className="absolute top-0 bottom-0 w-px bg-zinc-600"
+          className="absolute top-0 bottom-0 w-px bg-surface-raised"
           style={{ left: '50%' }}
         />
       </div>
 
       {/* Status row */}
       <div className="flex justify-between items-center">
-        <span className={`text-xs ${compact ? 'text-[10px]' : ''} text-zinc-500`}>
-          RC: <span className="text-zinc-300 font-mono">{rcValue}</span>
+        <span className={`text-xs ${compact ? 'text-[10px]' : ''} text-content-secondary`}>
+          RC: <span className="text-content font-mono">{rcValue}</span>
         </span>
         {isActive ? (
           <span
@@ -110,7 +110,7 @@ export const RcChannelBar: React.FC<RcChannelBarProps> = ({
           <span
             className={`${
               compact ? 'text-[10px] px-1.5 py-0.5' : 'text-xs px-2 py-1'
-            } bg-zinc-700/50 text-zinc-500 rounded-full`}
+            } bg-surface-raised text-content-secondary rounded-full`}
           >
             INACTIVE
           </span>

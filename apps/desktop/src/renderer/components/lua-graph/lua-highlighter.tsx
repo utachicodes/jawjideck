@@ -21,7 +21,7 @@ interface Token {
 
 function classifyToken(text: string): string {
   // Comments
-  if (text.startsWith('--')) return 'text-gray-600 italic';
+  if (text.startsWith('--')) return 'text-content-tertiary italic';
   // Strings
   if (text.startsWith('"') || text.startsWith("'") || text.startsWith('[[')) return 'text-amber-400';
   // Numbers

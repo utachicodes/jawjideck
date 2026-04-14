@@ -23,7 +23,7 @@ export default function ServoAssignmentStep() {
   const [highlightedSurface, setHighlightedSurface] = useState<ControlSurface | null>(null);
 
   if (!selectedPreset || !selectedPresetId) {
-    return <div className="text-zinc-400">No aircraft type selected</div>;
+    return <div className="text-content-secondary">No aircraft type selected</div>;
   }
 
   // Build servo labels for the diagram
@@ -39,31 +39,31 @@ export default function ServoAssignmentStep() {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-xl font-bold text-white">Assign Servos to Control Surfaces</h2>
-        <p className="text-sm text-zinc-400 mt-2">
+        <h2 className="text-xl font-bold text-content">Assign Servos to Control Surfaces</h2>
+        <p className="text-sm text-content-secondary mt-2">
           Match each control surface to the servo output it's connected to on your flight controller.
         </p>
       </div>
 
       <div className="grid grid-cols-2 gap-8">
         {/* Diagram */}
-        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-6">
+        <div className="bg-surface-input rounded-xl border border-subtle p-6">
           <AircraftDiagram
             presetId={selectedPresetId}
             highlightSurface={highlightedSurface}
             onSurfaceClick={(surface) => setHighlightedSurface(surface)}
             servoLabels={servoLabels}
           />
-          <p className="text-xs text-zinc-500 text-center mt-4">
+          <p className="text-xs text-content-secondary text-center mt-4">
             Click a control surface to highlight it
           </p>
         </div>
 
         {/* Assignment table */}
         <div className="space-y-3">
-          <div className="bg-zinc-800/30 rounded-lg p-3 mb-4">
-            <p className="text-xs text-zinc-400">
-              <strong className="text-zinc-300">Tip:</strong> Check your FC wiring. Servo outputs are usually labeled S1-S8 or SERVO1-8.
+          <div className="bg-surface rounded-lg p-3 mb-4">
+            <p className="text-xs text-content-secondary">
+              <strong className="text-content">Tip:</strong> Check your FC wiring. Servo outputs are usually labeled S1-S8 or SERVO1-8.
               S1 = Servo 0 in iNav.
             </p>
           </div>
@@ -78,26 +78,26 @@ export default function ServoAssignmentStep() {
                 className={`flex items-center gap-4 p-3 rounded-lg transition-all ${
                   isHighlighted
                     ? 'bg-blue-500/20 border border-blue-500/50'
-                    : 'bg-zinc-800/50 border border-zinc-700/50'
+                    : 'bg-surface border border-subtle'
                 }`}
                 onMouseEnter={() => setHighlightedSurface(assignment.surface)}
                 onMouseLeave={() => setHighlightedSurface(null)}
               >
                 {/* Surface name */}
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-white">{surfaceInfo.name}</div>
-                  <div className="text-xs text-zinc-500">{surfaceInfo.description}</div>
+                  <div className="text-sm font-medium text-content">{surfaceInfo.name}</div>
+                  <div className="text-xs text-content-secondary">{surfaceInfo.description}</div>
                 </div>
 
                 {/* Servo selector */}
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-zinc-400">Servo</span>
+                  <span className="text-xs text-content-secondary">Servo</span>
                   <select
                     value={assignment.servoIndex}
                     onChange={(e) =>
                       updateAssignment(index, { servoIndex: Number(e.target.value) })
                     }
-                    className="w-20 px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-20 px-3 py-2 bg-surface-raised border border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
                   >
                     {availableServos.map((servo) => (
                       <option key={servo} value={servo}>
@@ -126,7 +126,7 @@ export default function ServoAssignmentStep() {
       <div className="flex justify-between">
         <button
           onClick={prevStep}
-          className="px-6 py-2.5 rounded-lg font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+          className="px-6 py-2.5 rounded-lg font-medium bg-surface-tooltip text-content hover:bg-surface-raised"
         >
           ← Back
         </button>

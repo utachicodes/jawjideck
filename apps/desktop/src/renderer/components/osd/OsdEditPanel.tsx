@@ -22,18 +22,18 @@ export function OsdEditPanel({ selectedElement }: Props) {
   if (!selectedElement) {
     return (
       <div className="flex flex-col h-full">
-        <div className="px-3 py-2 border-b border-gray-700">
-          <h3 className="text-xs font-medium text-gray-300">Position Editor</h3>
+        <div className="px-3 py-2 border-b border">
+          <h3 className="text-xs font-medium text-content">Position Editor</h3>
         </div>
         <div className="flex-1 flex items-center justify-center p-4">
-          <p className="text-xs text-gray-500 text-center">
+          <p className="text-xs text-content-secondary text-center">
             Click an element on the canvas or in the browser to edit its position
           </p>
         </div>
-        <div className="p-3 border-t border-gray-700">
+        <div className="p-3 border-t border">
           <button
             onClick={resetElementPositions}
-            className="w-full px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded"
+            className="w-full px-3 py-1.5 bg-surface-raised hover:bg-surface-raised text-content text-xs rounded"
           >
             Reset All Positions
           </button>
@@ -71,9 +71,9 @@ export function OsdEditPanel({ selectedElement }: Props) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-3 py-2 border-b border-gray-700">
+      <div className="px-3 py-2 border-b border">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-medium text-gray-300">{formatName(selectedElement)}</h3>
+          <h3 className="text-xs font-medium text-content">{formatName(selectedElement)}</h3>
           <button
             onClick={handleReset}
             className="text-[10px] text-blue-400 hover:text-blue-300"
@@ -81,7 +81,7 @@ export function OsdEditPanel({ selectedElement }: Props) {
             Reset
           </button>
         </div>
-        <p className="text-[10px] text-gray-500 mt-0.5">
+        <p className="text-[10px] text-content-secondary mt-0.5">
           {size.width}x{size.height} chars
         </p>
       </div>
@@ -90,7 +90,7 @@ export function OsdEditPanel({ selectedElement }: Props) {
         {/* Position inputs */}
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[10px] text-gray-500 mb-1">X Position</label>
+            <label className="block text-[10px] text-content-secondary mb-1">X Position</label>
             <input
               type="number"
               value={pos.x}
@@ -100,11 +100,11 @@ export function OsdEditPanel({ selectedElement }: Props) {
               }}
               min={0}
               max={maxX}
-              className="w-full bg-gray-800 text-white text-xs rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none"
+              className="w-full bg-surface-tooltip text-content text-xs rounded px-2 py-1 border border focus:border-blue-500 focus:outline-none"
             />
           </div>
           <div>
-            <label className="block text-[10px] text-gray-500 mb-1">Y Position</label>
+            <label className="block text-[10px] text-content-secondary mb-1">Y Position</label>
             <input
               type="number"
               value={pos.y}
@@ -114,14 +114,14 @@ export function OsdEditPanel({ selectedElement }: Props) {
               }}
               min={0}
               max={maxY}
-              className="w-full bg-gray-800 text-white text-xs rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none"
+              className="w-full bg-surface-tooltip text-content text-xs rounded px-2 py-1 border border focus:border-blue-500 focus:outline-none"
             />
           </div>
         </div>
 
         {/* Nudge arrows */}
         <div>
-          <p className="text-[10px] text-gray-500 mb-1.5">Nudge</p>
+          <p className="text-[10px] text-content-secondary mb-1.5">Nudge</p>
           <div className="grid grid-cols-3 gap-1 w-24 mx-auto">
             <div />
             <NudgeBtn label="^" onClick={() => nudge(0, -1)} />
@@ -137,17 +137,17 @@ export function OsdEditPanel({ selectedElement }: Props) {
 
         {/* Alignment */}
         <div>
-          <p className="text-[10px] text-gray-500 mb-1.5">Align</p>
+          <p className="text-[10px] text-content-secondary mb-1.5">Align</p>
           <div className="flex gap-1.5">
             <button
               onClick={centerH}
-              className="flex-1 px-2 py-1 text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-400 rounded border border-gray-700"
+              className="flex-1 px-2 py-1 text-[10px] bg-surface-tooltip hover:bg-surface-raised text-content-secondary rounded border border"
             >
               Center H
             </button>
             <button
               onClick={centerV}
-              className="flex-1 px-2 py-1 text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-400 rounded border border-gray-700"
+              className="flex-1 px-2 py-1 text-[10px] bg-surface-tooltip hover:bg-surface-raised text-content-secondary rounded border border"
             >
               Center V
             </button>
@@ -155,13 +155,13 @@ export function OsdEditPanel({ selectedElement }: Props) {
           <div className="flex gap-1.5 mt-1.5">
             <button
               onClick={() => setPos(0, pos.y)}
-              className="flex-1 px-2 py-1 text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-400 rounded border border-gray-700"
+              className="flex-1 px-2 py-1 text-[10px] bg-surface-tooltip hover:bg-surface-raised text-content-secondary rounded border border"
             >
               Left
             </button>
             <button
               onClick={() => setPos(maxX, pos.y)}
-              className="flex-1 px-2 py-1 text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-400 rounded border border-gray-700"
+              className="flex-1 px-2 py-1 text-[10px] bg-surface-tooltip hover:bg-surface-raised text-content-secondary rounded border border"
             >
               Right
             </button>
@@ -169,13 +169,13 @@ export function OsdEditPanel({ selectedElement }: Props) {
           <div className="flex gap-1.5 mt-1.5">
             <button
               onClick={() => setPos(pos.x, 0)}
-              className="flex-1 px-2 py-1 text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-400 rounded border border-gray-700"
+              className="flex-1 px-2 py-1 text-[10px] bg-surface-tooltip hover:bg-surface-raised text-content-secondary rounded border border"
             >
               Top
             </button>
             <button
               onClick={() => setPos(pos.x, maxY)}
-              className="flex-1 px-2 py-1 text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-400 rounded border border-gray-700"
+              className="flex-1 px-2 py-1 text-[10px] bg-surface-tooltip hover:bg-surface-raised text-content-secondary rounded border border"
             >
               Bottom
             </button>
@@ -183,10 +183,10 @@ export function OsdEditPanel({ selectedElement }: Props) {
         </div>
       </div>
 
-      <div className="mt-auto p-3 border-t border-gray-700">
+      <div className="mt-auto p-3 border-t border">
         <button
           onClick={resetElementPositions}
-          className="w-full px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded"
+          className="w-full px-3 py-1.5 bg-surface-raised hover:bg-surface-raised text-content text-xs rounded"
         >
           Reset All Positions
         </button>
@@ -199,7 +199,7 @@ function NudgeBtn({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="w-7 h-7 flex items-center justify-center bg-gray-800 hover:bg-gray-700 text-gray-400 text-xs rounded border border-gray-700"
+      className="w-7 h-7 flex items-center justify-center bg-surface-tooltip hover:bg-surface-raised text-content-secondary text-xs rounded border border"
     >
       {label}
     </button>

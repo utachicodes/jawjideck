@@ -512,9 +512,9 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
   };
 
   return (
-    <div ref={containerRef} className="h-full w-full bg-gray-900/50 overflow-hidden relative">
+    <div ref={containerRef} className="h-full w-full bg-surface overflow-hidden relative">
       {waypoints.length === 0 ? (
-        <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+        <div className="h-full flex items-center justify-center text-content-secondary text-sm">
           {readOnly ? 'No mission loaded' : 'No waypoints to display'}
         </div>
       ) : (
@@ -528,11 +528,11 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
             <>
               <span className="flex items-center gap-1 pointer-events-none">
                 <span className="w-2 h-2 rounded-sm bg-green-500/60" />
-                <span className="text-gray-500">Terrain</span>
+                <span className="text-content-secondary">Terrain</span>
               </span>
               <span className="flex items-center gap-1 pointer-events-none">
                 <span className="w-3 h-0.5 bg-amber-500" style={{ borderStyle: 'dashed' }} />
-                <span className="text-gray-500">Safe +{safeAltitudeBuffer}m</span>
+                <span className="text-content-secondary">Safe +{safeAltitudeBuffer}m</span>
               </span>
             </>
           )}
@@ -551,7 +551,7 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
               Auto Adjust
             </button>
           )}
-          {!readOnly && <span className="text-gray-500 pointer-events-none">Drag points to edit</span>}
+          {!readOnly && <span className="text-content-secondary pointer-events-none">Drag points to edit</span>}
         </div>
         <svg
           ref={svgRef}
@@ -568,7 +568,7 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
                 x2={chartWidth}
                 y1={yScale(tick)}
                 y2={yScale(tick)}
-                stroke="#374151"
+                stroke="var(--border-subtle)"
                 strokeWidth={1}
                 strokeDasharray="2,2"
               />
@@ -581,7 +581,7 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
                 x2={chartWidth}
                 y1={yScale(0)}
                 y2={yScale(0)}
-                stroke="#4b5563"
+                stroke="var(--border-default)"
                 strokeWidth={1}
               />
             )}
@@ -678,7 +678,7 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
                     cy={y}
                     r={isDragging ? 10 : isCurrent ? 9 : isSelected ? 8 : 6}
                     fill={isDragging ? '#fbbf24' : isBelowSafe ? '#ef4444' : color}
-                    stroke={isDragging ? 'white' : isCurrent ? '#fbbf24' : isSelected ? 'white' : isBelowSafe ? '#fca5a5' : 'rgba(255,255,255,0.5)'}
+                    stroke={isDragging ? 'var(--bg-base)' : isCurrent ? '#fbbf24' : isSelected ? 'var(--bg-base)' : isBelowSafe ? '#fca5a5' : 'var(--border-default)'}
                     strokeWidth={isDragging || isCurrent || isSelected ? 2 : 1}
                   />
 
@@ -687,7 +687,7 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
                     x={x}
                     y={y - (isDragging ? 16 : isCurrent ? 14 : 12)}
                     textAnchor="middle"
-                    fill={isDragging ? '#fbbf24' : isCurrent ? '#f97316' : isBelowSafe ? '#ef4444' : '#d1d5db'}
+                    fill={isDragging ? '#fbbf24' : isCurrent ? '#f97316' : isBelowSafe ? '#ef4444' : 'var(--text-primary)'}
                     fontSize={isDragging ? 11 : isCurrent ? 11 : 10}
                     fontWeight={isDragging || isCurrent || isSelected ? 'bold' : 'normal'}
                   >
@@ -700,7 +700,7 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
                       x={x}
                       y={y + (y < chartHeight / 2 ? 20 : -20)}
                       textAnchor="middle"
-                      fill={isDragging ? '#fbbf24' : isCurrent ? '#f97316' : isBelowSafe ? '#ef4444' : '#9ca3af'}
+                      fill={isDragging ? '#fbbf24' : isCurrent ? '#f97316' : isBelowSafe ? '#ef4444' : 'var(--text-secondary)'}
                       fontSize={isDragging || isCurrent ? 11 : 9}
                       fontWeight={isDragging || isCurrent ? 'bold' : 'normal'}
                     >
@@ -730,7 +730,7 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
               x2={chartWidth}
               y1={chartHeight}
               y2={chartHeight}
-              stroke="#4b5563"
+              stroke="var(--border-default)"
               strokeWidth={1}
             />
 
@@ -740,18 +740,18 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
               x2={0}
               y1={0}
               y2={chartHeight}
-              stroke="#4b5563"
+              stroke="var(--border-default)"
               strokeWidth={1}
             />
 
             {/* X-axis ticks and labels */}
             {xTicks.map((tick, i) => (
               <g key={`x-tick-${i}`} transform={`translate(${xScale(tick)}, ${chartHeight})`}>
-                <line y1={0} y2={4} stroke="#6b7280" strokeWidth={1} />
+                <line y1={0} y2={4} stroke="var(--text-tertiary)" strokeWidth={1} />
                 <text
                   y={16}
                   textAnchor="middle"
-                  fill="#9ca3af"
+                  fill="var(--text-secondary)"
                   fontSize={9}
                 >
                   {formatDistance(tick)}
@@ -762,12 +762,12 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
             {/* Y-axis ticks and labels */}
             {yTicks.map((tick, i) => (
               <g key={`y-tick-${i}`} transform={`translate(0, ${yScale(tick)})`}>
-                <line x1={-4} x2={0} stroke="#6b7280" strokeWidth={1} />
+                <line x1={-4} x2={0} stroke="var(--text-tertiary)" strokeWidth={1} />
                 <text
                   x={-8}
                   textAnchor="end"
                   dominantBaseline="middle"
-                  fill="#9ca3af"
+                  fill="var(--text-secondary)"
                   fontSize={9}
                 >
                   {Math.round(tick)}
@@ -780,7 +780,7 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
               x={chartWidth / 2}
               y={chartHeight + 26}
               textAnchor="middle"
-              fill="#6b7280"
+              fill="var(--text-tertiary)"
               fontSize={10}
             >
               Distance
@@ -790,7 +790,7 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
               x={-chartHeight / 2}
               y={-35}
               textAnchor="middle"
-              fill="#6b7280"
+              fill="var(--text-tertiary)"
               fontSize={10}
               transform="rotate(-90)"
             >

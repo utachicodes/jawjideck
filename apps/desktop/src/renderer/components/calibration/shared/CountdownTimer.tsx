@@ -26,7 +26,7 @@ export function CountdownTimer({ seconds, total }: CountdownTimerProps) {
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="text-gray-700"
+          className="text-content-tertiary"
         />
       </svg>
 
@@ -58,10 +58,10 @@ export function CountdownTimer({ seconds, total }: CountdownTimerProps) {
 
       {/* Center content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-4xl font-bold text-white font-mono">
+        <span className="text-4xl font-bold text-content font-mono">
           {seconds}
         </span>
-        <span className="text-xs text-gray-400 mt-1">seconds</span>
+        <span className="text-xs text-content-secondary mt-1">seconds</span>
       </div>
 
       {/* Pulsing ring animation */}

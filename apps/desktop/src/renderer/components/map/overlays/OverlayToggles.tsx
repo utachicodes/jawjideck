@@ -43,10 +43,10 @@ export function OverlayToggles() {
           <button
             key={id}
             onClick={() => toggleOverlay(id)}
-            className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1.5 ${
+            className={`px-2 py-1 text-xs rounded shadow-sm transition-colors flex items-center gap-1.5 ${
               isActive
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+                : 'bg-surface-overlay text-content hover:bg-surface-overlay-light border border-subtle'
             }`}
           >
             {icon}

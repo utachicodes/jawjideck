@@ -70,7 +70,7 @@ export function InfoCard({
       </div>
       <div>
         <p className={`${textColor} font-medium`}>{title}</p>
-        <div className="text-sm text-gray-400 mt-1">{children}</div>
+        <div className="text-sm text-content-secondary mt-1">{children}</div>
       </div>
     </div>
   );
@@ -100,15 +100,15 @@ export function ExplanationCard({ title, explanations, className = '' }: Explana
   }
 
   return (
-    <div className={`bg-gray-800/30 rounded-xl border border-gray-700/30 p-5 ${className}`}>
-      <h4 className="font-medium text-gray-300 mb-3 flex items-center gap-2">
+    <div className={`bg-surface rounded-xl border border-subtle p-5 ${className}`}>
+      <h4 className="font-medium text-content mb-3 flex items-center gap-2">
         <Lightbulb className="w-4 h-4 text-yellow-400" /> {title}
       </h4>
       <div className={`grid grid-cols-${Math.min(explanations.length, 4)} gap-6 text-sm`}>
         {explanations.map((item) => (
           <div key={item.label}>
             <span className={`${item.color} font-medium`}>{item.label}</span>
-            <p className="text-gray-500 mt-1">{item.description}</p>
+            <p className="text-content-secondary mt-1">{item.description}</p>
           </div>
         ))}
       </div>
@@ -132,8 +132,8 @@ export function Tip({ children, className = '' }: TipProps) {
   }
 
   return (
-    <div className={`bg-zinc-800/50 rounded-lg p-3 ${className}`}>
-      <p className="text-xs text-zinc-500">
+    <div className={`bg-surface rounded-lg p-3 ${className}`}>
+      <p className="text-xs text-content-secondary">
         <span className="text-blue-400">Tip:</span> {children}
       </p>
     </div>

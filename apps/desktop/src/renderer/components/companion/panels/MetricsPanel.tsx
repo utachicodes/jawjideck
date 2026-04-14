@@ -58,8 +58,8 @@ function GaugeRing({ value, label, detail, color }: { value: number; label: stri
           %
         </text>
       </svg>
-      <span className="text-xs text-gray-400 font-medium">{label}</span>
-      {detail && <span className="text-[10px] text-gray-600">{detail}</span>}
+      <span className="text-xs text-content-secondary font-medium">{label}</span>
+      {detail && <span className="text-[10px] text-content-tertiary">{detail}</span>}
     </div>
   );
 }
@@ -70,18 +70,18 @@ function TempDisplay({ temp }: { temp: number }) {
 
   if (temp < 0) {
     return (
-      <div className="flex items-center justify-center p-3 bg-gray-800/50 rounded-lg">
-        <span className="text-xs text-gray-600">Temp sensor unavailable</span>
+      <div className="flex items-center justify-center p-3 bg-surface rounded-lg">
+        <span className="text-xs text-content-tertiary">Temp sensor unavailable</span>
       </div>
     );
   }
 
   return (
     <div className={`flex items-center justify-between p-3 ${bgColor} rounded-lg`}>
-      <span className="text-xs text-gray-400">CPU Temperature</span>
+      <span className="text-xs text-content-secondary">CPU Temperature</span>
       <div className="flex items-baseline gap-1">
         <span className={`text-xl font-mono font-bold ${color}`}>{temp.toFixed(0)}</span>
-        <span className="text-xs text-gray-500">°C</span>
+        <span className="text-xs text-content-secondary">°C</span>
       </div>
     </div>
   );
@@ -93,8 +93,8 @@ export function MetricsPanel() {
   if (!metrics) {
     return (
       <PanelContainer className="flex items-center justify-center">
-        <div className="text-center text-gray-600 text-xs">
-          <div className="text-gray-500 mb-1">No metrics data</div>
+        <div className="text-center text-content-tertiary text-xs">
+          <div className="text-content-secondary mb-1">No metrics data</div>
           <div>Waiting for agent connection...</div>
         </div>
       </PanelContainer>

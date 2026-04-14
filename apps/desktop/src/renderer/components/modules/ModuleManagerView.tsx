@@ -110,7 +110,7 @@ function ActivationProgress({ progress }: { progress: ModuleProgress }) {
   };
 
   return (
-    <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+    <div className="bg-surface rounded-xl border border-subtle p-5">
       <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
           {progress.stage === 'complete' ? (
@@ -125,13 +125,13 @@ function ActivationProgress({ progress }: { progress: ModuleProgress }) {
           <h3 className={`text-sm font-medium ${stageColors[progress.stage]}`}>
             {stageLabels[progress.stage]}
           </h3>
-          <p className="text-xs text-gray-400">{progress.message}</p>
+          <p className="text-xs text-content-secondary">{progress.message}</p>
         </div>
       </div>
 
       {/* Progress bar */}
       {progress.percent !== undefined && progress.stage !== 'error' && (
-        <div className="w-full h-1.5 bg-gray-700/50 rounded-full overflow-hidden">
+        <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-300 ${
               progress.stage === 'complete' ? 'bg-emerald-500' : 'bg-blue-500'
@@ -165,7 +165,7 @@ function ModuleCard({
     .join(' ');
 
   return (
-    <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-4 flex items-start gap-4">
+    <div className="bg-surface rounded-xl border border-subtle p-4 flex items-start gap-4">
       {/* Icon */}
       <div className="w-12 h-12 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
         <PackageIcon className="w-6 h-6 text-purple-400" />
@@ -174,7 +174,7 @@ function ModuleCard({
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <h3 className="text-sm font-medium text-white truncate">{displayName}</h3>
+          <h3 className="text-sm font-medium text-content truncate">{displayName}</h3>
           {hasUpdate && (
             <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
               <ArrowUpIcon className="w-2.5 h-2.5" />
@@ -182,12 +182,12 @@ function ModuleCard({
             </span>
           )}
         </div>
-        <p className="text-xs text-gray-500 font-mono mb-2">{module.slug}</p>
+        <p className="text-xs text-content-secondary font-mono mb-2">{module.slug}</p>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-400">v{module.version}</span>
+          <span className="text-xs text-content-secondary">v{module.version}</span>
           <LicenseTypeBadge type={module.licenseType} />
           {module.bundleName && (
-            <span className="text-xs text-gray-500">{module.bundleName}</span>
+            <span className="text-xs text-content-secondary">{module.bundleName}</span>
           )}
         </div>
       </div>
@@ -207,7 +207,7 @@ function ModuleCard({
             </button>
             <button
               onClick={() => setConfirmRemove(false)}
-              className="px-2 py-1 text-xs bg-gray-700/50 text-gray-400 rounded hover:bg-gray-700 transition-colors"
+              className="px-2 py-1 text-xs bg-surface-raised text-content-secondary rounded hover:bg-surface-raised transition-colors"
             >
               Cancel
             </button>
@@ -215,7 +215,7 @@ function ModuleCard({
         ) : (
           <button
             onClick={() => setConfirmRemove(true)}
-            className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="p-1.5 rounded-lg text-content-secondary hover:text-red-400 hover:bg-red-500/10 transition-colors"
             title="Remove module"
           >
             <TrashIcon className="w-4 h-4" />
@@ -233,11 +233,11 @@ function ModuleCard({
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-gray-800/50 border border-gray-700/30 flex items-center justify-center mb-5">
-        <PackageIcon className="w-8 h-8 text-gray-600" />
+      <div className="w-16 h-16 rounded-2xl bg-surface border border-subtle flex items-center justify-center mb-5">
+        <PackageIcon className="w-8 h-8 text-content-tertiary" />
       </div>
-      <h3 className="text-lg font-medium text-gray-300 mb-2">No modules installed</h3>
-      <p className="text-sm text-gray-500 max-w-sm leading-relaxed">
+      <h3 className="text-lg font-medium text-content mb-2">No modules installed</h3>
+      <p className="text-sm text-content-secondary max-w-sm leading-relaxed">
         Enter a license key above to activate and download your modules.
         License keys are provided when you purchase modules from the ArduDeck marketplace.
       </p>
@@ -324,18 +324,18 @@ export function ModuleManagerView() {
             <PackageIcon className="w-5 h-5 text-purple-400" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-white">Module Manager</h1>
-            <p className="text-sm text-gray-400">Activate license keys and manage installed modules</p>
+            <h1 className="text-xl font-semibold text-content">Module Manager</h1>
+            <p className="text-sm text-content-secondary">Activate license keys and manage installed modules</p>
           </div>
         </div>
 
         {/* License Key Input */}
-        <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+        <div className="bg-surface rounded-xl border border-subtle p-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
               <KeyIcon className="w-4 h-4 text-blue-400" />
             </div>
-            <h2 className="text-sm font-medium text-gray-200">Activate License</h2>
+            <h2 className="text-sm font-medium text-content">Activate License</h2>
           </div>
 
           <div className="flex gap-2">
@@ -348,14 +348,14 @@ export function ModuleManagerView() {
                 onKeyDown={handleKeyDown}
                 placeholder="ARDUDECK-xxxxxxxx-xxxxxxxx"
                 disabled={activating}
-                className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700/50 rounded-lg text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50 font-mono"
+                className="w-full px-3 py-2.5 bg-surface-input border border-subtle rounded-lg text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50 font-mono"
                 spellCheck={false}
                 autoComplete="off"
               />
               {!keyInput && (
                 <button
                   onClick={handlePaste}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-xs text-gray-500 hover:text-gray-300 bg-gray-800/50 rounded transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-xs text-content-secondary hover:text-content bg-surface rounded transition-colors"
                 >
                   Paste
                 </button>
@@ -387,16 +387,16 @@ export function ModuleManagerView() {
         {/* Installed Modules */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-gray-300">
+            <h2 className="text-sm font-medium text-content">
               Installed Modules
               {modules.length > 0 && (
-                <span className="ml-2 text-xs text-gray-500">({modules.length})</span>
+                <span className="ml-2 text-xs text-content-secondary">({modules.length})</span>
               )}
             </h2>
             {modules.length > 0 && (
               <button
                 onClick={() => checkUpdates()}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-400 hover:text-gray-200 bg-gray-800/30 hover:bg-gray-800/50 border border-gray-700/30 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-content-secondary hover:text-content bg-surface hover:bg-surface border border-subtle rounded-lg transition-colors"
               >
                 <RefreshIcon className="w-3.5 h-3.5" />
                 Check Updates
@@ -436,8 +436,8 @@ export function ModuleManagerView() {
             <div className="space-y-2">
               {updates.map((u) => (
                 <div key={u.slug} className="flex items-center justify-between text-sm">
-                  <span className="text-gray-300">{u.name}</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-content">{u.name}</span>
+                  <span className="text-xs text-content-secondary">
                     {u.currentVersion} → <span className="text-blue-400">{u.latestVersion}</span>
                   </span>
                 </div>

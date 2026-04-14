@@ -6,8 +6,11 @@ import {
   DockviewApi,
   SerializedDockview,
   Orientation,
+  themeAbyss,
+  themeLight,
 } from 'dockview-react';
 import 'dockview-react/dist/styles/dockview.css';
+import { useResolvedTheme } from '../../hooks/useTheme';
 
 import { useCompanionStore } from '../../stores/companion-store';
 import { useLayoutStore } from '../../stores/layout-store';
@@ -186,7 +189,7 @@ function loadPresetLayout(api: DockviewApi, preset: PresetLayoutKey): void {
 
 function CompanionTabBar({ activeTab, onTabChange }: { activeTab: CompanionTab; onTabChange: (tab: CompanionTab) => void }) {
   return (
-    <div className="flex items-center gap-0.5 px-3 py-1.5 bg-gray-800/60 border-b border-gray-700/50">
+    <div className="flex items-center gap-0.5 px-3 py-1.5 bg-surface border-b border-subtle">
       {TAB_ITEMS.map(({ id, label, icon }) => (
         <button
           key={id}
@@ -194,7 +197,7 @@ function CompanionTabBar({ activeTab, onTabChange }: { activeTab: CompanionTab; 
           className={`px-3 py-1.5 text-xs rounded transition-colors flex items-center gap-1.5 ${
             activeTab === id
               ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/40'
+              : 'text-content-secondary hover:text-content hover:bg-surface-raised'
           }`}
         >
           <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -241,16 +244,16 @@ function DroneBridgeTab() {
     return (
       <div className="h-full flex items-center justify-center p-8">
         <div className="max-w-md text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gray-800/50 border border-gray-700/30">
-            <svg className="w-7 h-7 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-surface border border-subtle">
+            <svg className="w-7 h-7 text-content-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.858 15.355-5.858 21.213 0" />
             </svg>
           </div>
-          <h3 className="text-sm font-medium text-gray-300">
+          <h3 className="text-sm font-medium text-content">
             {autoProbing ? 'Scanning for DroneBridge...' : 'No DroneBridge Detected'}
           </h3>
           {autoProbing ? (
-            <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+            <div className="flex items-center justify-center gap-2 text-xs text-content-secondary">
               <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -258,7 +261,7 @@ function DroneBridgeTab() {
               Trying 192.168.2.1...
             </div>
           ) : (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-content-secondary">
               Connect to your DroneBridge WiFi network, or read settings directly via USB.
             </p>
           )}
@@ -266,9 +269,9 @@ function DroneBridgeTab() {
             <div className="space-y-3">
               <DroneBridgeUsbReader />
               <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-gray-700/30" />
-                <span className="text-[10px] text-gray-600">or connect via WiFi</span>
-                <div className="flex-1 h-px bg-gray-700/30" />
+                <div className="flex-1 h-px bg-surface-raised" />
+                <span className="text-[10px] text-content-tertiary">or connect via WiFi</span>
+                <div className="flex-1 h-px bg-surface-raised" />
               </div>
               <DroneBridgeManualProbe />
             </div>
@@ -279,7 +282,7 @@ function DroneBridgeTab() {
   }
 
   return (
-    <div className="h-full grid grid-cols-2 gap-0 divide-x divide-gray-700/30">
+    <div className="h-full grid grid-cols-2 gap-0 divide-x divide-subtle/30">
       <div className="overflow-y-auto">
         <DroneBridgeStatusPanel />
       </div>
@@ -351,7 +354,7 @@ function DroneBridgeUsbReader() {
     const s = result.settings;
     return (
       <div className="space-y-3 text-left">
-        <div className="bg-gray-800/50 border border-gray-700/30 rounded-xl p-4 space-y-3">
+        <div className="bg-surface border border-subtle rounded-xl p-4 space-y-3">
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
             <span className="text-sm font-medium text-emerald-400">Device Found (USB)</span>
@@ -360,40 +363,40 @@ function DroneBridgeUsbReader() {
           <div className="space-y-1.5">
             {result.ssid && (
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">WiFi SSID</span>
-                <span className="text-gray-200 font-mono">{result.ssid}</span>
+                <span className="text-content-secondary">WiFi SSID</span>
+                <span className="text-content font-mono">{result.ssid}</span>
               </div>
             )}
             {s['wifi_pass'] != null && (
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Password</span>
-                <span className="text-gray-200 font-mono">{String(s['wifi_pass'])}</span>
+                <span className="text-content-secondary">Password</span>
+                <span className="text-content font-mono">{String(s['wifi_pass'])}</span>
               </div>
             )}
             {result.apIp && (
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">AP IP</span>
-                <span className="text-gray-200 font-mono">{result.apIp}</span>
+                <span className="text-content-secondary">AP IP</span>
+                <span className="text-content font-mono">{result.apIp}</span>
               </div>
             )}
             {s['esp32_mode'] != null && (
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Mode</span>
-                <span className="text-gray-200">{
+                <span className="text-content-secondary">Mode</span>
+                <span className="text-content">{
                   ({ 1: 'Access Point', 2: 'Station', 3: 'Long Range', 4: 'ESP-NOW Air', 5: 'ESP-NOW Ground' } as Record<number, string>)[Number(s['esp32_mode'])] ?? `Mode ${s['esp32_mode']}`
                 }</span>
               </div>
             )}
             {s['baud'] != null && (
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Baud Rate</span>
-                <span className="text-gray-200 font-mono">{String(s['baud'])}</span>
+                <span className="text-content-secondary">Baud Rate</span>
+                <span className="text-content font-mono">{String(s['baud'])}</span>
               </div>
             )}
             {s['proto'] != null && (
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Protocol</span>
-                <span className="text-gray-200">{
+                <span className="text-content-secondary">Protocol</span>
+                <span className="text-content">{
                   ({ 0: 'MSP / LTM', 1: 'MAVLink', 2: 'Transparent' } as Record<number, string>)[Number(s['proto'])] ?? `Proto ${s['proto']}`
                 }</span>
               </div>
@@ -417,7 +420,7 @@ function DroneBridgeUsbReader() {
 
         <button
           onClick={() => setResult(null)}
-          className="w-full text-[10px] text-gray-600 hover:text-gray-400 transition-colors"
+          className="w-full text-[10px] text-content-tertiary hover:text-content-secondary transition-colors"
         >
           Back
         </button>
@@ -432,7 +435,7 @@ function DroneBridgeUsbReader() {
           value={selectedPort}
           onChange={(e) => setSelectedPort(e.target.value)}
           disabled={reading}
-          className="flex-1 bg-gray-900/60 border border-gray-700/50 rounded-lg px-3 py-2 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
+          className="flex-1 bg-surface-input border border-subtle rounded-lg px-3 py-2 text-xs text-content focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
         >
           <option value="">Select USB port...</option>
           {ports.map((port) => (
@@ -442,7 +445,7 @@ function DroneBridgeUsbReader() {
         <button
           onClick={handleRefresh}
           disabled={reading}
-          className="px-2 py-2 bg-gray-700/50 hover:bg-gray-600/50 disabled:opacity-40 text-gray-300 rounded-lg transition-colors"
+          className="px-2 py-2 bg-surface-raised hover:bg-surface-raised disabled:opacity-40 text-content rounded-lg transition-colors"
           title="Refresh ports"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -453,7 +456,7 @@ function DroneBridgeUsbReader() {
       <button
         onClick={handleRead}
         disabled={!selectedPort || reading}
-        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-amber-600/80 hover:bg-amber-500/80 disabled:bg-gray-700/50 disabled:text-gray-600 text-white text-xs font-medium rounded-lg transition-colors"
+        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-amber-600/80 hover:bg-amber-500/80 disabled:bg-surface-raised disabled:text-content-tertiary text-white text-xs font-medium rounded-lg transition-colors"
       >
         {reading ? (
           <>
@@ -473,7 +476,7 @@ function DroneBridgeUsbReader() {
         )}
       </button>
       {reading && (
-        <p className="text-[10px] text-gray-600 text-center">
+        <p className="text-[10px] text-content-tertiary text-center">
           Resetting device and reading boot log (~10s)
         </p>
       )}
@@ -516,7 +519,7 @@ function DroneBridgeManualProbe() {
         value={ip}
         onChange={(e) => setIp(e.target.value)}
         placeholder="192.168.2.1"
-        className="flex-1 bg-gray-900/60 border border-gray-700/50 rounded-lg px-3 py-2 text-xs text-gray-200 font-mono placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+        className="flex-1 bg-surface-input border border-subtle rounded-lg px-3 py-2 text-xs text-content font-mono placeholder-content-tertiary focus:outline-none focus:ring-1 focus:ring-blue-500/50"
         onKeyDown={(e) => { if (e.key === 'Enter') handleProbe(); }}
       />
       <button
@@ -533,6 +536,7 @@ function DroneBridgeManualProbe() {
 // ─── Dashboard tab ──────────────────────────────────────────────────────────
 
 function DashboardTab() {
+  const resolvedTheme = useResolvedTheme();
   const apiRef = useRef<DockviewApi | null>(null);
   const connectionState = useCompanionStore((s) => s.connectionState);
   const { layouts: allLayouts, saveLayout, loadLayouts } = useLayoutStore();
@@ -613,21 +617,21 @@ function DashboardTab() {
     return (
       <div className="h-full flex items-center justify-center p-8">
         <div className="max-w-lg text-center space-y-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gray-800/50 border border-gray-700/30">
-            <svg className="w-7 h-7 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-surface border border-subtle">
+            <svg className="w-7 h-7 text-content-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
             </svg>
           </div>
           <div>
-            <h3 className="text-sm font-medium text-gray-300">ArduDeck Agent Not Connected</h3>
-            <p className="text-xs text-gray-500 mt-2 max-w-sm mx-auto">
+            <h3 className="text-sm font-medium text-content">ArduDeck Agent Not Connected</h3>
+            <p className="text-xs text-content-secondary mt-2 max-w-sm mx-auto">
               Install the ArduDeck Agent on your companion computer to enable real-time metrics, terminal access, and service management.
             </p>
           </div>
 
-          <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5 text-left space-y-4">
-            <h4 className="text-xs font-medium text-gray-300">Quick Install</h4>
-            <div className="bg-gray-900/60 rounded-lg px-3 py-2 font-mono text-xs text-gray-400 select-all">
+          <div className="bg-surface rounded-xl border border-subtle p-5 text-left space-y-4">
+            <h4 className="text-xs font-medium text-content">Quick Install</h4>
+            <div className="bg-surface-input rounded-lg px-3 py-2 font-mono text-xs text-content-secondary select-all">
               curl -fsSL https://ardudeck.com/agent/install.sh | bash
             </div>
             <DashboardConnectForm />
@@ -653,7 +657,7 @@ function DashboardTab() {
         <DockviewReact
           components={dockviewComponents}
           onReady={handleReady}
-          className="dockview-theme-abyss"
+          theme={resolvedTheme === 'light' ? themeLight : themeAbyss}
         />
       </div>
     </div>
@@ -674,14 +678,14 @@ function DashboardConnectForm() {
 
   return (
     <div className="space-y-3">
-      <h4 className="text-xs font-medium text-gray-300">Connect to Agent</h4>
+      <h4 className="text-xs font-medium text-content">Connect to Agent</h4>
       <div className="grid grid-cols-2 gap-2">
         <input
           type="text"
           value={host}
           onChange={(e) => setHost(e.target.value)}
           placeholder="192.168.1.100"
-          className="bg-gray-900/60 border border-gray-700/50 rounded-lg px-3 py-2 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+          className="bg-surface-input border border-subtle rounded-lg px-3 py-2 text-xs text-content placeholder-content-tertiary focus:outline-none focus:ring-1 focus:ring-blue-500/50"
           onKeyDown={(e) => { if (e.key === 'Enter') handleConnect(); }}
         />
         <input
@@ -689,14 +693,14 @@ function DashboardConnectForm() {
           value={token}
           onChange={(e) => setToken(e.target.value)}
           placeholder="Pairing token"
-          className="bg-gray-900/60 border border-gray-700/50 rounded-lg px-3 py-2 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+          className="bg-surface-input border border-subtle rounded-lg px-3 py-2 text-xs text-content placeholder-content-tertiary focus:outline-none focus:ring-1 focus:ring-blue-500/50"
           onKeyDown={(e) => { if (e.key === 'Enter') handleConnect(); }}
         />
       </div>
       <button
         onClick={handleConnect}
         disabled={connecting || !host.trim() || !token.trim()}
-        className="w-full py-2 bg-blue-600/80 hover:bg-blue-500/80 disabled:bg-gray-700/50 disabled:text-gray-600 text-white text-xs font-medium rounded-lg transition-colors"
+        className="w-full py-2 bg-blue-600/80 hover:bg-blue-500/80 disabled:bg-surface-raised disabled:text-content-tertiary text-white text-xs font-medium rounded-lg transition-colors"
       >
         {connecting ? 'Connecting...' : 'Connect'}
       </button>
@@ -721,14 +725,14 @@ function CompanionStatusBar() {
     connected: 'text-emerald-400',
     connecting: 'text-yellow-400',
     reconnecting: 'text-yellow-400',
-    disconnected: 'text-gray-500',
+    disconnected: 'text-content-secondary',
   };
 
   return (
-    <div className="flex items-center gap-4 px-3 py-1 bg-gray-800/40 border-b border-gray-700/30 text-xs">
+    <div className="flex items-center gap-4 px-3 py-1 bg-surface border-b border-subtle text-xs">
       <div className="flex items-center gap-1.5">
         <div className={`w-1.5 h-1.5 rounded-full ${stateDots[connectionState.state] ?? 'bg-gray-600'}`} />
-        <span className={stateColors[connectionState.state] ?? 'text-gray-500'}>
+        <span className={stateColors[connectionState.state] ?? 'text-content-secondary'}>
           {connectionState.state === 'connected' && connectionState.host
             ? connectionState.host
             : connectionState.state === 'reconnecting'
@@ -738,18 +742,18 @@ function CompanionStatusBar() {
         </span>
       </div>
       {connectionState.state === 'connected' && connectionState.agentVersion && (
-        <span className="text-gray-600">Agent v{connectionState.agentVersion}</span>
+        <span className="text-content-tertiary">Agent v{connectionState.agentVersion}</span>
       )}
       {connectionState.versionMismatch && (
         <span className="text-yellow-500">Protocol version mismatch - update your agent</span>
       )}
       {metrics && (
         <>
-          <span className="text-gray-600">|</span>
-          <span className="text-gray-400">CPU {metrics.cpu.toFixed(0)}%</span>
-          <span className="text-gray-400">RAM {metrics.ram.toFixed(0)}%</span>
+          <span className="text-content-tertiary">|</span>
+          <span className="text-content-secondary">CPU {metrics.cpu.toFixed(0)}%</span>
+          <span className="text-content-secondary">RAM {metrics.ram.toFixed(0)}%</span>
           {metrics.temp > 0 && (
-            <span className={metrics.temp > 80 ? 'text-red-400' : 'text-gray-400'}>
+            <span className={metrics.temp > 80 ? 'text-red-400' : 'text-content-secondary'}>
               {metrics.temp.toFixed(0)}C
             </span>
           )}
@@ -783,12 +787,12 @@ function CompanionLayoutToolbar({
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/60 border-b border-gray-700/50">
-      <span className="text-xs text-gray-500">Layout:</span>
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-surface border-b border-subtle">
+      <span className="text-xs text-content-secondary">Layout:</span>
       <select
         value={activeLayout}
         onChange={(e) => onLoad(e.target.value)}
-        className="bg-gray-700/50 border border-gray-600/50 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+        className="bg-surface-raised border border rounded px-2 py-1 text-xs text-content focus:outline-none focus:ring-1 focus:ring-blue-500/50"
       >
         <optgroup label="Presets">
           {Object.entries(PRESET_LAYOUTS).map(([key, name]) => (
@@ -811,7 +815,7 @@ function CompanionLayoutToolbar({
             value={layoutName}
             onChange={(e) => setLayoutName(e.target.value)}
             placeholder="Layout name"
-            className="bg-gray-700/50 border border-gray-600/50 rounded px-2 py-1 text-xs text-gray-200 w-32 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+            className="bg-surface-raised border border rounded px-2 py-1 text-xs text-content w-32 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
             autoFocus
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSave();
@@ -819,12 +823,12 @@ function CompanionLayoutToolbar({
             }}
           />
           <button onClick={handleSave} className="px-2 py-1 bg-blue-600/80 hover:bg-blue-500/80 text-white text-xs rounded transition-colors">Save</button>
-          <button onClick={() => setShowSaveDialog(false)} className="px-2 py-1 bg-gray-600/50 hover:bg-gray-500/50 text-gray-300 text-xs rounded transition-colors">Cancel</button>
+          <button onClick={() => setShowSaveDialog(false)} className="px-2 py-1 bg-surface-raised hover:bg-surface-raised text-content text-xs rounded transition-colors">Cancel</button>
         </div>
       ) : (
         <>
-          <button onClick={() => setShowSaveDialog(true)} className="px-2 py-1 bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 text-xs rounded transition-colors">Save As...</button>
-          <button onClick={onReset} className="px-2 py-1 bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 text-xs rounded transition-colors">Reset</button>
+          <button onClick={() => setShowSaveDialog(true)} className="px-2 py-1 bg-surface-raised hover:bg-surface-raised text-content text-xs rounded transition-colors">Save As...</button>
+          <button onClick={onReset} className="px-2 py-1 bg-surface-raised hover:bg-surface-raised text-content text-xs rounded transition-colors">Reset</button>
         </>
       )}
 
@@ -844,7 +848,7 @@ function CompanionAddPanelDropdown({ onAddPanel }: { onAddPanel: (id: string, co
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="px-2 py-1 bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 text-xs rounded transition-colors flex items-center gap-1"
+        className="px-2 py-1 bg-surface-raised hover:bg-surface-raised text-content text-xs rounded transition-colors flex items-center gap-1"
       >
         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -855,12 +859,12 @@ function CompanionAddPanelDropdown({ onAddPanel }: { onAddPanel: (id: string, co
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700/50 rounded-lg shadow-xl z-20 py-1 min-w-[150px]">
+          <div className="absolute right-0 top-full mt-1 bg-surface-tooltip border border-subtle rounded-lg shadow-xl z-20 py-1 min-w-[150px]">
             {Object.entries(COMPANION_PANEL_COMPONENTS).map(([id, { component, title }]) => (
               <button
                 key={id}
                 onClick={() => { onAddPanel(id, component, title); setIsOpen(false); }}
-                className="w-full px-3 py-1.5 text-left text-xs text-gray-300 hover:bg-gray-700/50 transition-colors"
+                className="w-full px-3 py-1.5 text-left text-xs text-content hover:bg-surface-raised transition-colors"
               >
                 {title}
               </button>
@@ -895,7 +899,7 @@ export function CompanionDashboard() {
   }, [setDroneBridgeIp]);
 
   return (
-    <div className="h-full flex flex-col bg-gray-900">
+    <div className="h-full flex flex-col bg-surface-input">
       <CompanionTabBar activeTab={activeTab} onTabChange={setActiveTab} />
       <div className="flex-1 overflow-hidden">
         {activeTab === 'store' && <CompanionStoreTab onFlashComplete={handleFlashComplete} />}

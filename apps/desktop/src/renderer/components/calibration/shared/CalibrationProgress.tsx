@@ -28,7 +28,7 @@ export function CalibrationProgress({
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="text-gray-700"
+          className="text-content-tertiary"
         />
       </svg>
 
@@ -60,10 +60,10 @@ export function CalibrationProgress({
 
       {/* Center content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-bold text-white">
+        <span className="text-3xl font-bold text-content">
           {Math.round(progress)}%
         </span>
-        <span className="text-xs text-gray-400 mt-1">
+        <span className="text-xs text-content-secondary mt-1">
           {progress < 100 ? 'Calibrating...' : 'Complete'}
         </span>
       </div>

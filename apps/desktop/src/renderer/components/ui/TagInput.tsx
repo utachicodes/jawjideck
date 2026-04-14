@@ -99,19 +99,19 @@ export function TagInput({ tags, onChange, placeholder = 'Add tags...', suggesti
   return (
     <div ref={containerRef} className="relative">
       <div
-        className="flex flex-wrap items-center gap-1.5 px-2.5 py-1.5 bg-gray-900/50 border border-gray-700 rounded-lg focus-within:border-blue-500/50 min-h-[38px] cursor-text"
+        className="flex flex-wrap items-center gap-1.5 px-2.5 py-1.5 bg-surface-input border border-border rounded-lg focus-within:border-blue-500/50 min-h-[38px] cursor-text"
         onClick={() => inputRef.current?.focus()}
       >
         {/* Tag pills */}
         {tags.map(tag => (
           <span
             key={tag}
-            className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-gray-700/50 text-gray-300 rounded group"
+            className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-surface-raised text-content rounded group"
           >
             {tag}
             <button
               onClick={(e) => { e.stopPropagation(); removeTag(tag); }}
-              className="text-gray-500 hover:text-gray-200 transition-colors"
+              className="text-content-secondary hover:text-content transition-colors"
               type="button"
             >
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -131,13 +131,13 @@ export function TagInput({ tags, onChange, placeholder = 'Add tags...', suggesti
           onFocus={() => setIsFocused(true)}
           onBlur={() => { /* handled by click-outside */ }}
           placeholder={tags.length === 0 ? placeholder : ''}
-          className="flex-1 min-w-[80px] bg-transparent border-none outline-none text-sm text-white placeholder-gray-500 py-0.5"
+          className="flex-1 min-w-[80px] bg-transparent border-none outline-none text-sm text-content placeholder-content-tertiary py-0.5"
         />
       </div>
 
       {/* Suggestions dropdown */}
       {showSuggestions && filtered.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl overflow-hidden z-10">
+        <div className="absolute left-0 right-0 top-full mt-1 bg-surface-tooltip border border-border rounded-lg shadow-xl overflow-hidden z-10">
           {filtered.map((suggestion, idx) => (
             <button
               key={suggestion}
@@ -147,7 +147,7 @@ export function TagInput({ tags, onChange, placeholder = 'Add tags...', suggesti
               className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${
                 idx === highlightIndex
                   ? 'bg-blue-600/30 text-blue-300'
-                  : 'text-gray-300 hover:bg-gray-700/50'
+                  : 'text-content hover:bg-surface-raised'
               }`}
             >
               {suggestion}

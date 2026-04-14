@@ -191,14 +191,14 @@ const PidTuningTab: React.FC = () => {
     <div className="p-6 space-y-6">
       {/* Parameters not loaded warning */}
       {!hasParameters && (
-        <div className="bg-amber-500/10 rounded-xl border border-amber-500/30 p-4 flex items-center justify-between">
+        <div className="bg-amber-500/10 rounded-xl border-amber-500/30 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
               <Lightbulb className="w-5 h-5 text-amber-400" />
             </div>
             <div>
               <p className="text-amber-300 font-medium">Parameters Not Loaded</p>
-              <p className="text-xs text-gray-500">Fetch parameters from the FC to use presets and adjust values</p>
+              <p className="text-xs text-content-secondary">Fetch parameters from the FC to use presets and adjust values</p>
             </div>
           </div>
           <button
@@ -213,23 +213,23 @@ const PidTuningTab: React.FC = () => {
 
       {/* Warning: No recognized PID scheme found (suppress while still loading) */}
       {hasParameters && !isLoading && isUnknown && (
-        <div className="bg-red-500/10 rounded-xl border border-red-500/30 p-4">
+        <div className="bg-red-500/10 rounded-xl border-red-500/30 p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0">
               <AlertTriangle className="w-5 h-5 text-red-400" />
             </div>
             <div>
               <p className="text-red-300 font-medium">Unrecognized PID Parameters</p>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-content-secondary mt-1">
                 Could not detect a known PID parameter scheme on this board.
-                Expected <span className="font-mono text-gray-300">ATC_RAT_*</span>,
-                <span className="font-mono text-gray-300"> RATE_RLL_*</span>,
-                <span className="font-mono text-gray-300"> RLL_RATE_*</span>,
-                <span className="font-mono text-gray-300"> RLL2SRV_*</span>, or
-                <span className="font-mono text-gray-300"> Q_A_RAT_*</span> parameters.
+                Expected <span className="font-mono text-content">ATC_RAT_*</span>,
+                <span className="font-mono text-content"> RATE_RLL_*</span>,
+                <span className="font-mono text-content"> RLL_RATE_*</span>,
+                <span className="font-mono text-content"> RLL2SRV_*</span>, or
+                <span className="font-mono text-content"> Q_A_RAT_*</span> parameters.
               </p>
-              <p className="text-sm text-gray-500 mt-1">
-                Use the <span className="font-medium text-gray-300">All Parameters</span> tab to find and edit your board's PID parameters directly.
+              <p className="text-sm text-content-secondary mt-1">
+                Use the <span className="font-medium text-content">All Parameters</span> tab to find and edit your board's PID parameters directly.
               </p>
             </div>
           </div>
@@ -264,42 +264,42 @@ const PidTuningTab: React.FC = () => {
       {scheme && pidValues && (
       <div className="grid grid-cols-3 gap-5">
         {/* Roll */}
-        <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-xl border border-blue-500/20 p-5">
+        <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-xl border-blue-500/20 p-5">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
               <MoveHorizontal className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-white">Roll</h3>
-              <p className="text-xs text-gray-500">Left/right tilt</p>
+              <h3 className="text-lg font-medium text-content">Roll</h3>
+              <p className="text-xs text-content-secondary">Left/right tilt</p>
             </div>
           </div>
           {renderAxisSliders(scheme.roll, scheme, pidValues.roll)}
         </div>
 
         {/* Pitch */}
-        <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 rounded-xl border border-emerald-500/20 p-5">
+        <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 rounded-xl border-emerald-500/20 p-5">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
               <MoveVertical className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-white">Pitch</h3>
-              <p className="text-xs text-gray-500">Forward/back tilt</p>
+              <h3 className="text-lg font-medium text-content">Pitch</h3>
+              <p className="text-xs text-content-secondary">Forward/back tilt</p>
             </div>
           </div>
           {renderAxisSliders(scheme.pitch, scheme, pidValues.pitch)}
         </div>
 
         {/* Yaw */}
-        <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 rounded-xl border border-orange-500/20 p-5">
+        <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 rounded-xl border-orange-500/20 p-5">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
               <RefreshCw className="w-5 h-5 text-orange-400" />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-white">Yaw</h3>
-              <p className="text-xs text-gray-500">Rotation</p>
+              <h3 className="text-lg font-medium text-content">Yaw</h3>
+              <p className="text-xs text-content-secondary">Rotation</p>
             </div>
           </div>
           {renderAxisSliders(scheme.yaw, scheme, pidValues.yaw)}
@@ -309,14 +309,14 @@ const PidTuningTab: React.FC = () => {
 
       {/* Acceleration Limits - only for copter-type schemes */}
       {scheme?.accel && accelValues && (
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+      <div className="bg-surface rounded-xl border-subtle p-5">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-lg bg-rose-500/20 flex items-center justify-center">
             <Gauge className="w-5 h-5 text-rose-400" />
           </div>
           <div>
-            <h3 className="text-lg font-medium text-white">Acceleration Limits</h3>
-            <p className="text-xs text-gray-500">Max rotational acceleration per axis (deg/s²). Set by Initial Parameters and Autotune.</p>
+            <h3 className="text-lg font-medium text-content">Acceleration Limits</h3>
+            <p className="text-xs text-content-secondary">Max rotational acceleration per axis (deg/s²). Set by Initial Parameters and Autotune.</p>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-5">
@@ -358,33 +358,33 @@ const PidTuningTab: React.FC = () => {
 
       {/* Explanation card */}
       {showExplanationCards && (
-        <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
-          <h4 className="font-medium text-gray-300 mb-3 flex items-center gap-2">
+        <div className="bg-surface rounded-xl border-subtle p-5">
+          <h4 className="font-medium text-content mb-3 flex items-center gap-2">
             <Lightbulb className="w-4 h-4 text-yellow-400" /> What do these numbers mean?
           </h4>
           <div className={`grid ${scheme?.hasFF !== false ? 'grid-cols-4' : 'grid-cols-3'} gap-6 text-sm`}>
             <div>
               <span className="text-blue-400 font-medium">P (Proportional)</span>
-              <p className="text-gray-500 mt-1">
+              <p className="text-content-secondary mt-1">
                 How quickly your aircraft reacts to errors. Too high = oscillation/vibration. Too low = mushy feeling.
               </p>
             </div>
             <div>
               <span className="text-emerald-400 font-medium">I (Integral)</span>
-              <p className="text-gray-500 mt-1">
+              <p className="text-content-secondary mt-1">
                 Keeps your aircraft on target over time. Helps fight wind and drift. Too high = slow wobbles.
               </p>
             </div>
             <div>
               <span className="text-purple-400 font-medium">D (Derivative)</span>
-              <p className="text-gray-500 mt-1">
+              <p className="text-content-secondary mt-1">
                 Dampens overshooting and oscillation. Too high = hot motors and noise. Too low = bouncy stops.
               </p>
             </div>
             {scheme?.hasFF !== false && (
             <div>
               <span className="text-amber-400 font-medium">FF (Feedforward)</span>
-              <p className="text-gray-500 mt-1">
+              <p className="text-content-secondary mt-1">
                 Anticipates stick movements for faster response. Useful for agile flying but can cause overshoot.
               </p>
             </div>

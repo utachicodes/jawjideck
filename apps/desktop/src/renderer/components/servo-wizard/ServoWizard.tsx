@@ -176,7 +176,7 @@ export default function ServoWizard() {
   // Show loading state while checking servo support
   if (isCheckingSupport || servoSupported === null) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] h-full gap-4 text-zinc-400">
+      <div className="flex flex-col items-center justify-center min-h-[400px] h-full gap-4 text-content-secondary">
         <svg className="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -190,12 +190,12 @@ export default function ServoWizard() {
   if (!servoSupported) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-6 p-8 max-w-lg mx-auto text-center">
-        <CircleSlash className="w-16 h-16 text-zinc-500" />
+        <CircleSlash className="w-16 h-16 text-content-secondary" />
         <div>
-          <h2 className="text-xl font-bold text-white mb-2">
+          <h2 className="text-xl font-bold text-content mb-2">
             {isMultirotor ? 'Board Configured as Multirotor' : 'Servo Setup Not Available'}
           </h2>
-          <p className="text-zinc-400">{supportError}</p>
+          <p className="text-content-secondary">{supportError}</p>
         </div>
 
         {/* Show conversion options if it's a multirotor */}
@@ -237,13 +237,13 @@ export default function ServoWizard() {
 
               {/* Show reconnect prompt after successful change */}
               {mixerChangeStatus?.type === 'success' && (
-                <p className="text-xs text-zinc-400 mt-1">
+                <p className="text-xs text-content-secondary mt-1">
                   Use the connection panel at the top to reconnect.
                 </p>
               )}
             </div>
 
-            <p className="text-xs text-zinc-500 mt-3">
+            <p className="text-xs text-content-secondary mt-3">
               This will change the mixer type to AIRPLANE, save to EEPROM, and reboot the board.
             </p>
 
@@ -257,9 +257,9 @@ export default function ServoWizard() {
           </div>
         )}
 
-        <div className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-4 text-left">
-          <p className="text-sm text-zinc-300 font-medium mb-2">Servo Setup is used for:</p>
-          <ul className="text-xs text-zinc-400 space-y-1 list-disc list-inside">
+        <div className="bg-surface border border rounded-xl p-4 text-left">
+          <p className="text-sm text-content font-medium mb-2">Servo Setup is used for:</p>
+          <ul className="text-xs text-content-secondary space-y-1 list-disc list-inside">
             <li><strong>Fixed-wing aircraft</strong> - ailerons, elevator, rudder</li>
             <li><strong>Flying wings</strong> - elevon mixing</li>
             <li><strong>Gimbal servos</strong> - camera pan/tilt (requires compatible board)</li>
@@ -271,16 +271,16 @@ export default function ServoWizard() {
 
   // Common header with mode toggle (consistent in both views)
   const renderHeader = () => (
-    <div className="bg-zinc-900/50 border-b border-zinc-800/50 px-6 py-4">
+    <div className="bg-surface-input border-b border-subtle px-6 py-4">
       <div className="flex items-center justify-between max-w-3xl mx-auto">
         {/* Mode toggle - always in same position */}
-        <div className="flex items-center gap-1 bg-zinc-800 rounded-lg p-1">
+        <div className="flex items-center gap-1 bg-surface-tooltip rounded-lg p-1">
           <button
             onClick={() => setViewMode('wizard')}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
               viewMode === 'wizard'
                 ? 'bg-blue-500 text-white'
-                : 'text-zinc-400 hover:text-white'
+                : 'text-content-secondary hover:text-content'
             }`}
           >
             Wizard
@@ -292,8 +292,8 @@ export default function ServoWizard() {
               viewMode === 'tune'
                 ? 'bg-blue-500 text-white'
                 : !selectedPresetId || assignments.length === 0
-                ? 'text-zinc-600 cursor-not-allowed'
-                : 'text-zinc-400 hover:text-white'
+                ? 'text-content-tertiary cursor-not-allowed'
+                : 'text-content-secondary hover:text-content'
             }`}
             title={!selectedPresetId ? 'Complete wizard first' : 'Fine-tune servos'}
           >
@@ -326,14 +326,14 @@ export default function ServoWizard() {
                           ? 'bg-blue-500 text-white ring-2 ring-blue-400/50 ring-offset-2 ring-offset-zinc-900'
                           : isCompleted
                           ? 'bg-green-500 text-white'
-                          : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                          : 'bg-surface-tooltip text-content-secondary border border'
                       }`}
                     >
                       {isCompleted ? <Check className="w-4 h-4" /> : <info.icon className="w-4 h-4" />}
                     </div>
                     <span
                       className={`text-[10px] font-medium ${
-                        isActive ? 'text-blue-400' : isCompleted ? 'text-green-400' : 'text-zinc-500'
+                        isActive ? 'text-blue-400' : isCompleted ? 'text-green-400' : 'text-content-secondary'
                       }`}
                     >
                       {info.label}
@@ -342,7 +342,7 @@ export default function ServoWizard() {
                   {index < STEPS.length - 1 && (
                     <div
                       className={`w-8 h-0.5 mx-1 ${
-                        index < currentStepIndex ? 'bg-green-500' : 'bg-zinc-700'
+                        index < currentStepIndex ? 'bg-green-500' : 'bg-surface-raised'
                       }`}
                     />
                   )}
@@ -354,8 +354,8 @@ export default function ServoWizard() {
           <div className="flex items-center gap-3">
             <span className="text-xl">{selectedPreset?.icon}</span>
             <div>
-              <span className="text-sm font-medium text-white">{selectedPreset?.name}</span>
-              <span className="text-xs text-zinc-500 ml-2">- {assignments.length} servos</span>
+              <span className="text-sm font-medium text-content">{selectedPreset?.name}</span>
+              <span className="text-xs text-content-secondary ml-2">- {assignments.length} servos</span>
             </div>
           </div>
         )}

@@ -169,10 +169,10 @@ export function PrepareCalibrationStep() {
   if (!calibrationType || !calTypeInfo) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-400">No calibration type selected.</p>
+        <p className="text-content-secondary">No calibration type selected.</p>
         <button
           onClick={() => setStep('select')}
-          className="mt-3 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors"
+          className="mt-3 px-4 py-2 bg-surface-raised hover:bg-surface-raised rounded-lg text-content transition-colors"
         >
           Go Back
         </button>
@@ -199,8 +199,8 @@ export function PrepareCalibrationStep() {
                 {CalibrationIcons[calibrationType]}
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white">{calTypeInfo.name}</h3>
-                <p className="text-xs text-gray-400">~{calTypeInfo.estimatedDuration}s duration</p>
+                <h3 className="text-lg font-semibold text-content">{calTypeInfo.name}</h3>
+                <p className="text-xs text-content-secondary">~{calTypeInfo.estimatedDuration}s duration</p>
               </div>
             </div>
 
@@ -224,10 +224,10 @@ export function PrepareCalibrationStep() {
                 {/* Instructions */}
                 <div className="flex-1 space-y-2">
                   <InstructionItem theme={theme} num={1}>
-                    Place vehicle on a <strong className="text-white">level surface</strong>
+                    Place vehicle on a <strong className="text-content">level surface</strong>
                   </InstructionItem>
                   <InstructionItem theme={theme} num={2}>
-                    Keep <strong className="text-white">completely still</strong> during calibration
+                    Keep <strong className="text-content">completely still</strong> during calibration
                   </InstructionItem>
                   <InstructionItem theme={theme} num={3}>
                     Click Start when ready
@@ -244,21 +244,21 @@ export function PrepareCalibrationStep() {
 
             {calibrationType === 'accel-6point' && (
               <>
-                <p className="text-gray-300 text-sm">
-                  Place vehicle in <strong className="text-white">6 positions</strong> - you'll be guided step by step.
+                <p className="text-content text-sm">
+                  Place vehicle in <strong className="text-content">6 positions</strong> - you'll be guided step by step.
                 </p>
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                   {ACCEL_6POINT_POSITIONS.map((pos, index) => (
-                    <div key={index} className="bg-gray-900/50 rounded-lg p-2 text-center">
+                    <div key={index} className="bg-surface-input rounded-lg p-2 text-center">
                       <div className={`w-5 h-5 mx-auto mb-1 ${theme.iconColor}`}>
                         <PositionIcon position={index as 0 | 1 | 2 | 3 | 4 | 5} />
                       </div>
-                      <p className="text-[10px] text-gray-500 truncate">{pos.split(' ')[0]}</p>
+                      <p className="text-[10px] text-content-secondary truncate">{pos.split(' ')[0]}</p>
                     </div>
                   ))}
                 </div>
                 <WarningBox>
-                  Hold each position <strong className="text-white">steady</strong> until confirmed.
+                  Hold each position <strong className="text-content">steady</strong> until confirmed.
                 </WarningBox>
               </>
             )}
@@ -267,10 +267,10 @@ export function PrepareCalibrationStep() {
               <>
                 <div className="grid sm:grid-cols-3 gap-2">
                   <InstructionItem theme={theme} num={1}>
-                    Move away from <strong className="text-white">metal/electronics</strong>
+                    Move away from <strong className="text-content">metal/electronics</strong>
                   </InstructionItem>
                   <InstructionItem theme={theme} num={2}>
-                    <strong className="text-white">Rotate continuously</strong> in all directions
+                    <strong className="text-content">Rotate continuously</strong> in all directions
                   </InstructionItem>
                   <InstructionItem theme={theme} num={3}>
                     Continue for ~{countdown}s
@@ -286,10 +286,10 @@ export function PrepareCalibrationStep() {
               <>
                 <div className="grid sm:grid-cols-3 gap-2">
                   <InstructionItem theme={theme} num={1}>
-                    Place on <strong className="text-white">stable surface</strong>
+                    Place on <strong className="text-content">stable surface</strong>
                   </InstructionItem>
                   <InstructionItem theme={theme} num={2}>
-                    Keep <strong className="text-white">completely still</strong>
+                    Keep <strong className="text-content">completely still</strong>
                   </InstructionItem>
                   <InstructionItem theme={theme} num={3}>
                     Auto-completes in seconds
@@ -304,10 +304,10 @@ export function PrepareCalibrationStep() {
             {calibrationType === 'opflow' && (
               <div className="grid sm:grid-cols-3 gap-2">
                 <InstructionItem theme={theme} num={1}>
-                  Hold <strong className="text-white">1-2m above textured surface</strong>
+                  Hold <strong className="text-content">1-2m above textured surface</strong>
                 </InstructionItem>
                 <InstructionItem theme={theme} num={2}>
-                  Surface needs <strong className="text-white">visible patterns</strong>
+                  Surface needs <strong className="text-content">visible patterns</strong>
                 </InstructionItem>
                 <InstructionItem theme={theme} num={3}>
                   Keep still for ~{countdown}s
@@ -329,7 +329,7 @@ export function PrepareCalibrationStep() {
       <div className="mt-4 flex justify-start">
         <button
           onClick={() => setStep('select')}
-          className="px-3 py-2 text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1.5 text-sm"
+          className="px-3 py-2 text-content-secondary hover:text-content transition-colors flex items-center gap-1.5 text-sm"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -356,7 +356,7 @@ function InstructionItem({
       <div className={`w-5 h-5 rounded-full ${theme.accentColor} flex items-center justify-center text-xs font-medium flex-shrink-0`}>
         {num}
       </div>
-      <p className="text-gray-300 text-sm leading-snug">{children}</p>
+      <p className="text-content text-sm leading-snug">{children}</p>
     </div>
   );
 }
@@ -380,7 +380,7 @@ function InfoBox({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`flex items-center gap-2 bg-gray-800/50 border ${theme.border} rounded-lg px-3 py-2`}>
+    <div className={`flex items-center gap-2 bg-surface border ${theme.border} rounded-lg px-3 py-2`}>
       <svg className={`w-4 h-4 flex-shrink-0 ${theme.iconColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>

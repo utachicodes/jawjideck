@@ -162,8 +162,8 @@ export function TerminalPanel() {
   if (!isConnected) {
     return (
       <PanelContainer className="flex items-center justify-center">
-        <div className="text-center text-gray-600 text-xs">
-          <div className="text-gray-500 mb-1">Terminal unavailable</div>
+        <div className="text-center text-content-tertiary text-xs">
+          <div className="text-content-secondary mb-1">Terminal unavailable</div>
           <div>Connect to companion agent to open a terminal session.</div>
         </div>
       </PanelContainer>
@@ -174,20 +174,20 @@ export function TerminalPanel() {
     <div className="relative h-full flex flex-col">
       <div
         ref={terminalRef}
-        className="flex-1 bg-zinc-900 rounded-lg overflow-hidden"
+        className="flex-1 bg-surface-input rounded-lg overflow-hidden"
         style={{ minHeight: '200px' }}
       />
 
       {/* Status bar */}
-      <div className="flex items-center justify-between px-3 py-1 bg-zinc-800/50 border-t border-zinc-700/50 text-xs">
+      <div className="flex items-center justify-between px-3 py-1 bg-surface border-t border-subtle text-xs">
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-green-400" />
           <span className="text-green-400">PTY Connected</span>
           {connectionState.host && (
-            <span className="text-zinc-500 ml-1">{connectionState.host}</span>
+            <span className="text-content-secondary ml-1">{connectionState.host}</span>
           )}
         </div>
-        <div className="flex items-center gap-2 text-zinc-500">
+        <div className="flex items-center gap-2 text-content-secondary">
           <span>Ctrl+C: Copy/Interrupt</span>
           <span>|</span>
           <span>Ctrl+V: Paste</span>

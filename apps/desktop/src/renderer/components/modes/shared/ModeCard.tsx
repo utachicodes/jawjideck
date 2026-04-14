@@ -57,8 +57,8 @@ export const ModeCard: React.FC<ModeCardProps> = ({
     <div
       className={`rounded-xl border transition-all ${
         isActive
-          ? 'bg-zinc-800/80 border-green-500/50 shadow-lg shadow-green-500/10'
-          : 'bg-zinc-800/50 border-zinc-700/50'
+          ? 'bg-surface border-green-500/50 shadow-lg shadow-green-500/10'
+          : 'bg-surface border-subtle'
       }`}
     >
       {/* Header */}
@@ -74,20 +74,20 @@ export const ModeCard: React.FC<ModeCardProps> = ({
           {/* Name and description */}
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-zinc-100">{displayName}</h3>
+              <h3 className="font-semibold text-content">{displayName}</h3>
               {info.essential && (
                 <span className="px-1.5 py-0.5 text-[10px] bg-amber-500/20 text-amber-400 rounded">
                   ESSENTIAL
                 </span>
               )}
             </div>
-            <p className="text-sm text-zinc-400">{info.description}</p>
+            <p className="text-sm text-content-secondary">{info.description}</p>
           </div>
         </div>
 
         {/* Channel badge + Actions */}
         <div className="flex items-center gap-2">
-          <div className="px-2 py-1 bg-zinc-700 rounded text-xs text-zinc-300">
+          <div className="px-2 py-1 bg-surface-raised rounded text-xs text-content">
             {auxChannel?.name || `AUX ${mode.auxChannel + 1}`}
           </div>
 
@@ -108,7 +108,7 @@ export const ModeCard: React.FC<ModeCardProps> = ({
               {onEdit && (
                 <button
                   onClick={onEdit}
-                  className="p-2 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 rounded-lg transition-colors"
+                  className="p-2 text-content-secondary hover:text-content hover:bg-surface-raised rounded-lg transition-colors"
                   title="Edit mode"
                 >
                   <Pencil className="w-4 h-4" />
@@ -117,7 +117,7 @@ export const ModeCard: React.FC<ModeCardProps> = ({
               {onDelete && (
                 <button
                   onClick={onDelete}
-                  className="p-2 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                  className="p-2 text-content-secondary hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                   title="Remove mode"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -150,13 +150,13 @@ export const ModeCard: React.FC<ModeCardProps> = ({
 
       {/* Range info (expanded only) */}
       {expanded && (
-        <div className="px-4 pb-4 pt-0 flex items-center justify-between text-xs text-zinc-500">
+        <div className="px-4 pb-4 pt-0 flex items-center justify-between text-xs text-content-secondary">
           <span>
-            Range: <span className="font-mono text-zinc-300">{mode.rangeStart}</span> -{' '}
-            <span className="font-mono text-zinc-300">{mode.rangeEnd}</span>
+            Range: <span className="font-mono text-content">{mode.rangeStart}</span> -{' '}
+            <span className="font-mono text-content">{mode.rangeEnd}</span>
           </span>
           <span>
-            Channel: <span className="text-zinc-300">{auxChannel?.name}</span>
+            Channel: <span className="text-content">{auxChannel?.name}</span>
           </span>
         </div>
       )}

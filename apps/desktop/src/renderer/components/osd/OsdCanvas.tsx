@@ -129,7 +129,7 @@ export const OsdCanvas = React.memo(function OsdCanvas({ className = '' }: OsdCa
       ref={canvasRef}
       width={canvasWidth}
       height={canvasHeight}
-      className={`border border-gray-600 rounded ${className}`}
+      className={`border border rounded ${className}`}
       style={{
         imageRendering: 'pixelated',
       }}

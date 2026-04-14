@@ -38,16 +38,16 @@ const ChannelBar: React.FC<{
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
-        <span className={detected ? 'text-green-400' : 'text-zinc-400'}>
+        <span className={detected ? 'text-green-400' : 'text-content-secondary'}>
           {channelName}
         </span>
-        <span className="text-zinc-500 font-mono">{value}</span>
+        <span className="text-content-secondary font-mono">{value}</span>
       </div>
-      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden relative">
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-600" />
+      <div className="h-2 bg-surface-tooltip rounded-full overflow-hidden relative">
+        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-surface-raised" />
         <div
           className={`absolute top-0 bottom-0 w-2 rounded-full transition-all ${
-            detected ? 'bg-green-500' : 'bg-zinc-600'
+            detected ? 'bg-green-500' : 'bg-surface-raised'
           }`}
           style={{ left: `calc(${percent}% - 4px)` }}
         />
@@ -68,16 +68,16 @@ const CompactChannelBar: React.FC<{
   return (
     <div className="space-y-0.5">
       <div className="flex items-center justify-between">
-        <span className={`text-[11px] ${detected ? 'text-green-400' : 'text-zinc-500'}`}>
+        <span className={`text-[11px] ${detected ? 'text-green-400' : 'text-content-secondary'}`}>
           {channelName}
         </span>
-        <span className="text-[10px] text-zinc-600 font-mono">{value}</span>
+        <span className="text-[10px] text-content-tertiary font-mono">{value}</span>
       </div>
-      <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden relative">
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-700" />
+      <div className="h-1.5 bg-surface-tooltip rounded-full overflow-hidden relative">
+        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-surface-raised" />
         <div
           className={`absolute top-0 bottom-0 w-1.5 rounded-full transition-all ${
-            detected ? 'bg-green-500' : 'bg-zinc-600'
+            detected ? 'bg-green-500' : 'bg-surface-raised'
           }`}
           style={{ left: `calc(${percent}% - 3px)` }}
         />
@@ -274,10 +274,10 @@ export const TransmitterCheckStep: React.FC = () => {
             <Radio className="w-8 h-8 text-amber-400 animate-pulse" />
           )}
         </div>
-        <h2 className="text-xl font-semibold text-zinc-100">
+        <h2 className="text-xl font-semibold text-content">
           {allDetected ? 'Transmitter Connected!' : 'Wiggle Your Sticks'}
         </h2>
-        <p className="text-sm text-zinc-400 mt-2 max-w-md mx-auto">
+        <p className="text-sm text-content-secondary mt-2 max-w-md mx-auto">
           {allDetected
             ? 'Your transmitter is working. You can proceed to review your configuration.'
             : 'Turn on your transmitter and move all sticks to verify they are being received.'}
@@ -302,7 +302,7 @@ export const TransmitterCheckStep: React.FC = () => {
             <p className={`text-sm font-medium ${allDetected ? 'text-green-300' : 'text-amber-300'}`}>
               {detectedCount}/4 channels detected
             </p>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-content-secondary mt-0.5">
               {allDetected
                 ? 'All primary channels (Roll, Pitch, Throttle, Yaw) are responding'
                 : 'Wiggle each stick to detect remaining channels'}
@@ -312,8 +312,8 @@ export const TransmitterCheckStep: React.FC = () => {
       </div>
 
       {/* Channel bars */}
-      <div className="p-4 bg-zinc-800/50 rounded-xl space-y-3">
-        <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+      <div className="p-4 bg-surface rounded-xl space-y-3">
+        <h3 className="text-sm font-medium text-content flex items-center gap-2">
           <Radio className="w-4 h-4" />
           RC Channels
           {isPollingRc && (
@@ -336,7 +336,7 @@ export const TransmitterCheckStep: React.FC = () => {
         {/* AUX channels - compact layout */}
         {displayChannels.length > PRIMARY_CHANNEL_COUNT && (
           <>
-            <div className="border-t border-zinc-700/50 mt-3" />
+            <div className="border-t border-subtle mt-3" />
             <div className="grid grid-cols-3 gap-x-4 gap-y-2 mt-2">
               {displayChannels.slice(PRIMARY_CHANNEL_COUNT).map((value, i) => (
                 <CompactChannelBar
@@ -362,7 +362,7 @@ export const TransmitterCheckStep: React.FC = () => {
                 <p className="text-sm font-medium text-amber-300">
                   No RC signal detected
                 </p>
-                <p className="text-xs text-zinc-400 mt-1">
+                <p className="text-xs text-content-secondary mt-1">
                   Your receiver may not be configured correctly. Check that it's powered, bound to your transmitter, and the correct protocol is set.
                 </p>
                 {!showTroubleshoot && (
@@ -380,22 +380,22 @@ export const TransmitterCheckStep: React.FC = () => {
 
           {/* Inline troubleshooter panel */}
           {showTroubleshoot && (
-            <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/30 space-y-4">
+            <div className="p-4 rounded-xl bg-surface border border-subtle space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Wrench className="w-4 h-4 text-blue-400" />
-                  <h3 className="text-sm font-medium text-zinc-200">Receiver Configuration</h3>
+                  <h3 className="text-sm font-medium text-content">Receiver Configuration</h3>
                 </div>
                 <button
                   onClick={() => setShowTroubleshoot(false)}
-                  className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                  className="text-xs text-content-secondary hover:text-content transition-colors"
                 >
                   Close
                 </button>
               </div>
 
               {!configLoaded ? (
-                <div className="flex items-center justify-center gap-2 py-4 text-zinc-400">
+                <div className="flex items-center justify-center gap-2 py-4 text-content-secondary">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span className="text-sm">Loading config from FC...</span>
                 </div>
@@ -405,7 +405,7 @@ export const TransmitterCheckStep: React.FC = () => {
                   {isInav ? (
                     <div className="space-y-3">
                       <div>
-                        <label className="text-xs text-zinc-400 mb-1.5 block">Receiver Type</label>
+                        <label className="text-xs text-content-secondary mb-1.5 block">Receiver Type</label>
                         <div className="flex gap-1.5 flex-wrap">
                           {INAV_RECEIVER_TYPES.map((t) => (
                             <button
@@ -414,7 +414,7 @@ export const TransmitterCheckStep: React.FC = () => {
                               className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
                                 rxType === t.value
                                   ? 'bg-blue-600 text-white'
-                                  : 'bg-zinc-700 text-zinc-400 hover:bg-zinc-600'
+                                  : 'bg-surface-raised text-content-secondary hover:bg-surface-raised'
                               }`}
                             >
                               {t.label}
@@ -425,7 +425,7 @@ export const TransmitterCheckStep: React.FC = () => {
 
                       {rxType === 'SERIAL' && (
                         <div>
-                          <label className="text-xs text-zinc-400 mb-1.5 block">Serial RX Protocol</label>
+                          <label className="text-xs text-content-secondary mb-1.5 block">Serial RX Protocol</label>
                           <div className="flex gap-1.5 flex-wrap">
                             {INAV_QUICK_SELECT.map((p) => (
                               <button
@@ -434,7 +434,7 @@ export const TransmitterCheckStep: React.FC = () => {
                                 className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
                                   inavProvider === p.value
                                     ? 'bg-blue-600 text-white'
-                                    : 'bg-zinc-700 text-zinc-400 hover:bg-zinc-600'
+                                    : 'bg-surface-raised text-content-secondary hover:bg-surface-raised'
                                 }`}
                               >
                                 {p.label}
@@ -442,7 +442,7 @@ export const TransmitterCheckStep: React.FC = () => {
                             ))}
                           </div>
                           {inavProvider && PROTOCOL_HINTS[inavProvider] && (
-                            <p className="text-[11px] text-zinc-500 mt-1.5">{PROTOCOL_HINTS[inavProvider]}</p>
+                            <p className="text-[11px] text-content-secondary mt-1.5">{PROTOCOL_HINTS[inavProvider]}</p>
                           )}
                         </div>
                       )}
@@ -450,7 +450,7 @@ export const TransmitterCheckStep: React.FC = () => {
                   ) : (
                     <div className="space-y-3">
                       <div>
-                        <label className="text-xs text-zinc-400 mb-1.5 block">Receiver Protocol</label>
+                        <label className="text-xs text-content-secondary mb-1.5 block">Receiver Protocol</label>
                         <div className="flex gap-1.5 flex-wrap">
                           {BF_QUICK_SELECT.map((p) => (
                             <button
@@ -459,7 +459,7 @@ export const TransmitterCheckStep: React.FC = () => {
                               className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
                                 bfProvider === p.value
                                   ? 'bg-blue-600 text-white'
-                                  : 'bg-zinc-700 text-zinc-400 hover:bg-zinc-600'
+                                  : 'bg-surface-raised text-content-secondary hover:bg-surface-raised'
                               }`}
                             >
                               {p.label}
@@ -468,11 +468,11 @@ export const TransmitterCheckStep: React.FC = () => {
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs text-zinc-400 mb-1.5 block">All Protocols</label>
+                        <label className="text-xs text-content-secondary mb-1.5 block">All Protocols</label>
                         <select
                           value={bfProvider ?? ''}
                           onChange={(e) => setBfProvider(Number(e.target.value))}
-                          className="w-full bg-zinc-700 text-zinc-200 rounded-lg px-3 py-1.5 text-xs border border-zinc-600 focus:border-blue-500 focus:outline-none"
+                          className="w-full bg-surface-raised text-content rounded-lg px-3 py-1.5 text-xs border border focus:border-blue-500 focus:outline-none"
                         >
                           {bfProvider === null && <option value="">Not loaded</option>}
                           {BF_PROVIDERS.map((p) => (
@@ -481,7 +481,7 @@ export const TransmitterCheckStep: React.FC = () => {
                         </select>
                       </div>
                       {bfProvider != null && BF_PROTOCOL_HINTS[bfProvider] && (
-                        <p className="text-[11px] text-zinc-500">{BF_PROTOCOL_HINTS[bfProvider]}</p>
+                        <p className="text-[11px] text-content-secondary">{BF_PROTOCOL_HINTS[bfProvider]}</p>
                       )}
                     </div>
                   )}
@@ -489,11 +489,11 @@ export const TransmitterCheckStep: React.FC = () => {
                   {/* Serial RX Port selector */}
                   {serialPorts.length > 0 && (rxType === 'SERIAL' || !isInav) && (
                     <div>
-                      <label className="text-xs text-zinc-400 mb-1.5 block">Serial RX Port</label>
+                      <label className="text-xs text-content-secondary mb-1.5 block">Serial RX Port</label>
                       <select
                         value={rxPortId}
                         onChange={(e) => setRxPortId(Number(e.target.value))}
-                        className="w-full bg-zinc-700 text-zinc-200 rounded-lg px-3 py-1.5 text-xs border border-zinc-600 focus:border-blue-500 focus:outline-none"
+                        className="w-full bg-surface-raised text-content rounded-lg px-3 py-1.5 text-xs border border focus:border-blue-500 focus:outline-none"
                       >
                         <option value={-1}>None selected</option>
                         {serialPorts.map((p) => (
@@ -502,7 +502,7 @@ export const TransmitterCheckStep: React.FC = () => {
                           </option>
                         ))}
                       </select>
-                      <p className="text-[11px] text-zinc-500 mt-1">
+                      <p className="text-[11px] text-content-secondary mt-1">
                         Select the UART your receiver is wired to. Only one port can have Serial RX.
                       </p>
                     </div>
@@ -539,24 +539,24 @@ export const TransmitterCheckStep: React.FC = () => {
 
       {/* Selected preset reminder */}
       {selectedPreset && (
-        <div className="p-3 bg-zinc-800/30 rounded-lg border border-zinc-700">
+        <div className="p-3 bg-surface rounded-lg border border">
           <div className="flex items-center gap-3">
-            <selectedPreset.icon className="w-6 h-6 text-zinc-300" />
+            <selectedPreset.icon className="w-6 h-6 text-content" />
             <div>
-              <p className="text-sm text-zinc-300">
+              <p className="text-sm text-content">
                 Applying <strong>{selectedPreset.name}</strong> preset
               </p>
-              <p className="text-xs text-zinc-500">{selectedPreset.description}</p>
+              <p className="text-xs text-content-secondary">{selectedPreset.description}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Navigation buttons */}
-      <div className="flex items-center justify-between pt-4 border-t border-zinc-700">
+      <div className="flex items-center justify-between pt-4 border-t border">
         <button
           onClick={prevStep}
-          className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
@@ -568,7 +568,7 @@ export const TransmitterCheckStep: React.FC = () => {
           className={`flex items-center gap-2 px-6 py-2 text-sm font-medium rounded-lg transition-colors ${
             transmitterConfirmed
               ? 'bg-blue-600 text-white hover:bg-blue-500'
-              : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+              : 'bg-surface-raised text-content-secondary cursor-not-allowed'
           }`}
         >
           Continue
@@ -583,7 +583,7 @@ export const TransmitterCheckStep: React.FC = () => {
             setTransmitterConfirmed(true);
             nextStep();
           }}
-          className="text-xs text-zinc-500 hover:text-zinc-400 underline"
+          className="text-xs text-content-secondary hover:text-content-secondary underline"
         >
           Skip transmitter check (not recommended)
         </button>

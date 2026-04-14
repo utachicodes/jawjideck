@@ -134,8 +134,8 @@ export default function ServoTuningCard({
       onClick={onSelect}
       className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer ${
         isSelected
-          ? 'border-opacity-100 bg-zinc-800/80'
-          : 'border-zinc-700/50 bg-zinc-800/40 hover:border-zinc-600'
+          ? 'border-opacity-100 bg-surface'
+          : 'border-subtle bg-surface hover:border'
       }`}
       style={{
         borderColor: isSelected ? color : undefined,
@@ -147,8 +147,8 @@ export default function ServoTuningCard({
         <div className="flex items-center gap-2">
           <SurfaceIcon className="w-5 h-5" />
           <div>
-            <div className="text-sm font-medium text-white">{info.name}</div>
-            <div className="text-xs text-zinc-500">Servo {assignment.servoIndex}</div>
+            <div className="text-sm font-medium text-content">{info.name}</div>
+            <div className="text-xs text-content-secondary">Servo {assignment.servoIndex}</div>
           </div>
         </div>
 
@@ -161,7 +161,7 @@ export default function ServoTuningCard({
           className={`px-2 py-1 rounded-lg text-xs font-medium transition-all ${
             assignment.reversed
               ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50'
-              : 'bg-zinc-700 text-zinc-400 hover:bg-zinc-600 border border-zinc-600'
+              : 'bg-surface-raised text-content-secondary hover:bg-surface-raised border border'
           }`}
           title={assignment.reversed ? 'Servo reversed' : 'Click to reverse'}
         >
@@ -178,7 +178,7 @@ export default function ServoTuningCard({
         onPointerLeave={handlePointerUp}
       >
         {/* Track background */}
-        <div className="absolute top-1/2 -translate-y-1/2 w-full h-2 bg-zinc-900 rounded-full overflow-hidden">
+        <div className="absolute top-1/2 -translate-y-1/2 w-full h-2 bg-surface-input rounded-full overflow-hidden">
           {/* Active range highlight */}
           <div
             className="absolute h-full rounded-full"
@@ -245,7 +245,7 @@ export default function ServoTuningCard({
       </div>
 
       {/* Value labels */}
-      <div className="flex justify-between text-[10px] text-zinc-500 px-1 mb-3">
+      <div className="flex justify-between text-[10px] text-content-secondary px-1 mb-3">
         <span>{min}µs</span>
         <span
           className="font-mono font-medium"
@@ -264,7 +264,7 @@ export default function ServoTuningCard({
               e.stopPropagation();
               onTestPosition('min');
             }}
-            className="flex-1 py-1.5 text-xs bg-zinc-700/50 text-zinc-400 rounded hover:bg-zinc-700 transition-colors"
+            className="flex-1 py-1.5 text-xs bg-surface-raised text-content-secondary rounded hover:bg-surface-raised transition-colors"
           >
             ← Min
           </button>
@@ -282,7 +282,7 @@ export default function ServoTuningCard({
               e.stopPropagation();
               onTestPosition('max');
             }}
-            className="flex-1 py-1.5 text-xs bg-zinc-700/50 text-zinc-400 rounded hover:bg-zinc-700 transition-colors"
+            className="flex-1 py-1.5 text-xs bg-surface-raised text-content-secondary rounded hover:bg-surface-raised transition-colors"
           >
             Max →
           </button>

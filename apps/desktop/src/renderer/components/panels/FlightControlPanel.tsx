@@ -134,7 +134,7 @@ function ThrottleGauge({ value, onChange }: { value: number; onChange: (v: numbe
         <span className={`text-xl font-bold font-mono ${textColor}`}>
           {Math.round(percentage)}%
         </span>
-        <div className="text-gray-500 text-[10px]">{value}us</div>
+        <div className="text-content-secondary text-[10px]">{value}us</div>
       </div>
     </div>
   );
@@ -211,19 +211,19 @@ function JoystickControl({
 
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className="text-gray-500 text-[10px] uppercase tracking-wider">{label}</div>
+      <div className="text-content-secondary text-[10px] uppercase tracking-wider">{label}</div>
 
       {/* Joystick area */}
       <div
         ref={containerRef}
-        className="relative bg-gray-900 rounded-lg border border-gray-700 cursor-crosshair select-none"
+        className="relative bg-surface-base rounded-lg border border-default cursor-crosshair select-none"
         style={{ width: size, height: size }}
         onMouseDown={handleMouseDown}
       >
         {/* Cross-hair guides */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="absolute w-full h-px bg-gray-700" />
-          <div className="absolute h-full w-px bg-gray-700" />
+          <div className="absolute w-full h-px bg-border" />
+          <div className="absolute h-full w-px bg-border" />
         </div>
 
         {/* Dot indicator */}
@@ -242,12 +242,12 @@ function JoystickControl({
       {/* Values */}
       <div className="flex gap-3 text-[10px]">
         <div>
-          <span className="text-gray-500">{xLabel}:</span>
-          <span className="text-gray-300 font-mono ml-1">{x}</span>
+          <span className="text-content-secondary">{xLabel}:</span>
+          <span className="text-content font-mono ml-1">{x}</span>
         </div>
         <div>
-          <span className="text-gray-500">{yLabel}:</span>
-          <span className="text-gray-300 font-mono ml-1">{y}</span>
+          <span className="text-content-secondary">{yLabel}:</span>
+          <span className="text-content font-mono ml-1">{y}</span>
         </div>
       </div>
     </div>
@@ -279,13 +279,13 @@ function ArmButton({
         className={`
           relative ${compact ? 'w-14 h-14 border-[3px]' : 'w-24 h-24 border-4'} rounded-full
           transition-all duration-300 ease-out
-          focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900
+          focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface-base
           ${canArm ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
           ${isArmed
             ? 'bg-red-500/20 border-red-500 shadow-lg shadow-red-500/30 focus:ring-red-500'
             : armSwitchOn
               ? 'bg-amber-500/20 border-amber-500 focus:ring-amber-500'
-              : 'bg-gray-800 border-gray-600 hover:border-gray-500 focus:ring-gray-500'
+              : 'bg-surface border-default hover:border-default focus:ring-gray-500'
           }
         `}
       >
@@ -294,11 +294,11 @@ function ArmButton({
           className={`
             absolute ${compact ? 'inset-1' : 'inset-2'} rounded-full flex items-center justify-center
             transition-colors duration-300
-            ${isArmed ? 'bg-red-500' : armSwitchOn ? 'bg-amber-500' : 'bg-gray-700'}
+            ${isArmed ? 'bg-red-500' : armSwitchOn ? 'bg-amber-500' : 'bg-surface-raised'}
           `}
         >
           <svg
-            className={`${compact ? 'w-6 h-6' : 'w-10 h-10'} ${isArmed || armSwitchOn ? 'text-white' : 'text-gray-400'}`}
+            className={`${compact ? 'w-6 h-6' : 'w-10 h-10'} ${isArmed || armSwitchOn ? 'text-white' : 'text-content-secondary'}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -323,14 +323,14 @@ function ArmButton({
 
       {/* Status text */}
       <div className={`${compact ? 'mt-1.5' : 'mt-3'} text-center`}>
-        <div className={`${compact ? 'text-xs' : 'text-lg'} font-bold ${isArmed ? 'text-red-400' : 'text-gray-400'}`}>
+        <div className={`${compact ? 'text-xs' : 'text-lg'} font-bold ${isArmed ? 'text-red-400' : 'text-content-secondary'}`}>
           {isArmed ? 'ARMED' : 'DISARMED'}
         </div>
         {armSwitchOn && !isArmed && (
           <div className="text-amber-400 text-xs">Arming...</div>
         )}
         {!canArm && !compact && (
-          <div className="text-gray-500 text-xs">Not configured</div>
+          <div className="text-content-secondary text-xs">Not configured</div>
         )}
       </div>
     </div>
@@ -362,8 +362,8 @@ function ModeChip({
         ${isActive
           ? 'bg-blue-500 text-white shadow-md shadow-blue-500/30'
           : isConfigured
-            ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            : 'bg-gray-800 text-gray-500'
+            ? 'bg-surface-raised text-content hover:bg-surface-raised'
+            : 'bg-surface text-content-secondary'
         }
       `}
     >
@@ -378,7 +378,7 @@ function ModeChip({
 function RcStatusIndicator({ isActive }: { isActive: boolean }) {
   return (
     <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${
-      isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-700 text-gray-500'
+      isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-surface-raised text-content-secondary'
     }`}>
       <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400' : 'bg-gray-500'}`} />
       <span>RC {isActive ? 'Active' : 'Idle'}</span>
@@ -544,7 +544,7 @@ function MavlinkFlightControl() {
   };
 
   // Status message color
-  const statusColor = statusMsg?.type === 'success' ? 'text-emerald-400' : statusMsg?.type === 'error' ? 'text-red-400' : 'text-gray-400';
+  const statusColor = statusMsg?.type === 'success' ? 'text-emerald-400' : statusMsg?.type === 'error' ? 'text-red-400' : 'text-content-secondary';
 
   return (
     <PanelContainer>
@@ -555,8 +555,8 @@ function MavlinkFlightControl() {
             <div className="flex items-center gap-4">
               {/* Left: Mode + protocol */}
               <div className="shrink-0 w-20">
-                <div className="text-white font-medium leading-tight">{flight.mode || 'Unknown'}</div>
-                <div className="text-[10px] text-gray-500">MAVLink</div>
+                <div className="text-content font-medium leading-tight">{flight.mode || 'Unknown'}</div>
+                <div className="text-[10px] text-content-secondary">MAVLink</div>
               </div>
 
               {/* CENTER: The ARM button — primary control */}
@@ -573,7 +573,7 @@ function MavlinkFlightControl() {
                       ? 'bg-red-500/15 border-red-500/50 text-red-400 hover:bg-red-500/25 shadow-lg shadow-red-500/10'
                       : forceArm
                         ? 'bg-amber-500/15 border-amber-500/50 text-amber-400 hover:bg-amber-500/25 shadow-lg shadow-amber-500/10'
-                        : 'bg-gray-800/60 border-gray-600/40 text-gray-300 hover:bg-gray-700/60 hover:text-white hover:border-gray-500/50'
+                        : 'bg-surface border-subtle text-content hover:bg-surface-raised hover:text-content hover:border-default'
                     }
                   `}
                 >
@@ -604,15 +604,15 @@ function MavlinkFlightControl() {
                     flex items-center gap-2 px-3 py-2 rounded-lg transition-all
                     ${forceArm
                       ? 'bg-amber-500/10 border border-amber-500/30'
-                      : 'bg-gray-800/30 border border-gray-700/30 hover:border-gray-600/50'
+                      : 'bg-surface border border-subtle hover:border-default'
                     }
                   `}
                   title="Force ARM bypasses pre-arm safety checks"
                 >
-                  <svg className={`w-3.5 h-3.5 ${forceArm ? 'text-amber-400' : 'text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className={`w-3.5 h-3.5 ${forceArm ? 'text-amber-400' : 'text-content-secondary'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
-                  <span className={`text-xs font-medium ${forceArm ? 'text-amber-300' : 'text-gray-300'}`}>Force</span>
+                  <span className={`text-xs font-medium ${forceArm ? 'text-amber-300' : 'text-content'}`}>Force</span>
                   <div className={`w-7 h-3.5 rounded-full transition-colors relative ${forceArm ? 'bg-amber-500' : 'bg-gray-600'}`}>
                     <div className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white shadow transition-transform ${forceArm ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
                   </div>
@@ -663,8 +663,8 @@ function MavlinkFlightControl() {
           /* Vertical layout for side panels */
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-white font-medium">{flight.mode || 'Unknown'}</div>
-              <div className="text-xs text-gray-500">MAVLink</div>
+              <div className="text-content font-medium">{flight.mode || 'Unknown'}</div>
+              <div className="text-xs text-content-secondary">MAVLink</div>
             </div>
 
             <div className="flex justify-center mb-4">
@@ -727,17 +727,17 @@ function MavlinkFlightControl() {
                 flex items-center justify-between w-full px-3 py-2.5 rounded-lg transition-all
                 ${forceArm
                   ? 'bg-amber-500/10 border border-amber-500/30'
-                  : 'bg-gray-800/30 border border-gray-700/30 hover:border-gray-600/50'
+                  : 'bg-surface border border-subtle hover:border-default'
                 }
               `}
             >
               <div className="flex items-center gap-2.5">
-                <svg className={`w-4 h-4 ${forceArm ? 'text-amber-400' : 'text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className={`w-4 h-4 ${forceArm ? 'text-amber-400' : 'text-content-secondary'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <div className="text-left">
-                  <div className={`text-xs font-medium ${forceArm ? 'text-amber-300' : 'text-gray-300'}`}>Force ARM</div>
-                  <div className="text-[10px] text-gray-500">Bypass pre-arm checks</div>
+                  <div className={`text-xs font-medium ${forceArm ? 'text-amber-300' : 'text-content'}`}>Force ARM</div>
+                  <div className="text-[10px] text-content-secondary">Bypass pre-arm checks</div>
                 </div>
               </div>
               <div className={`w-8 h-4 rounded-full transition-colors relative ${forceArm ? 'bg-amber-500' : 'bg-gray-600'}`}>
@@ -870,10 +870,10 @@ export function FlightControlPanel() {
   if (!isConnected) {
     return (
       <PanelContainer className="flex flex-col items-center justify-center">
-        <svg className="w-12 h-12 text-gray-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-12 h-12 text-content-tertiary mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
         </svg>
-        <div className="text-gray-500 text-sm">Connect to a device</div>
+        <div className="text-content-secondary text-sm">Connect to a device</div>
       </PanelContainer>
     );
   }
@@ -889,7 +889,7 @@ export function FlightControlPanel() {
         {/* Header with status */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="text-white font-medium">{flight.mode || 'Unknown'}</div>
+            <div className="text-content font-medium">{flight.mode || 'Unknown'}</div>
           </div>
           <RcStatusIndicator isActive={isOverrideActive} />
         </div>
@@ -974,17 +974,17 @@ export function FlightControlPanel() {
         {/* Center button */}
         <button
           onClick={centerSticks}
-          className="mt-3 py-1.5 px-3 text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 rounded transition-colors self-center"
+          className="mt-3 py-1.5 px-3 text-xs text-content-secondary hover:text-content bg-surface hover:bg-surface-raised rounded transition-colors self-center"
         >
           Center Sticks
         </button>
 
         {/* Setup section (collapsed by default) */}
         {!canArm && modeMappingsLoaded && (
-          <div className="mt-4 pt-3 border-t border-gray-700">
+          <div className="mt-4 pt-3 border-t border-default">
             <button
               onClick={() => setShowSetup(!showSetup)}
-              className="flex items-center gap-2 text-gray-500 hover:text-gray-400 text-xs transition-colors"
+              className="flex items-center gap-2 text-content-secondary hover:text-content-secondary text-xs transition-colors"
             >
               <svg className={`w-3 h-3 transition-transform ${showSetup ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -993,8 +993,8 @@ export function FlightControlPanel() {
             </button>
 
             {showSetup && (
-              <div className="mt-2 p-2 bg-gray-800/50 rounded-lg">
-                <p className="text-gray-400 text-xs mb-2">
+              <div className="mt-2 p-2 bg-surface rounded-lg">
+                <p className="text-content-secondary text-xs mb-2">
                   ARM mode not configured. Click below to auto-configure for SITL testing.
                 </p>
                 <button
@@ -1014,7 +1014,7 @@ export function FlightControlPanel() {
 
         {/* Loading state */}
         {!modeMappingsLoaded && (
-          <div className="text-center text-gray-500 text-xs py-4">
+          <div className="text-center text-content-secondary text-xs py-4">
             Loading configuration...
           </div>
         )}

@@ -109,10 +109,10 @@ export default function ServoTuningView() {
   if (!selectedPresetId || assignments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-6 p-8 text-center">
-        <Settings className="w-16 h-16 text-zinc-500" />
+        <Settings className="w-16 h-16 text-content-secondary" />
         <div>
-          <h2 className="text-xl font-bold text-white mb-2">No Servo Configuration</h2>
-          <p className="text-zinc-400">Use the Wizard to configure your servos first.</p>
+          <h2 className="text-xl font-bold text-content mb-2">No Servo Configuration</h2>
+          <p className="text-content-secondary">Use the Wizard to configure your servos first.</p>
         </div>
       </div>
     );
@@ -121,9 +121,9 @@ export default function ServoTuningView() {
   return (
     <div className="flex flex-col h-full">
       {/* Live indicator bar */}
-      <div className="flex items-center justify-end px-4 py-2 border-b border-zinc-800/30">
-        <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-          <div className={`w-2 h-2 rounded-full ${isPollingServos ? 'bg-green-500 animate-pulse' : 'bg-zinc-600'}`} />
+      <div className="flex items-center justify-end px-4 py-2 border-b border-subtle">
+        <div className="flex items-center gap-1.5 text-xs text-content-secondary">
+          <div className={`w-2 h-2 rounded-full ${isPollingServos ? 'bg-green-500 animate-pulse' : 'bg-surface-raised'}`} />
           Live
         </div>
       </div>
@@ -132,7 +132,7 @@ export default function ServoTuningView() {
       <div className="flex-1 flex gap-4 p-4 overflow-hidden">
         {/* Left: Aircraft diagram */}
         <div className="w-1/3 flex flex-col">
-          <div className="flex-1 flex items-center justify-center bg-zinc-900/30 rounded-xl border border-zinc-800/50 p-4">
+          <div className="flex-1 flex items-center justify-center bg-surface rounded-xl border border-subtle p-4">
             <AircraftDiagram
               presetId={selectedPresetId}
               highlightSurface={selectedSurface}
@@ -147,7 +147,7 @@ export default function ServoTuningView() {
 
           {/* Legend */}
           <div className="mt-3 px-2">
-            <div className="text-xs text-zinc-500 mb-2">Click surface to select</div>
+            <div className="text-xs text-content-secondary mb-2">Click surface to select</div>
             <div className="flex flex-wrap gap-2">
               {assignments.map((a, i) => (
                 <button
@@ -155,8 +155,8 @@ export default function ServoTuningView() {
                   onClick={() => selectAndScrollTo(i)}
                   className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-all ${
                     i === selectedIndex
-                      ? 'bg-zinc-700 text-white'
-                      : 'bg-zinc-800/50 text-zinc-500 hover:bg-zinc-800'
+                      ? 'bg-surface-raised text-content'
+                      : 'bg-surface text-content-secondary hover:bg-surface'
                   }`}
                 >
                   <div
@@ -196,7 +196,7 @@ export default function ServoTuningView() {
       </div>
 
       {/* Footer with save button */}
-      <div className="px-4 py-3 border-t border-zinc-800/50">
+      <div className="px-4 py-3 border-t border-subtle">
         <div className="flex items-center justify-between">
           {/* Status messages */}
           <div className="text-sm">
@@ -218,7 +218,7 @@ export default function ServoTuningView() {
             disabled={isSaving}
             className={`px-6 py-2.5 rounded-xl font-medium transition-all flex items-center gap-2 ${
               isSaving
-                ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                ? 'bg-surface-raised text-content-secondary cursor-not-allowed'
                 : 'bg-blue-500 text-white hover:bg-blue-400'
             }`}
           >

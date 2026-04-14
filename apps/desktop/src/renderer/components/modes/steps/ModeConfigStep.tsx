@@ -35,7 +35,7 @@ export const ModeConfigStep: React.FC = () => {
   if (!currentMode || !modeInfo) {
     return (
       <div className="text-center py-8">
-        <p className="text-zinc-400">No mode to configure</p>
+        <p className="text-content-secondary">No mode to configure</p>
       </div>
     );
   }
@@ -65,7 +65,7 @@ export const ModeConfigStep: React.FC = () => {
                   ? 'bg-green-500'
                   : idx === currentModeIndex
                   ? 'bg-blue-500'
-                  : 'bg-zinc-700'
+                  : 'bg-surface-raised'
               }`}
             />
           ))}
@@ -84,8 +84,8 @@ export const ModeConfigStep: React.FC = () => {
             </div>
           );
         })()}
-        <h2 className="text-xl font-semibold text-zinc-100">{modeInfo.name}</h2>
-        <p className="text-sm text-zinc-400 mt-1">{modeInfo.description}</p>
+        <h2 className="text-xl font-semibold text-content">{modeInfo.name}</h2>
+        <p className="text-sm text-content-secondary mt-1">{modeInfo.description}</p>
         {modeInfo.essential && (
           <span className="inline-block mt-2 px-2 py-0.5 text-xs bg-amber-500/20 text-amber-400 rounded">
             ESSENTIAL MODE
@@ -100,7 +100,7 @@ export const ModeConfigStep: React.FC = () => {
 
       {/* AUX Channel selection */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-zinc-300">
+        <label className="block text-sm font-medium text-content">
           Which switch should activate this mode?
         </label>
         <AuxChannelPicker
@@ -112,10 +112,10 @@ export const ModeConfigStep: React.FC = () => {
 
       {/* Range slider */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-zinc-300">
+        <label className="block text-sm font-medium text-content">
           When should it activate? (PWM range)
         </label>
-        <div className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-700">
+        <div className="p-4 bg-surface rounded-xl border border">
           <RangeSlider
             rangeStart={currentMode.rangeStart}
             rangeEnd={currentMode.rangeEnd}
@@ -127,14 +127,14 @@ export const ModeConfigStep: React.FC = () => {
 
       {/* Live preview */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-zinc-300">
+        <label className="block text-sm font-medium text-content">
           Test it! Flip your switch to see if it activates:
         </label>
         <div
           className={`p-4 rounded-xl border transition-all ${
             isActive
               ? 'bg-green-500/10 border-green-500/30 shadow-lg shadow-green-500/10'
-              : 'bg-zinc-800/50 border-zinc-700'
+              : 'bg-surface border'
           }`}
         >
           <RcChannelBar
@@ -160,12 +160,12 @@ export const ModeConfigStep: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="p-4 bg-zinc-800/30 border border-zinc-700/50 rounded-xl">
+        <div className="p-4 bg-surface border border-subtle rounded-xl">
           <div className="flex items-center gap-3">
             <Lightbulb className="w-6 h-6 text-amber-400 shrink-0" />
             <div>
-              <h4 className="font-medium text-zinc-300">Try it now!</h4>
-              <p className="text-xs text-zinc-500">
+              <h4 className="font-medium text-content">Try it now!</h4>
+              <p className="text-xs text-content-secondary">
                 Move your {AUX_CHANNELS[currentMode.auxChannel]?.name || 'switch'} to
                 the {currentMode.rangeStart >= 1700 ? 'HIGH' : currentMode.rangeEnd <= 1300 ? 'LOW' : 'MID'} position
                 to see {modeInfo.name} activate.
@@ -179,7 +179,7 @@ export const ModeConfigStep: React.FC = () => {
       <div className="flex gap-3 pt-4">
         <button
           onClick={prevStep}
-          className="px-4 py-2.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-lg transition-colors"
+          className="px-4 py-2.5 bg-surface-raised hover:bg-surface-raised text-content rounded-lg transition-colors"
         >
           Back
         </button>

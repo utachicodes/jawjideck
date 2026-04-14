@@ -105,16 +105,16 @@ export function OsdView() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-700 shrink-0">
-        <h1 className="text-sm font-semibold text-white">OSD Simulator</h1>
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border shrink-0">
+        <h1 className="text-sm font-semibold text-content">OSD Simulator</h1>
         <div className="flex items-center gap-3">
           {/* Mode selector */}
           <div className="flex items-center gap-1.5">
-            <label className="text-[10px] text-gray-500">Mode:</label>
+            <label className="text-[10px] text-content-secondary">Mode:</label>
             <select
               value={mode}
               onChange={(e) => setMode(e.target.value as OsdMode)}
-              className="bg-gray-700 text-white text-xs rounded px-2 py-1 border border-gray-600"
+              className="bg-surface-raised text-content text-xs rounded px-2 py-1 border border"
             >
               <option value="demo">Demo</option>
               <option value="live">Live</option>
@@ -124,11 +124,11 @@ export function OsdView() {
 
           {/* Video type */}
           <div className="flex items-center gap-1.5">
-            <label className="text-[10px] text-gray-500">Video:</label>
+            <label className="text-[10px] text-content-secondary">Video:</label>
             <select
               value={videoType}
               onChange={(e) => setVideoType(e.target.value as 'PAL' | 'NTSC')}
-              className="bg-gray-700 text-white text-xs rounded px-2 py-1 border border-gray-600"
+              className="bg-surface-raised text-content text-xs rounded px-2 py-1 border border"
             >
               <option value="PAL">PAL</option>
               <option value="NTSC">NTSC</option>
@@ -137,11 +137,11 @@ export function OsdView() {
 
           {/* Scale */}
           <div className="flex items-center gap-1.5">
-            <label className="text-[10px] text-gray-500">Scale:</label>
+            <label className="text-[10px] text-content-secondary">Scale:</label>
             <select
               value={scale}
               onChange={(e) => setScale(parseInt(e.target.value))}
-              className="bg-gray-700 text-white text-xs rounded px-2 py-1 border border-gray-600"
+              className="bg-surface-raised text-content text-xs rounded px-2 py-1 border border"
             >
               <option value="1">1x</option>
               <option value="2">2x</option>
@@ -152,12 +152,12 @@ export function OsdView() {
 
           {/* Font */}
           <div className="flex items-center gap-1.5">
-            <label className="text-[10px] text-gray-500">Font:</label>
+            <label className="text-[10px] text-content-secondary">Font:</label>
             <select
               value={currentFontName}
               onChange={(e) => loadBundledFont(e.target.value)}
               disabled={isLoadingFont}
-              className="bg-gray-700 text-white text-xs rounded px-2 py-1 border border-gray-600"
+              className="bg-surface-raised text-content text-xs rounded px-2 py-1 border border"
             >
               {BUNDLED_FONT_NAMES.map((name) => (
                 <option key={name} value={name}>{name}</option>
@@ -170,7 +170,7 @@ export function OsdView() {
       {/* 3-column body */}
       <div className="flex flex-1 overflow-hidden min-h-0">
         {/* LEFT: Element browser */}
-        <div className="w-48 border-r border-gray-700 flex flex-col overflow-hidden shrink-0">
+        <div className="w-48 border-r border flex flex-col overflow-hidden shrink-0">
           <OsdElementBrowser
             selectedElement={selectedElement}
             onSelect={setSelectedElement}
@@ -178,7 +178,7 @@ export function OsdView() {
         </div>
 
         {/* CENTER: Canvas area */}
-        <div className="flex-1 flex flex-col items-center justify-center p-4 bg-gray-900 overflow-auto">
+        <div className="flex-1 flex flex-col items-center justify-center p-4 bg-surface-input overflow-auto">
           {fontError && (
             <div className="mb-3 p-2 bg-red-900/50 border border-red-700 rounded text-red-300 text-xs">
               {fontError}
@@ -186,9 +186,9 @@ export function OsdView() {
           )}
 
           {isLoadingFont ? (
-            <div className="text-gray-400 text-sm">Loading font...</div>
+            <div className="text-content-secondary text-sm">Loading font...</div>
           ) : !currentFont ? (
-            <div className="text-gray-400 text-sm">No font loaded</div>
+            <div className="text-content-secondary text-sm">No font loaded</div>
           ) : (
             <div
               className="relative"
@@ -223,30 +223,30 @@ export function OsdView() {
 
           {/* Display options below canvas */}
           <div className="flex items-center gap-4 mt-3">
-            <label className="flex items-center gap-1.5 text-[11px] text-gray-400">
+            <label className="flex items-center gap-1.5 text-[11px] text-content-secondary">
               <input
                 type="checkbox"
                 checked={showGrid}
                 onChange={(e) => setShowGrid(e.target.checked)}
-                className="rounded bg-gray-700 border-gray-600 w-3 h-3"
+                className="rounded bg-surface-raised border w-3 h-3"
               />
               Grid
             </label>
 
             {mode === 'edit' && (
-              <label className="flex items-center gap-1.5 text-[11px] text-gray-400">
+              <label className="flex items-center gap-1.5 text-[11px] text-content-secondary">
                 <input
                   type="checkbox"
                   checked={showLabels}
                   onChange={(e) => setShowLabels(e.target.checked)}
-                  className="rounded bg-gray-700 border-gray-600 w-3 h-3"
+                  className="rounded bg-surface-raised border w-3 h-3"
                 />
                 Labels
               </label>
             )}
 
             <div className="flex items-center gap-1.5">
-              <label className="text-[11px] text-gray-400">BG:</label>
+              <label className="text-[11px] text-content-secondary">BG:</label>
               <input
                 type="color"
                 value={backgroundColor.startsWith('rgba') ? '#0064c8' : backgroundColor}
@@ -257,14 +257,14 @@ export function OsdView() {
           </div>
 
           {mode === 'edit' && (
-            <p className="mt-2 text-[10px] text-gray-500">
+            <p className="mt-2 text-[10px] text-content-secondary">
               Drag elements to reposition. Select in browser to edit.
             </p>
           )}
         </div>
 
         {/* RIGHT: Context panel */}
-        <div className="w-60 border-l border-gray-700 flex flex-col overflow-hidden shrink-0">
+        <div className="w-60 border-l border flex flex-col overflow-hidden shrink-0">
           <OsdContextPanel mode={mode} selectedElement={selectedElement} />
         </div>
       </div>

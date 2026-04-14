@@ -378,7 +378,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mb-2 mx-auto" />
-          <p className="text-zinc-400">Loading servo configuration...</p>
+          <p className="text-content-secondary">Loading servo configuration...</p>
         </div>
       </div>
     );
@@ -394,14 +394,14 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
     <div className="space-y-4">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-medium text-zinc-100">Servo Mixer</h2>
-        <p className="text-sm text-zinc-500">
+        <h2 className="text-lg font-medium text-content">Servo Mixer</h2>
+        <p className="text-sm text-content-secondary">
           Tell the flight controller what each servo is connected to
         </p>
       </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center gap-3">
+        <div className="bg-red-500/10 border-red-500/30 rounded-lg p-3 flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
           <p className="text-sm text-red-400 flex-1">{error}</p>
           <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300">
@@ -413,14 +413,14 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
       {/* Servo Selector */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-zinc-500 uppercase tracking-wide">Select Servo</span>
+          <span className="text-xs text-content-secondary uppercase tracking-wide">Select Servo</span>
           {servoConfigs.length > 4 && (
             <button
               onClick={() => setShowAllServos(!showAllServos)}
               className={`text-xs flex items-center gap-1 px-2 py-1 rounded transition-colors ${
                 showAllServos
                   ? 'text-blue-400 bg-blue-500/10 hover:bg-blue-500/20'
-                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+                  : 'text-content-secondary hover:text-content hover:bg-surface-tooltip'
               }`}
             >
               {showAllServos ? (
@@ -448,10 +448,10 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
                 onClick={() => setSelectedServo(idx)}
                 className={`relative px-3 py-2 rounded-lg transition-all text-left min-w-[80px] ${
                   selectedServo === idx
-                    ? 'bg-blue-500/20 border border-blue-500/50 text-blue-400'
+                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
                     : hasRules
-                      ? 'bg-zinc-800 border border-zinc-600 text-zinc-300 hover:border-zinc-500'
-                      : 'bg-zinc-800/50 border border-zinc-700/50 text-zinc-500 hover:border-zinc-600'
+                      ? 'bg-surface-tooltip border text-content hover:border'
+                      : 'bg-surface border-subtle text-content-secondary hover:border'
                 }`}
               >
                 <div className="text-xs font-medium">Servo {idx}</div>
@@ -465,7 +465,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
       {currentConfig && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Left: What is this servo? */}
-          <div className="bg-gradient-to-br from-blue-500/10 to-indigo-600/5 rounded-xl border border-blue-500/20 p-4 space-y-4">
+          <div className="bg-gradient-to-br from-blue-500/10 to-indigo-600/5 rounded-xl border-blue-500/20 p-4 space-y-4">
             <div>
               <h3 className="text-sm font-medium text-blue-200">
                 What is Servo {selectedServo} connected to?
@@ -490,7 +490,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
                     key={func.id}
                     onClick={() => applyFunction(func)}
                     className={`p-3 rounded-xl border text-left transition-all ${
-                      isActive ? func.activeColor : `${func.color} text-zinc-300`
+                      isActive ? func.activeColor : `${func.color} text-content`
                     }`}
                   >
                     <div className="text-xs font-medium">{func.name}</div>
@@ -512,7 +512,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
 
             {/* Current configuration summary */}
             {currentRules.length > 0 && (
-              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <div className="p-3 bg-blue-500/10 border-blue-500/20 rounded-lg">
                 <p className="text-xs text-blue-300/60">Current configuration:</p>
                 <p className="text-sm text-blue-100 mt-1">
                   Servo {selectedServo} responds to <strong className="text-blue-200">{describeServoFunction(selectedServo)}</strong>
@@ -524,7 +524,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
           {/* Right: Servo limits + Advanced */}
           <div className="space-y-4">
             {/* Servo Limits */}
-            <div className="bg-gradient-to-br from-emerald-500/10 to-teal-600/5 rounded-xl border border-emerald-500/20 p-4 space-y-4">
+            <div className="bg-gradient-to-br from-emerald-500/10 to-teal-600/5 rounded-xl border-emerald-500/20 p-4 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center">
                   <Settings className="w-5 h-5 text-emerald-400" />
@@ -536,7 +536,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
               </div>
 
               {/* PWM Visualization */}
-              <div className="relative h-5 bg-zinc-800 rounded overflow-hidden">
+              <div className="relative h-5 bg-surface-tooltip rounded overflow-hidden">
                 <div
                   className="absolute h-full bg-blue-500/30"
                   style={{
@@ -611,7 +611,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
             </div>
 
             {/* Advanced: Custom rules */}
-            <div className="bg-gradient-to-br from-purple-500/10 to-violet-600/5 rounded-xl border border-purple-500/20">
+            <div className="bg-gradient-to-br from-purple-500/10 to-violet-600/5 rounded-xl border-purple-500/20">
               <button
                 onClick={() => setShowAdvanced(!showAdvanced)}
                 className="w-full p-3 flex items-center justify-between text-left"
@@ -648,7 +648,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
                           onChange={(e) =>
                             updateMixerRule(rule.originalIndex, { inputSource: Number(e.target.value) })
                           }
-                          className="flex-1 px-2 py-1.5 bg-purple-900/30 border border-purple-500/30 rounded text-xs text-purple-200"
+                          className="flex-1 px-2 py-1.5 bg-purple-900/30 border-purple-500/30 rounded text-xs text-purple-200"
                         >
                           {Object.entries(INPUT_SOURCE_NAMES).map(([val, name]) => (
                             <option key={val} value={val}>
@@ -662,7 +662,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
                           onChange={(e) =>
                             updateMixerRule(rule.originalIndex, { rate: Number(e.target.value) })
                           }
-                          className="w-16 px-2 py-1.5 bg-purple-900/30 border border-purple-500/30 rounded text-xs text-purple-200 text-center"
+                          className="w-16 px-2 py-1.5 bg-purple-900/30 border-purple-500/30 rounded text-xs text-purple-200 text-center"
                           min={-125}
                           max={125}
                         />
@@ -687,7 +687,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
       <div className="flex justify-between items-center pt-2">
         <button
           onClick={loadConfig}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+          className="flex items-center gap-2 px-3 py-1.5 text-xs text-content-secondary hover:text-content hover:bg-surface-tooltip rounded transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           Refresh
@@ -698,7 +698,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
           className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
             modified
               ? 'bg-blue-600 text-white hover:bg-blue-500'
-              : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+              : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
           }`}
         >
           <Save className="w-4 h-4" />

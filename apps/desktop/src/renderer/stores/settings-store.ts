@@ -194,6 +194,12 @@ export interface ConnectionMemory {
 export type DefaultSitlType = 'inav' | 'ardupilot';
 
 /**
+ * Theme preference
+ * 'dark' = dark theme (default), 'light' = light theme, 'system' = follow OS preference
+ */
+export type ThemePreference = 'dark' | 'light' | 'system';
+
+/**
  * App-level settings store
  */
 interface SettingsStore {
@@ -248,6 +254,10 @@ interface SettingsStore {
   // Display units
   displayUnits: DisplayUnits;
   setDisplayUnits: (units: DisplayUnits) => void;
+
+  // Theme
+  theme: ThemePreference;
+  setTheme: (theme: ThemePreference) => void;
 
   // Experience level
   experienceLevel: ExperienceLevel | null;
@@ -653,6 +663,7 @@ export const useSettingsStore = create<SettingsStore>()(
   preferredFirmwareSource: 'ardupilot' as FirmwareSource,
   telemetrySpeed: 'normal' as TelemetrySpeed,
   displayUnits: 'small' as DisplayUnits,
+  theme: 'dark' as ThemePreference,
   experienceLevel: null as ExperienceLevel | null,
   experienceLevelVersion: null as string | null,
   uiVisibility: { ...BEGINNER_UI_VISIBILITY },
@@ -721,6 +732,7 @@ export const useSettingsStore = create<SettingsStore>()(
           preferredFirmwareSource: ((settings as unknown as Record<string, unknown>).preferredFirmwareSource as FirmwareSource) || 'ardupilot',
           telemetrySpeed: ((settings as unknown as Record<string, unknown>).telemetrySpeed as TelemetrySpeed) || 'normal',
           displayUnits: ((settings as unknown as Record<string, unknown>).displayUnits as DisplayUnits) || 'small',
+          theme: ((settings as unknown as Record<string, unknown>).theme as ThemePreference) || 'dark',
           experienceLevel: ((settings as unknown as Record<string, unknown>).experienceLevel as ExperienceLevel) || null,
           experienceLevelVersion: ((settings as unknown as Record<string, unknown>).experienceLevelVersion as string) || null,
           uiVisibility: {
@@ -760,6 +772,7 @@ export const useSettingsStore = create<SettingsStore>()(
         preferredFirmwareSource: state.preferredFirmwareSource,
         telemetrySpeed: state.telemetrySpeed,
         displayUnits: state.displayUnits,
+        theme: state.theme,
         ...(state.experienceLevel ? { experienceLevel: state.experienceLevel } : {}),
         ...(state.experienceLevelVersion ? { experienceLevelVersion: state.experienceLevelVersion } : {}),
         uiVisibility: state.uiVisibility,
@@ -987,6 +1000,10 @@ export const useSettingsStore = create<SettingsStore>()(
     set({ displayUnits: units });
   },
 
+  setTheme: (theme) => {
+    set({ theme });
+  },
+
   setExperienceLevel: (level, version) => {
     const uiVis = level === 'advanced' ? { ...ADVANCED_UI_VISIBILITY } : { ...BEGINNER_UI_VISIBILITY };
     set((state) => ({
@@ -1046,6 +1063,7 @@ useSettingsStore.subscribe(
     preferredFirmwareSource: state.preferredFirmwareSource,
     telemetrySpeed: state.telemetrySpeed,
     displayUnits: state.displayUnits,
+    theme: state.theme,
     experienceLevel: state.experienceLevel,
     experienceLevelVersion: state.experienceLevelVersion,
     uiVisibility: state.uiVisibility,
@@ -1070,6 +1088,7 @@ useSettingsStore.subscribe(
         curr.preferredFirmwareSource !== prev.preferredFirmwareSource ||
         curr.telemetrySpeed !== prev.telemetrySpeed ||
         curr.displayUnits !== prev.displayUnits ||
+        curr.theme !== prev.theme ||
         curr.experienceLevel !== prev.experienceLevel ||
         curr.experienceLevelVersion !== prev.experienceLevelVersion ||
         curr.uiVisibility !== prev.uiVisibility ||

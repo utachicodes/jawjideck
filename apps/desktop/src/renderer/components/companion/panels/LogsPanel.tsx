@@ -4,7 +4,7 @@ import { PanelContainer } from '../../panels/panel-utils';
 import type { LogLevel } from '@ardudeck/companion-types';
 
 const LOG_LEVEL_COLORS: Record<LogLevel, { text: string; bg: string; border: string }> = {
-  debug: { text: 'text-gray-500', bg: 'bg-gray-600/20', border: 'border-l-gray-600' },
+  debug: { text: 'text-content-secondary', bg: 'bg-gray-600/20', border: 'border-l-gray-600' },
   info: { text: 'text-blue-400', bg: 'bg-blue-500/20', border: 'border-l-blue-500' },
   warn: { text: 'text-yellow-400', bg: 'bg-yellow-500/20', border: 'border-l-yellow-500' },
   error: { text: 'text-red-400', bg: 'bg-red-500/20', border: 'border-l-red-500' },
@@ -63,7 +63,7 @@ export function LogsPanel() {
   return (
     <PanelContainer className="flex flex-col gap-0 p-0">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-700/40 shrink-0">
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-subtle shrink-0">
         {/* Level filter buttons */}
         <div className="flex items-center gap-1">
           {LOG_LEVELS.map((level) => {
@@ -76,7 +76,7 @@ export function LogsPanel() {
                 className={`px-1.5 py-0.5 text-[10px] font-mono font-bold rounded transition-colors ${
                   isActive
                     ? `${colors.bg} ${colors.text}`
-                    : 'bg-gray-800/50 text-gray-600'
+                    : 'bg-surface text-content-tertiary'
                 }`}
               >
                 {level.toUpperCase()}
@@ -91,10 +91,10 @@ export function LogsPanel() {
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           placeholder="Search logs..."
-          className="flex-1 bg-gray-800/50 border border-gray-700/50 rounded px-2 py-0.5 text-[11px] text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+          className="flex-1 bg-surface border border-subtle rounded px-2 py-0.5 text-[11px] text-content focus:outline-none focus:ring-1 focus:ring-blue-500/50"
         />
 
-        <span className="text-[10px] text-gray-600">{filteredLogs.length}/{logs.length}</span>
+        <span className="text-[10px] text-content-tertiary">{filteredLogs.length}/{logs.length}</span>
       </div>
 
       {/* Log list */}
@@ -104,26 +104,26 @@ export function LogsPanel() {
         onScroll={handleScroll}
       >
         {filteredLogs.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-600 text-xs">
+          <div className="flex items-center justify-center h-full text-content-tertiary text-xs">
             {logs.length === 0 ? 'Waiting for logs...' : 'No logs match filter'}
           </div>
         ) : (
-          <div className="divide-y divide-gray-800/30">
+          <div className="divide-y divide-subtle">
             {filteredLogs.map((log, i) => {
               const colors = LOG_LEVEL_COLORS[log.level];
               return (
                 <div
                   key={`${log.timestamp}-${i}`}
-                  className={`flex items-start gap-2 px-3 py-1 border-l-2 ${colors.border} hover:bg-gray-800/30 transition-colors`}
+                  className={`flex items-start gap-2 px-3 py-1 border-l-2 ${colors.border} hover:bg-surface/30 transition-colors`}
                 >
                   <span className={`shrink-0 text-[9px] font-mono font-bold px-1 py-0.5 rounded ${colors.bg} ${colors.text} mt-0.5`}>
                     {log.level.slice(0, 4).toUpperCase()}
                   </span>
-                  <span className="text-[10px] text-gray-500 font-mono shrink-0 mt-0.5">
+                  <span className="text-[10px] text-content-secondary font-mono shrink-0 mt-0.5">
                     {formatTimestamp(log.timestamp)}
                   </span>
                   {log.source && (
-                    <span className="text-[10px] text-gray-600 shrink-0 mt-0.5">
+                    <span className="text-[10px] text-content-tertiary shrink-0 mt-0.5">
                       [{log.source}]
                     </span>
                   )}

@@ -75,30 +75,30 @@ function VehicleMismatchDialog({
 }) {
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-xl border border-amber-500/50 w-full max-w-md mx-4 overflow-hidden shadow-2xl">
+      <div className="bg-surface-tooltip rounded-xl border border-amber-500/50 w-full max-w-md mx-4 overflow-hidden shadow-2xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-700 bg-amber-500/10">
+        <div className="px-6 py-4 border-b border-subtle bg-amber-500/10">
           <div className="flex items-center gap-3">
             <svg className="w-6 h-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
-            <h2 className="text-lg font-semibold text-white">Vehicle Type Mismatch</h2>
+            <h2 className="text-lg font-semibold text-content">Vehicle Type Mismatch</h2>
           </div>
         </div>
 
         {/* Content */}
         <div className="px-6 py-5">
-          <p className="text-gray-300 mb-4">
+          <p className="text-content mb-4">
             Your vehicle profile is set to <span className="font-semibold text-amber-400">{VEHICLE_TYPE_NAMES[profileType]}</span> but
             the connected flight controller is a <span className="font-semibold text-blue-400">{VEHICLE_TYPE_NAMES[fcType]}</span>.
           </p>
-          <p className="text-gray-400 text-sm">
+          <p className="text-content-secondary text-sm">
             Performance estimates and settings may not be accurate for your actual vehicle.
           </p>
         </div>
 
         {/* Actions */}
-        <div className="px-6 py-4 border-t border-gray-700 flex flex-col gap-2">
+        <div className="px-6 py-4 border-t border-subtle flex flex-col gap-2">
           <button
             onClick={onUpdateProfile}
             className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors"
@@ -108,13 +108,13 @@ function VehicleMismatchDialog({
           <div className="flex gap-2">
             <button
               onClick={onIgnore}
-              className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+              className="flex-1 px-4 py-2 bg-surface-raised hover:bg-surface text-content rounded-lg transition-colors"
             >
               Ignore Once
             </button>
             <button
               onClick={onDismissSession}
-              className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+              className="flex-1 px-4 py-2 bg-surface-raised hover:bg-surface text-content rounded-lg transition-colors"
             >
               Don't Ask Again
             </button>
@@ -137,7 +137,7 @@ function CollapsedSidebar({ onExpand }: { onExpand: () => void }) {
       {/* Expand button */}
       <button
         onClick={onExpand}
-        className="p-2 rounded-lg hover:bg-gray-700/50 text-gray-400 hover:text-gray-200 transition-colors"
+        className="p-2 rounded-lg hover:bg-surface-raised text-content-secondary hover:text-content transition-colors"
         title="Expand sidebar"
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -149,7 +149,7 @@ function CollapsedSidebar({ onExpand }: { onExpand: () => void }) {
       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
         connectionState.isConnected
           ? 'bg-emerald-500/20 border border-emerald-500/30'
-          : 'bg-gray-700/50 border border-gray-600/30'
+          : 'bg-surface-raised border border-subtle'
       }`}>
         <div className={`w-2.5 h-2.5 rounded-full ${
           connectionState.isConnected ? 'bg-emerald-400' : 'bg-gray-500'
@@ -159,8 +159,8 @@ function CollapsedSidebar({ onExpand }: { onExpand: () => void }) {
       {/* System ID */}
       {connectionState.isConnected && connectionState.systemId && (
         <div className="text-center">
-          <div className="text-[10px] text-gray-500 uppercase">SYS</div>
-          <div className="text-sm font-mono text-gray-300">{connectionState.systemId}</div>
+          <div className="text-[10px] text-content-secondary uppercase">SYS</div>
+          <div className="text-sm font-mono text-content">{connectionState.systemId}</div>
         </div>
       )}
 
@@ -645,54 +645,54 @@ function App() {
               <img src={logoImage} alt="ArduDeck" className="w-full h-full object-cover" />
             </div>
 
-            <h2 className="text-2xl font-semibold text-white mb-3">
+            <h2 className="text-2xl font-semibold text-content mb-3">
               Welcome to ArduDeck
             </h2>
-            <p className="text-gray-400 mb-8 leading-relaxed">
+            <p className="text-content-secondary mb-8 leading-relaxed">
               Connect to your flight controller using the panel on the left.
               Choose serial, TCP, or UDP connection method.
             </p>
 
             {/* Feature cards */}
             <div className="grid grid-cols-2 gap-3 text-left">
-              <div className="p-4 rounded-xl bg-gray-800/30 border border-gray-700/30">
+              <div className="p-4 rounded-xl bg-surface border border-subtle">
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-3">
                   <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="text-sm font-medium text-gray-200 mb-1">Auto-detect</h3>
-                <p className="text-xs text-gray-500">Automatically find MAVLink devices</p>
+                <h3 className="text-sm font-medium text-content mb-1">Auto-detect</h3>
+                <p className="text-xs text-content-secondary">Automatically find MAVLink devices</p>
               </div>
 
-              <div className="p-4 rounded-xl bg-gray-800/30 border border-gray-700/30">
+              <div className="p-4 rounded-xl bg-surface border border-subtle">
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center mb-3">
                   <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
-                <h3 className="text-sm font-medium text-gray-200 mb-1">Real-time</h3>
-                <p className="text-xs text-gray-500">Live telemetry streaming</p>
+                <h3 className="text-sm font-medium text-content mb-1">Real-time</h3>
+                <p className="text-xs text-content-secondary">Live telemetry streaming</p>
               </div>
 
-              <div className="p-4 rounded-xl bg-gray-800/30 border border-gray-700/30">
+              <div className="p-4 rounded-xl bg-surface border border-subtle">
                 <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center mb-3">
                   <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                 </div>
-                <h3 className="text-sm font-medium text-gray-200 mb-1">Parameters</h3>
-                <p className="text-xs text-gray-500">Configure your vehicle</p>
+                <h3 className="text-sm font-medium text-content mb-1">Parameters</h3>
+                <p className="text-xs text-content-secondary">Configure your vehicle</p>
               </div>
 
-              <div className="p-4 rounded-xl bg-gray-800/30 border border-gray-700/30">
+              <div className="p-4 rounded-xl bg-surface border border-subtle">
                 <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center mb-3">
                   <svg className="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                   </svg>
                 </div>
-                <h3 className="text-sm font-medium text-gray-200 mb-1">Mission Planning</h3>
-                <p className="text-xs text-gray-500">Create flight plans</p>
+                <h3 className="text-sm font-medium text-content mb-1">Mission Planning</h3>
+                <p className="text-xs text-content-secondary">Create flight plans</p>
               </div>
             </div>
           </div>
@@ -743,7 +743,7 @@ function App() {
         <NavigationRail onViewChange={handleViewChange} />
 
         {/* Sidebar - collapsible */}
-        <aside className={`border-r border-gray-800/50 bg-gray-900/30 shrink-0 transition-all duration-300 ${
+        <aside className={`border-r border-subtle bg-surface-nav shrink-0 transition-all duration-300 ${
           sidebarCollapsed ? 'w-16' : 'w-80'
         }`}>
           {sidebarCollapsed ? (
@@ -753,7 +753,7 @@ function App() {
               <ConnectionPanel />
               <button
                 onClick={() => setSidebarCollapsed(true)}
-                className="absolute top-3 right-3 p-1.5 rounded-md hover:bg-gray-700/50 text-gray-500 hover:text-gray-300 transition-colors"
+                className="absolute top-3 right-3 p-1.5 rounded-md hover:bg-surface-raised text-content-secondary hover:text-content transition-colors"
                 title="Collapse sidebar"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -789,32 +789,32 @@ function App() {
       {/* CLI exit confirmation dialog */}
       {showCliExitDialog && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-xl border border-amber-500/50 w-full max-w-md mx-4 overflow-hidden shadow-2xl">
+          <div className="bg-surface-tooltip rounded-xl border border-amber-500/50 w-full max-w-md mx-4 overflow-hidden shadow-2xl">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-700 bg-amber-500/10">
+            <div className="px-6 py-4 border-b border-subtle bg-amber-500/10">
               <div className="flex items-center gap-3">
                 <svg className="w-6 h-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
-                <h2 className="text-lg font-semibold text-white">Leave CLI Terminal?</h2>
+                <h2 className="text-lg font-semibold text-content">Leave CLI Terminal?</h2>
               </div>
             </div>
 
             {/* Content */}
             <div className="px-6 py-5">
-              <p className="text-gray-300 mb-3">
+              <p className="text-content mb-3">
                 Leaving the CLI tab will send an exit command which triggers a flight controller reboot (2-4 seconds).
               </p>
-              <p className="text-gray-400 text-sm">
+              <p className="text-content-secondary text-sm">
                 The app will automatically reconnect after the board restarts.
               </p>
             </div>
 
             {/* Actions */}
-            <div className="px-6 py-4 border-t border-gray-700 flex gap-3">
+            <div className="px-6 py-4 border-t border-subtle flex gap-3">
               <button
                 onClick={handleCliExitCancel}
-                className="flex-1 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+                className="flex-1 px-4 py-2.5 bg-surface-raised hover:bg-surface text-content rounded-lg transition-colors"
               >
                 Stay in CLI
               </button>

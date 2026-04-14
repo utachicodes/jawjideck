@@ -40,12 +40,12 @@ export default function ServoBar({
     <div className="relative" style={{ height: height + (showLabels ? 20 : 0) }}>
       {/* Background track */}
       <div
-        className="absolute w-full bg-zinc-800 rounded-full overflow-hidden"
+        className="absolute w-full bg-surface-tooltip rounded-full overflow-hidden"
         style={{ height }}
       >
         {/* Active range highlight */}
         <div
-          className="absolute h-full bg-zinc-700"
+          className="absolute h-full bg-surface-raised"
           style={{
             left: `${minPercent}%`,
             width: `${maxPercent - minPercent}%`,
@@ -86,7 +86,7 @@ export default function ServoBar({
       {/* Labels - positioned within bounds */}
       {showLabels && (
         <div
-          className="absolute w-full text-[10px] text-zinc-500 px-1"
+          className="absolute w-full text-[10px] text-content-secondary px-1"
           style={{ top: height + 4 }}
         >
           <span className="absolute left-0">{min}</span>

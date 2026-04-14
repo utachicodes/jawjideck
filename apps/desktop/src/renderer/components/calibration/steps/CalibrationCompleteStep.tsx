@@ -114,7 +114,7 @@ export function CalibrationCompleteStep() {
             : showSuccess ? 'Calibration Complete!' : 'Calibration Failed'}
         </h3>
 
-        <p className="text-gray-400">
+        <p className="text-content-secondary">
           {isVerifying
             ? 'Reading parameters back from the flight controller to confirm the calibration was applied.'
             : showSuccess
@@ -128,7 +128,7 @@ export function CalibrationCompleteStep() {
           for a calibration that didn't actually apply. */}
       {showSuccess && calibrationData && (
         <div className="space-y-4">
-          <h4 className="text-sm font-medium text-gray-300 uppercase tracking-wide">
+          <h4 className="text-sm font-medium text-content uppercase tracking-wide">
             Calibration Results
           </h4>
 
@@ -165,7 +165,7 @@ export function CalibrationCompleteStep() {
         {showSuccess ? (
           <button
             onClick={handleStartNew}
-            className="px-4 py-2.5 text-gray-300 hover:text-white transition-colors flex items-center gap-2"
+            className="px-4 py-2.5 text-content hover:text-content transition-colors flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -175,7 +175,7 @@ export function CalibrationCompleteStep() {
         ) : (
           <button
             onClick={handleStartNew}
-            className="px-4 py-2.5 text-gray-400 hover:text-gray-300 transition-colors flex items-center gap-2"
+            className="px-4 py-2.5 text-content-secondary hover:text-content transition-colors flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -241,7 +241,7 @@ export function CalibrationCompleteStep() {
           F7/H7 boards. F4 boards are excluded — see showPersistentSave.
           Hidden during verification because we don't yet know if cal applied. */}
       {showSuccess && showPersistentSave && (isMavlink ? !savePersistentSuccess : (saveSuccess && !savePersistentSuccess)) && (
-        <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+        <div className="bg-surface rounded-xl border border-subtle p-5">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
               <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -249,10 +249,10 @@ export function CalibrationCompleteStep() {
               </svg>
             </div>
             <div className="flex-1">
-              <h4 className="text-sm font-medium text-gray-200 mb-1">
+              <h4 className="text-sm font-medium text-content mb-1">
                 {isMavlink ? 'Save Calibration to Flash' : 'Save to Persistent Storage'}
               </h4>
-              <p className="text-xs text-gray-400 mb-3">
+              <p className="text-xs text-content-secondary mb-3">
                 {isMavlink
                   ? 'Calibration is already applied. Write parameters to the FC\u2019s parameter storage so they persist across reboots.'
                   : 'Save calibration data to the bootloader partition. This data will survive firmware updates.'}
@@ -289,7 +289,7 @@ export function CalibrationCompleteStep() {
                 <button
                   onClick={() => setStep('select')}
                   disabled={isSavingPersistent}
-                  className="text-xs text-gray-500 hover:text-gray-400 transition-colors"
+                  className="text-xs text-content-secondary hover:text-content-secondary transition-colors"
                 >
                   Skip
                 </button>
@@ -315,17 +315,17 @@ export function CalibrationCompleteStep() {
       {/* Info note — uses showSuccess (not raw calibrationSuccess) so notes
           stay hidden during the verification window. */}
       {showSuccess && !saveSuccess && !isMavlink && (
-        <p className="text-center text-xs text-gray-500">
+        <p className="text-center text-xs text-content-secondary">
           Calibration data has been applied. Click "Save to FC" to persist changes to flash memory.
         </p>
       )}
       {showSuccess && isMavlink && showPersistentSave && !savePersistentSuccess && (
-        <p className="text-center text-xs text-gray-500">
+        <p className="text-center text-xs text-content-secondary">
           The flight controller already applied the calibration. Use "Save Calibration to Flash" so it persists across reboots.
         </p>
       )}
       {showSuccess && isMavlink && !showPersistentSave && (
-        <p className="text-center text-xs text-gray-500">
+        <p className="text-center text-xs text-content-secondary">
           The flight controller has applied and saved the calibration.
         </p>
       )}
@@ -352,12 +352,12 @@ function CalibrationVerificationCard({ verification }: { verification: Calibrati
 
   if (verification.status === 'pending') {
     return (
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-4 flex items-center gap-3">
+      <div className="bg-surface rounded-xl border border-subtle p-4 flex items-center gap-3">
         <svg className="w-4 h-4 animate-spin text-cyan-400 flex-shrink-0" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
         </svg>
-        <p className="text-sm text-gray-400">Verifying calibration parameters on flight controller…</p>
+        <p className="text-sm text-content-secondary">Verifying calibration parameters on flight controller…</p>
       </div>
     );
   }
@@ -419,10 +419,10 @@ function CalibrationVerificationCard({ verification }: { verification: Calibrati
           </button>
 
           {expanded && (
-            <div className="mt-3 rounded-lg border border-gray-700/40 overflow-hidden">
+            <div className="mt-3 rounded-lg border border-subtle overflow-hidden">
               <table className="w-full text-xs">
-                <thead className="bg-gray-800/40">
-                  <tr className="text-left text-gray-400">
+                <thead className="bg-surface">
+                  <tr className="text-left text-content-secondary">
                     <th className="px-3 py-2 font-medium">Parameter</th>
                     <th className="px-3 py-2 font-medium text-right">Before</th>
                     <th className="px-3 py-2 font-medium text-right">After</th>
@@ -433,11 +433,11 @@ function CalibrationVerificationCard({ verification }: { verification: Calibrati
                   {verification.results.map((r) => {
                     const delta = (r.after ?? 0) - (r.before ?? 0);
                     return (
-                      <tr key={r.paramId} className="border-t border-gray-700/30">
-                        <td className="px-3 py-1.5 font-mono text-gray-300">{r.paramId}</td>
-                        <td className="px-3 py-1.5 text-right font-mono text-gray-400">{r.before?.toFixed(6) ?? '-'}</td>
-                        <td className="px-3 py-1.5 text-right font-mono text-gray-300">{r.after?.toFixed(6) ?? '-'}</td>
-                        <td className={`px-3 py-1.5 text-right font-mono ${r.changed ? palette.text : 'text-gray-500'}`}>
+                      <tr key={r.paramId} className="border-t border-subtle">
+                        <td className="px-3 py-1.5 font-mono text-content">{r.paramId}</td>
+                        <td className="px-3 py-1.5 text-right font-mono text-content-secondary">{r.before?.toFixed(6) ?? '-'}</td>
+                        <td className="px-3 py-1.5 text-right font-mono text-content">{r.after?.toFixed(6) ?? '-'}</td>
+                        <td className={`px-3 py-1.5 text-right font-mono ${r.changed ? palette.text : 'text-content-secondary'}`}>
                           {delta >= 0 ? '+' : ''}{delta.toFixed(6)}
                         </td>
                       </tr>

@@ -128,14 +128,14 @@ export function ArmDisarmButton() {
             ? 'bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30'
             : forceArm && isMavlink
               ? 'bg-amber-500/20 border border-amber-500/40 text-amber-400 hover:bg-amber-500/30'
-              : 'bg-gray-800/60 border border-gray-600/40 text-gray-400 hover:bg-gray-700/60 hover:text-gray-200'
+              : 'bg-surface border border-border text-content-secondary hover:bg-surface-raised hover:text-content'
           }
         `}
         title={`${isArmed ? 'Disarm' : forceArm && isMavlink ? 'Force arm (bypasses checks)' : 'Arm'} - Right-click for options`}
       >
         {/* Pulsing dot for armed state */}
         <div className={`w-1.5 h-1.5 rounded-full ${
-          isArmed ? 'bg-red-400 animate-pulse' : 'bg-gray-500'
+          isArmed ? 'bg-red-400 animate-pulse' : 'bg-content-secondary'
         }`} />
 
         {isLoading ? (
@@ -159,32 +159,32 @@ export function ArmDisarmButton() {
 
       {/* Context menu */}
       {showMenu && (
-        <div className="absolute right-0 top-full mt-1.5 w-60 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-1.5 w-60 bg-surface-tooltip border border-border rounded-lg shadow-xl z-50 overflow-hidden">
           {/* Force ARM toggle (MAVLink only) */}
           {isMavlink && (
-            <label className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-700/50 cursor-pointer transition-colors">
+            <label className="flex items-center gap-3 px-3 py-2.5 hover:bg-surface-raised cursor-pointer transition-colors">
               <input
                 type="checkbox"
                 checked={forceArm}
                 onChange={(e) => setForceArm(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-gray-600 bg-gray-700 text-amber-500 focus:ring-amber-500/50 focus:ring-offset-0"
+                className="w-3.5 h-3.5 rounded border-border bg-surface-raised text-amber-500 focus:ring-amber-500/50 focus:ring-offset-0"
               />
               <div>
-                <div className="text-xs text-gray-200 font-medium">Force ARM</div>
-                <div className="text-[10px] text-gray-500">Bypass pre-arm safety checks</div>
+                <div className="text-xs text-content font-medium">Force ARM</div>
+                <div className="text-[10px] text-content-secondary">Bypass pre-arm safety checks</div>
               </div>
             </label>
           )}
 
           {isMsp && !mspCanArm && modeMappingsLoaded && (
-            <div className="px-3 py-2.5 text-[10px] text-gray-500">
+            <div className="px-3 py-2.5 text-[10px] text-content-secondary">
               ARM mode not configured on FC. Set an AUX channel for ARM in the Modes tab.
             </div>
           )}
 
           {/* Arming blocked reasons */}
           {hasBlockedReasons && (
-            <div className={`px-3 py-2.5 ${isMavlink ? 'border-t border-gray-700/50' : ''}`}>
+            <div className={`px-3 py-2.5 ${isMavlink ? 'border-t border-subtle' : ''}`}>
               <div className="text-[10px] font-medium text-red-400 uppercase tracking-wider mb-1">
                 {isMavlink ? 'Pre-arm Checks Failed' : 'Arming Blocked'}
               </div>
@@ -199,7 +199,7 @@ export function ArmDisarmButton() {
           )}
 
           {/* Protocol info */}
-          <div className="px-3 py-2 border-t border-gray-700/50 text-[10px] text-gray-500">
+          <div className="px-3 py-2 border-t border-subtle text-[10px] text-content-secondary">
             {isMavlink ? 'MAVLink' : `MSP (${connectionState.fcVariant || 'Unknown'})`}
           </div>
         </div>

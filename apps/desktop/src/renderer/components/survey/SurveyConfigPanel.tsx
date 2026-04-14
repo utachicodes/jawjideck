@@ -74,19 +74,19 @@ export function SurveyConfigPanel() {
   if (!polygon) return null;
 
   return (
-    <div className="absolute top-3 right-24 z-[1000] w-72 max-h-[calc(100%-24px)] flex flex-col bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-2xl overflow-hidden">
+    <div className="absolute top-3 right-24 z-[1000] w-72 max-h-[calc(100%-24px)] flex flex-col bg-surface/95 backdrop-blur-sm border border-subtle rounded-xl shadow-2xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-subtle flex-shrink-0">
         <div className="flex items-center gap-2">
           <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
           </svg>
-          <h3 className="text-sm font-medium text-white">Survey Grid</h3>
+          <h3 className="text-sm font-medium text-content">Survey Grid</h3>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={startDrawing}
-            className="p-1 text-gray-400 hover:text-purple-400 transition-colors"
+            className="p-1 text-content-secondary hover:text-purple-400 transition-colors"
             title="Redraw polygon"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -95,7 +95,7 @@ export function SurveyConfigPanel() {
           </button>
           <button
             onClick={clearSurvey}
-            className="p-1 text-gray-400 hover:text-red-400 transition-colors"
+            className="p-1 text-content-secondary hover:text-red-400 transition-colors"
             title="Clear survey"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -125,7 +125,7 @@ export function SurveyConfigPanel() {
           <div className="space-y-2">
             <SliderInput label="Altitude" value={config.altitude} onChange={setAltitude} min={10} max={500} step={5} unit="m" />
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400 w-14 flex-shrink-0">Alt Ref</span>
+              <span className="text-xs text-content-secondary w-14 flex-shrink-0">Alt Ref</span>
               <div className="flex gap-1 flex-1">
                 {ALT_REF_OPTIONS.map(opt => (
                   <button
@@ -134,7 +134,7 @@ export function SurveyConfigPanel() {
                     className={`flex-1 px-1.5 py-1 text-[10px] rounded-md transition-colors ${
                       config.altitudeReference === opt.id
                         ? 'bg-purple-600/80 text-white'
-                        : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                        : 'bg-surface-tooltip text-content-secondary hover:text-content hover:bg-surface-raised'
                     }`}
                     title={opt.description}
                   >
@@ -165,7 +165,7 @@ export function SurveyConfigPanel() {
                 className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-colors ${
                   config.pattern === opt.id
                     ? 'bg-purple-600/80 text-white'
-                    : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                    : 'bg-surface-tooltip text-content-secondary hover:text-content hover:bg-surface-raised'
                 }`}
                 title={opt.description}
               >
@@ -187,11 +187,11 @@ export function SurveyConfigPanel() {
 
         {/* Show footprints toggle */}
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-400">Show footprints</span>
+          <span className="text-xs text-content-secondary">Show footprints</span>
           <button
             onClick={() => setShowFootprints(!showFootprints)}
             className={`w-8 h-4.5 rounded-full transition-colors relative ${
-              showFootprints ? 'bg-purple-600' : 'bg-gray-600'
+              showFootprints ? 'bg-purple-600' : 'bg-surface-raised'
             }`}
           >
             <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${
@@ -202,7 +202,7 @@ export function SurveyConfigPanel() {
 
         {/* Stats */}
         {result && result.stats.photoCount > 0 && (
-          <div className="pt-3 border-t border-gray-700/50">
+          <div className="pt-3 border-t border-subtle">
             <SurveyStatsPanel stats={result.stats} />
           </div>
         )}
@@ -236,7 +236,7 @@ export function SurveyConfigPanel() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1.5">{title}</div>
+      <div className="text-[10px] font-medium text-content-secondary uppercase tracking-wider mb-1.5">{title}</div>
       {children}
     </div>
   );
@@ -250,7 +250,7 @@ function SliderInput({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-gray-400 w-14 flex-shrink-0">{label}</span>
+      <span className="text-xs text-content-secondary w-14 flex-shrink-0">{label}</span>
       <input
         type="range"
         value={value}
@@ -258,9 +258,9 @@ function SliderInput({
         min={min}
         max={max}
         step={step}
-        className="flex-1 h-1 bg-gray-700 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-400 [&::-webkit-slider-thumb]:cursor-grab"
+        className="flex-1 h-1 bg-surface-raised rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-400 [&::-webkit-slider-thumb]:cursor-grab"
       />
-      <span className="text-xs text-gray-300 w-14 text-right tabular-nums font-medium">{value}{unit}</span>
+      <span className="text-xs text-content w-14 text-right tabular-nums font-medium">{value}{unit}</span>
     </div>
   );
 }
@@ -273,7 +273,7 @@ function NumberInput({
 }) {
   return (
     <div>
-      <label className="text-[10px] text-gray-500">{label}</label>
+      <label className="text-[10px] text-content-secondary">{label}</label>
       <input
         type="number"
         value={value}
@@ -284,7 +284,7 @@ function NumberInput({
         min={min}
         max={max}
         step={step}
-        className="w-full px-2 py-1 text-xs bg-gray-800 border border-gray-600 rounded text-gray-200 focus:border-purple-500 focus:outline-none"
+        className="w-full px-2 py-1 text-xs bg-surface-tooltip border border rounded text-content focus:border-purple-500 focus:outline-none"
       />
     </div>
   );

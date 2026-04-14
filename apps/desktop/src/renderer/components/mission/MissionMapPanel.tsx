@@ -1098,20 +1098,20 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
             className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1.5 ${
               activeLayer === key
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+                : 'bg-surface-tooltip text-content hover:bg-surface-raised'
             }`}
           >
             <LayerIcon layerKey={key} />
             {MAP_LAYERS[key].name}
           </button>
         ))}
-        <div className="border-t border-gray-700/50 my-0.5" />
+        <div className="border-t border-subtle my-0.5" />
         <button
           onClick={() => setShowTerrain(!showTerrain)}
           className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1.5 ${
             showTerrain
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+              : 'bg-surface-tooltip text-content hover:bg-surface-raised'
           }`}
           title="Toggle terrain elevation heatmap"
         >
@@ -1121,7 +1121,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
           </svg>
           Height
         </button>
-        <div className="border-t border-gray-700/50 my-0.5" />
+        <div className="border-t border-subtle my-0.5" />
         <OverlayToggles />
         <OfflineAreaDownload bounds={mapBounds} activeLayer={activeLayer} />
       </div>
@@ -1167,7 +1167,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
                 className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
                   isAddingWaypoint
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+                    : 'bg-surface-tooltip text-content hover:bg-surface-raised'
                 }`}
                 title={isAddingWaypoint ? 'Click on map to add waypoints' : 'Enter waypoint adding mode'}
               >
@@ -1180,15 +1180,15 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
 
             {/* Hint for Shift+click - show when NOT in add mode (as a shortcut hint) */}
             {!readOnly && !isAddingWaypoint && !isSettingHome && (
-              <span className="text-xs text-gray-500 bg-gray-800/90 px-2.5 py-1.5 rounded">
-                <kbd className="bg-gray-700 px-1 rounded text-gray-400">Shift</kbd>+click to add
+              <span className="text-xs text-content-secondary bg-surface-tooltip px-2.5 py-1.5 rounded">
+                <kbd className="bg-surface-raised px-1 rounded text-content-secondary">Shift</kbd>+click to add
               </span>
             )}
 
             {waypoints.length > 0 && (
               <button
                 onClick={() => setFitTrigger(t => t + 1)}
-                className="px-2.5 py-1.5 rounded text-xs font-medium bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 transition-colors flex items-center gap-1.5"
+                className="px-2.5 py-1.5 rounded text-xs font-medium bg-surface-tooltip text-content hover:bg-surface-raised transition-colors flex items-center gap-1.5"
                 title="Fit map to show all waypoints"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1201,7 +1201,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
             {/* Center on Vehicle button */}
             <button
               onClick={() => setCenterOnVehicleTrigger(t => t + 1)}
-              className="px-2.5 py-1.5 rounded text-xs font-medium bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 transition-colors flex items-center gap-1.5"
+              className="px-2.5 py-1.5 rounded text-xs font-medium bg-surface-tooltip text-content hover:bg-surface-raised transition-colors flex items-center gap-1.5"
               title="Center map on vehicle GPS position"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1220,7 +1220,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
                     ? 'bg-emerald-600 text-white'
                     : homePosition
                       ? 'bg-emerald-600/80 text-white'
-                      : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+                      : 'bg-surface-tooltip text-content hover:bg-surface-raised'
                 }`}
                 title={isSettingHome ? 'Click on map to set home position' : homePosition ? 'Click to change home position' : 'Set home position by clicking on map'}
               >
@@ -1233,7 +1233,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
 
             {/* Hint for Set Home mode */}
             {!readOnly && isSettingHome && (
-              <span className="text-xs text-emerald-400 bg-gray-800/90 px-2.5 py-1.5 rounded">
+              <span className="text-xs text-emerald-400 bg-surface-tooltip px-2.5 py-1.5 rounded">
                 Click on map to set home
               </span>
             )}
@@ -1241,11 +1241,11 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
             {/* Survey button */}
             {!readOnly && surveyUnlocked && (
               <>
-                <div className="w-px h-5 bg-gray-700/50" />
+                <div className="w-px h-5 bg-subtle" />
                 {!surveyIsActive ? (
                   <button
                     onClick={() => { activateSurvey(); startSurveyDrawing(); }}
-                    className="px-2.5 py-1.5 rounded text-xs font-medium bg-gray-800/90 text-purple-400 hover:bg-purple-600/30 transition-colors flex items-center gap-1.5"
+                    className="px-2.5 py-1.5 rounded text-xs font-medium bg-surface-tooltip text-purple-400 hover:bg-purple-600/30 transition-colors flex items-center gap-1.5"
                     title="Start survey grid planning"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1256,7 +1256,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
                 ) : (
                   <>
                     {surveyDrawMode === 'polygon' && (
-                      <span className="text-xs text-purple-400 bg-gray-800/90 px-2.5 py-1.5 rounded">
+                      <span className="text-xs text-purple-400 bg-surface-tooltip px-2.5 py-1.5 rounded">
                         Click to add boundary points, double-click to finish
                       </span>
                     )}
@@ -1274,7 +1274,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
                     )}
                     <button
                       onClick={deactivateSurvey}
-                      className="px-2.5 py-1.5 rounded text-xs font-medium bg-gray-800/90 text-red-400 hover:bg-red-600/20 transition-colors flex items-center gap-1.5"
+                      className="px-2.5 py-1.5 rounded text-xs font-medium bg-surface-tooltip text-red-400 hover:bg-red-600/20 transition-colors flex items-center gap-1.5"
                       title="Exit survey mode"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1293,13 +1293,13 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
         {activeMode === 'geofence' && !readOnly && (
           <>
             {/* Include/Exclude toggle */}
-            <div className="flex items-center bg-gray-800/90 rounded overflow-hidden">
+            <div className="flex items-center bg-surface-tooltip rounded overflow-hidden">
               <button
                 onClick={() => setFenceInclusionMode(true)}
                 className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
                   fenceInclusionMode
                     ? 'bg-green-600 text-white'
-                    : 'text-gray-400 hover:text-gray-200'
+                    : 'text-content-secondary hover:text-content'
                 }`}
                 title="Draw inclusion zones (vehicle must stay inside)"
               >
@@ -1310,7 +1310,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
                 className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
                   !fenceInclusionMode
                     ? 'bg-red-600 text-white'
-                    : 'text-gray-400 hover:text-gray-200'
+                    : 'text-content-secondary hover:text-content'
                 }`}
                 title="Draw exclusion zones (vehicle must stay outside)"
               >
@@ -1329,7 +1329,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
                   className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
                     isPolygonActive
                       ? `${activeColor} text-white`
-                      : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+                      : 'bg-surface-tooltip text-content hover:bg-surface-raised'
                   }`}
                   title={`Draw ${fenceInclusionMode ? 'inclusion' : 'exclusion'} polygon`}
                 >
@@ -1352,7 +1352,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
                   className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
                     isCircleActive
                       ? `${activeColor} text-white`
-                      : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+                      : 'bg-surface-tooltip text-content hover:bg-surface-raised'
                   }`}
                   title={`Draw ${fenceInclusionMode ? 'inclusion' : 'exclusion'} circle`}
                 >
@@ -1370,7 +1370,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
               className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
                 fenceDrawMode === 'return-point'
                   ? 'bg-amber-600 text-white'
-                  : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+                  : 'bg-surface-tooltip text-content hover:bg-surface-raised'
               }`}
               title="Set fence return point (where vehicle flies on breach)"
             >
@@ -1383,7 +1383,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
 
             {/* Drawing hint */}
             {fenceDrawMode !== 'none' && (
-              <span className={`text-xs bg-gray-800/90 px-2.5 py-1.5 rounded ${
+              <span className={`text-xs bg-surface-tooltip px-2.5 py-1.5 rounded ${
                 fenceDrawMode === 'return-point' ? 'text-amber-400' :
                 fenceInclusionMode ? 'text-green-400' : 'text-red-400'
               }`}>
@@ -1403,7 +1403,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
               className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
                 rallyAddMode
                   ? 'bg-orange-600 text-white'
-                  : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+                  : 'bg-surface-tooltip text-content hover:bg-surface-raised'
               }`}
               title="Add rally points by clicking on map"
             >
@@ -1415,7 +1415,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
 
             {/* Adding hint */}
             {rallyAddMode && (
-              <span className="text-xs text-orange-400 bg-gray-800/90 px-2.5 py-1.5 rounded">
+              <span className="text-xs text-orange-400 bg-surface-tooltip px-2.5 py-1.5 rounded">
                 Click on map to add rally point (ESC to cancel)
               </span>
             )}
@@ -1426,17 +1426,17 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
       {/* Placeholder message when no waypoints - only in mission mode */}
       {activeMode === 'mission' && waypoints.length === 0 && !readOnly && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[500]">
-          <div className="bg-gray-900/80 backdrop-blur-sm px-6 py-4 rounded-xl text-center">
+          <div className="bg-surface/80 backdrop-blur-sm px-6 py-4 rounded-xl text-center">
             {isSettingHome ? (
               <>
                 <div className="text-emerald-400 text-sm mb-2">Click anywhere on the map</div>
-                <div className="text-gray-500 text-xs">to set your Home position</div>
+                <div className="text-content-secondary text-xs">to set your Home position</div>
               </>
             ) : (
               <>
                 <div className="text-blue-400 text-sm mb-2">Click to add first waypoint</div>
-                <div className="text-gray-500 text-xs">
-                  Click "Add WP" or <kbd className="bg-gray-700 px-1.5 py-0.5 rounded text-gray-400 text-[10px]">Shift</kbd>+click
+                <div className="text-content-secondary text-xs">
+                  Click "Add WP" or <kbd className="bg-surface-raised px-1.5 py-0.5 rounded text-content-secondary text-[10px]">Shift</kbd>+click
                 </div>
               </>
             )}
@@ -1447,8 +1447,8 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
       {/* ReadOnly empty state */}
       {waypoints.length === 0 && readOnly && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[500]">
-          <div className="bg-gray-900/80 backdrop-blur-sm px-6 py-4 rounded-xl text-center">
-            <div className="text-gray-500 text-sm">No mission loaded</div>
+          <div className="bg-surface/80 backdrop-blur-sm px-6 py-4 rounded-xl text-center">
+            <div className="text-content-secondary text-sm">No mission loaded</div>
           </div>
         </div>
       )}
@@ -1456,15 +1456,15 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
       {/* Segment color legend + toggle */}
       {activeMode === 'mission' && waypoints.length > 1 && (
         <div className="absolute bottom-3 right-3 z-[1000]">
-          <div className="bg-gray-800/90 rounded-lg overflow-hidden text-xs">
+          <div className="bg-surface-tooltip rounded-lg overflow-hidden text-xs">
             <button
               onClick={() => updateMissionDefaults({ showSegmentColors: !showSegmentColors })}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 w-full hover:bg-gray-700/50 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 w-full hover:bg-surface-raised transition-colors"
             >
               <div className={`w-3 h-3 rounded-sm border transition-colors ${
                 showSegmentColors
                   ? 'bg-blue-500 border-blue-400'
-                  : 'bg-transparent border-gray-500'
+                  : 'bg-transparent border-content-secondary'
               }`}>
                 {showSegmentColors && (
                   <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1472,33 +1472,33 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
                   </svg>
                 )}
               </div>
-              <span className="text-gray-300 font-medium">Path colors</span>
+              <span className="text-content font-medium">Path colors</span>
             </button>
             {showSegmentColors && (
               <div className="px-2.5 pb-2 pt-0.5 grid grid-cols-2 gap-x-3 gap-y-0.5">
                 <div className="flex items-center gap-1.5">
                   <div className="w-4 h-0.5 rounded-full" style={{ backgroundColor: SEGMENT_COLORS.camera }} />
-                  <span className="text-gray-400">Camera</span>
+                  <span className="text-content-secondary">Camera</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-4 h-0.5 rounded-full" style={{ backgroundColor: SEGMENT_COLORS.roi }} />
-                  <span className="text-gray-400">ROI</span>
+                  <span className="text-content-secondary">ROI</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-4 h-0.5 rounded-full" style={{ backgroundColor: SEGMENT_COLORS.speed }} />
-                  <span className="text-gray-400">Speed</span>
+                  <span className="text-content-secondary">Speed</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-4 h-0.5 rounded-full" style={{ backgroundColor: SEGMENT_COLORS.rth }} />
-                  <span className="text-gray-400">RTH</span>
+                  <span className="text-content-secondary">RTH</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-4 h-0.5 rounded-full" style={{ backgroundColor: SEGMENT_COLORS.land }} />
-                  <span className="text-gray-400">Land</span>
+                  <span className="text-content-secondary">Land</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-4 h-0.5 rounded-full" style={{ backgroundColor: SEGMENT_COLORS.default }} />
-                  <span className="text-gray-400">Default</span>
+                  <span className="text-content-secondary">Default</span>
                 </div>
               </div>
             )}
@@ -1517,19 +1517,19 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
           />
           {/* Menu */}
           <div
-            className="absolute z-[1200] bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[180px]"
+            className="absolute z-[1200] bg-surface-tooltip border border-default rounded-lg shadow-xl py-1 min-w-[180px]"
             style={{ left: contextMenu.x, top: contextMenu.y }}
           >
             <button
               onClick={handleInsertWaypoint}
-              className="w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-blue-600 hover:text-white transition-colors flex items-center gap-2"
+              className="w-full px-3 py-2 text-left text-sm text-content hover:bg-blue-600 hover:text-white transition-colors flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               Insert waypoint here
             </button>
-            <div className="px-3 py-1 text-[10px] text-gray-500 border-t border-gray-700 mt-1">
+            <div className="px-3 py-1 text-[10px] text-content-secondary border-t border-default mt-1">
               Between WP {contextMenu.afterSeq + 1} → {contextMenu.afterSeq + 2}
             </div>
           </div>

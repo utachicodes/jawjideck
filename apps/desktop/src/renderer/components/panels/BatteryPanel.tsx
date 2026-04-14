@@ -34,13 +34,13 @@ function BatteryIcon({ percentage, voltage }: { percentage: number; voltage: num
         </defs>
 
         {/* Battery terminal (top cap) */}
-        <rect x="25" y="2" width="30" height="10" rx="3" fill="#4b5563" stroke="#6b7280" strokeWidth="1"/>
+        <rect x="25" y="2" width="30" height="10" rx="3" fill="var(--border-default)" stroke="var(--text-tertiary)" strokeWidth="1"/>
 
         {/* Battery body outline */}
-        <rect x="10" y="12" width="60" height="120" rx="6" fill="#1f2937" stroke="#4b5563" strokeWidth="2"/>
+        <rect x="10" y="12" width="60" height="120" rx="6" fill="var(--bg-surface)" stroke="var(--border-default)" strokeWidth="2"/>
 
         {/* Inner background */}
-        <rect x="14" y="16" width="52" height="112" rx="4" fill="#0f172a"/>
+        <rect x="14" y="16" width="52" height="112" rx="4" fill="var(--bg-base)"/>
 
         {/* Battery segments */}
         {[0, 1, 2, 3].map((i) => {
@@ -57,7 +57,7 @@ function BatteryIcon({ percentage, voltage }: { percentage: number; voltage: num
               width="44"
               height={segmentHeight}
               rx="2"
-              fill={isFilled ? `url(#batteryGradient)` : '#1e293b'}
+              fill={isFilled ? `url(#batteryGradient)` : 'var(--bg-surface)'}
               filter={isFilled ? 'url(#glow)' : undefined}
               style={{
                 transition: 'fill 0.3s ease-out',
@@ -71,7 +71,7 @@ function BatteryIcon({ percentage, voltage }: { percentage: number; voltage: num
           x="40"
           y="80"
           textAnchor="middle"
-          fill={level >= 0 ? fillColor : '#6b7280'}
+          fill={level >= 0 ? fillColor : 'var(--text-tertiary)'}
           fontSize="20"
           fontWeight="bold"
           fontFamily="monospace"
@@ -85,7 +85,7 @@ function BatteryIcon({ percentage, voltage }: { percentage: number; voltage: num
         <span className={`text-3xl font-bold font-mono ${textColor}`}>
           {formatNumber(voltage, 1)}
         </span>
-        <span className="text-gray-500 text-lg ml-1">V</span>
+        <span className="text-content-secondary text-lg ml-1">V</span>
       </div>
     </div>
   );

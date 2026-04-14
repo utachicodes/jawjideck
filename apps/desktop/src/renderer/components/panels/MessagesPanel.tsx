@@ -18,11 +18,11 @@ function severityColor(severity: number): string {
     case 5: // NOTICE
       return 'text-blue-400';
     case 6: // INFO
-      return 'text-gray-300';
+      return 'text-content';
     case 7: // DEBUG
-      return 'text-gray-500';
+      return 'text-content-secondary';
     default:
-      return 'text-gray-400';
+      return 'text-content-secondary';
   }
 }
 
@@ -98,14 +98,14 @@ export function MessagesPanel() {
   return (
     <PanelContainer className="flex flex-col gap-0 p-0">
       {/* Header bar */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-700/40 shrink-0">
-        <span className="text-xs text-gray-400 font-medium">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-subtle shrink-0">
+        <span className="text-xs text-content-secondary font-medium">
           {messages.length > 0 ? `${messages.length} message${messages.length !== 1 ? 's' : ''}` : 'No messages'}
         </span>
         {messages.length > 0 && (
           <button
             onClick={clear}
-            className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors px-1.5 py-0.5 rounded hover:bg-gray-700/30"
+            className="text-[10px] text-content-secondary hover:text-content transition-colors px-1.5 py-0.5 rounded hover:bg-surface-raised"
           >
             Clear
           </button>
@@ -115,11 +115,11 @@ export function MessagesPanel() {
       {/* Message list */}
       <div ref={listRef} className="flex-1 overflow-auto">
         {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-600 text-xs">
+          <div className="flex items-center justify-center h-full text-content-tertiary text-xs">
             Waiting for messages...
           </div>
         ) : (
-          <div className="divide-y divide-gray-800/50">
+          <div className="divide-y divide-subtle">
             {messages.map((msg, i) => {
               const msgKey = `${msg.text}-${msg.severity}-${i}`;
               const prearmMatch = matchPreArmError(msg.text);
@@ -128,7 +128,7 @@ export function MessagesPanel() {
               return (
                 <div key={msgKey}>
                   <div
-                    className={`flex items-start gap-2 px-3 py-1.5 border-l-2 ${severityBorder(msg.severity)} hover:bg-gray-800/30 transition-colors ${prearmMatch ? 'cursor-pointer' : ''}`}
+                    className={`flex items-start gap-2 px-3 py-1.5 border-l-2 ${severityBorder(msg.severity)} hover:bg-surface transition-colors ${prearmMatch ? 'cursor-pointer' : ''}`}
                     onClick={prearmMatch ? () => toggleExpand(msgKey) : undefined}
                   >
                     {/* Severity badge */}
@@ -143,7 +143,7 @@ export function MessagesPanel() {
 
                     {/* Count badge (for repeated messages) */}
                     {msg.count > 1 && (
-                      <span className="shrink-0 text-[9px] font-mono bg-gray-700/50 text-gray-400 px-1.5 py-0.5 rounded-full mt-0.5">
+                      <span className="shrink-0 text-[9px] font-mono bg-surface-raised text-content-secondary px-1.5 py-0.5 rounded-full mt-0.5">
                         x{msg.count}
                       </span>
                     )}
@@ -156,7 +156,7 @@ export function MessagesPanel() {
                     )}
 
                     {/* Timestamp */}
-                    <span className="shrink-0 text-[10px] font-mono text-gray-600 mt-0.5">
+                    <span className="shrink-0 text-[10px] font-mono text-content-tertiary mt-0.5">
                       {formatTime(msg.timestamp)}
                     </span>
                   </div>

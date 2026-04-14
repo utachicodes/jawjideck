@@ -14,7 +14,7 @@ export function PositionDiagram({ position, isActive = false }: PositionDiagramP
 
   // Different SVG paths for each position
   const renderDiagram = () => {
-    const baseClass = isActive ? 'text-cyan-400' : 'text-gray-400';
+    const baseClass = isActive ? 'text-cyan-400' : 'text-content-secondary';
     const fillClass = isActive ? 'fill-cyan-500/20' : 'fill-gray-700/50';
     const strokeWidth = isActive ? 2 : 1.5;
 
@@ -127,7 +127,7 @@ export function PositionDiagram({ position, isActive = false }: PositionDiagramP
   };
 
   return (
-    <div className={`rounded-xl p-4 ${isActive ? 'bg-cyan-500/10 border border-cyan-500/30' : 'bg-gray-800/50 border border-gray-700/50'}`}>
+    <div className={`rounded-xl p-4 ${isActive ? 'bg-cyan-500/10 border border-cyan-500/30' : 'bg-surface border border-subtle'}`}>
       <svg
         width={size}
         height={size}
@@ -136,7 +136,7 @@ export function PositionDiagram({ position, isActive = false }: PositionDiagramP
       >
         {renderDiagram()}
       </svg>
-      <p className={`text-center text-sm mt-2 font-medium ${isActive ? 'text-cyan-400' : 'text-gray-400'}`}>
+      <p className={`text-center text-sm mt-2 font-medium ${isActive ? 'text-cyan-400' : 'text-content-secondary'}`}>
         {ACCEL_6POINT_POSITIONS[position]}
       </p>
     </div>

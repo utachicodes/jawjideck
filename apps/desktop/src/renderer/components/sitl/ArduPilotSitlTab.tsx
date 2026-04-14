@@ -174,8 +174,8 @@ export default function ArduPilotSitlTab() {
       )}
 
       {/* Vehicle Type Selection */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-white mb-3">Vehicle Type</h3>
+      <div className="bg-surface-input border border-subtle rounded-lg p-4">
+        <h3 className="text-sm font-medium text-content mb-3">Vehicle Type</h3>
         <div className="grid grid-cols-4 gap-2">
           {VEHICLE_TYPE_OPTIONS.map((opt) => (
             <button
@@ -185,7 +185,7 @@ export default function ArduPilotSitlTab() {
               className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-colors ${
                 vehicleType === opt.value
                   ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
-                  : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                  : 'bg-surface border text-content-secondary hover:bg-surface hover:text-content'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -200,16 +200,16 @@ export default function ArduPilotSitlTab() {
       {/* Configuration Row */}
       <div className="grid grid-cols-2 gap-4">
         {/* Model & Release Track */}
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-white mb-3">Configuration</h3>
+        <div className="bg-surface-input border border-subtle rounded-lg p-4">
+          <h3 className="text-sm font-medium text-content mb-3">Configuration</h3>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Frame/Model</label>
+              <label className="block text-xs text-content-secondary mb-1">Frame/Model</label>
               <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
                 disabled={isRunning || isStarting}
-                className="w-full px-3 py-1.5 text-sm bg-zinc-800 text-white border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50"
+                className="w-full px-3 py-1.5 text-sm bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50"
               >
                 {modelOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -218,7 +218,7 @@ export default function ArduPilotSitlTab() {
             </div>
 
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Release Track</label>
+              <label className="block text-xs text-content-secondary mb-1">Release Track</label>
               <div className="grid grid-cols-3 gap-1">
                 {RELEASE_TRACK_OPTIONS.map((opt) => (
                   <button
@@ -228,7 +228,7 @@ export default function ArduPilotSitlTab() {
                     className={`px-2 py-1.5 text-xs rounded-lg border transition-colors ${
                       releaseTrack === opt.value
                         ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
-                        : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800'
+                        : 'bg-surface border text-content-secondary hover:bg-surface'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                     title={opt.description}
                   >
@@ -240,7 +240,7 @@ export default function ArduPilotSitlTab() {
 
             <div className="flex items-center gap-4">
               <div className="flex-1">
-                <label className="block text-xs text-zinc-500 mb-1">Speedup</label>
+                <label className="block text-xs text-content-secondary mb-1">Speedup</label>
                 <input
                   type="number"
                   value={speedup}
@@ -248,7 +248,7 @@ export default function ArduPilotSitlTab() {
                   disabled={isRunning || isStarting}
                   min={1}
                   max={10}
-                  className="w-full px-2 py-1.5 text-sm bg-zinc-800 text-white border border-zinc-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
+                  className="w-full px-2 py-1.5 text-sm bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
                 />
               </div>
               <div className="flex items-center gap-2 pt-5">
@@ -257,52 +257,52 @@ export default function ArduPilotSitlTab() {
                   checked={wipeOnStart}
                   onChange={(e) => setWipeOnStart(e.target.checked)}
                   disabled={isRunning || isStarting}
-                  className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-blue-500 focus:ring-blue-500/50"
+                  className="w-4 h-4 rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500/50"
                 />
-                <label className="text-xs text-zinc-400">Wipe EEPROM</label>
+                <label className="text-xs text-content-secondary">Wipe EEPROM</label>
               </div>
             </div>
           </div>
         </div>
 
         {/* Home Location */}
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-white mb-3">Home Location</h3>
+        <div className="bg-surface-input border border-subtle rounded-lg p-4">
+          <h3 className="text-sm font-medium text-content mb-3">Home Location</h3>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Latitude</label>
+              <label className="block text-xs text-content-secondary mb-1">Latitude</label>
               <input
                 type="number"
                 step="0.0001"
                 value={homeLocation.lat}
                 onChange={(e) => setHomeLocation({ ...homeLocation, lat: parseFloat(e.target.value) || 0 })}
                 disabled={isRunning || isStarting}
-                className="w-full px-2 py-1.5 text-sm bg-zinc-800 text-white border border-zinc-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
+                className="w-full px-2 py-1.5 text-sm bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Longitude</label>
+              <label className="block text-xs text-content-secondary mb-1">Longitude</label>
               <input
                 type="number"
                 step="0.0001"
                 value={homeLocation.lng}
                 onChange={(e) => setHomeLocation({ ...homeLocation, lng: parseFloat(e.target.value) || 0 })}
                 disabled={isRunning || isStarting}
-                className="w-full px-2 py-1.5 text-sm bg-zinc-800 text-white border border-zinc-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
+                className="w-full px-2 py-1.5 text-sm bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Altitude (m)</label>
+              <label className="block text-xs text-content-secondary mb-1">Altitude (m)</label>
               <input
                 type="number"
                 value={homeLocation.alt}
                 onChange={(e) => setHomeLocation({ ...homeLocation, alt: parseFloat(e.target.value) || 0 })}
                 disabled={isRunning || isStarting}
-                className="w-full px-2 py-1.5 text-sm bg-zinc-800 text-white border border-zinc-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
+                className="w-full px-2 py-1.5 text-sm bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Heading</label>
+              <label className="block text-xs text-content-secondary mb-1">Heading</label>
               <input
                 type="number"
                 value={homeLocation.heading}
@@ -310,12 +310,12 @@ export default function ArduPilotSitlTab() {
                 disabled={isRunning || isStarting}
                 min={0}
                 max={359}
-                className="w-full px-2 py-1.5 text-sm bg-zinc-800 text-white border border-zinc-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
+                className="w-full px-2 py-1.5 text-sm bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
               />
             </div>
           </div>
           <div className="mt-3 flex items-center justify-between">
-            <p className="text-xs text-zinc-600">Default: San Francisco Bay Area</p>
+            <p className="text-xs text-content-tertiary">Default: San Francisco Bay Area</p>
             <button
               onClick={getCurrentLocation}
               disabled={isRunning || isStarting || isGettingLocation}
@@ -347,15 +347,15 @@ export default function ArduPilotSitlTab() {
       </div>
 
       {/* Binary Status & Download */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
+      <div className="bg-surface-input border border-subtle rounded-lg p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-2 h-2 rounded-full ${binaryInfo?.exists ? 'bg-green-400' : 'bg-amber-400'}`} />
             <div>
-              <span className="text-sm text-white">
+              <span className="text-sm text-content">
                 {vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1)} ({releaseTrack})
               </span>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-content-secondary">
                 {binaryInfo?.exists
                   ? `Ready at ${binaryInfo.path?.split('/').pop()}`
                   : 'Binary not downloaded'}
@@ -375,13 +375,13 @@ export default function ArduPilotSitlTab() {
 
             {isDownloading && downloadProgress && (
               <div className="flex items-center gap-2">
-                <div className="w-32 h-2 bg-zinc-700 rounded-full overflow-hidden">
+                <div className="w-32 h-2 bg-surface-raised rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 transition-all"
                     style={{ width: `${downloadProgress.progress}%` }}
                   />
                 </div>
-                <span className="text-xs text-zinc-400">{downloadProgress.progress}%</span>
+                <span className="text-xs text-content-secondary">{downloadProgress.progress}%</span>
               </div>
             )}
 
@@ -452,14 +452,14 @@ export default function ArduPilotSitlTab() {
 
       {/* Virtual RC Control */}
       {isRunning && (
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
+        <div className="bg-surface-input border border-subtle rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
-              <h3 className="text-sm font-medium text-white">Virtual RC Control (UDP)</h3>
-              <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${isRcSending ? 'bg-green-500/20 text-green-400' : 'bg-zinc-700 text-zinc-400'}`}>
+              <h3 className="text-sm font-medium text-content">Virtual RC Control (UDP)</h3>
+              <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${isRcSending ? 'bg-green-500/20 text-green-400' : 'bg-surface-raised text-content-secondary'}`}>
                 {isRcSending ? '50Hz' : 'Off'}
               </span>
             </div>
@@ -476,7 +476,7 @@ export default function ArduPilotSitlTab() {
               </button>
               <button
                 onClick={resetRcState}
-                className="px-2 py-1 text-xs text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded transition-colors"
+                className="px-2 py-1 text-xs text-content-secondary hover:text-content bg-surface-tooltip hover:bg-surface-raised rounded transition-colors"
               >
                 Reset
               </button>
@@ -487,8 +487,8 @@ export default function ArduPilotSitlTab() {
           <div className="grid grid-cols-4 gap-3 mb-3">
             {/* Throttle */}
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">
-                Throttle <span className="text-zinc-600">{normalizedToPWM(rcState.throttle)}</span>
+              <label className="block text-xs text-content-secondary mb-1">
+                Throttle <span className="text-content-tertiary">{normalizedToPWM(rcState.throttle)}</span>
               </label>
               <input
                 type="range"
@@ -497,12 +497,12 @@ export default function ArduPilotSitlTab() {
                 step="0.1"
                 value={rcState.throttle}
                 onChange={(e) => updateRC('throttle', parseFloat(e.target.value))}
-                className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                className="w-full h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer accent-amber-500"
               />
             </div>
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">
-                Roll <span className="text-zinc-600">{normalizedToPWM(rcState.roll)}</span>
+              <label className="block text-xs text-content-secondary mb-1">
+                Roll <span className="text-content-tertiary">{normalizedToPWM(rcState.roll)}</span>
               </label>
               <input
                 type="range"
@@ -511,12 +511,12 @@ export default function ArduPilotSitlTab() {
                 step="0.1"
                 value={rcState.roll}
                 onChange={(e) => updateRC('roll', parseFloat(e.target.value))}
-                className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="w-full h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer accent-blue-500"
               />
             </div>
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">
-                Pitch <span className="text-zinc-600">{normalizedToPWM(rcState.pitch)}</span>
+              <label className="block text-xs text-content-secondary mb-1">
+                Pitch <span className="text-content-tertiary">{normalizedToPWM(rcState.pitch)}</span>
               </label>
               <input
                 type="range"
@@ -525,12 +525,12 @@ export default function ArduPilotSitlTab() {
                 step="0.1"
                 value={rcState.pitch}
                 onChange={(e) => updateRC('pitch', parseFloat(e.target.value))}
-                className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="w-full h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer accent-blue-500"
               />
             </div>
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">
-                Yaw <span className="text-zinc-600">{normalizedToPWM(rcState.yaw)}</span>
+              <label className="block text-xs text-content-secondary mb-1">
+                Yaw <span className="text-content-tertiary">{normalizedToPWM(rcState.yaw)}</span>
               </label>
               <input
                 type="range"
@@ -539,18 +539,18 @@ export default function ArduPilotSitlTab() {
                 step="0.1"
                 value={rcState.yaw}
                 onChange={(e) => updateRC('yaw', parseFloat(e.target.value))}
-                className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="w-full h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer accent-blue-500"
               />
             </div>
           </div>
 
           {/* AUX channels */}
-          <div className="grid grid-cols-4 gap-3 pt-3 border-t border-zinc-800">
+          <div className="grid grid-cols-4 gap-3 pt-3 border-t border-subtle">
             {(['aux1', 'aux2', 'aux3', 'aux4'] as const).map((key, idx) => (
               <div key={key}>
-                <label className={`block text-xs mb-1 ${key === 'aux4' ? 'text-amber-400 font-medium' : 'text-zinc-500'}`}>
+                <label className={`block text-xs mb-1 ${key === 'aux4' ? 'text-amber-400 font-medium' : 'text-content-secondary'}`}>
                   {key === 'aux4' ? 'AUX4 (ARM)' : `AUX${idx + 1}`}{' '}
-                  <span className={key === 'aux4' ? 'text-amber-500' : 'text-zinc-600'}>{normalizedToPWM(rcState[key])}</span>
+                  <span className={key === 'aux4' ? 'text-amber-500' : 'text-content-tertiary'}>{normalizedToPWM(rcState[key])}</span>
                 </label>
                 <input
                   type="range"
@@ -559,7 +559,7 @@ export default function ArduPilotSitlTab() {
                   step="0.1"
                   value={rcState[key]}
                   onChange={(e) => updateRC(key, parseFloat(e.target.value))}
-                  className={`w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer ${key === 'aux4' ? 'accent-amber-500' : 'accent-green-500'}`}
+                  className={`w-full h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer ${key === 'aux4' ? 'accent-amber-500' : 'accent-green-500'}`}
                 />
               </div>
             ))}
@@ -578,19 +578,19 @@ export default function ArduPilotSitlTab() {
       )}
 
       {/* Output log */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-zinc-900 border border-zinc-800 rounded-lg min-h-[200px]">
-        <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800 bg-zinc-900/50">
-          <span className="text-xs font-medium text-zinc-400">Console Output</span>
+      <div className="flex-1 flex flex-col overflow-hidden bg-surface-input border border-subtle rounded-lg min-h-[200px]">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-subtle bg-surface-input">
+          <span className="text-xs font-medium text-content-secondary">Console Output</span>
           <div className="flex items-center gap-2">
             {lastCommand && (
-              <span className="text-xs text-zinc-500 font-mono truncate max-w-md" title={lastCommand}>
+              <span className="text-xs text-content-secondary font-mono truncate max-w-md" title={lastCommand}>
                 {lastCommand.split('/').pop()?.slice(0, 50)}
               </span>
             )}
             <button
               onClick={clearOutput}
               disabled={output.length === 0}
-              className="px-2 py-1 text-xs text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
+              className="px-2 py-1 text-xs text-content-secondary hover:text-content transition-colors disabled:opacity-50"
             >
               Clear
             </button>
@@ -601,7 +601,7 @@ export default function ArduPilotSitlTab() {
           className="flex-1 overflow-auto p-3 font-mono text-xs leading-relaxed max-h-[300px]"
         >
           {output.length === 0 ? (
-            <div className="text-zinc-600 italic">
+            <div className="text-content-tertiary italic">
               No output yet. Start SITL to see process output.
             </div>
           ) : (
@@ -615,7 +615,7 @@ export default function ArduPilotSitlTab() {
                       ? 'text-blue-400 font-medium'
                       : line.includes('ArduPilot') || line.includes('SITL')
                         ? 'text-green-400'
-                        : 'text-zinc-300'
+                        : 'text-content'
                 }
               >
                 {line}

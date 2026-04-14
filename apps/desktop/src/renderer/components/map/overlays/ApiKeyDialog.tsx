@@ -35,15 +35,15 @@ export function ApiKeyDialog() {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-gray-800 border border-gray-700/50 rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
-        <h3 className="text-lg font-semibold text-gray-100 mb-2">OpenAIP API Key Required</h3>
-        <p className="text-sm text-gray-400 mb-4">
+      <div className="bg-surface-tooltip border border-subtle rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
+        <h3 className="text-lg font-semibold text-content mb-2">OpenAIP API Key Required</h3>
+        <p className="text-sm text-content-secondary mb-4">
           Airspace and airport data is provided by OpenAIP. A free API key is required.
         </p>
 
-        <div className="bg-gray-900/50 rounded-lg p-3 mb-4 text-sm text-gray-300 space-y-2">
-          <p className="font-medium text-gray-200">How to get your free key:</p>
-          <ol className="list-decimal list-inside space-y-1 text-gray-400">
+        <div className="bg-surface-input rounded-lg p-3 mb-4 text-sm text-content space-y-2">
+          <p className="font-medium text-content">How to get your free key:</p>
+          <ol className="list-decimal list-inside space-y-1 text-content-secondary">
             <li>
               Go to{' '}
               <a
@@ -65,7 +65,7 @@ export function ApiKeyDialog() {
           value={key}
           onChange={(e) => { setKey(e.target.value); setError(''); }}
           placeholder="Paste your OpenAIP API key"
-          className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500 mb-2"
+          className="w-full px-3 py-2 bg-surface-input border border rounded-lg text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-blue-500 mb-2"
           onKeyDown={(e) => e.key === 'Enter' && handleSave()}
           autoFocus
         />
@@ -74,7 +74,7 @@ export function ApiKeyDialog() {
         <div className="flex justify-end gap-2 mt-4">
           <button
             onClick={() => setShowApiKeyDialog(false)}
-            className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200 transition-colors"
+            className="px-4 py-2 text-sm text-content-secondary hover:text-content transition-colors"
           >
             Cancel
           </button>

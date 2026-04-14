@@ -379,8 +379,8 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
           onClick={() => setAdvancedMode(!advancedMode)}
           className={`ml-4 flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
             advancedMode
-              ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-              : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+              ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+              : 'bg-surface-tooltip text-content-secondary border'
           }`}
         >
           {advancedMode ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
@@ -389,19 +389,19 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
       </div>
 
       {/* Mode Switch Channel — with auto-detect */}
-      <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4">
+      <div className="bg-surface rounded-xl border-subtle p-4">
         {!detectMode ? (
           /* Default state: dropdown + detect button */
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-medium text-zinc-300">Mode Switch Channel</h3>
-              <p className="text-xs text-zinc-500 mt-0.5">Which RC channel controls flight modes</p>
+              <h3 className="text-sm font-medium text-content">Mode Switch Channel</h3>
+              <p className="text-xs text-content-secondary mt-0.5">Which RC channel controls flight modes</p>
             </div>
             <div className="flex items-center gap-2">
               <select
                 value={modeChannel}
                 onChange={(e) => handleChannelChange(Number(e.target.value))}
-                className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                className="px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
               >
                 {[5, 6, 7, 8, 9, 10, 11, 12].map((ch) => (
                   <option key={ch} value={ch}>
@@ -414,8 +414,8 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                 disabled={signalStatus !== 'active'}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors ${
                   signalStatus === 'active'
-                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30'
-                    : 'bg-zinc-800 text-zinc-600 border border-zinc-700 cursor-not-allowed'
+                    ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/30'
+                    : 'bg-surface-tooltip text-content-tertiary border cursor-not-allowed'
                 }`}
                 title={signalStatus !== 'active' ? 'Connect to vehicle to use auto-detect' : 'Auto-detect mode switch channel'}
               >
@@ -430,7 +430,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-medium text-cyan-300">Detecting Mode Switch Channel</h3>
-                <p className="text-xs text-zinc-400 mt-0.5">
+                <p className="text-xs text-content-secondary mt-0.5">
                   {detectedChannel
                     ? `Channel ${detectedChannel} detected — use this channel?`
                     : 'Flip your mode switch on your transmitter'}
@@ -440,7 +440,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                 {detectedChannel && (
                   <button
                     onClick={() => confirmDetect(detectedChannel)}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30 transition-colors"
                   >
                     <Check className="w-3.5 h-3.5" />
                     Use CH{detectedChannel}
@@ -448,7 +448,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                 )}
                 <button
                   onClick={cancelDetect}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-surface-tooltip text-content-secondary border hover:bg-surface-raised transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />
                   Cancel
@@ -470,14 +470,14 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                 return (
                   <div key={idx} className="space-y-0.5">
                     <div className="flex items-center justify-between">
-                      <span className={`text-[11px] ${isDetected ? 'text-green-400 font-medium' : 'text-zinc-500'}`}>
+                      <span className={`text-[11px] ${isDetected ? 'text-green-400 font-medium' : 'text-content-secondary'}`}>
                         CH{chNum}
                         {isDetected && ' — Detected'}
                       </span>
-                      <span className={`text-[10px] font-mono ${isDetected ? 'text-green-400' : 'text-zinc-600'}`}>{value}</span>
+                      <span className={`text-[10px] font-mono ${isDetected ? 'text-green-400' : 'text-content-tertiary'}`}>{value}</span>
                     </div>
-                    <div className={`h-1.5 rounded-full overflow-hidden relative ${isDetected ? 'bg-green-500/20' : 'bg-zinc-800'}`}>
-                      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-700" />
+                    <div className={`h-1.5 rounded-full overflow-hidden relative ${isDetected ? 'bg-green-500/20' : 'bg-surface-tooltip'}`}>
+                      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-surface-raised" />
                       <div
                         className={`absolute top-0 bottom-0 w-1.5 rounded-full transition-all ${
                           isDetected ? 'bg-green-500' : movement > 50 ? 'bg-cyan-500' : 'bg-zinc-600'
@@ -502,16 +502,16 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
       />
 
       {/* Visual Switch Position Diagram */}
-      <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4">
+      <div className="bg-surface rounded-xl border-subtle p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-zinc-300">Switch Position Diagram</h3>
+          <h3 className="text-sm font-medium text-content">Switch Position Diagram</h3>
           {signalStatus === 'active' ? (
             <span className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] bg-green-500/20 text-green-400 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
               LIVE
             </span>
           ) : (
-            <span className="text-[10px] text-zinc-600">Connect to see live data</span>
+            <span className="text-[10px] text-content-tertiary">Connect to see live data</span>
           )}
         </div>
         <div className="flex items-center justify-center gap-8">
@@ -519,7 +519,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
           <div className="flex flex-col items-center">
             {advancedMode ? (
               /* 6-position switch */
-              <div className="w-12 h-48 bg-zinc-800 rounded-lg relative border border-zinc-700">
+              <div className="w-12 h-48 bg-surface-tooltip rounded-lg relative border">
                 {MODE_PWM_RANGES.map((range, i) => {
                   const topPercent = 8 + i * (84 / 5); // Distribute 6 markers evenly
                   const slotColor = i <= 1 ? 'bg-blue-500/50' : i <= 3 ? 'bg-purple-500/50' : 'bg-orange-500/50';
@@ -536,7 +536,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
               </div>
             ) : (
               /* 3-position switch */
-              <div className="w-12 h-32 bg-zinc-800 rounded-lg relative border border-zinc-700">
+              <div className="w-12 h-32 bg-surface-tooltip rounded-lg relative border">
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-orange-500/50 rounded" />
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-1 bg-purple-500/50 rounded" />
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-blue-500/50 rounded" />
@@ -549,7 +549,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                 )}
               </div>
             )}
-            <span className="text-xs text-zinc-500 mt-2">Mode Switch</span>
+            <span className="text-xs text-content-secondary mt-2">Mode Switch</span>
           </div>
 
           {/* Position to modes mapping */}
@@ -568,24 +568,24 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                     key={range.slot}
                     className={`flex items-center gap-3 p-2.5 rounded-lg transition-colors ${
                       isSlotActive
-                        ? 'bg-cyan-500/10 border border-cyan-500/30'
-                        : 'bg-zinc-800/50 border border-transparent'
+                        ? 'bg-cyan-500/10 border-cyan-500/30'
+                        : 'bg-surface border-transparent'
                     }`}
                   >
                     <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
                     <div className="w-20">
-                      <div className={`text-sm font-medium ${isSlotActive ? 'text-cyan-400' : 'text-zinc-300'}`}>
+                      <div className={`text-sm font-medium ${isSlotActive ? 'text-cyan-400' : 'text-content'}`}>
                         Slot {range.slot}
                       </div>
-                      <div className="text-[10px] text-zinc-500 font-mono">{range.min}-{range.max}</div>
+                      <div className="text-[10px] text-content-secondary font-mono">{range.min}-{range.max}</div>
                     </div>
                     <div className="flex-1 flex items-center gap-2">
                       <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                        isSlotActive ? 'bg-cyan-500/20' : 'bg-zinc-700/50'
+                        isSlotActive ? 'bg-cyan-500/20' : 'bg-surface-raised'
                       }`}>
-                        <IconComponent className={`w-3.5 h-3.5 ${isSlotActive ? 'text-cyan-400' : 'text-zinc-400'}`} />
+                        <IconComponent className={`w-3.5 h-3.5 ${isSlotActive ? 'text-cyan-400' : 'text-content-secondary'}`} />
                       </div>
-                      <span className={`text-sm ${isSlotActive ? 'text-cyan-300' : 'text-zinc-400'}`}>
+                      <span className={`text-sm ${isSlotActive ? 'text-cyan-300' : 'text-content-secondary'}`}>
                         {modeInfo.name}
                       </span>
                     </div>
@@ -608,31 +608,31 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                     key={pos.name}
                     className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
                       isPositionActive
-                        ? 'bg-cyan-500/10 border border-cyan-500/30'
-                        : 'bg-zinc-800/50 border border-transparent'
+                        ? 'bg-cyan-500/10 border-cyan-500/30'
+                        : 'bg-surface border-transparent'
                     }`}
                   >
                     <div className={`w-3 h-3 rounded-full ${pos.color}`} />
                     <div className="w-16">
-                      <div className={`text-sm font-medium ${isPositionActive ? 'text-cyan-400' : 'text-zinc-300'}`}>
+                      <div className={`text-sm font-medium ${isPositionActive ? 'text-cyan-400' : 'text-content'}`}>
                         {pos.name}
                       </div>
-                      <div className="text-[10px] text-zinc-500">{pos.label}</div>
+                      <div className="text-[10px] text-content-secondary">{pos.label}</div>
                     </div>
                     <div className="flex-1 flex items-center gap-2">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        isPositionActive ? 'bg-cyan-500/20' : 'bg-zinc-700/50'
+                        isPositionActive ? 'bg-cyan-500/20' : 'bg-surface-raised'
                       }`}>
-                        <IconComponent className={`w-4 h-4 ${isPositionActive ? 'text-cyan-400' : 'text-zinc-400'}`} />
+                        <IconComponent className={`w-4 h-4 ${isPositionActive ? 'text-cyan-400' : 'text-content-secondary'}`} />
                       </div>
-                      <span className={`text-sm ${isPositionActive ? 'text-cyan-300' : 'text-zinc-400'}`}>
+                      <span className={`text-sm ${isPositionActive ? 'text-cyan-300' : 'text-content-secondary'}`}>
                         {modeInfo.name}
                       </span>
                     </div>
                     {isPositionActive && liveRcValue !== null && (
                       <span className="text-xs font-mono text-cyan-400/70">{liveRcValue}</span>
                     )}
-                    <span className="text-xs text-zinc-600">
+                    <span className="text-xs text-content-tertiary">
                       Slots {pos.slots.join(', ')}
                     </span>
                   </div>
@@ -646,7 +646,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
       {/* Mode Slots - Simple Mode (Primary 3 positions) */}
       {!advancedMode && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-zinc-300">{isRover ? 'Drive' : 'Flight'} Modes (3-Position Switch)</h3>
+          <h3 className="text-sm font-medium text-content">{isRover ? 'Drive' : 'Flight'} Modes (3-Position Switch)</h3>
           <div className="grid grid-cols-3 gap-4">
             {SWITCH_POSITIONS.map((pos) => {
               const primarySlot = pos.name === 'High' ? 6 : pos.name === 'Mid' ? 3 : 1;
@@ -659,10 +659,10 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
               return (
                 <div
                   key={pos.name}
-                  className={`bg-zinc-900/50 rounded-xl border p-4 space-y-3 transition-all ${
+                  className={`bg-surface rounded-xl border p-4 space-y-3 transition-all ${
                     isActive
                       ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/10'
-                      : 'border-zinc-800/50'
+                      : 'border-subtle'
                   }`}
                 >
                   {/* Header */}
@@ -677,9 +677,9 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                     <div>
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${pos.color}`} />
-                        <span className="text-sm font-medium text-white">{pos.name}</span>
+                        <span className="text-sm font-medium text-content">{pos.name}</span>
                       </div>
-                      <div className="text-xs text-zinc-500">{pos.label}</div>
+                      <div className="text-xs text-content-secondary">{pos.label}</div>
                     </div>
                     {isActive && (
                       <span className="ml-auto px-2 py-0.5 text-[10px] bg-cyan-500/20 text-cyan-400 rounded-full">
@@ -696,7 +696,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                       // Set both slots in this position group
                       pos.slots.forEach(slot => handleModeChange(slot, newMode));
                     }}
-                    className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
                   >
                     {Object.entries(getModesForCategory(vehicleCategory)).map(([num, mode]) => (
                       <option key={num} value={num}>
@@ -706,7 +706,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                   </select>
 
                   {/* Mode Description */}
-                  <p className="text-xs text-zinc-500">{modeInfo.description}</p>
+                  <p className="text-xs text-content-secondary">{modeInfo.description}</p>
                 </div>
               );
             })}
@@ -717,7 +717,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
       {/* Mode Slots - Advanced Mode (All 6 slots) */}
       {advancedMode && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-zinc-300">{isRover ? 'Drive' : 'Flight'} Mode Slots (All 6)</h3>
+          <h3 className="text-sm font-medium text-content">{isRover ? 'Drive' : 'Flight'} Mode Slots (All 6)</h3>
           <div className="grid grid-cols-2 gap-4">
             {MODE_PWM_RANGES.map((range) => {
               const currentMode = flightModes[range.slot - 1] ?? 0;
@@ -730,10 +730,10 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
               return (
                 <div
                   key={range.slot}
-                  className={`bg-zinc-900/50 rounded-xl border p-4 space-y-3 transition-all ${
+                  className={`bg-surface rounded-xl border p-4 space-y-3 transition-all ${
                     isActive
                       ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/10'
-                      : 'border-zinc-800/50'
+                      : 'border-subtle'
                   }`}
                 >
                   {/* Header */}
@@ -748,12 +748,12 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-white">Slot {range.slot}</span>
+                          <span className="text-sm font-medium text-content">Slot {range.slot}</span>
                           {positionInfo && (
                             <span className={`w-2 h-2 rounded-full ${positionInfo.color}`} />
                           )}
                         </div>
-                        <div className="text-xs text-zinc-500">{range.label}</div>
+                        <div className="text-xs text-content-secondary">{range.label}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -771,7 +771,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                   </div>
 
                   {/* PWM Range Indicator */}
-                  <div className="relative h-2 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="relative h-2 bg-surface-tooltip rounded-full overflow-hidden">
                     <div
                       className={`absolute h-full rounded-full ${
                         isActive ? 'bg-cyan-500' : 'bg-gradient-to-r from-blue-500 to-blue-400'
@@ -782,7 +782,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                       }}
                     />
                   </div>
-                  <div className="flex justify-between text-[10px] text-zinc-500 font-mono">
+                  <div className="flex justify-between text-[10px] text-content-secondary font-mono">
                     <span>{range.min}</span>
                     <span>{range.max}</span>
                   </div>
@@ -791,7 +791,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                   <select
                     value={currentMode}
                     onChange={(e) => handleModeChange(range.slot, Number(e.target.value))}
-                    className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
                   >
                     {Object.entries(getModesForCategory(vehicleCategory)).map(([num, mode]) => (
                       <option key={num} value={num}>
@@ -801,7 +801,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                   </select>
 
                   {/* Mode Description */}
-                  <p className="text-xs text-zinc-500">{modeInfo.description}</p>
+                  <p className="text-xs text-content-secondary">{modeInfo.description}</p>
                 </div>
               );
             })}
@@ -811,7 +811,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
 
       {/* Save Reminder */}
       {modified > 0 && (
-        <div className="bg-amber-500/10 rounded-xl border border-amber-500/30 p-4 flex items-center gap-3">
+        <div className="bg-amber-500/10 rounded-xl border-amber-500/30 p-4 flex items-center gap-3">
           <AlertTriangle className="w-5 h-5 text-amber-400" />
           <p className="text-sm text-amber-400">
             You have unsaved changes. Click <span className="font-medium">"Write to Flash"</span> in the header to save.
@@ -821,8 +821,8 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
 
       {/* Mode Reference */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-zinc-300">Mode Reference</h3>
-        <div className="bg-zinc-900/30 rounded-xl border border-zinc-800/30 p-4">
+        <h3 className="text-sm font-medium text-content">Mode Reference</h3>
+        <div className="bg-surface rounded-xl border-subtle/30 p-4">
           <div className="grid grid-cols-3 gap-3">
             {Object.entries(getModesForCategory(vehicleCategory))
               .filter(([, mode]) => mode.safe)
@@ -831,10 +831,10 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                 const IconComponent = mode.icon;
                 return (
                   <div key={num} className="flex items-center gap-2 text-sm">
-                    <IconComponent className="w-4 h-4 text-zinc-400" />
-                    <span className="text-zinc-300">{mode.name}</span>
-                    <span className="text-zinc-600">-</span>
-                    <span className="text-xs text-zinc-500 truncate">{mode.description}</span>
+                    <IconComponent className="w-4 h-4 text-content-secondary" />
+                    <span className="text-content">{mode.name}</span>
+                    <span className="text-content-tertiary">-</span>
+                    <span className="text-xs text-content-secondary truncate">{mode.description}</span>
                   </div>
                 );
               })}

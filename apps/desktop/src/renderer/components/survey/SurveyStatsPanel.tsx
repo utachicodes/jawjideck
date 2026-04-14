@@ -47,8 +47,8 @@ export function SurveyStatsPanel({ stats }: SurveyStatsPanelProps) {
 function StatItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-gray-500 text-[10px]">{label}</div>
-      <div className="text-gray-200 font-medium tabular-nums">{value}</div>
+      <div className="text-content-secondary text-[10px]">{label}</div>
+      <div className="text-content font-medium tabular-nums">{value}</div>
     </div>
   );
 }

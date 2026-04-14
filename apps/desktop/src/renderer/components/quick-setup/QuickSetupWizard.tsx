@@ -64,21 +64,21 @@ export const QuickSetupWizard: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
       {/* Modal container */}
-      <div className="bg-zinc-900 rounded-2xl border border-zinc-700 shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+      <div className="bg-surface-input rounded-2xl border border shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-subtle">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center">
               <Rocket className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-zinc-100">Quick Setup Wizard</h2>
-              <p className="text-xs text-zinc-500">Configure everything in one go</p>
+              <h2 className="text-lg font-semibold text-content">Quick Setup Wizard</h2>
+              <p className="text-xs text-content-secondary">Configure everything in one go</p>
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="p-2 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
+            className="p-2 text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -92,7 +92,7 @@ export const QuickSetupWizard: React.FC = () => {
         </div>
 
         {/* Progress indicator */}
-        <div className="px-6 py-3 border-b border-zinc-800 bg-zinc-800/30">
+        <div className="px-6 py-3 border-b border-subtle bg-surface">
           <div className="flex items-center justify-between">
             {STEPS.map((step, index) => {
               const isCompleted = index < currentStepIndex;
@@ -108,7 +108,7 @@ export const QuickSetupWizard: React.FC = () => {
                           ? 'bg-green-500 text-white'
                           : isCurrent
                           ? 'bg-blue-500 text-white'
-                          : 'bg-zinc-700 text-zinc-400'
+                          : 'bg-surface-raised text-content-secondary'
                       }`}
                     >
                       {isCompleted ? (
@@ -126,7 +126,7 @@ export const QuickSetupWizard: React.FC = () => {
                     </div>
                     <span
                       className={`text-xs mt-1 ${
-                        isCurrent ? 'text-blue-400' : isCompleted ? 'text-green-400' : 'text-zinc-500'
+                        isCurrent ? 'text-blue-400' : isCompleted ? 'text-green-400' : 'text-content-secondary'
                       }`}
                     >
                       {step.label}
@@ -138,7 +138,7 @@ export const QuickSetupWizard: React.FC = () => {
                     <div className="flex-1 mx-2">
                       <div
                         className={`h-0.5 rounded ${
-                          index < currentStepIndex ? 'bg-green-500' : 'bg-zinc-700'
+                          index < currentStepIndex ? 'bg-green-500' : 'bg-surface-raised'
                         }`}
                       />
                     </div>

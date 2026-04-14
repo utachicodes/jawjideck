@@ -44,7 +44,7 @@ function ParamEditor({ paramId, onApplied }: { paramId: string; onApplied: (need
 
   if (!param && !paramsLoading) {
     return (
-      <div className="flex items-center gap-2 text-[11px] text-gray-500">
+      <div className="flex items-center gap-2 text-[11px] text-content-secondary">
         <span className="font-mono">{paramId}</span>
         <span>— not found on vehicle</span>
       </div>
@@ -53,7 +53,7 @@ function ParamEditor({ paramId, onApplied }: { paramId: string; onApplied: (need
 
   if (!param) {
     return (
-      <div className="flex items-center gap-2 text-[11px] text-gray-500">
+      <div className="flex items-center gap-2 text-[11px] text-content-secondary">
         <span className="font-mono">{paramId}</span>
         <span>— loading...</span>
       </div>
@@ -66,7 +66,7 @@ function ParamEditor({ paramId, onApplied }: { paramId: string; onApplied: (need
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[10px] font-mono text-gray-400 w-28 shrink-0 truncate" title={paramId}>
+        <span className="text-[10px] font-mono text-content-secondary w-28 shrink-0 truncate" title={paramId}>
           {paramId}
         </span>
 
@@ -75,7 +75,7 @@ function ParamEditor({ paramId, onApplied }: { paramId: string; onApplied: (need
           <select
             value={editValue}
             onChange={(e) => setLocalValue(Number(e.target.value))}
-            className="bg-gray-700/60 border border-gray-600/50 rounded px-2 py-0.5 text-[11px] text-gray-200 min-w-[120px] max-w-[200px]"
+            className="bg-surface-raised border border rounded px-2 py-0.5 text-[11px] text-content min-w-[120px] max-w-[200px]"
           >
             {Object.entries(meta!.values!).map(([val, label]) => (
               <option key={val} value={val}>{label}</option>
@@ -90,7 +90,7 @@ function ParamEditor({ paramId, onApplied }: { paramId: string; onApplied: (need
               const bitNum = Number(bit);
               const isSet = (editValue & (1 << bitNum)) !== 0;
               return (
-                <label key={bit} className="flex items-center gap-1 text-[10px] text-gray-300 cursor-pointer">
+                <label key={bit} className="flex items-center gap-1 text-[10px] text-content cursor-pointer">
                   <input
                     type="checkbox"
                     checked={isSet}
@@ -100,7 +100,7 @@ function ParamEditor({ paramId, onApplied }: { paramId: string; onApplied: (need
                         : editValue | (1 << bitNum);
                       setLocalValue(newVal);
                     }}
-                    className="w-3 h-3 rounded border-gray-600 bg-gray-700"
+                    className="w-3 h-3 rounded border bg-surface-raised"
                   />
                   {label}
                 </label>
@@ -117,12 +117,12 @@ function ParamEditor({ paramId, onApplied }: { paramId: string; onApplied: (need
             onChange={(e) => setLocalValue(Number(e.target.value))}
             min={meta?.range?.min}
             max={meta?.range?.max}
-            className="bg-gray-700/60 border border-gray-600/50 rounded px-2 py-0.5 text-[11px] text-gray-200 w-24"
+            className="bg-surface-raised border border rounded px-2 py-0.5 text-[11px] text-content w-24"
           />
         )}
 
         {meta?.units && (
-          <span className="text-[10px] text-gray-500">{meta.units}</span>
+          <span className="text-[10px] text-content-secondary">{meta.units}</span>
         )}
 
         {isReboot && (
@@ -175,8 +175,8 @@ export function PreArmParamFix({ paramIds, hint, action, navigateTo }: PreArmPar
   }, []);
 
   return (
-    <div className="px-3 py-2 bg-gray-800/40 border-t border-gray-700/30 space-y-2">
-      <div className="text-[11px] text-gray-300">{hint}</div>
+    <div className="px-3 py-2 bg-surface border-t border-subtle space-y-2">
+      <div className="text-[11px] text-content">{hint}</div>
 
       {action && (
         <div className="text-[10px] text-amber-400/80">

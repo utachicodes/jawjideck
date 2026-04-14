@@ -22,8 +22,8 @@ export default function LegacyServoTab() {
 
   if (servoConfigs.length === 0) {
     return (
-      <div className="text-center py-12 text-zinc-500">
-        <Settings className="w-10 h-10 text-zinc-500 mb-3 mx-auto" />
+      <div className="text-center py-12 text-content-secondary">
+        <Settings className="w-10 h-10 text-content-secondary mb-3 mx-auto" />
         <p>No servo configurations found.</p>
         <p className="text-sm mt-1">Run the dump command to load configuration.</p>
       </div>
@@ -56,19 +56,19 @@ export default function LegacyServoTab() {
           const isReversed = servo.rate < 0;
 
           return (
-            <div key={servo.index} className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-hidden">
+            <div key={servo.index} className="bg-surface-input rounded-xl border border-subtle overflow-hidden">
               {/* Header */}
-              <div className="px-5 py-3 border-b border-zinc-800 flex items-center justify-between">
+              <div className="px-5 py-3 border-b border-subtle flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-content font-bold"
                     style={{ backgroundColor: color }}
                   >
                     S{servo.index}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">Servo {servo.index}</h3>
-                    <p className="text-xs text-zinc-400">Travel: {travelRange}μs</p>
+                    <h3 className="font-semibold text-content">Servo {servo.index}</h3>
+                    <p className="text-xs text-content-secondary">Travel: {travelRange}μs</p>
                   </div>
                 </div>
                 {isReversed && (
@@ -81,7 +81,7 @@ export default function LegacyServoTab() {
               {/* Controls */}
               <div className="p-5 space-y-4">
                 {/* Visual Range */}
-                <div className="relative h-8 bg-zinc-800 rounded-lg overflow-hidden">
+                <div className="relative h-8 bg-surface-tooltip rounded-lg overflow-hidden">
                   {/* Range bar */}
                   <div
                     className="absolute h-full transition-all opacity-40"
@@ -100,9 +100,9 @@ export default function LegacyServoTab() {
                     }}
                   />
                   {/* PWM center line */}
-                  <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-600" />
+                  <div className="absolute left-1/2 top-0 bottom-0 w-px bg-surface-raised" />
                 </div>
-                <div className="flex justify-between text-xs text-zinc-500">
+                <div className="flex justify-between text-xs text-content-secondary">
                   <span>750μs</span>
                   <span>1500μs</span>
                   <span>2250μs</span>
@@ -142,11 +142,11 @@ export default function LegacyServoTab() {
                   />
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-zinc-400">Rate</span>
+                      <span className="text-xs text-content-secondary">Rate</span>
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => handleChange({ ...servo, rate: -servo.rate })}
-                          className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs"
+                          className="px-2 py-0.5 rounded bg-surface-tooltip hover:bg-surface-raised text-content-secondary text-xs"
                         >
                           Reverse
                         </button>
@@ -156,11 +156,11 @@ export default function LegacyServoTab() {
                           max={125}
                           value={servo.rate}
                           onChange={(e) => handleChange({ ...servo, rate: parseInt(e.target.value) || 100 })}
-                          className="w-16 px-2 py-0.5 text-center text-sm bg-zinc-900 border border-zinc-700 rounded text-white"
+                          className="w-16 px-2 py-0.5 text-center text-sm bg-surface-input border border rounded text-content"
                         />
                       </div>
                     </div>
-                    <div className="relative h-2 bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="relative h-2 bg-surface-tooltip rounded-full overflow-hidden">
                       <div
                         className="absolute top-0 h-full rounded-full transition-all"
                         style={{
@@ -174,22 +174,22 @@ export default function LegacyServoTab() {
                 </div>
 
                 {/* Quick presets */}
-                <div className="flex gap-2 pt-2 border-t border-zinc-800">
+                <div className="flex gap-2 pt-2 border-t border-subtle">
                   <button
                     onClick={() => handleChange({ ...servo, min: 1000, max: 2000, mid: 1500, rate: 100 })}
-                    className="flex-1 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
+                    className="flex-1 py-1.5 text-xs text-content-secondary hover:text-content hover:bg-surface rounded transition-colors"
                   >
                     Reset Default
                   </button>
                   <button
                     onClick={() => handleChange({ ...servo, min: 1100, max: 1900, mid: 1500, rate: 100 })}
-                    className="flex-1 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
+                    className="flex-1 py-1.5 text-xs text-content-secondary hover:text-content hover:bg-surface rounded transition-colors"
                   >
                     Safe Range
                   </button>
                   <button
                     onClick={() => handleChange({ ...servo, min: 750, max: 2250, mid: 1500, rate: 100 })}
-                    className="flex-1 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
+                    className="flex-1 py-1.5 text-xs text-content-secondary hover:text-content hover:bg-surface rounded transition-colors"
                   >
                     Full Range
                   </button>

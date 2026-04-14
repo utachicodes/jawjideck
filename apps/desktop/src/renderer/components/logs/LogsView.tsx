@@ -22,8 +22,8 @@ export function LogsView() {
   return (
     <div className="flex flex-col h-full">
       {/* Tab bar */}
-      <div className="flex items-center gap-1 px-4 pt-3 pb-2 border-b border-gray-700/50">
-        <h2 className="text-lg font-semibold text-white mr-4">Flight Logs</h2>
+      <div className="flex items-center gap-1 px-4 pt-3 pb-2 border-b border-subtle">
+        <h2 className="text-lg font-semibold text-content mr-4">Flight Logs</h2>
         <span className="text-xs font-medium px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 mr-4">
           Experimental
         </span>
@@ -35,8 +35,8 @@ export function LogsView() {
               activeTab === tab.id
                 ? tab.id === 'ai' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
                 : tab.disabled
-                  ? 'text-gray-600 cursor-not-allowed'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                  ? 'text-content-tertiary cursor-not-allowed'
+                  : 'text-content-secondary hover:text-content hover:bg-surface'
             }`}
             disabled={tab.disabled}
           >

@@ -55,8 +55,8 @@ export const ReviewStep: React.FC = () => {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 mb-4">
           <ClipboardList className="w-8 h-8 text-green-400" />
         </div>
-        <h2 className="text-xl font-semibold text-zinc-100">Review Your Configuration</h2>
-        <p className="text-sm text-zinc-400 mt-2 max-w-md mx-auto">
+        <h2 className="text-xl font-semibold text-content">Review Your Configuration</h2>
+        <p className="text-sm text-content-secondary mt-2 max-w-md mx-auto">
           {selectedPreset
             ? `Using ${selectedPreset.name} preset with ${pendingModes.length} mode${pendingModes.length !== 1 ? 's' : ''}.`
             : `You have configured ${pendingModes.length} mode${pendingModes.length !== 1 ? 's' : ''}.`}
@@ -70,11 +70,11 @@ export const ReviewStep: React.FC = () => {
           <div className={`p-4 rounded-xl border bg-gradient-to-br ${selectedPreset.gradient}`}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
-                <PresetIcon className="w-5 h-5 text-white" />
+                <PresetIcon className="w-5 h-5 text-content" />
               </div>
               <div>
-                <h3 className="font-medium text-zinc-100">{selectedPreset.name} Preset</h3>
-                <p className="text-xs text-zinc-400 mt-0.5">{selectedPreset.tip}</p>
+                <h3 className="font-medium text-content">{selectedPreset.name} Preset</h3>
+                <p className="text-xs text-content-secondary mt-0.5">{selectedPreset.tip}</p>
               </div>
             </div>
           </div>
@@ -83,7 +83,7 @@ export const ReviewStep: React.FC = () => {
 
       {/* Mode cards */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-zinc-300">Configured Modes:</h3>
+        <h3 className="text-sm font-medium text-content">Configured Modes:</h3>
         {pendingModes.map((mode, index) => (
           <ModeCard
             key={index}
@@ -97,17 +97,17 @@ export const ReviewStep: React.FC = () => {
       </div>
 
       {/* Summary table */}
-      <div className="overflow-hidden rounded-xl border border-zinc-700">
+      <div className="overflow-hidden rounded-xl border border">
         <table className="w-full text-sm">
-          <thead className="bg-zinc-800">
+          <thead className="bg-surface-tooltip">
             <tr>
-              <th className="px-4 py-2 text-left font-medium text-zinc-300">Mode</th>
-              <th className="px-4 py-2 text-left font-medium text-zinc-300">Channel</th>
-              <th className="px-4 py-2 text-left font-medium text-zinc-300">Range</th>
-              <th className="px-4 py-2 text-left font-medium text-zinc-300">Status</th>
+              <th className="px-4 py-2 text-left font-medium text-content">Mode</th>
+              <th className="px-4 py-2 text-left font-medium text-content">Channel</th>
+              <th className="px-4 py-2 text-left font-medium text-content">Range</th>
+              <th className="px-4 py-2 text-left font-medium text-content">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800">
+          <tbody className="divide-y divide-subtle">
             {pendingModes.map((mode, index) => {
               const info = MODE_INFO[mode.boxId];
               const IconComponent = info?.icon || HelpCircle;
@@ -116,15 +116,15 @@ export const ReviewStep: React.FC = () => {
               const isActive = rcValue >= mode.rangeStart && rcValue <= mode.rangeEnd;
 
               return (
-                <tr key={index} className="bg-zinc-900/50">
+                <tr key={index} className="bg-surface-input">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <IconComponent className={`w-4 h-4 ${(info?.color || 'bg-zinc-500').replace('bg-', 'text-')}`} />
-                      <span className="text-zinc-200">{info?.name || `Mode ${mode.boxId}`}</span>
+                      <span className="text-content">{info?.name || `Mode ${mode.boxId}`}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-zinc-400">{aux?.name || `AUX ${mode.auxChannel + 1}`}</td>
-                  <td className="px-4 py-3 font-mono text-zinc-400">
+                  <td className="px-4 py-3 text-content-secondary">{aux?.name || `AUX ${mode.auxChannel + 1}`}</td>
+                  <td className="px-4 py-3 font-mono text-content-secondary">
                     {mode.rangeStart} - {mode.rangeEnd}
                   </td>
                   <td className="px-4 py-3">
@@ -134,7 +134,7 @@ export const ReviewStep: React.FC = () => {
                         Active
                       </span>
                     ) : (
-                      <span className="text-zinc-500 text-xs">Ready</span>
+                      <span className="text-content-secondary text-xs">Ready</span>
                     )}
                   </td>
                 </tr>
@@ -207,14 +207,14 @@ export const ReviewStep: React.FC = () => {
         <button
           onClick={prevStep}
           disabled={isSaving}
-          className="px-4 py-2.5 bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 text-zinc-200 rounded-lg transition-colors"
+          className="px-4 py-2.5 bg-surface-raised hover:bg-surface-raised disabled:opacity-50 text-content rounded-lg transition-colors"
         >
           Back
         </button>
         <button
           onClick={handleSave}
           disabled={isSaving || pendingModes.length === 0}
-          className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+          className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-500 disabled:bg-surface-raised disabled:text-content-secondary text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
         >
           {isSaving ? (
             <>

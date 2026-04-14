@@ -52,14 +52,14 @@ const TuningTab: React.FC = () => {
     <div className="p-6 space-y-6">
       {/* Parameters not loaded warning */}
       {!hasParameters && (
-        <div className="bg-amber-500/10 rounded-xl border border-amber-500/30 p-4 flex items-center justify-between">
+        <div className="bg-amber-500/10 rounded-xl border-amber-500/30 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
               <Lightbulb className="w-5 h-5 text-amber-400" />
             </div>
             <div>
               <p className="text-amber-300 font-medium">Parameters Not Loaded</p>
-              <p className="text-xs text-gray-500">Fetch parameters from the FC to use presets</p>
+              <p className="text-xs text-content-secondary">Fetch parameters from the FC to use presets</p>
             </div>
           </div>
           <button
@@ -73,8 +73,8 @@ const TuningTab: React.FC = () => {
       )}
 
       {/* Current Settings Overview */}
-      <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4 space-y-4">
-        <h3 className="text-sm font-medium text-zinc-300">Current Settings</h3>
+      <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+        <h3 className="text-sm font-medium text-content">Current Settings</h3>
 
         <div className="grid grid-cols-3 gap-4">
           {/* Responsiveness */}
@@ -83,14 +83,14 @@ const TuningTab: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
                 <Zap className="w-4 h-4 text-purple-400" />
               </div>
-              <span className="text-xs text-zinc-400">Responsiveness</span>
+              <span className="text-xs text-content-secondary">Responsiveness</span>
             </div>
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Max Angle</span>
-                <span className="text-white font-mono">{angleMaxDeg}°</span>
+                <span className="text-content-secondary">Max Angle</span>
+                <span className="text-content font-mono">{angleMaxDeg}°</span>
               </div>
-              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-surface-tooltip rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full"
                   style={{ width: `${(tuningValues.angleMax / 8000) * 100}%` }}
@@ -105,16 +105,16 @@ const TuningTab: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
                 <Sliders className="w-4 h-4 text-blue-400" />
               </div>
-              <span className="text-xs text-zinc-400">Acro Rates</span>
+              <span className="text-xs text-content-secondary">Acro Rates</span>
             </div>
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Roll/Pitch</span>
-                <span className="text-white font-mono">{tuningValues.acroRpRate}°/s</span>
+                <span className="text-content-secondary">Roll/Pitch</span>
+                <span className="text-content font-mono">{tuningValues.acroRpRate}°/s</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Yaw</span>
-                <span className="text-white font-mono">{tuningValues.acroYRate}°/s</span>
+                <span className="text-content-secondary">Yaw</span>
+                <span className="text-content font-mono">{tuningValues.acroYRate}°/s</span>
               </div>
             </div>
           </div>
@@ -125,16 +125,16 @@ const TuningTab: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
                 <Target className="w-4 h-4 text-green-400" />
               </div>
-              <span className="text-xs text-zinc-400">Navigation Speed</span>
+              <span className="text-xs text-content-secondary">Navigation Speed</span>
             </div>
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Waypoint</span>
-                <span className="text-white font-mono">{(tuningValues.wpnavSpeed / 100).toFixed(0)} m/s</span>
+                <span className="text-content-secondary">Waypoint</span>
+                <span className="text-content font-mono">{(tuningValues.wpnavSpeed / 100).toFixed(0)} m/s</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Loiter</span>
-                <span className="text-white font-mono">{(tuningValues.loitSpeed / 100).toFixed(0)} m/s</span>
+                <span className="text-content-secondary">Loiter</span>
+                <span className="text-content font-mono">{(tuningValues.loitSpeed / 100).toFixed(0)} m/s</span>
               </div>
             </div>
           </div>
@@ -142,10 +142,10 @@ const TuningTab: React.FC = () => {
       </div>
 
       {/* Fine Tuning */}
-      <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4 space-y-4">
+      <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-zinc-300">Fine Tuning</h3>
-          <span className="text-xs text-zinc-500">Adjust individual values</span>
+          <h3 className="text-sm font-medium text-content">Fine Tuning</h3>
+          <span className="text-xs text-content-secondary">Adjust individual values</span>
         </div>
 
         <div className="grid grid-cols-2 gap-6">
@@ -208,7 +208,7 @@ const TuningTab: React.FC = () => {
 
       {/* Save Reminder */}
       {modified > 0 && (
-        <div className="bg-amber-500/10 rounded-xl border border-amber-500/30 p-4 flex items-center gap-3">
+        <div className="bg-amber-500/10 rounded-xl border-amber-500/30 p-4 flex items-center gap-3">
           <Save className="w-5 h-5 text-amber-400" />
           <p className="text-sm text-amber-400">
             You have unsaved changes. Click <span className="font-medium">"Write to Flash"</span> in the header to save.

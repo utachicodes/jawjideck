@@ -78,22 +78,22 @@ export default function LegacyConfigView() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-zinc-950">
+    <div className="h-full flex flex-col bg-surface-base">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-subtle">
         <div className="flex items-center gap-3">
           {/* Legacy badge */}
           <div className="px-2 py-1 bg-amber-500/10 border border-amber-500/30 rounded text-xs font-medium text-amber-400">
             Legacy CLI
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-white">
+            <h1 className="text-lg font-semibold text-content">
               {connectionState.fcVariant} {connectionState.fcVersion}
               {connectionState.vehicleType && (
                 <span className="ml-2 text-emerald-400">({connectionState.vehicleType})</span>
               )}
             </h1>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-content-secondary">
               Configuration via CLI commands (F3 board)
             </p>
           </div>
@@ -110,7 +110,7 @@ export default function LegacyConfigView() {
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
               hasChanges && !isLoading
                 ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
             }`}
           >
             Save to EEPROM
@@ -121,7 +121,7 @@ export default function LegacyConfigView() {
       {/* Save confirmation dialog */}
       {showSaveConfirm && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 max-w-md mx-4 shadow-2xl">
+          <div className="bg-surface-input border border rounded-xl p-6 max-w-md mx-4 shadow-2xl">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -129,9 +129,9 @@ export default function LegacyConfigView() {
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-white mb-2">Save to EEPROM?</h3>
-                <p className="text-sm text-zinc-400 mb-4">
-                  This will save all changes to the flight controller and <strong className="text-white">reboot the board</strong>.
+                <h3 className="text-lg font-semibold text-content mb-2">Save to EEPROM?</h3>
+                <p className="text-sm text-content-secondary mb-4">
+                  This will save all changes to the flight controller and <strong className="text-content">reboot the board</strong>.
                   You will need to reconnect after the reboot completes.
                 </p>
                 <div className="flex gap-3">
@@ -143,7 +143,7 @@ export default function LegacyConfigView() {
                   </button>
                   <button
                     onClick={() => setShowSaveConfirm(false)}
-                    className="flex-1 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-sm transition-colors"
+                    className="flex-1 px-4 py-2 bg-surface-raised hover:bg-surface-raised text-content rounded-lg text-sm transition-colors"
                   >
                     Cancel
                   </button>
@@ -157,7 +157,7 @@ export default function LegacyConfigView() {
       {/* Reboot/Reconnect overlay */}
       {rebootState !== 'idle' && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-8 max-w-md mx-4 shadow-2xl text-center">
+          <div className="bg-surface-input border border rounded-xl p-8 max-w-md mx-4 shadow-2xl text-center">
             {/* Icon based on state */}
             {rebootState === 'error' ? (
               <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
@@ -178,7 +178,7 @@ export default function LegacyConfigView() {
             )}
 
             {/* Title */}
-            <h3 className="text-lg font-semibold text-white mb-2">
+            <h3 className="text-lg font-semibold text-content mb-2">
               {rebootState === 'saving' && 'Saving Configuration'}
               {rebootState === 'rebooting' && 'Rebooting Board'}
               {rebootState === 'reconnecting' && 'Reconnecting'}
@@ -187,17 +187,17 @@ export default function LegacyConfigView() {
             </h3>
 
             {/* Message */}
-            <p className="text-sm text-zinc-400 mb-4">
+            <p className="text-sm text-content-secondary mb-4">
               {rebootError || rebootMessage}
             </p>
 
             {/* Progress indicator for non-terminal states */}
             {(rebootState === 'saving' || rebootState === 'rebooting' || rebootState === 'reconnecting') && (
-              <div className="flex items-center justify-center gap-2 text-xs text-zinc-500">
+              <div className="flex items-center justify-center gap-2 text-xs text-content-secondary">
                 <div className="flex gap-1">
-                  <div className={`w-2 h-2 rounded-full ${rebootState === 'saving' ? 'bg-blue-500' : 'bg-zinc-600'}`} />
-                  <div className={`w-2 h-2 rounded-full ${rebootState === 'rebooting' ? 'bg-blue-500' : 'bg-zinc-600'}`} />
-                  <div className={`w-2 h-2 rounded-full ${rebootState === 'reconnecting' ? 'bg-blue-500' : 'bg-zinc-600'}`} />
+                  <div className={`w-2 h-2 rounded-full ${rebootState === 'saving' ? 'bg-blue-500' : 'bg-surface-raised'}`} />
+                  <div className={`w-2 h-2 rounded-full ${rebootState === 'rebooting' ? 'bg-blue-500' : 'bg-surface-raised'}`} />
+                  <div className={`w-2 h-2 rounded-full ${rebootState === 'reconnecting' ? 'bg-blue-500' : 'bg-surface-raised'}`} />
                 </div>
               </div>
             )}
@@ -206,7 +206,7 @@ export default function LegacyConfigView() {
             {(rebootState === 'done' || rebootState === 'error') && (
               <button
                 onClick={clearRebootState}
-                className="mt-4 px-6 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-sm transition-colors"
+                className="mt-4 px-6 py-2 bg-surface-raised hover:bg-surface-raised text-content rounded-lg text-sm transition-colors"
               >
                 Dismiss
               </button>
@@ -236,8 +236,8 @@ export default function LegacyConfigView() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-zinc-400">Loading configuration from CLI...</p>
-            <p className="text-xs text-zinc-600 mt-1">Running dump command</p>
+            <p className="text-content-secondary">Loading configuration from CLI...</p>
+            <p className="text-xs text-content-tertiary mt-1">Running dump command</p>
           </div>
         </div>
       )}
@@ -260,7 +260,7 @@ export default function LegacyConfigView() {
       {/* Tabs */}
       {hasConfigData && (
         <>
-          <div className="flex items-center gap-1 px-4 pt-3 border-b border-zinc-800">
+          <div className="flex items-center gap-1 px-4 pt-3 border-b border-subtle">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -270,8 +270,8 @@ export default function LegacyConfigView() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
                     isActive
-                      ? 'bg-zinc-800 text-white border-b-2 border-blue-500'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                      ? 'bg-surface-tooltip text-content border-b-2 border-blue-500'
+                      : 'text-content-secondary hover:text-content hover:bg-surface'
                   }`}
                 >
                   <Icon className={`w-4 h-4 ${isActive ? tab.color : `${tab.color} opacity-50`}`} />
@@ -296,10 +296,10 @@ export default function LegacyConfigView() {
       {!connectionState.isConnected && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <svg className="w-12 h-12 text-zinc-600 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-12 h-12 text-content-tertiary mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a5 5 0 01-7.072-7.072m7.072 7.072l2.829-2.829" />
             </svg>
-            <p className="text-zinc-400">Connect to a legacy board to configure</p>
+            <p className="text-content-secondary">Connect to a legacy board to configure</p>
           </div>
         </div>
       )}

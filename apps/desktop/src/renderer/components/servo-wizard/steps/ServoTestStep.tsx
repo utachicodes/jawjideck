@@ -36,11 +36,11 @@ export default function ServoTestStep() {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-xl font-bold text-white">Test Your Servos</h2>
-        <p className="text-sm text-zinc-400 mt-2">
+        <h2 className="text-xl font-bold text-content">Test Your Servos</h2>
+        <p className="text-sm text-content-secondary mt-2">
           Move your transmitter sticks and verify each servo responds correctly.
           <br />
-          If a servo moves the <strong className="text-zinc-300">wrong way</strong>, click <strong className="text-blue-400">Reverse</strong>.
+          If a servo moves the <strong className="text-content">wrong way</strong>, click <strong className="text-blue-400">Reverse</strong>.
         </p>
       </div>
 
@@ -51,9 +51,9 @@ export default function ServoTestStep() {
             type="checkbox"
             checked={isPollingServos}
             onChange={(e) => (e.target.checked ? startServoPolling() : stopServoPolling())}
-            className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500/50"
+            className="w-4 h-4 rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500/50"
           />
-          <span className="text-sm text-zinc-400">
+          <span className="text-sm text-content-secondary">
             {isPollingServos ? (
               <span className="text-green-400">● Live servo polling enabled</span>
             ) : (
@@ -73,17 +73,17 @@ export default function ServoTestStep() {
           return (
             <div
               key={assignment.surface}
-              className={`bg-zinc-900/50 rounded-xl border p-4 transition-all ${
+              className={`bg-surface-input rounded-xl border p-4 transition-all ${
                 moving
                   ? 'border-green-500/50 bg-green-500/5'
-                  : 'border-zinc-800/50'
+                  : 'border-subtle'
               }`}
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-white">{surfaceInfo.name}</span>
-                    <span className="text-xs px-2 py-0.5 bg-zinc-800 rounded text-zinc-400">
+                    <span className="text-sm font-medium text-content">{surfaceInfo.name}</span>
+                    <span className="text-xs px-2 py-0.5 bg-surface-tooltip rounded text-content-secondary">
                       Servo {assignment.servoIndex}
                     </span>
                     {assignment.reversed && (
@@ -92,7 +92,7 @@ export default function ServoTestStep() {
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-zinc-500 mt-1">
+                  <div className="text-xs text-content-secondary mt-1">
                     {getServoTestInstruction(assignment.surface)}
                   </div>
                 </div>
@@ -127,8 +127,8 @@ export default function ServoTestStep() {
                   </>
                 ) : (
                   <>
-                    <span className="text-zinc-500">○</span>
-                    <span className="text-xs text-zinc-500">Move stick to test</span>
+                    <span className="text-content-secondary">○</span>
+                    <span className="text-xs text-content-secondary">Move stick to test</span>
                   </>
                 )}
               </div>
@@ -142,7 +142,7 @@ export default function ServoTestStep() {
         <Lightbulb className="w-5 h-5 text-amber-400 shrink-0" />
         <div>
           <p className="text-sm text-amber-400 font-medium">How to check direction:</p>
-          <ul className="text-xs text-zinc-400 mt-1 space-y-1 list-disc list-inside">
+          <ul className="text-xs text-content-secondary mt-1 space-y-1 list-disc list-inside">
             <li><strong>Ailerons:</strong> Roll stick right → right aileron should go UP, left should go DOWN</li>
             <li><strong>Elevator:</strong> Pull stick back → trailing edge should go UP</li>
             <li><strong>Rudder:</strong> Yaw stick right → rudder should move RIGHT</li>
@@ -155,7 +155,7 @@ export default function ServoTestStep() {
       <div className="flex justify-between">
         <button
           onClick={prevStep}
-          className="px-6 py-2.5 rounded-lg font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+          className="px-6 py-2.5 rounded-lg font-medium bg-surface-tooltip text-content hover:bg-surface-raised"
         >
           ← Back
         </button>

@@ -185,7 +185,7 @@ export default function FilterConfigTab({ setModified }: Props) {
   return (
     <div className="max-w-full px-4 space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-500/10 to-violet-500/5 rounded-xl border border-purple-500/30 p-4">
+      <div className="bg-gradient-to-r from-purple-500/10 to-violet-500/5 rounded-xl border-purple-500/30 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
@@ -193,7 +193,7 @@ export default function FilterConfigTab({ setModified }: Props) {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-purple-300">Filter Configuration</h2>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-content-secondary">
                 Configure noise filtering for smooth and clean flight
               </p>
             </div>
@@ -202,7 +202,7 @@ export default function FilterConfigTab({ setModified }: Props) {
             <button
               onClick={loadConfig}
               disabled={loading}
-              className="px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg text-sm flex items-center gap-2 transition-colors"
+              className="px-3 py-2 bg-surface-raised hover:bg-surface-raised text-content rounded-lg text-sm flex items-center gap-2 transition-colors"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
@@ -213,7 +213,7 @@ export default function FilterConfigTab({ setModified }: Props) {
               className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
                 hasChanges
                   ? 'bg-purple-600 hover:bg-purple-500 text-white'
-                  : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                  : 'bg-surface-raised text-content-secondary cursor-not-allowed'
               }`}
             >
               <Save className="w-4 h-4" />
@@ -225,13 +225,13 @@ export default function FilterConfigTab({ setModified }: Props) {
 
       {/* Messages */}
       {error && (
-        <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm flex items-center gap-2">
+        <div className="p-3 bg-red-500/20 border-red-500/30 rounded-lg text-red-400 text-sm flex items-center gap-2">
           <AlertTriangle className="w-4 h-4" />
           {error}
         </div>
       )}
       {success && (
-        <div className="p-3 bg-green-500/20 border border-green-500/30 rounded-lg text-green-400 text-sm flex items-center gap-2">
+        <div className="p-3 bg-green-500/20 border-green-500/30 rounded-lg text-green-400 text-sm flex items-center gap-2">
           <Waves className="w-4 h-4" />
           {success}
         </div>
@@ -240,10 +240,10 @@ export default function FilterConfigTab({ setModified }: Props) {
       {/* Main Settings Grid */}
       <div className="grid grid-cols-2 gap-6">
         {/* Gyro Filters Section */}
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+        <div className="bg-surface border-subtle rounded-xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <Activity className="w-5 h-5 text-blue-400" />
-            <h3 className="text-white font-medium">Gyro Filters</h3>
+            <h3 className="text-content font-medium">Gyro Filters</h3>
           </div>
           <div className="space-y-4">
             <DraggableSlider
@@ -257,11 +257,11 @@ export default function FilterConfigTab({ setModified }: Props) {
               hint="Primary noise filter (0 = off)"
             />
             <div className="flex items-center gap-4">
-              <label className="text-sm text-gray-400 min-w-[100px]">Type</label>
+              <label className="text-sm text-content-secondary min-w-[100px]">Type</label>
               <select
                 value={config.gyroLowpassType}
                 onChange={(e) => updateConfig('gyroLowpassType', parseInt(e.target.value, 10))}
-                className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                className="flex-1 px-3 py-2 bg-surface-tooltip border rounded-lg text-content text-sm focus:outline-none focus:border-blue-500"
               >
                 {FILTER_TYPES.map((type) => (
                   <option key={type.value} value={type.value}>
@@ -294,10 +294,10 @@ export default function FilterConfigTab({ setModified }: Props) {
         </div>
 
         {/* D-Term Filters Section */}
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+        <div className="bg-surface border-subtle rounded-xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <Zap className="w-5 h-5 text-orange-400" />
-            <h3 className="text-white font-medium">D-Term Filters</h3>
+            <h3 className="text-content font-medium">D-Term Filters</h3>
           </div>
           <div className="space-y-4">
             <DraggableSlider
@@ -311,11 +311,11 @@ export default function FilterConfigTab({ setModified }: Props) {
               hint="Primary D-term filter (0 = off)"
             />
             <div className="flex items-center gap-4">
-              <label className="text-sm text-gray-400 min-w-[100px]">Type</label>
+              <label className="text-sm text-content-secondary min-w-[100px]">Type</label>
               <select
                 value={config.dTermLowpassType}
                 onChange={(e) => updateConfig('dTermLowpassType', parseInt(e.target.value, 10))}
-                className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500"
+                className="flex-1 px-3 py-2 bg-surface-tooltip border rounded-lg text-content text-sm focus:outline-none focus:border-orange-500"
               >
                 {FILTER_TYPES.map((type) => (
                   <option key={type.value} value={type.value}>
@@ -339,11 +339,11 @@ export default function FilterConfigTab({ setModified }: Props) {
       </div>
 
       {/* Dynamic Notch Section */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+      <div className="bg-surface border-subtle rounded-xl p-5">
         <div className="flex items-center gap-2 mb-4">
           <FilterIcon className="w-5 h-5 text-cyan-400" />
-          <h3 className="text-white font-medium">Dynamic Notch Filter</h3>
-          <span className="text-xs text-gray-500">Tracks and removes motor noise</span>
+          <h3 className="text-content font-medium">Dynamic Notch Filter</h3>
+          <span className="text-xs text-content-secondary">Tracks and removes motor noise</span>
         </div>
         <div className="grid grid-cols-3 gap-6">
           <div className="space-y-4">
@@ -406,18 +406,18 @@ export default function FilterConfigTab({ setModified }: Props) {
       </div>
 
       {/* Advanced Settings (Collapsible) */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
+      <div className="bg-surface border-subtle rounded-xl overflow-hidden">
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="w-full px-5 py-4 flex items-center justify-between hover:bg-zinc-800/50 transition-colors"
+          className="w-full px-5 py-4 flex items-center justify-between hover:bg-surface transition-colors"
         >
           <div className="flex items-center gap-2">
-            <Settings className="w-5 h-5 text-gray-400" />
-            <h3 className="text-white font-medium">Advanced Settings</h3>
-            <span className="text-xs text-gray-500">(Notch Filters, RPM Filter & Dynamic Lowpass)</span>
+            <Settings className="w-5 h-5 text-content-secondary" />
+            <h3 className="text-content font-medium">Advanced Settings</h3>
+            <span className="text-xs text-content-secondary">(Notch Filters, RPM Filter & Dynamic Lowpass)</span>
           </div>
           <svg
-            className={`w-5 h-5 text-gray-400 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
+            className={`w-5 h-5 text-content-secondary transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -427,7 +427,7 @@ export default function FilterConfigTab({ setModified }: Props) {
         </button>
 
         {showAdvanced && (
-          <div className="px-5 pb-5 border-t border-zinc-800">
+          <div className="px-5 pb-5 border-t border-subtle">
             <div className="grid grid-cols-2 gap-6 mt-4">
               {/* Static Notch Filters */}
               <div className="space-y-4">
@@ -581,12 +581,12 @@ export default function FilterConfigTab({ setModified }: Props) {
       </div>
 
       {/* Help Text */}
-      <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+      <div className="bg-blue-500/10 border-blue-500/30 rounded-xl p-4">
         <div className="flex items-start gap-3">
           <Activity className="w-5 h-5 text-blue-400 mt-0.5" />
           <div>
             <h4 className="font-medium text-blue-300">Filter Tuning Tips</h4>
-            <ul className="text-sm text-gray-400 mt-2 space-y-1">
+            <ul className="text-sm text-content-secondary mt-2 space-y-1">
               <li><strong>Lowpass:</strong> Lower values = more filtering, less noise, but more delay. Start at 150Hz.</li>
               <li><strong>Dynamic Notch:</strong> Automatically tracks motor noise. Set min/max to bracket your motor frequencies.</li>
               <li><strong>D-Term:</strong> More aggressive filtering here reduces motor heat and oscillations.</li>

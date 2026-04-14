@@ -43,15 +43,15 @@ export function OsdLivePanel() {
   return (
     <div className="flex flex-col h-full">
       {/* Connection status */}
-      <div className="px-3 py-2 border-b border-gray-700">
-        <h3 className="text-xs font-medium text-gray-300 mb-1">Live Telemetry</h3>
+      <div className="px-3 py-2 border-b border">
+        <h3 className="text-xs font-medium text-content mb-1">Live Telemetry</h3>
         {connectionState.isConnected ? (
           <p className="text-[10px] text-green-400">
             Connected to {connectionState.fcVariant || connectionState.autopilot || 'FC'}
             {connectionState.fcVersion && ` ${connectionState.fcVersion}`}
           </p>
         ) : (
-          <p className="text-[10px] text-gray-500">
+          <p className="text-[10px] text-content-secondary">
             Connect to FC for live OSD data
           </p>
         )}
@@ -60,20 +60,20 @@ export function OsdLivePanel() {
       <div className="flex-1 overflow-y-auto">
         {/* Mode switches */}
         {connectionState.isConnected && (
-          <div className="border-b border-gray-700 py-2">
+          <div className="border-b border py-2">
             <OsdModeSwitchPanel />
           </div>
         )}
 
         {/* Raw RC controls (collapsed by default) */}
         {connectionState.isConnected && (
-          <div className="border-b border-gray-700">
+          <div className="border-b border">
             <button
-              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-800/50 text-left"
+              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-surface text-left"
               onClick={() => setRcExpanded(!rcExpanded)}
             >
               <svg
-                className={`w-3 h-3 text-gray-500 shrink-0 transition-transform ${rcExpanded ? 'rotate-90' : ''}`}
+                className={`w-3 h-3 text-content-secondary shrink-0 transition-transform ${rcExpanded ? 'rotate-90' : ''}`}
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -81,7 +81,7 @@ export function OsdLivePanel() {
               >
                 <path d="M9 18l6-6-6-6" />
               </svg>
-              <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+              <span className="text-[10px] font-medium text-content-secondary uppercase tracking-wider">
                 Raw RC Channels
               </span>
             </button>
@@ -89,12 +89,12 @@ export function OsdLivePanel() {
             {rcExpanded && (
               <div className="px-3 pb-3">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="flex items-center gap-2 text-[10px] text-gray-400">
+                  <label className="flex items-center gap-2 text-[10px] text-content-secondary">
                     <input
                       type="checkbox"
                       checked={isOverrideActive}
                       onChange={(e) => handleRcToggle(e.target.checked)}
-                      className="rounded-sm bg-gray-700 border-gray-600 w-3 h-3"
+                      className="rounded-sm bg-surface-raised border w-3 h-3"
                     />
                     Send RC
                   </label>
@@ -111,7 +111,7 @@ export function OsdLivePanel() {
                   <RcBar label="Pitch" value={channels[1] ?? 1500} onChange={(v) => setChannel(1, v)} />
                   <RcBar label="Thr" value={channels[2] ?? 1000} onChange={(v) => setChannel(2, v)} isThrottle />
                   <RcBar label="Yaw" value={channels[3] ?? 1500} onChange={(v) => setChannel(3, v)} />
-                  <div className="border-t border-gray-800 pt-1.5 mt-1.5">
+                  <div className="border-t border-subtle pt-1.5 mt-1.5">
                     <RcBar label="AUX1" value={channels[4] ?? 1000} onChange={(v) => setChannel(4, v)} />
                     <RcBar label="AUX2" value={channels[5] ?? 1000} onChange={(v) => setChannel(5, v)} />
                   </div>
@@ -147,8 +147,8 @@ function RcBar({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[10px] text-gray-500 w-8 shrink-0">{label}</span>
-      <div className="flex-1 relative h-3.5 bg-gray-800 rounded overflow-hidden">
+      <span className="text-[10px] text-content-secondary w-8 shrink-0">{label}</span>
+      <div className="flex-1 relative h-3.5 bg-surface-tooltip rounded overflow-hidden">
         {!isThrottle && (
           <div className="absolute top-0 bottom-0 w-px bg-gray-600" style={{ left: '50%' }} />
         )}
@@ -170,7 +170,7 @@ function RcBar({
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
       </div>
-      <span className="text-[9px] text-gray-500 w-8 text-right font-mono">{value}</span>
+      <span className="text-[9px] text-content-secondary w-8 text-right font-mono">{value}</span>
     </div>
   );
 }

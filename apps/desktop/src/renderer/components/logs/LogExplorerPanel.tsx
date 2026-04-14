@@ -6,8 +6,11 @@ import {
   DockviewApi,
   SerializedDockview,
   Orientation,
+  themeDark,
+  themeLight,
 } from 'dockview-react';
 import 'dockview-react/dist/styles/dockview.css';
+import { useResolvedTheme } from '../../hooks/useTheme';
 import uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 import maplibregl from 'maplibre-gl';
@@ -325,20 +328,20 @@ function ChartPanel() {
   if (!chartData) {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-4 p-6">
-        <div className="text-gray-500 text-sm">Pick a quick plot or select fields</div>
+        <div className="text-content-secondary text-sm">Pick a quick plot or select fields</div>
         <div className="flex flex-wrap justify-center gap-2">
           {QUICK_PRESETS.filter((p) => p.types.some((t) => messageTypes.includes(t))).map((preset) => (
             <button
               key={preset.label}
               onClick={() => applyPreset(preset)}
-              className="flex flex-col items-start px-3 py-2 rounded-lg bg-gray-800/40 hover:bg-blue-500/10 hover:border-blue-500/30 border border-gray-700/30 transition-colors text-left"
+              className="flex flex-col items-start px-3 py-2 rounded-lg bg-surface hover:bg-blue-500/10 hover:border-blue-500/30 border border-subtle transition-colors text-left"
             >
-              <span className="text-xs text-gray-200 font-medium">{preset.label}</span>
-              <span className="text-[10px] text-gray-500">{preset.desc}</span>
+              <span className="text-xs text-content font-medium">{preset.label}</span>
+              <span className="text-[10px] text-content-secondary">{preset.desc}</span>
             </button>
           ))}
         </div>
-        <p className="text-[10px] text-gray-600 mt-1">Drag to select range &middot; Scroll to zoom &middot; Double-click to reset</p>
+        <p className="text-[10px] text-content-tertiary mt-1">Drag to select range &middot; Scroll to zoom &middot; Double-click to reset</p>
       </div>
     );
   }
@@ -352,7 +355,7 @@ function ChartPanel() {
     <div className="h-full flex flex-col relative">
       {/* Mode timeline — synced with chart X axis */}
       {modeTimeline.length > 0 && visibleRange > 0 && (
-        <div className="h-5 mx-2 mt-1 flex-shrink-0 rounded overflow-hidden relative bg-gray-800/50">
+        <div className="h-5 mx-2 mt-1 flex-shrink-0 rounded overflow-hidden relative bg-surface">
           {modeTimeline
             .filter((seg) => seg.endS > visibleXMin && seg.startS < visibleXMax)
             .map((seg, i) => {
@@ -368,7 +371,7 @@ function ChartPanel() {
                   title={`${seg.name} (${seg.startS.toFixed(0)}s - ${seg.endS.toFixed(0)}s)`}
                 >
                   {widthPct > 8 && (
-                    <span className="absolute inset-0 flex items-center justify-center text-[9px] text-white/80 font-medium truncate px-0.5">
+                    <span className="absolute inset-0 flex items-center justify-center text-[9px] text-content/80 font-medium truncate px-0.5">
                       {seg.name}
                     </span>
                   )}
@@ -384,7 +387,7 @@ function ChartPanel() {
       {isZoomed && (
         <button
           onClick={resetZoom}
-          className="absolute top-1 right-2 z-10 text-[10px] px-2 py-1 bg-gray-800/90 hover:bg-gray-700 text-gray-300 hover:text-white rounded border border-gray-600/50 transition-colors backdrop-blur-sm"
+          className="absolute top-1 right-2 z-10 text-[10px] px-2 py-1 bg-surface-overlay hover:bg-surface-raised text-content hover:text-content rounded border border transition-colors backdrop-blur-sm"
         >
           Reset Zoom
         </button>
@@ -625,7 +628,7 @@ function FlightPathPanel() {
 
   if (flightPath.length < 2) {
     return (
-      <div className="h-full flex items-center justify-center text-gray-600 text-xs">
+      <div className="h-full flex items-center justify-center text-content-tertiary text-xs">
         No GPS data available
       </div>
     );
@@ -637,7 +640,7 @@ function FlightPathPanel() {
       {/* Controls overlay */}
       <div className="absolute top-2 right-2 z-10 flex flex-col items-stretch gap-1.5">
         {/* Layer switcher */}
-        <div className="flex bg-gray-900/80 rounded-md backdrop-blur-sm overflow-hidden">
+        <div className="flex bg-surface-overlay rounded-md backdrop-blur-sm overflow-hidden">
           {Object.entries(FLIGHT_MAP_LAYERS).map(([key, l]) => (
             <button
               key={key}
@@ -645,7 +648,7 @@ function FlightPathPanel() {
               className={`flex-1 text-[10px] px-2 py-1 transition-colors ${
                 activeLayer === key
                   ? 'bg-blue-500/30 text-blue-300'
-                  : 'text-gray-400 hover:text-gray-200'
+                  : 'text-content-secondary hover:text-content'
               }`}
             >
               {l.name}
@@ -653,7 +656,7 @@ function FlightPathPanel() {
           ))}
         </div>
         {/* Path color mode */}
-        <div className="flex bg-gray-900/80 rounded-md backdrop-blur-sm overflow-hidden">
+        <div className="flex bg-surface-overlay rounded-md backdrop-blur-sm overflow-hidden">
           {([
             ['solid', 'Solid'],
             ['mode', 'Modes'],
@@ -666,7 +669,7 @@ function FlightPathPanel() {
               className={`flex-1 text-[10px] px-2 py-1 transition-colors ${
                 colorMode === key
                   ? 'bg-blue-500/30 text-blue-300'
-                  : 'text-gray-400 hover:text-gray-200'
+                  : 'text-content-secondary hover:text-content'
               }`}
             >
               {label}
@@ -685,7 +688,7 @@ function FlightPathPanel() {
             { padding: 80, pitch: 50, duration: 800 },
           );
         }}
-        className="absolute bottom-3 right-3 z-10 w-8 h-8 rounded-full bg-gray-800/90 text-gray-400 hover:text-white hover:bg-gray-700/90 shadow-lg flex items-center justify-center transition-all"
+        className="absolute bottom-3 right-3 z-10 w-8 h-8 rounded-full bg-surface-overlay text-content-secondary hover:text-content hover:bg-surface-overlay-light shadow-lg flex items-center justify-center transition-all"
         title="Center on flight path"
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -802,9 +805,9 @@ function FieldPickerPanel() {
   return (
     <div className="h-full flex flex-col">
       {/* Search + presets (sticky top) */}
-      <div className="p-3 pb-2 space-y-2 border-b border-gray-700/30">
+      <div className="p-3 pb-2 space-y-2 border-b border-subtle">
         <div className="relative">
-          <svg className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-content-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
@@ -812,12 +815,12 @@ function FieldPickerPanel() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filter messages..."
-            className="w-full bg-gray-900/50 border border-gray-700/40 rounded text-[11px] pl-6 pr-2 py-1 text-gray-200 placeholder-gray-600 focus:outline-none focus:border-blue-500/50"
+            className="w-full bg-surface-input border border-subtle rounded text-[11px] pl-6 pr-2 py-1 text-content placeholder-content-tertiary focus:outline-none focus:border-blue-500/50"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 text-xs"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-content-secondary hover:text-content text-xs"
             >
               x
             </button>
@@ -829,7 +832,7 @@ function FieldPickerPanel() {
             <button
               key={preset.label}
               onClick={() => applyPreset(preset)}
-              className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800/60 hover:bg-blue-500/20 hover:text-blue-400 text-gray-400 transition-colors"
+              className="text-[10px] px-1.5 py-0.5 rounded bg-surface hover:bg-blue-500/20 hover:text-blue-400 text-content-secondary transition-colors"
             >
               {preset.label}
             </button>
@@ -861,7 +864,7 @@ function FieldPickerPanel() {
             <div key={type}>
               <button
                 onClick={() => toggleExpanded(type)}
-                className={`flex items-center gap-2 text-xs w-full rounded px-2 py-1.5 transition-colors hover:bg-gray-800/40`}
+                className={`flex items-center gap-2 text-xs w-full rounded px-2 py-1.5 transition-colors hover:bg-surface/40`}
                 style={{ backgroundColor: hasSelection ? `${groupColor}18` : undefined, opacity: hasSelection ? 1 : 0.45 }}
               >
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: groupColor }} />
@@ -871,8 +874,8 @@ function FieldPickerPanel() {
                     {activeFieldCount}
                   </span>
                 )}
-                <span className="text-[10px] text-gray-600 ml-auto tabular-nums">{currentLog?.messages[type]?.length ?? 0}</span>
-                <svg className={`w-3 h-3 text-gray-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <span className="text-[10px] text-content-tertiary ml-auto tabular-nums">{currentLog?.messages[type]?.length ?? 0}</span>
+                <svg className={`w-3 h-3 text-content-secondary transition-transform ${isExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
@@ -885,19 +888,19 @@ function FieldPickerPanel() {
                       <label
                         key={field}
                         className={`flex items-center gap-2 text-[11px] cursor-pointer rounded px-2 py-1 transition-colors ${
-                          isChecked ? 'bg-gray-800/50' : 'hover:bg-gray-800/30'
+                          isChecked ? 'bg-surface' : 'hover:bg-surface/30'
                         }`}
                       >
                         <input
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => handleFieldToggle(type, field)}
-                          className="rounded border-gray-600 bg-gray-800 text-blue-500 w-3 h-3"
+                          className="rounded border bg-surface-tooltip text-blue-500 w-3 h-3"
                         />
                         {isChecked && lineColor && (
                           <span className="w-3 h-[3px] rounded-full flex-shrink-0" style={{ backgroundColor: lineColor }} />
                         )}
-                        <span className={isChecked ? 'text-gray-200' : 'text-gray-500'}>{field}</span>
+                        <span className={isChecked ? 'text-content' : 'text-content-secondary'}>{field}</span>
                       </label>
                     );
                   })}
@@ -907,7 +910,7 @@ function FieldPickerPanel() {
           );
         })}
         {filteredTypes.length === 0 && search && (
-          <p className="text-[11px] text-gray-600 text-center py-4">No matches for "{search}"</p>
+          <p className="text-[11px] text-content-tertiary text-center py-4">No matches for "{search}"</p>
         )}
       </div>
     </div>
@@ -968,6 +971,7 @@ const PANEL_DEFS = [
 ];
 
 export function LogExplorerPanel() {
+  const resolvedTheme = useResolvedTheme();
   const apiRef = useRef<DockviewApi | null>(null);
   const [openPanels, setOpenPanels] = useState<Set<string>>(new Set(['chart', 'map', 'fields']));
 
@@ -1015,12 +1019,12 @@ export function LogExplorerPanel() {
       <div className="flex items-center gap-2 px-4 pt-2 pb-1 flex-shrink-0">
         {closedPanels.length > 0 && (
           <>
-            <span className="text-[10px] text-gray-500">Add panel:</span>
+            <span className="text-[10px] text-content-secondary">Add panel:</span>
             {closedPanels.map((def) => (
               <button
                 key={def.id}
                 onClick={() => handleAddPanel(def.id, def.component, def.title)}
-                className="text-[10px] px-2 py-0.5 rounded bg-gray-800/60 hover:bg-blue-500/20 hover:text-blue-400 text-gray-400 border border-gray-700/30 transition-colors"
+                className="text-[10px] px-2 py-0.5 rounded bg-surface hover:bg-blue-500/20 hover:text-blue-400 text-content-secondary border border-subtle transition-colors"
               >
                 {def.title}
               </button>
@@ -1029,7 +1033,7 @@ export function LogExplorerPanel() {
         )}
         <button
           onClick={handleResetLayout}
-          className="text-[10px] px-2 py-0.5 rounded bg-gray-800/60 hover:bg-gray-700 text-gray-500 hover:text-gray-300 border border-gray-700/30 transition-colors ml-auto"
+          className="text-[10px] px-2 py-0.5 rounded bg-surface hover:bg-surface-raised text-content-secondary hover:text-content border border-subtle transition-colors ml-auto"
           title="Reset panel layout"
         >
           Reset Layout
@@ -1037,10 +1041,11 @@ export function LogExplorerPanel() {
       </div>
 
       {/* Dockview panels */}
-      <div className="flex-1 dockview-theme-dark log-explorer-dock">
+      <div className="flex-1 log-explorer-dock">
         <DockviewReact
           components={dockviewComponents}
           onReady={onReady}
+          theme={resolvedTheme === 'light' ? themeLight : themeDark}
           className="h-full"
         />
       </div>

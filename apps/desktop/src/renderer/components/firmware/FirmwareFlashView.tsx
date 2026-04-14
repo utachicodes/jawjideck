@@ -104,7 +104,7 @@ function SuggestedBoards({
             key={board.id}
             onClick={() => onSelectBoard(board)}
             disabled={disabled}
-            className="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-cyan-500/50 rounded text-sm text-zinc-300 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-2.5 py-1.5 bg-surface-tooltip hover:bg-surface-raised border border hover:border-cyan-500/50 rounded text-sm text-content hover:text-content transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {board.name}
           </button>
@@ -138,20 +138,20 @@ function SerialPortPicker({
   }, []);
 
   return (
-    <div className="mb-4 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700">
+    <div className="mb-4 p-3 bg-surface rounded-lg border border">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-zinc-400 text-sm font-medium">Serial Ports</span>
+        <span className="text-content-secondary text-sm font-medium">Serial Ports</span>
         <button
           onClick={onRefresh}
           disabled={isLoading || disabled}
-          className="px-2 py-1 text-xs text-zinc-400 hover:text-zinc-200 bg-zinc-700 hover:bg-zinc-600 rounded transition-colors disabled:opacity-50"
+          className="px-2 py-1 text-xs text-content-secondary hover:text-content bg-surface-raised hover:bg-surface-raised rounded transition-colors disabled:opacity-50"
         >
           {isLoading ? 'Scanning...' : 'Refresh'}
         </button>
       </div>
 
       {ports.length === 0 ? (
-        <div className="text-zinc-500 text-sm">
+        <div className="text-content-secondary text-sm">
           {isLoading ? 'Scanning for ports...' : 'No serial ports found'}
         </div>
       ) : (
@@ -159,15 +159,15 @@ function SerialPortPicker({
           {ports.map((port) => (
             <div
               key={port.path}
-              className="flex items-center justify-between p-2 bg-zinc-900 rounded border border-zinc-700"
+              className="flex items-center justify-between p-2 bg-surface-input rounded border border"
             >
               <div className="flex-1 min-w-0">
-                <div className="text-zinc-200 text-sm font-medium truncate">{formatPortDisplayName(port)}</div>
+                <div className="text-content text-sm font-medium truncate">{formatPortDisplayName(port)}</div>
               </div>
               <button
                 onClick={() => onProbe(port.path)}
                 disabled={isProbing || disabled}
-                className="ml-2 px-2.5 py-1.5 text-xs bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded transition-colors flex items-center gap-1.5"
+                className="ml-2 px-2.5 py-1.5 text-xs bg-purple-600 hover:bg-purple-500 disabled:bg-surface-raised disabled:text-content-secondary text-white rounded transition-colors flex items-center gap-1.5"
               >
                 {isProbing ? (
                   <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -188,7 +188,7 @@ function SerialPortPicker({
         </div>
       )}
 
-      <div className="mt-2 text-zinc-600 text-xs">
+      <div className="mt-2 text-content-tertiary text-xs">
         Probe will attempt to detect STM32 chip via bootloader
       </div>
     </div>
@@ -220,7 +220,7 @@ function BootloaderChecklist({
         Board in Bootloader Mode
       </div>
 
-      <p className="text-zinc-400 text-sm mb-4">
+      <p className="text-content-secondary text-sm mb-4">
         Your board is ready for flashing. Complete this checklist before proceeding:
       </p>
 
@@ -230,13 +230,13 @@ function BootloaderChecklist({
             type="checkbox"
             checked={boardSelected}
             onChange={(e) => setBoardSelected(e.target.checked)}
-            className="mt-0.5 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500"
+            className="mt-0.5 rounded border bg-surface-tooltip text-emerald-500 focus:ring-emerald-500"
           />
           <div>
-            <span className="text-zinc-300 group-hover:text-white transition-colors">
+            <span className="text-content group-hover:text-content transition-colors">
               I have selected the correct board from the dropdown
             </span>
-            <p className="text-zinc-500 text-xs mt-0.5">
+            <p className="text-content-secondary text-xs mt-0.5">
               In bootloader mode we can only detect the chip (e.g., STM32F303), not the board model
             </p>
           </div>
@@ -247,13 +247,13 @@ function BootloaderChecklist({
             type="checkbox"
             checked={jumperRemoved}
             onChange={(e) => setJumperRemoved(e.target.checked)}
-            className="mt-0.5 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500"
+            className="mt-0.5 rounded border bg-surface-tooltip text-emerald-500 focus:ring-emerald-500"
           />
           <div>
-            <span className="text-zinc-300 group-hover:text-white transition-colors">
+            <span className="text-content group-hover:text-content transition-colors">
               I have removed the boot jumper / released the boot pads
             </span>
-            <p className="text-zinc-500 text-xs mt-0.5">
+            <p className="text-content-secondary text-xs mt-0.5">
               The board will reboot after flashing. Remove the jumper so it boots into new firmware.
             </p>
           </div>
@@ -282,7 +282,7 @@ function BootloaderChecklist({
           w-full px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2
           ${canFlash && allChecked
             ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-            : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+            : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
           }
         `}
       >
@@ -618,9 +618,9 @@ export function FirmwareFlashView() {
     !isConnected;  // Must disconnect from board before flashing
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950">
+    <div className="flex flex-col h-full bg-surface-base">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-zinc-800 bg-zinc-900/50">
+      <div className="px-6 py-4 border-b border-subtle bg-surface-input">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <svg
@@ -636,21 +636,21 @@ export function FirmwareFlashView() {
                 d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
               />
             </svg>
-            <h1 className="text-xl font-semibold text-white">Firmware Flash</h1>
+            <h1 className="text-xl font-semibold text-content">Firmware Flash</h1>
           </div>
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
+            <label className="flex items-center gap-2 text-sm text-content-secondary cursor-pointer">
               <input
                 type="checkbox"
                 checked={advancedMode}
                 onChange={(e) => setAdvancedMode(e.target.checked)}
-                className="rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500"
+                className="rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500"
               />
               Advanced
             </label>
             <button
               onClick={reset}
-              className="px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
             >
               Reset
             </button>
@@ -670,10 +670,10 @@ export function FirmwareFlashView() {
                 </svg>
                 <div className="flex-1">
                   <h4 className="text-amber-300 font-medium">Connected to {connectedBoardId || 'board'}</h4>
-                  <p className="text-sm text-gray-400 mt-1">
+                  <p className="text-sm text-content-secondary mt-1">
                     Flashing requires disconnecting from the board first. The board will reboot into bootloader mode for flashing.
                   </p>
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-content-secondary mt-2">
                     {connectedProtocol === 'msp' && connectedFcVariant ? (
                       <>Currently running: <span className="text-purple-400">{connectedFcVariant}</span> firmware</>
                     ) : connectedProtocol === 'mavlink' ? (
@@ -688,10 +688,10 @@ export function FirmwareFlashView() {
           )}
 
           {/* Board Detection Card */}
-          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5">
+          <div className="bg-surface-input rounded-xl border border-subtle p-5">
             <div className="flex items-center gap-2 mb-4">
               <svg
-                className="w-5 h-5 text-zinc-400"
+                className="w-5 h-5 text-content-secondary"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -703,21 +703,21 @@ export function FirmwareFlashView() {
                   d="M13 10V3L4 14h7v7l9-11h-7z"
                 />
               </svg>
-              <span className="text-zinc-300 font-medium">
+              <span className="text-content font-medium">
                 Connect your flight controller via USB
               </span>
             </div>
 
             {/* Connection Status - compact info line */}
             {detectedBoard && (
-              <div className="flex items-center gap-2 p-2 bg-zinc-800/50 rounded-lg border border-zinc-700 mb-3 text-sm overflow-hidden">
+              <div className="flex items-center gap-2 p-2 bg-surface rounded-lg border border mb-3 text-sm overflow-hidden">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
-                <span className="text-zinc-300 shrink-0">Connected:</span>
-                <span className="text-zinc-400 truncate min-w-0">{detectedBoard.port || 'USB'}</span>
+                <span className="text-content shrink-0">Connected:</span>
+                <span className="text-content-secondary truncate min-w-0">{detectedBoard.port || 'USB'}</span>
                 {/* Show detected board info with protocol badge */}
                 {detectedBoard.name && detectedBoard.name !== 'unknown' && detectedBoard.name !== 'Unknown' && (
                   <>
-                    <span className="text-zinc-600 shrink-0">·</span>
+                    <span className="text-content-tertiary shrink-0">·</span>
                     <span className="text-emerald-400 font-medium shrink-0">{detectedBoard.name}</span>
                   </>
                 )}
@@ -731,7 +731,7 @@ export function FirmwareFlashView() {
                     detectedBoard.detectionMethod === 'mavlink' ? 'bg-blue-500/20 text-blue-400' :
                     detectedBoard.detectionMethod === 'msp' ? 'bg-purple-500/20 text-purple-400' :
                     detectedBoard.detectionMethod === 'dfu' ? 'bg-amber-500/20 text-amber-400' :
-                    'bg-zinc-700 text-zinc-400'
+                    'bg-surface-raised text-content-secondary'
                   }`}>
                     {detectedBoard.detectionMethod.toUpperCase()}
                   </span>
@@ -739,12 +739,12 @@ export function FirmwareFlashView() {
                 {/* MCU info for bootloader detection */}
                 {detectedBoard.mcuType && detectedBoard.mcuType !== 'Unknown' && !detectedBoard.name?.includes(detectedBoard.mcuType) && (
                   <>
-                    <span className="text-zinc-600 shrink-0">·</span>
-                    <span className="text-zinc-400 shrink-0">{detectedBoard.mcuType}</span>
+                    <span className="text-content-tertiary shrink-0">·</span>
+                    <span className="text-content-secondary shrink-0">{detectedBoard.mcuType}</span>
                   </>
                 )}
                 {detectedBoard.chipId && (
-                  <span className="text-zinc-500 text-xs font-mono ml-auto shrink-0">
+                  <span className="text-content-secondary text-xs font-mono ml-auto shrink-0">
                     0x{detectedBoard.chipId.toString(16).padStart(4, '0')}
                   </span>
                 )}
@@ -752,7 +752,7 @@ export function FirmwareFlashView() {
             )}
 
             {/* Board Selection - Primary control */}
-            <label className="block text-sm font-medium text-zinc-400 mb-2">
+            <label className="block text-sm font-medium text-content-secondary mb-2">
               Select Board
             </label>
             <div className="flex gap-2 mb-3">
@@ -779,8 +779,8 @@ export function FirmwareFlashView() {
                   className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                     selectedBoard
                       ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                      : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
-                  } disabled:bg-zinc-800 disabled:text-zinc-600`}
+                      : 'bg-surface-raised hover:bg-surface-raised text-content'
+                  } disabled:bg-surface-tooltip disabled:text-content-tertiary`}
                 >
                   {isDetecting ? (
                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -821,11 +821,11 @@ export function FirmwareFlashView() {
           </div>
 
           {/* Divider line */}
-          <div className="h-px bg-zinc-800" />
+          <div className="h-px bg-surface-tooltip" />
 
           {/* Firmware Source */}
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-3">
+            <label className="block text-sm font-medium text-content-secondary mb-3">
               Firmware Source
             </label>
             <div className="flex flex-wrap gap-2">
@@ -840,7 +840,7 @@ export function FirmwareFlashView() {
                       ${
                         selectedSource === source
                           ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                          : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-600'
+                          : 'border bg-surface-tooltip text-content-secondary hover:border'
                       }
                     `}
                   >
@@ -887,12 +887,12 @@ export function FirmwareFlashView() {
                       hardware. Motors, servos, and sensors could be on different pins. Check the iNav wiki for
                       your specific board before flashing.
                     </p>
-                    <p className="text-xs text-zinc-400 mt-2">
+                    <p className="text-xs text-content-secondary mt-2">
                       If your exact board is available with the same name, the pinout will be identical.
                     </p>
                     <button
                       onClick={clearUnmatchedBoardWarning}
-                      className="mt-2 text-xs text-zinc-500 hover:text-zinc-300 underline"
+                      className="mt-2 text-xs text-content-secondary hover:text-content underline"
                     >
                       Dismiss warning
                     </button>
@@ -904,7 +904,7 @@ export function FirmwareFlashView() {
 
           {/* Vehicle Type */}
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-3">
+            <label className="block text-sm font-medium text-content-secondary mb-3">
               Vehicle Type
               {selectedSource === 'betaflight' && (
                 <span className="ml-2 text-xs text-amber-400/80 font-normal">
@@ -934,8 +934,8 @@ export function FirmwareFlashView() {
                       ${isSelected
                         ? 'border-blue-500 bg-blue-500/10 text-blue-400'
                         : isAvailable
-                          ? 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-600'
-                          : 'border-zinc-800 bg-zinc-900 text-zinc-600 cursor-not-allowed'
+                          ? 'border bg-surface-tooltip text-content-secondary hover:border'
+                          : 'border-subtle bg-surface-input text-content-tertiary cursor-not-allowed'
                       }
                       ${isFlashing ? 'opacity-50 cursor-not-allowed' : ''}
                     `}
@@ -958,12 +958,12 @@ export function FirmwareFlashView() {
           {/* Version Selection */}
           {selectedSource !== 'custom' && selectedBoard && (
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-3">
+              <label className="block text-sm font-medium text-content-secondary mb-3">
                 Version
               </label>
 
               {isFetchingVersions ? (
-                <div className="flex items-center gap-2 text-zinc-500 py-2">
+                <div className="flex items-center gap-2 text-content-secondary py-2">
                   <div className="w-4 h-4 border-2 border-zinc-500 border-t-transparent rounded-full animate-spin" />
                   Loading versions...
                 </div>
@@ -974,23 +974,23 @@ export function FirmwareFlashView() {
                   {/* Beta/Dev toggles (advanced mode) - show above pills for context */}
                   {advancedMode && (
                     <div className="flex gap-3">
-                      <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
+                      <label className="flex items-center gap-1.5 text-xs text-content-secondary cursor-pointer">
                         <input
                           type="checkbox"
                           checked={includeBeta}
                           onChange={(e) => setIncludeBeta(e.target.checked)}
                           disabled={isFlashing}
-                          className="rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500"
+                          className="rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500"
                         />
                         Include Beta
                       </label>
-                      <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
+                      <label className="flex items-center gap-1.5 text-xs text-content-secondary cursor-pointer">
                         <input
                           type="checkbox"
                           checked={includeDev}
                           onChange={(e) => setIncludeDev(e.target.checked)}
                           disabled={isFlashing}
-                          className="rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500"
+                          className="rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500"
                         />
                         Include Dev
                       </label>
@@ -1010,7 +1010,7 @@ export function FirmwareFlashView() {
                             ${
                               selectedVersionGroup?.major === group.major
                                 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50'
-                                : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:border-zinc-600'
+                                : 'bg-surface-tooltip text-content-secondary border border hover:border'
                             }
                             ${group.isLatest ? 'ring-1 ring-emerald-500/30' : ''}
                           `}
@@ -1023,7 +1023,7 @@ export function FirmwareFlashView() {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-zinc-500 text-sm py-2">
+                    <div className="text-content-secondary text-sm py-2">
                       No stable releases available for this board. Enable Beta or Dev in Advanced mode to see pre-release versions.
                     </div>
                   )}
@@ -1040,7 +1040,7 @@ export function FirmwareFlashView() {
                           setSelectedVersion(version || null);
                         }}
                         disabled={isFlashing}
-                        className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-200 focus:outline-none focus:border-blue-500"
+                        className="flex-1 px-3 py-2 bg-surface-tooltip border border rounded-lg text-content focus:outline-none focus:border-blue-500"
                       >
                         {filteredVersions.map((v) => (
                           <option key={v.version} value={v.version}>
@@ -1052,13 +1052,13 @@ export function FirmwareFlashView() {
                       </select>
                     </div>
                   ) : selectedVersionGroup && filteredVersions.length === 0 ? (
-                    <div className="text-zinc-500 text-sm py-2">
+                    <div className="text-content-secondary text-sm py-2">
                       No versions match current filters for {selectedVersionGroup.label}. Enable Beta or Dev to see more.
                     </div>
                   ) : null}
                 </div>
               ) : (
-                <div className="text-zinc-500 text-sm py-2">
+                <div className="text-content-secondary text-sm py-2">
                   No firmware found for {selectedBoard?.name} ({VEHICLE_TYPE_NAMES[selectedVehicleType]})
                 </div>
               )}
@@ -1068,13 +1068,13 @@ export function FirmwareFlashView() {
           {/* Custom Firmware File */}
           {selectedSource === 'custom' && (
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-3">
+              <label className="block text-sm font-medium text-content-secondary mb-3">
                 Firmware File
               </label>
               <button
                 onClick={selectCustomFirmware}
                 disabled={isFlashing}
-                className="w-full px-4 py-4 bg-zinc-800 border border-zinc-700 border-dashed rounded-lg text-zinc-400 hover:border-zinc-600 hover:text-zinc-300 transition-colors"
+                className="w-full px-4 py-4 bg-surface-tooltip border border border-dashed rounded-lg text-content-secondary hover:border hover:text-content transition-colors"
               >
                 {customFirmwarePath ? (
                   <span className="text-blue-400">
@@ -1088,11 +1088,11 @@ export function FirmwareFlashView() {
           )}
 
           {/* Flash Progress & Button */}
-          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5">
+          <div className="bg-surface-input rounded-xl border border-subtle p-5">
             {/* Progress bar - hide percentage when error/idle */}
             <div className="mb-4">
               <div className="flex justify-between text-sm mb-1.5">
-                <span className={flashState === 'error' ? 'text-red-400' : 'text-zinc-400'}>
+                <span className={flashState === 'error' ? 'text-red-400' : 'text-content-secondary'}>
                   {flashState === 'error'
                     ? 'Flash failed'
                     : flashState === 'complete'
@@ -1100,10 +1100,10 @@ export function FirmwareFlashView() {
                       : flashProgress?.message || 'Ready to flash'}
                 </span>
                 {flashState !== 'error' && flashState !== 'idle' && (
-                  <span className="text-zinc-500">{flashProgress?.progress || 0}%</span>
+                  <span className="text-content-secondary">{flashProgress?.progress || 0}%</span>
                 )}
               </div>
-              <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+              <div className="h-2 bg-surface-tooltip rounded-full overflow-hidden">
                 <div
                   className={`h-full transition-all duration-300 ${
                     flashState === 'error'
@@ -1170,7 +1170,7 @@ export function FirmwareFlashView() {
                               ? 'Platform configured as Airplane'
                               : 'Configuring for Airplane mode...'}
                         </p>
-                        <p className="text-zinc-400 text-sm mt-1">
+                        <p className="text-content-secondary text-sm mt-1">
                           {postFlashError || postFlashMessage || 'Processing...'}
                         </p>
                       </div>
@@ -1180,7 +1180,7 @@ export function FirmwareFlashView() {
 
                 {/* Final message */}
                 {(postFlashState === 'complete' || postFlashState === 'skipped' || postFlashState === 'idle') && (
-                  <p className="text-zinc-400 text-sm">
+                  <p className="text-content-secondary text-sm">
                     Unplug and reconnect your board to start using the new firmware.
                   </p>
                 )}
@@ -1208,11 +1208,11 @@ export function FirmwareFlashView() {
                       </div>
                       <div>
                         <h3 className="text-amber-300 font-semibold">Boot Pads Required</h3>
-                        <p className="text-zinc-400 text-sm">This board needs manual bootloader entry</p>
+                        <p className="text-content-secondary text-sm">This board needs manual bootloader entry</p>
                       </div>
                     </div>
-                    <p className="text-zinc-300 text-sm mb-4">
-                      Your <span className="text-white font-medium">{selectedBoard.name}</span> uses a USB-serial chip
+                    <p className="text-content text-sm mb-4">
+                      Your <span className="text-content font-medium">{selectedBoard.name}</span> uses a USB-serial chip
                       and can't enter bootloader via software. Don't worry - the wizard will guide you through it!
                     </p>
                     <button
@@ -1254,24 +1254,24 @@ export function FirmwareFlashView() {
             {/* Flash Options (advanced mode) */}
             {advancedMode && (
               <div className="flex gap-4 py-2">
-                <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-content-secondary cursor-pointer">
                   <input
                     type="checkbox"
                     checked={noRebootSequence}
                     onChange={(e) => setNoRebootSequence(e.target.checked)}
                     disabled={isFlashing}
-                    className="rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500"
+                    className="rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500"
                   />
                   No reboot sequence
-                  <span className="text-xs text-zinc-500">(board already in bootloader)</span>
+                  <span className="text-xs text-content-secondary">(board already in bootloader)</span>
                 </label>
-                <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-content-secondary cursor-pointer">
                   <input
                     type="checkbox"
                     checked={fullChipErase}
                     onChange={(e) => setFullChipErase(e.target.checked)}
                     disabled={isFlashing}
-                    className="rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500"
+                    className="rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500"
                   />
                   Full chip erase
                 </label>
@@ -1298,7 +1298,7 @@ export function FirmwareFlashView() {
                       ${
                         canFlash
                           ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                          : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                          : 'bg-surface-tooltip text-content-tertiary cursor-not-allowed'
                       }
                     `}
                   >
@@ -1332,12 +1332,12 @@ export function FirmwareFlashView() {
 
             {/* Summary text */}
             {(selectedBoard || selectedVersion || customFirmwarePath) && (
-              <div className="mt-4 pt-3 border-t border-zinc-800 text-sm text-zinc-500">
+              <div className="mt-4 pt-3 border-t border-subtle text-sm text-content-secondary">
                 {selectedSource === 'custom' ? (
                   <>
                     Custom firmware{' '}
                     {customFirmwarePath && (
-                      <span className="text-zinc-300">
+                      <span className="text-content">
                         ({customFirmwarePath.split(/[\\/]/).pop()})
                       </span>
                     )}{' '}
@@ -1346,8 +1346,8 @@ export function FirmwareFlashView() {
                 ) : (
                   <>
                     {FIRMWARE_SOURCE_NAMES[selectedSource]}{' '}
-                    <span className="text-zinc-300">{selectedVersion?.version}</span> for{' '}
-                    <span className="text-zinc-300">
+                    <span className="text-content">{selectedVersion?.version}</span> for{' '}
+                    <span className="text-content">
                       {selectedBoard?.name || detectedBoard?.name}
                     </span>
                   </>

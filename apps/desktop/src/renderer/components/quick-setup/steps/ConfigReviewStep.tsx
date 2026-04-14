@@ -30,11 +30,11 @@ const ConfigSection: React.FC<{
     <div className={`p-4 rounded-xl border bg-gradient-to-br ${color}`}>
       <div className="flex items-center gap-2 mb-3">
         {icon}
-        <h3 className="font-medium text-zinc-100">{title}</h3>
+        <h3 className="font-medium text-content">{title}</h3>
       </div>
       <ul className="space-y-1.5">
         {items.map((item, index) => (
-          <li key={index} className="flex items-center gap-2 text-sm text-zinc-300">
+          <li key={index} className="flex items-center gap-2 text-sm text-content">
             <CheckCircle2 className="w-3.5 h-3.5 text-green-400 shrink-0" />
             <span>{item}</span>
           </li>
@@ -50,7 +50,7 @@ export const ConfigReviewStep: React.FC = () => {
   if (!selectedPreset) {
     return (
       <div className="text-center py-8">
-        <p className="text-zinc-400">No preset selected. Please go back and select a preset.</p>
+        <p className="text-content-secondary">No preset selected. Please go back and select a preset.</p>
       </div>
     );
   }
@@ -122,12 +122,12 @@ export const ConfigReviewStep: React.FC = () => {
       {/* Header */}
       <div className="text-center">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 mb-4">
-          <selectedPreset.icon className="w-8 h-8 text-zinc-300" />
+          <selectedPreset.icon className="w-8 h-8 text-content" />
         </div>
-        <h2 className="text-xl font-semibold text-zinc-100">
+        <h2 className="text-xl font-semibold text-content">
           Review: {selectedPreset.name}
         </h2>
-        <p className="text-sm text-zinc-400 mt-2 max-w-md mx-auto">
+        <p className="text-sm text-content-secondary mt-2 max-w-md mx-auto">
           The following configuration will be applied to your flight controller.
           Review the settings below before proceeding.
         </p>
@@ -206,10 +206,10 @@ export const ConfigReviewStep: React.FC = () => {
       </div>
 
       {/* Navigation buttons */}
-      <div className="flex items-center justify-between pt-4 border-t border-zinc-700">
+      <div className="flex items-center justify-between pt-4 border-t border">
         <button
           onClick={prevStep}
-          className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back

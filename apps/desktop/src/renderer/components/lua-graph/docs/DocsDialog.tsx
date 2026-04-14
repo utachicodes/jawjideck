@@ -42,23 +42,23 @@ export function DocsDialog({ onClose }: DocsDialogProps) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-2xl border border-gray-700/50 w-full max-w-4xl mx-4 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      <div className="bg-surface rounded-2xl border border-subtle w-full max-w-4xl mx-4 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-subtle shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
               <BookOpen className="w-4 h-4 text-blue-400" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-white">Documentation</h2>
-              <p className="text-[10px] text-gray-500 mt-0.5">
+              <h2 className="text-sm font-semibold text-content">Documentation</h2>
+              <p className="text-[10px] text-content-secondary mt-0.5">
                 Learn how to use the Lua Graph Editor
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-800 text-gray-500 hover:text-gray-300 transition-colors"
+            className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-surface-raised text-content-secondary hover:text-content transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -67,7 +67,7 @@ export function DocsDialog({ onClose }: DocsDialogProps) {
         {/* Body - sidebar + content */}
         <div className="flex flex-1 min-h-0">
           {/* Sidebar */}
-          <div className="w-44 shrink-0 border-r border-gray-800 py-3 px-2 overflow-y-auto">
+          <div className="w-44 shrink-0 border-r border-subtle py-3 px-2 overflow-y-auto">
             {DOC_SECTIONS.map((section) => {
               const Icon = section.icon;
               const isActive = section.id === activeSection;
@@ -79,7 +79,7 @@ export function DocsDialog({ onClose }: DocsDialogProps) {
                     w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-[12px] transition-colors mb-0.5
                     ${isActive
                       ? 'bg-blue-500/10 text-blue-400'
-                      : 'text-gray-500 hover:bg-gray-800/50 hover:text-gray-300'
+                      : 'text-content-secondary hover:bg-surface hover:text-content'
                     }
                   `}
                 >

@@ -135,8 +135,8 @@ export function DraggableSlider({
         <div className="flex items-start justify-between mb-2">
           {label && (
             <div className="min-w-0">
-              <span className={`text-sm font-medium ${disabled ? 'text-gray-400' : 'text-gray-200'}`}>{label}</span>
-              {hint && <p className="text-xs text-gray-500 mt-0.5">{hint}</p>}
+              <span className={`text-sm font-medium ${disabled ? 'text-content-secondary' : 'text-content'}`}>{label}</span>
+              {hint && <p className="text-xs text-content-secondary mt-0.5">{hint}</p>}
             </div>
           )}
           {showControls && (
@@ -146,8 +146,8 @@ export function DraggableSlider({
                 disabled={disabled}
                 className={`w-6 h-6 rounded text-sm flex items-center justify-center ${
                   disabled
-                    ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
-                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-400'
+                    ? 'bg-surface-tooltip text-content-tertiary cursor-not-allowed'
+                    : 'bg-surface-tooltip hover:bg-surface-raised text-content-secondary'
                 }`}
               >
                 -
@@ -161,8 +161,8 @@ export function DraggableSlider({
                 disabled={disabled}
                 className={`w-14 px-2 py-1 text-center text-sm border rounded ${
                   disabled
-                    ? 'bg-zinc-900 border-zinc-800 text-zinc-500 cursor-not-allowed'
-                    : 'bg-zinc-900 border-zinc-700 text-white'
+                    ? 'bg-surface-input border-subtle text-content-secondary cursor-not-allowed'
+                    : 'bg-surface-input border-border text-content'
                 }`}
               />
               <button
@@ -170,8 +170,8 @@ export function DraggableSlider({
                 disabled={disabled}
                 className={`w-6 h-6 rounded text-sm flex items-center justify-center ${
                   disabled
-                    ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
-                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-400'
+                    ? 'bg-surface-tooltip text-content-tertiary cursor-not-allowed'
+                    : 'bg-surface-tooltip hover:bg-surface-raised text-content-secondary'
                 }`}
               >
                 +
@@ -184,7 +184,7 @@ export function DraggableSlider({
       {/* Slider track */}
       <div
         ref={trackRef}
-        className={`relative bg-zinc-800 rounded-full touch-none select-none ${
+        className={`relative bg-surface-tooltip rounded-full touch-none select-none ${
           disabled ? 'cursor-not-allowed' : 'cursor-pointer'
         }`}
         style={{ height }}
@@ -203,7 +203,7 @@ export function DraggableSlider({
         {showThumb && (
           <div
             className={`absolute top-1/2 -translate-y-1/2 rounded-full shadow-lg border-2 pointer-events-none ${
-              disabled ? 'bg-zinc-400' : 'bg-white'
+              disabled ? 'bg-content-secondary' : 'bg-white'
             }`}
             style={{
               width: height + 4,
@@ -281,11 +281,11 @@ export function CompactSlider({
     <div className="space-y-1">
       {label && (
         <div className="flex items-center justify-between">
-          <span className="text-xs text-zinc-400">{label}</span>
+          <span className="text-xs text-content-secondary">{label}</span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => onChange(Math.max(min, value - step))}
-              className="w-5 h-5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs flex items-center justify-center"
+              className="w-5 h-5 rounded bg-surface-tooltip hover:bg-surface-raised text-content-secondary text-xs flex items-center justify-center"
             >
               -
             </button>
@@ -295,11 +295,11 @@ export function CompactSlider({
               max={max}
               value={value}
               onChange={(e) => onChange(Math.max(min, Math.min(max, parseInt(e.target.value) || min)))}
-              className="w-16 px-2 py-0.5 text-center text-sm bg-zinc-900 border border-zinc-700 rounded text-white"
+              className="w-16 px-2 py-0.5 text-center text-sm bg-surface-input border border-border rounded text-content"
             />
             <button
               onClick={() => onChange(Math.min(max, value + step))}
-              className="w-5 h-5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs flex items-center justify-center"
+              className="w-5 h-5 rounded bg-surface-tooltip hover:bg-surface-raised text-content-secondary text-xs flex items-center justify-center"
             >
               +
             </button>
@@ -310,7 +310,7 @@ export function CompactSlider({
       {/* Slider track with thumb */}
       <div
         ref={trackRef}
-        className="relative h-2 bg-zinc-800 rounded-full cursor-pointer touch-none select-none"
+        className="relative h-2 bg-surface-tooltip rounded-full cursor-pointer touch-none select-none"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

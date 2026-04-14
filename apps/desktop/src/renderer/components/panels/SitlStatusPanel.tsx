@@ -23,7 +23,7 @@ function SensorBadge({ name, status }: { name: string; status: string }) {
         isOk
           ? 'bg-green-500/20 text-green-400 border border-green-500/30'
           : isNone
-          ? 'bg-zinc-700/50 text-zinc-500 border border-zinc-600/30'
+          ? 'bg-surface-raised text-content-secondary border border-subtle'
           : 'bg-red-500/20 text-red-400 border border-red-500/30'
       }`}
     >
@@ -41,8 +41,8 @@ function RCChannelBar({ channel, value, label }: { channel: number; value: numbe
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-zinc-500 w-12">{label}</span>
-      <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
+      <span className="text-xs text-content-secondary w-12">{label}</span>
+      <div className="flex-1 h-2 bg-surface-base rounded-full overflow-hidden">
         <div
           className={`h-full transition-all ${
             isHigh ? 'bg-green-500' : isLow ? 'bg-red-500' : isCenter ? 'bg-blue-500' : 'bg-amber-500'
@@ -50,7 +50,7 @@ function RCChannelBar({ channel, value, label }: { channel: number; value: numbe
           style={{ width: `${Math.max(0, Math.min(100, percentage))}%` }}
         />
       </div>
-      <span className="text-xs text-zinc-400 w-10 text-right">{value}</span>
+      <span className="text-xs text-content-secondary w-10 text-right">{value}</span>
     </div>
   );
 }
@@ -115,12 +115,12 @@ export function SitlStatusPanel() {
       <div className="space-y-4 text-sm">
         {/* Connection Status */}
         <div className="flex items-center justify-between">
-          <span className="text-zinc-400">SITL Status</span>
+          <span className="text-content-secondary">SITL Status</span>
           <div className="flex items-center gap-2">
             {sitlRunning ? (
               <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded">Running</span>
             ) : (
-              <span className="px-2 py-0.5 bg-zinc-700 text-zinc-500 text-xs rounded">Stopped</span>
+              <span className="px-2 py-0.5 bg-surface-raised text-content-secondary text-xs rounded">Stopped</span>
             )}
             {bridgeConnected && (
               <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded">Bridge</span>
@@ -130,9 +130,9 @@ export function SitlStatusPanel() {
 
         {/* Firmware Info */}
         {isConnected && (
-          <div className="p-2 bg-zinc-800/50 rounded-lg">
-            <div className="text-xs text-zinc-500 mb-1">Firmware</div>
-            <div className="text-white font-medium">
+          <div className="p-2 bg-surface rounded-lg">
+            <div className="text-xs text-content-secondary mb-1">Firmware</div>
+            <div className="text-content font-medium">
               {connectionState.fcVariant} {connectionState.fcVersion}
             </div>
             {isSitl && <div className="text-xs text-amber-400 mt-1">SITL Simulation</div>}
@@ -140,14 +140,14 @@ export function SitlStatusPanel() {
         )}
 
         {/* Arming Status */}
-        <div className="p-2 bg-zinc-800/50 rounded-lg">
+        <div className="p-2 bg-surface rounded-lg">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-zinc-500">Arming</span>
+            <span className="text-xs text-content-secondary">Arming</span>
             <span
               className={`px-2 py-0.5 rounded text-xs font-bold ${
                 flight.armed
                   ? 'bg-red-500 text-white'
-                  : 'bg-zinc-700 text-zinc-400'
+                  : 'bg-surface-raised text-content-secondary'
               }`}
             >
               {flight.armed ? 'ARMED' : 'DISARMED'}
@@ -173,14 +173,14 @@ export function SitlStatusPanel() {
         </div>
 
         {/* Flight Mode */}
-        <div className="p-2 bg-zinc-800/50 rounded-lg">
-          <div className="text-xs text-zinc-500 mb-1">Flight Mode</div>
-          <div className="text-white font-medium">{flight.mode || 'Unknown'}</div>
+        <div className="p-2 bg-surface rounded-lg">
+          <div className="text-xs text-content-secondary mb-1">Flight Mode</div>
+          <div className="text-content font-medium">{flight.mode || 'Unknown'}</div>
         </div>
 
         {/* Sensors */}
         <div>
-          <div className="text-xs text-zinc-500 mb-2">Sensors</div>
+          <div className="text-xs text-content-secondary mb-2">Sensors</div>
           <div className="flex flex-wrap gap-1">
             <SensorBadge name="GYRO" status={sensorStatus.gyro} />
             <SensorBadge name="ACC" status={sensorStatus.acc} />
@@ -191,9 +191,9 @@ export function SitlStatusPanel() {
         </div>
 
         {/* GPS Status */}
-        <div className="p-2 bg-zinc-800/50 rounded-lg">
+        <div className="p-2 bg-surface rounded-lg">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-zinc-500">GPS</span>
+            <span className="text-xs text-content-secondary">GPS</span>
             <span
               className={`text-xs ${
                 gps.fixType >= 3 ? 'text-green-400' : 'text-amber-400'
@@ -204,54 +204,54 @@ export function SitlStatusPanel() {
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
-              <span className="text-zinc-500">Sats: </span>
-              <span className="text-white">{gps.satellites}</span>
+              <span className="text-content-secondary">Sats: </span>
+              <span className="text-content">{gps.satellites}</span>
             </div>
             <div>
-              <span className="text-zinc-500">HDOP: </span>
-              <span className="text-white">{(gps.hdop / 100).toFixed(1)}</span>
+              <span className="text-content-secondary">HDOP: </span>
+              <span className="text-content">{(gps.hdop / 100).toFixed(1)}</span>
             </div>
             <div>
-              <span className="text-zinc-500">Lat: </span>
-              <span className="text-white">{position.lat.toFixed(6)}</span>
+              <span className="text-content-secondary">Lat: </span>
+              <span className="text-content">{position.lat.toFixed(6)}</span>
             </div>
             <div>
-              <span className="text-zinc-500">Lon: </span>
-              <span className="text-white">{position.lon.toFixed(6)}</span>
+              <span className="text-content-secondary">Lon: </span>
+              <span className="text-content">{position.lon.toFixed(6)}</span>
             </div>
           </div>
         </div>
 
         {/* Attitude */}
-        <div className="p-2 bg-zinc-800/50 rounded-lg">
-          <div className="text-xs text-zinc-500 mb-1">Attitude</div>
+        <div className="p-2 bg-surface rounded-lg">
+          <div className="text-xs text-content-secondary mb-1">Attitude</div>
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div>
-              <span className="text-zinc-500">Roll: </span>
-              <span className="text-white">{attitude.roll.toFixed(1)}°</span>
+              <span className="text-content-secondary">Roll: </span>
+              <span className="text-content">{attitude.roll.toFixed(1)}°</span>
             </div>
             <div>
-              <span className="text-zinc-500">Pitch: </span>
-              <span className="text-white">{attitude.pitch.toFixed(1)}°</span>
+              <span className="text-content-secondary">Pitch: </span>
+              <span className="text-content">{attitude.pitch.toFixed(1)}°</span>
             </div>
             <div>
-              <span className="text-zinc-500">Yaw: </span>
-              <span className="text-white">{attitude.yaw.toFixed(0)}°</span>
+              <span className="text-content-secondary">Yaw: </span>
+              <span className="text-content">{attitude.yaw.toFixed(0)}°</span>
             </div>
           </div>
         </div>
 
         {/* Altitude */}
-        <div className="p-2 bg-zinc-800/50 rounded-lg">
-          <div className="text-xs text-zinc-500 mb-1">Altitude</div>
+        <div className="p-2 bg-surface rounded-lg">
+          <div className="text-xs text-content-secondary mb-1">Altitude</div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
-              <span className="text-zinc-500">MSL: </span>
-              <span className="text-white">{position.alt.toFixed(1)}m</span>
+              <span className="text-content-secondary">MSL: </span>
+              <span className="text-content">{position.alt.toFixed(1)}m</span>
             </div>
             <div>
-              <span className="text-zinc-500">AGL: </span>
-              <span className="text-white">{(position as unknown as Record<string, number>).altAgl?.toFixed(1) || '0.0'}m</span>
+              <span className="text-content-secondary">AGL: </span>
+              <span className="text-content">{(position as unknown as Record<string, number>).altAgl?.toFixed(1) || '0.0'}m</span>
             </div>
           </div>
         </div>
@@ -259,14 +259,14 @@ export function SitlStatusPanel() {
         {/* RC Channels - GCS Sending vs FC Receiving */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-zinc-500">RC Channels</span>
+            <span className="text-xs text-content-secondary">RC Channels</span>
             {isOverrideActive && (
               <span className="text-xs text-amber-400">Override Active</span>
             )}
           </div>
 
           {/* Column headers */}
-          <div className="flex items-center gap-2 mb-1 text-xs text-zinc-600">
+          <div className="flex items-center gap-2 mb-1 text-xs text-content-tertiary">
             <span className="w-12"></span>
             <span className="flex-1 text-center">FC Receives</span>
             <span className="w-10"></span>
@@ -291,10 +291,10 @@ export function SitlStatusPanel() {
 
               return (
                 <div key={idx} className="flex items-center gap-2">
-                  <span className={`text-xs w-12 ${mismatch ? 'text-red-400' : 'text-zinc-500'}`}>
+                  <span className={`text-xs w-12 ${mismatch ? 'text-red-400' : 'text-content-secondary'}`}>
                     {label}
                   </span>
-                  <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="flex-1 h-2 bg-surface-base rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all ${
                         fcValue > 1800 ? 'bg-green-500' : fcValue < 1200 ? 'bg-red-500' : 'bg-blue-500'
@@ -302,11 +302,11 @@ export function SitlStatusPanel() {
                       style={{ width: `${Math.max(0, Math.min(100, ((fcValue - 1000) / 1000) * 100))}%` }}
                     />
                   </div>
-                  <span className={`text-xs w-10 text-right ${mismatch ? 'text-red-400' : 'text-zinc-400'}`}>
+                  <span className={`text-xs w-10 text-right ${mismatch ? 'text-red-400' : 'text-content-secondary'}`}>
                     {fcValue}
                   </span>
                   <span className={`text-xs w-12 text-right font-mono ${
-                    isOverrideActive ? (mismatch ? 'text-red-400' : 'text-green-400') : 'text-zinc-600'
+                    isOverrideActive ? (mismatch ? 'text-red-400' : 'text-green-400') : 'text-content-tertiary'
                   }`}>
                     {gcsValue}
                   </span>
@@ -318,28 +318,28 @@ export function SitlStatusPanel() {
           {/* Warning if mismatch detected */}
           {isOverrideActive && rcChannels.some((fc, i) => Math.abs(fc - (gcsChannels[i] || 1000)) > 50) && (
             <div className="mt-2 p-2 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-400">
-              FC not receiving GCS values. Check: <code className="bg-zinc-800 px-1 rounded">set receiver_type = MSP</code>
+              FC not receiving GCS values. Check: <code className="bg-surface-base px-1 rounded">set receiver_type = MSP</code>
             </div>
           )}
         </div>
 
         {/* Battery (even if fake) */}
-        <div className="p-2 bg-zinc-800/50 rounded-lg">
-          <div className="text-xs text-zinc-500 mb-1">Battery</div>
+        <div className="p-2 bg-surface rounded-lg">
+          <div className="text-xs text-content-secondary mb-1">Battery</div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
-              <span className="text-zinc-500">Voltage: </span>
-              <span className="text-white">{battery.voltage.toFixed(2)}V</span>
+              <span className="text-content-secondary">Voltage: </span>
+              <span className="text-content">{battery.voltage.toFixed(2)}V</span>
             </div>
             <div>
-              <span className="text-zinc-500">Current: </span>
-              <span className="text-white">{battery.current.toFixed(1)}A</span>
+              <span className="text-content-secondary">Current: </span>
+              <span className="text-content">{battery.current.toFixed(1)}A</span>
             </div>
           </div>
         </div>
 
         {/* System Info */}
-        <div className="text-xs text-zinc-600 border-t border-zinc-800 pt-2">
+        <div className="text-xs text-content-tertiary border-t border-subtle pt-2">
           <div>System Load: {(flight as unknown as Record<string, number>).cpuLoad || 0}%</div>
         </div>
       </div>

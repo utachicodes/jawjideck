@@ -466,7 +466,7 @@ function LayerSwitcher({
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors flex items-center gap-1"
+        className="px-2 py-1 text-xs rounded bg-surface text-content hover:bg-surface-raised shadow-lg transition-colors flex items-center gap-1"
         title="Change map layer"
       >
         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -478,7 +478,7 @@ function LayerSwitcher({
       {isOpen && (
         <>
           <div className="fixed inset-0 z-[999]" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700/50 rounded shadow-xl z-[1000] py-1 min-w-[100px]">
+          <div className="absolute right-0 top-full mt-1 bg-surface border border-subtle rounded shadow-xl z-[1000] py-1 min-w-[100px]">
             {(Object.keys(TELEMETRY_LAYERS) as TelemetryLayerKey[]).map((key) => (
               <button
                 key={key}
@@ -489,7 +489,7 @@ function LayerSwitcher({
                 className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
                   currentLayer === key
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-700/50'
+                    : 'text-content hover:bg-surface-raised'
                 }`}
               >
                 {TELEMETRY_LAYERS[key].name}
@@ -509,12 +509,12 @@ function CompassOverlay({ heading }: { heading: number }) {
       <div className="relative w-16 h-16">
         {/* Compass ring */}
         <svg viewBox="0 0 100 100" className="w-full h-full">
-          <circle cx="50" cy="50" r="45" fill="rgba(17, 24, 39, 0.8)" stroke="#374151" strokeWidth="2" />
+          <circle cx="50" cy="50" r="45" fill="var(--bg-overlay)" stroke="var(--border-default)" strokeWidth="2" />
           {/* Cardinal directions */}
-          <text x="50" y="18" textAnchor="middle" fill="#f3f4f6" fontSize="12" fontWeight="bold">N</text>
-          <text x="85" y="54" textAnchor="middle" fill="#9ca3af" fontSize="10">E</text>
-          <text x="50" y="90" textAnchor="middle" fill="#9ca3af" fontSize="10">S</text>
-          <text x="15" y="54" textAnchor="middle" fill="#9ca3af" fontSize="10">W</text>
+          <text x="50" y="18" textAnchor="middle" fill="var(--text-primary)" fontSize="12" fontWeight="bold">N</text>
+          <text x="85" y="54" textAnchor="middle" fill="var(--text-secondary)" fontSize="10">E</text>
+          <text x="50" y="90" textAnchor="middle" fill="var(--text-secondary)" fontSize="10">S</text>
+          <text x="15" y="54" textAnchor="middle" fill="var(--text-secondary)" fontSize="10">W</text>
           {/* Tick marks */}
           {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
             <line
@@ -523,19 +523,19 @@ function CompassOverlay({ heading }: { heading: number }) {
               y1="8"
               x2="50"
               y2={deg % 90 === 0 ? "14" : "11"}
-              stroke={deg === 0 ? "#ef4444" : "#6b7280"}
+              stroke={deg === 0 ? "#ef4444" : "var(--text-tertiary)"}
               strokeWidth={deg % 90 === 0 ? "2" : "1"}
               transform={`rotate(${deg} 50 50)`}
             />
           ))}
           {/* Heading indicator (aircraft nose) */}
           <g transform={`rotate(${heading} 50 50)`}>
-            <polygon points="50,20 45,35 55,35" fill="#3b82f6" stroke="white" strokeWidth="0.5" />
+            <polygon points="50,20 45,35 55,35" fill="#3b82f6" stroke="var(--bg-base)" strokeWidth="0.5" />
           </g>
         </svg>
         {/* Digital heading */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-white text-xs font-mono font-bold">{Math.round(heading)}°</span>
+          <span className="text-content text-xs font-mono font-bold">{Math.round(heading)}°</span>
         </div>
       </div>
     </div>
@@ -601,17 +601,17 @@ function MapModeToggle({ className }: { className?: string }) {
   const setMapMode = useEditModeStore((s) => s.setMapMode);
 
   return (
-    <div className={`flex rounded-lg overflow-hidden shadow-lg border border-gray-600/50 ${className ?? ''}`}>
+    <div className={`flex rounded-lg overflow-hidden shadow-lg border border-default ${className ?? ''}`}>
       <button
         onClick={() => setMapMode('2d')}
         className={`px-2 py-1 text-xs font-medium transition-colors ${
-          mapMode === '2d' ? 'bg-gray-600 text-white' : 'bg-gray-800/90 text-gray-500 hover:text-gray-300'
+          mapMode === '2d' ? 'bg-surface-raised text-content' : 'bg-surface text-content-secondary hover:text-content'
         }`}
       >2D</button>
       <button
         onClick={() => setMapMode('3d')}
         className={`px-2 py-1 text-xs font-medium transition-colors ${
-          mapMode === '3d' ? 'bg-gray-600 text-white' : 'bg-gray-800/90 text-gray-500 hover:text-gray-300'
+          mapMode === '3d' ? 'bg-surface-raised text-content' : 'bg-surface text-content-secondary hover:text-content'
         }`}
       >3D</button>
     </div>
@@ -741,7 +741,7 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
       key={label}
       onClick={onClick}
       className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
-        active ? 'bg-blue-600 text-white' : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+        active ? 'bg-blue-600 text-white' : 'bg-surface text-content hover:bg-surface-raised'
       }`}
       title={title}
     >{icon}{label}</button>
@@ -809,14 +809,14 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
   // Toolbar buttons — compact with overflow toggle
   const toolbarContent = useMemo(() => (
     <>
-      <div className="my-0.5 border-t border-gray-600/30" />
+      <div className="my-0.5 border-t border-subtle" />
       {toggleBtn(followVehicle ? 'Following' : 'Free', followVehicle, () => setFollowVehicle(f => !f), followVehicle ? 'Following vehicle' : 'Free camera', icons.crosshair)}
       {toggleBtn(useRealVehicleSize ? 'Real Size' : 'Auto Size', useRealVehicleSize, () => setUseRealVehicleSize(v => !v), useRealVehicleSize ? 'Vehicle at real profile size' : 'Vehicle auto-scaled to stay visible', icons.resize)}
       {/* Overflow toggle */}
       <button
         onClick={() => setShowMoreTools(v => !v)}
         className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
-          showMoreTools ? 'bg-gray-600 text-white' : 'bg-gray-800/90 text-gray-400 hover:text-gray-200'
+          showMoreTools ? 'bg-surface-raised text-content' : 'bg-surface text-content-secondary hover:text-content'
         }`}
         title="More options"
       >
@@ -829,10 +829,10 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
           {toggleBtn('Attitude', showAttitude, () => setShowAttitude(v => !v), 'Toggle attitude indicator', icons.attitude)}
           {toggleBtn('Mission', showMission, () => setShowMission(v => !v), 'Toggle mission overlays', icons.mission)}
           {toggleBtn('Height', showTerrain, () => setShowTerrain(v => !v), 'Toggle terrain elevation', icons.height)}
-          <div className="my-0.5 border-t border-gray-600/30" />
+          <div className="my-0.5 border-t border-subtle" />
           <button
             onClick={clearTrail}
-            className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors flex items-center gap-1.5"
+            className="px-2 py-1 text-xs rounded bg-surface text-content hover:bg-surface-raised shadow-lg transition-colors flex items-center gap-1.5"
             title="Clear flight trail"
           >
             {icons.trash}
@@ -841,7 +841,7 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
           <button
             onClick={setHome}
             disabled={!hasValidGps}
-            className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="px-2 py-1 text-xs rounded bg-surface text-content hover:bg-surface-raised shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             title="Set home to current position"
           >
             {icons.home}
@@ -879,7 +879,7 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
       {/* Attitude indicator overlay */}
       {showAttitude && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000]">
-          <div className="absolute inset-[-4px] rounded-full bg-gray-900/80 shadow-xl" />
+          <div className="absolute inset-[-4px] rounded-full bg-surface-overlay-light shadow-xl" />
           <div className="relative">
             <AttitudeIndicator
               roll={attitude.roll}
@@ -899,36 +899,36 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
       )}
 
       {/* Stats overlay */}
-      <div className="absolute bottom-2 left-2 z-[1000] bg-gray-900/90 backdrop-blur-sm rounded px-3 py-2 text-xs text-gray-300 space-y-1 min-w-[130px]">
+      <div className="absolute bottom-2 left-2 z-[1000] bg-surface-overlay backdrop-blur-sm rounded px-3 py-2 text-xs text-content space-y-1 min-w-[130px] border border-subtle shadow-lg">
         <div className="flex justify-between">
-          <span className="text-gray-500">MSL</span>
-          <span className="font-mono text-white">{position.alt.toFixed(1)}<span className="text-gray-500 ml-0.5">m</span></span>
+          <span className="text-content-secondary">MSL</span>
+          <span className="font-mono text-content">{position.alt.toFixed(1)}<span className="text-content-secondary ml-0.5">m</span></span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">Rel</span>
-          <span className="font-mono text-white">{position.relativeAlt.toFixed(1)}<span className="text-gray-500 ml-0.5">m</span></span>
+          <span className="text-content-secondary">Rel</span>
+          <span className="font-mono text-content">{position.relativeAlt.toFixed(1)}<span className="text-content-secondary ml-0.5">m</span></span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">Spd</span>
-          <span className="font-mono text-white">{vfrHud.groundspeed.toFixed(1)}<span className="text-gray-500 ml-0.5">m/s</span></span>
+          <span className="text-content-secondary">Spd</span>
+          <span className="font-mono text-content">{vfrHud.groundspeed.toFixed(1)}<span className="text-content-secondary ml-0.5">m/s</span></span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">Hdg</span>
-          <span className="font-mono text-white">{vfrHud.heading.toFixed(0)}<span className="text-gray-500 ml-0.5">deg</span></span>
+          <span className="text-content-secondary">Hdg</span>
+          <span className="font-mono text-content">{vfrHud.heading.toFixed(0)}<span className="text-content-secondary ml-0.5">deg</span></span>
         </div>
         {homeStats && (
           <>
-            <div className="border-t border-gray-700 my-1" />
+            <div className="border-t border-default my-1" />
             <div className="flex justify-between">
-              <span className="text-gray-500">Home</span>
+              <span className="text-content-secondary">Home</span>
               <span className="font-mono text-emerald-400">{formatDistance(homeStats.distance)}</span>
             </div>
           </>
         )}
         {hasValidGps && (
           <>
-            <div className="border-t border-gray-700 my-1" />
-            <div className="text-[10px] text-gray-500 font-mono">
+            <div className="border-t border-default my-1" />
+            <div className="text-[10px] text-content-secondary font-mono">
               {gps.lat.toFixed(6)}, {gps.lon.toFixed(6)}
             </div>
           </>
@@ -941,7 +941,7 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
         className={`absolute bottom-14 right-3 z-[1000] w-9 h-9 rounded-full shadow-lg flex items-center justify-center transition-all ${
           followVehicle
             ? 'bg-blue-600 text-white'
-            : 'bg-gray-800/90 text-gray-400 hover:text-white hover:bg-gray-700/90'
+            : 'bg-surface text-content-secondary hover:text-content hover:bg-surface-raised'
         }`}
         title={followVehicle ? 'Following vehicle' : 'Center on vehicle'}
       >
@@ -956,7 +956,7 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
 
       {/* Armed status indicator */}
       <div className={`absolute bottom-2 right-3 z-[1000] px-2 py-1 rounded shadow-lg text-xs font-bold ${
-        flight.armed ? 'bg-red-600 text-white' : 'bg-gray-800/90 text-gray-400'
+        flight.armed ? 'bg-red-600 text-white' : 'bg-surface text-content-secondary'
       }`}>
         {flight.armed ? 'ARMED' : 'DISARMED'}
       </div>
@@ -1159,7 +1159,7 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
   const layer = TELEMETRY_LAYERS[currentLayer];
 
   return (
-    <div ref={containerRef} className="h-full w-full flex flex-col bg-gray-900 relative">
+    <div ref={containerRef} className="h-full w-full flex flex-col bg-surface-base relative">
       {/* Top toolbar */}
       <div className="absolute top-2 right-2 z-[1000] flex flex-col gap-1">
         <MapModeToggle />
@@ -1169,7 +1169,7 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
           className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
             followVehicle
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+              : 'bg-surface text-content hover:bg-surface-raised'
           }`}
           title={followVehicle ? 'Following vehicle' : 'Free camera'}
         >
@@ -1187,7 +1187,7 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
           className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
             showHeadingLine
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+              : 'bg-surface text-content hover:bg-surface-raised'
           }`}
           title="Toggle heading line"
         >
@@ -1201,7 +1201,7 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
           className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
             showCompass
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+              : 'bg-surface text-content hover:bg-surface-raised'
           }`}
           title="Toggle compass"
         >
@@ -1216,7 +1216,7 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
           className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
             showAttitude
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+              : 'bg-surface text-content hover:bg-surface-raised'
           }`}
           title="Toggle attitude indicator"
         >
@@ -1229,7 +1229,7 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
         </button>
         <button
           onClick={clearTrail}
-          className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors flex items-center gap-1.5"
+          className="px-2 py-1 text-xs rounded bg-surface text-content hover:bg-surface-raised shadow-lg transition-colors flex items-center gap-1.5"
           title="Clear flight trail"
         >
           <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1240,7 +1240,7 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
         <button
           onClick={setHome}
           disabled={!hasValidGps}
-          className="px-2 py-1 text-xs rounded bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+          className="px-2 py-1 text-xs rounded bg-surface text-content hover:bg-surface-raised shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
           title="Set home to current position"
         >
           <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1253,7 +1253,7 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
           className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
             showMission
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+              : 'bg-surface text-content hover:bg-surface-raised'
           }`}
           title="Toggle mission overlays (waypoints, geofence, rally)"
         >
@@ -1267,7 +1267,7 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
           className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
             showTerrain
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+              : 'bg-surface text-content hover:bg-surface-raised'
           }`}
           title="Toggle terrain elevation heatmap"
         >
@@ -1277,7 +1277,7 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
           </svg>
           Height
         </button>
-        <div className="border-t border-gray-700/50 my-0.5" />
+        <div className="border-t border-subtle my-0.5" />
         <OverlayToggles />
         <OfflineAreaDownload bounds={mapBounds} activeLayer={currentLayer} />
       </div>
@@ -1295,7 +1295,7 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
       {showAttitude && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000]">
           {/* Dark background circle */}
-          <div className="absolute inset-[-4px] rounded-full bg-gray-900/80 shadow-xl" />
+          <div className="absolute inset-[-4px] rounded-full bg-surface-overlay-light shadow-xl" />
           <div className="relative">
             <AttitudeIndicator
               roll={attitude.roll}
@@ -1332,40 +1332,40 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
       )}
 
       {/* Stats overlay */}
-      <div className="absolute bottom-2 left-2 z-[1000] bg-gray-900/90 backdrop-blur-sm rounded px-3 py-2 text-xs text-gray-300 space-y-1 min-w-[130px]">
+      <div className="absolute bottom-2 left-2 z-[1000] bg-surface-overlay backdrop-blur-sm rounded px-3 py-2 text-xs text-content space-y-1 min-w-[130px] border border-subtle shadow-lg">
         <div className="flex justify-between">
-          <span className="text-gray-500">MSL</span>
-          <span className="font-mono text-white">{position.alt.toFixed(1)}<span className="text-gray-500 ml-0.5">m</span></span>
+          <span className="text-content-secondary">MSL</span>
+          <span className="font-mono text-content">{position.alt.toFixed(1)}<span className="text-content-secondary ml-0.5">m</span></span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">Rel</span>
-          <span className="font-mono text-white">{position.relativeAlt.toFixed(1)}<span className="text-gray-500 ml-0.5">m</span></span>
+          <span className="text-content-secondary">Rel</span>
+          <span className="font-mono text-content">{position.relativeAlt.toFixed(1)}<span className="text-content-secondary ml-0.5">m</span></span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">Spd</span>
-          <span className="font-mono text-white">{vfrHud.groundspeed.toFixed(1)}<span className="text-gray-500 ml-0.5">m/s</span></span>
+          <span className="text-content-secondary">Spd</span>
+          <span className="font-mono text-content">{vfrHud.groundspeed.toFixed(1)}<span className="text-content-secondary ml-0.5">m/s</span></span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">Hdg</span>
-          <span className="font-mono text-white">{vfrHud.heading.toFixed(0)}<span className="text-gray-500 ml-0.5">°</span></span>
+          <span className="text-content-secondary">Hdg</span>
+          <span className="font-mono text-content">{vfrHud.heading.toFixed(0)}<span className="text-content-secondary ml-0.5">°</span></span>
         </div>
         {homeStats && (
           <>
-            <div className="border-t border-gray-700 my-1" />
+            <div className="border-t border-default my-1" />
             <div className="flex justify-between">
-              <span className="text-gray-500">Home</span>
+              <span className="text-content-secondary">Home</span>
               <span className="font-mono text-emerald-400">{formatDistance(homeStats.distance)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Brng</span>
-              <span className="font-mono text-emerald-400">{homeStats.bearing.toFixed(0)}<span className="text-gray-500 ml-0.5">°</span></span>
+              <span className="text-content-secondary">Brng</span>
+              <span className="font-mono text-emerald-400">{homeStats.bearing.toFixed(0)}<span className="text-content-secondary ml-0.5">°</span></span>
             </div>
           </>
         )}
         {hasValidGps && (
           <>
-            <div className="border-t border-gray-700 my-1" />
-            <div className="text-[10px] text-gray-500 font-mono">
+            <div className="border-t border-default my-1" />
+            <div className="text-[10px] text-content-secondary font-mono">
               {gps.lat.toFixed(6)}, {gps.lon.toFixed(6)}
             </div>
           </>
@@ -1378,7 +1378,7 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
         className={`absolute bottom-14 right-3 z-[1000] w-9 h-9 rounded-full shadow-lg flex items-center justify-center transition-all ${
           followVehicle
             ? 'bg-blue-600 text-white'
-            : 'bg-gray-800/90 text-gray-400 hover:text-white hover:bg-gray-700/90'
+            : 'bg-surface text-content-secondary hover:text-content hover:bg-surface-raised'
         }`}
         title={followVehicle ? 'Following vehicle' : 'Center on vehicle'}
       >
@@ -1393,7 +1393,7 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
 
       {/* Armed status indicator */}
       <div className={`absolute bottom-2 right-3 z-[1000] px-2 py-1 rounded shadow-lg text-xs font-bold ${
-        flight.armed ? 'bg-red-600 text-white' : 'bg-gray-800/90 text-gray-400'
+        flight.armed ? 'bg-red-600 text-white' : 'bg-surface text-content-secondary'
       }`}>
         {flight.armed ? 'ARMED' : 'DISARMED'}
       </div>

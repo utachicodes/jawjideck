@@ -60,8 +60,8 @@ function BoardSelectionView({ onSelectBoard }: { onSelectBoard: (board: BoardFam
   return (
     <div className="max-w-3xl mx-auto p-8 space-y-6">
       <div className="text-center space-y-2">
-        <h2 className="text-lg font-semibold text-gray-100">Companion Board Store</h2>
-        <p className="text-xs text-gray-500">
+        <h2 className="text-lg font-semibold text-content">Companion Board Store</h2>
+        <p className="text-xs text-content-secondary">
           Select your board to browse pre-configured firmware and software templates.
         </p>
       </div>
@@ -72,7 +72,7 @@ function BoardSelectionView({ onSelectBoard }: { onSelectBoard: (board: BoardFam
             key={key}
             onClick={() => onSelectBoard(key)}
             disabled={templateCounts[key] === 0}
-            className="group text-left rounded-xl border border-gray-700/30 bg-gray-800/50 hover:bg-gray-800 transition-all duration-200 hover:border-gray-600/50 hover:shadow-lg hover:shadow-black/20 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="group text-left rounded-xl border border-subtle bg-surface hover:bg-surface transition-all duration-200 hover:border hover:shadow-lg hover:shadow-black/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <div className="p-6">
               <div className="flex items-start gap-3 mb-3">
@@ -82,15 +82,15 @@ function BoardSelectionView({ onSelectBoard }: { onSelectBoard: (board: BoardFam
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <div className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">{board.name}</div>
-                  <div className="text-[11px] text-gray-500 leading-relaxed mt-1">{board.description}</div>
+                  <div className="text-sm font-medium text-content group-hover:text-content transition-colors">{board.name}</div>
+                  <div className="text-[11px] text-content-secondary leading-relaxed mt-1">{board.description}</div>
                 </div>
               </div>
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-700/20">
-                <span className="text-[10px] text-gray-600">
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-subtle">
+                <span className="text-[10px] text-content-tertiary">
                   {templateCounts[key]} template{templateCounts[key] !== 1 ? 's' : ''}
                 </span>
-                <ArrowRight className="w-3.5 h-3.5 text-gray-700 group-hover:text-gray-400 transition-colors" />
+                <ArrowRight className="w-3.5 h-3.5 text-content-tertiary group-hover:text-content-secondary transition-colors" />
               </div>
             </div>
           </button>
@@ -119,7 +119,7 @@ function TemplateListView({
     <div className="max-w-3xl mx-auto p-8 space-y-5">
       <button
         onClick={onBack}
-        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+        className="flex items-center gap-1.5 text-xs text-content-secondary hover:text-content transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         All boards
@@ -132,8 +132,8 @@ function TemplateListView({
           </svg>
         </div>
         <div>
-          <div className="text-sm font-medium text-gray-200">{boardInfo.name}</div>
-          <div className="text-[10px] text-gray-500">{templates.length} available templates</div>
+          <div className="text-sm font-medium text-content">{boardInfo.name}</div>
+          <div className="text-[10px] text-content-secondary">{templates.length} available templates</div>
         </div>
       </div>
 
@@ -145,7 +145,7 @@ function TemplateListView({
               <span className={`text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded border ${style.badge}`}>
                 {cat}
               </span>
-              <div className="flex-1 h-px bg-gray-800" />
+              <div className="flex-1 h-px bg-surface-tooltip" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -157,7 +157,7 @@ function TemplateListView({
                   <button
                     key={template.id}
                     onClick={() => onSelectTemplate(template)}
-                    className={`group text-left rounded-xl border-t-2 border border-gray-700/30 bg-gray-800/50 hover:bg-gray-800 transition-all duration-200 hover:border-gray-600/50 hover:shadow-lg hover:shadow-black/20 ${style.accent}`}
+                    className={`group text-left rounded-xl border-t-2 border border-subtle bg-surface hover:bg-surface transition-all duration-200 hover:border hover:shadow-lg hover:shadow-black/20 ${style.accent}`}
                   >
                     <div className="p-4">
                       <div className="flex items-start gap-3 mb-2.5">
@@ -165,26 +165,26 @@ function TemplateListView({
                           <Icon className={`w-4.5 h-4.5 ${style.text}`} />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-[13px] font-medium text-gray-200 group-hover:text-white transition-colors leading-tight">
+                          <div className="text-[13px] font-medium text-content group-hover:text-content transition-colors leading-tight">
                             {template.name}
                           </div>
-                          <div className="text-[11px] text-gray-500 leading-relaxed mt-1 line-clamp-2">
+                          <div className="text-[11px] text-content-secondary leading-relaxed mt-1 line-clamp-2">
                             {template.description}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-700/20">
+                      <div className="flex items-center gap-3 mt-3 pt-3 border-t border-subtle">
                         {flash && (
-                          <div className="flex items-center gap-1 text-[10px] text-gray-600">
+                          <div className="flex items-center gap-1 text-[10px] text-content-tertiary">
                             <flash.icon className="w-3 h-3" />
                             <span>{flash.label}</span>
                           </div>
                         )}
-                        <div className="text-[10px] text-gray-600">
+                        <div className="text-[10px] text-content-tertiary">
                           {template.boardVariants.length} board{template.boardVariants.length !== 1 ? 's' : ''}
                         </div>
                         <div className="flex-1" />
-                        <ArrowRight className="w-3.5 h-3.5 text-gray-700 group-hover:text-gray-400 transition-colors" />
+                        <ArrowRight className="w-3.5 h-3.5 text-content-tertiary group-hover:text-content-secondary transition-colors" />
                       </div>
                     </div>
                   </button>
@@ -284,7 +284,7 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
     <div className="max-w-2xl mx-auto p-8 space-y-5">
       <button
         onClick={onBack}
-        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+        className="flex items-center gap-1.5 text-xs text-content-secondary hover:text-content transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         Back to templates
@@ -296,11 +296,11 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
           <Icon className={`w-6 h-6 ${style.text}`} />
         </div>
         <div>
-          <h3 className="text-base font-semibold text-white">{template.name}</h3>
-          <p className="text-xs text-gray-400 mt-1">{template.description}</p>
+          <h3 className="text-base font-semibold text-content">{template.name}</h3>
+          <p className="text-xs text-content-secondary mt-1">{template.description}</p>
           {template.projectName && (
             <div className="flex items-center gap-1.5 mt-2">
-              <span className="text-[10px] text-gray-600">Powered by</span>
+              <span className="text-[10px] text-content-tertiary">Powered by</span>
               {template.projectUrl ? (
                 <a
                   href={template.projectUrl}
@@ -313,7 +313,7 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
                   <ExternalLink className="w-2.5 h-2.5" />
                 </a>
               ) : (
-                <span className="text-[10px] text-gray-500">{template.projectName}</span>
+                <span className="text-[10px] text-content-secondary">{template.projectName}</span>
               )}
             </div>
           )}
@@ -321,21 +321,21 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
       </div>
 
       {/* Supported boards */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-4">
-        <h4 className="text-xs font-medium text-gray-300 mb-2">Supported Boards</h4>
+      <div className="bg-surface rounded-xl border border-subtle p-4">
+        <h4 className="text-xs font-medium text-content mb-2">Supported Boards</h4>
         <div className="flex flex-wrap gap-1.5">
           {template.boardVariants.map((variant) => (
-            <span key={variant} className="px-2 py-0.5 bg-gray-700/40 rounded text-[11px] text-gray-400">{variant}</span>
+            <span key={variant} className="px-2 py-0.5 bg-surface-raised rounded text-[11px] text-content-secondary">{variant}</span>
           ))}
         </div>
       </div>
 
       {/* Features */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-4">
-        <h4 className="text-xs font-medium text-gray-300 mb-2">Features</h4>
+      <div className="bg-surface rounded-xl border border-subtle p-4">
+        <h4 className="text-xs font-medium text-content mb-2">Features</h4>
         <ul className="space-y-1.5">
           {template.features.map((feature) => (
-            <li key={feature} className="flex items-start gap-2 text-[11px] text-gray-400">
+            <li key={feature} className="flex items-start gap-2 text-[11px] text-content-secondary">
               <Check className="w-3 h-3 text-emerald-500 mt-0.5 shrink-0" />
               {feature}
             </li>
@@ -344,12 +344,12 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
       </div>
 
       {/* Requirements */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-4">
-        <h4 className="text-xs font-medium text-gray-300 mb-2">Requirements</h4>
+      <div className="bg-surface rounded-xl border border-subtle p-4">
+        <h4 className="text-xs font-medium text-content mb-2">Requirements</h4>
         <ul className="space-y-1.5">
           {template.requirements.map((req) => (
-            <li key={req} className="flex items-start gap-2 text-[11px] text-gray-400">
-              <span className="text-gray-600 mt-0.5 shrink-0">-</span>
+            <li key={req} className="flex items-start gap-2 text-[11px] text-content-secondary">
+              <span className="text-content-tertiary mt-0.5 shrink-0">-</span>
               {req}
             </li>
           ))}
@@ -357,23 +357,23 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
       </div>
 
       {/* Setup / Flash */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-4 space-y-3">
+      <div className="bg-surface rounded-xl border border-subtle p-4 space-y-3">
         <div className="flex items-center gap-2">
-          {flash && <flash.icon className="w-4 h-4 text-gray-400" />}
-          <h4 className="text-xs font-medium text-gray-300">{flash?.label ?? 'Setup'}: {flash?.description ?? ''}</h4>
+          {flash && <flash.icon className="w-4 h-4 text-content-secondary" />}
+          <h4 className="text-xs font-medium text-content">{flash?.label ?? 'Setup'}: {flash?.description ?? ''}</h4>
         </div>
 
         {template.flashMethod === 'serial' && (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="block text-[11px] text-gray-500">Serial Port</label>
+                <label className="block text-[11px] text-content-secondary">Serial Port</label>
                 <div className="flex gap-1.5">
                   <select
                     value={selectedPort}
                     onChange={(e) => setSelectedPort(e.target.value)}
                     disabled={flashing}
-                    className="flex-1 bg-gray-900/60 border border-gray-700/50 rounded-lg px-3 py-2 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
+                    className="flex-1 bg-surface-input border border-subtle rounded-lg px-3 py-2 text-xs text-content focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
                   >
                     <option value="">Select port...</option>
                     {ports.map((port) => (
@@ -383,7 +383,7 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
                   <button
                     onClick={handleRefreshPorts}
                     disabled={refreshing || flashing}
-                    className="px-2 py-2 bg-gray-700/50 hover:bg-gray-600/50 disabled:opacity-40 text-gray-300 rounded-lg transition-colors"
+                    className="px-2 py-2 bg-surface-raised hover:bg-surface-raised disabled:opacity-40 text-content rounded-lg transition-colors"
                     title="Refresh port list"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
@@ -391,12 +391,12 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="block text-[11px] text-gray-500">Board</label>
+                <label className="block text-[11px] text-content-secondary">Board</label>
                 <select
                   value={selectedChip}
                   onChange={(e) => setSelectedChip(e.target.value)}
                   disabled={flashing}
-                  className="w-full bg-gray-900/60 border border-gray-700/50 rounded-lg px-3 py-2 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
+                  className="w-full bg-surface-input border border-subtle rounded-lg px-3 py-2 text-xs text-content focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
                 >
                   {template.boardVariants.map((v) => (
                     <option key={v} value={v}>{v}</option>
@@ -409,10 +409,10 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
             {flashing && flashProgress && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-gray-400">{flashProgress.message}</span>
-                  <span className="text-gray-500">{flashProgress.progress}%</span>
+                  <span className="text-content-secondary">{flashProgress.message}</span>
+                  <span className="text-content-secondary">{flashProgress.progress}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-gray-700/50 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 rounded-full transition-all duration-300"
                     style={{ width: `${flashProgress.progress}%` }}
@@ -442,12 +442,12 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
             <button
               onClick={handleFlash}
               disabled={!selectedPort || flashing}
-              className="w-full py-2.5 bg-blue-600/80 hover:bg-blue-500/80 disabled:bg-gray-700/50 disabled:text-gray-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full py-2.5 bg-blue-600/80 hover:bg-blue-500/80 disabled:bg-surface-raised disabled:text-content-tertiary text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <Usb className="w-4 h-4" />
               {flashing ? 'Flashing...' : 'Flash Firmware'}
             </button>
-            <p className="text-[10px] text-gray-600 text-center">
+            <p className="text-[10px] text-content-tertiary text-center">
               Downloads esptool and firmware automatically. Just plug in and flash.
             </p>
           </div>
@@ -474,11 +474,11 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
             <div className="space-y-2">
               <div className="flex items-start gap-2.5">
                 <div className="w-5 h-5 rounded-full bg-blue-500/15 text-blue-400 flex items-center justify-center text-[10px] font-medium shrink-0 mt-0.5">1</div>
-                <p className="text-[11px] text-gray-400">Download the SD card image from the link above</p>
+                <p className="text-[11px] text-content-secondary">Download the SD card image from the link above</p>
               </div>
               <div className="flex items-start gap-2.5">
                 <div className="w-5 h-5 rounded-full bg-blue-500/15 text-blue-400 flex items-center justify-center text-[10px] font-medium shrink-0 mt-0.5">2</div>
-                <div className="text-[11px] text-gray-400">
+                <div className="text-[11px] text-content-secondary">
                   Flash to MicroSD using{' '}
                   <a href="https://www.raspberrypi.com/software/" target="_blank" rel="noopener noreferrer"
                     onClick={(e) => { e.preventDefault(); window.open('https://www.raspberrypi.com/software/', '_blank'); }}
@@ -491,25 +491,25 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
               </div>
               <div className="flex items-start gap-2.5">
                 <div className="w-5 h-5 rounded-full bg-blue-500/15 text-blue-400 flex items-center justify-center text-[10px] font-medium shrink-0 mt-0.5">3</div>
-                <p className="text-[11px] text-gray-400">Insert SD card, power on, and connect to the board's WiFi</p>
+                <p className="text-[11px] text-content-secondary">Insert SD card, power on, and connect to the board's WiFi</p>
               </div>
               <div className="flex items-start gap-2.5">
                 <div className="w-5 h-5 rounded-full bg-blue-500/15 text-blue-400 flex items-center justify-center text-[10px] font-medium shrink-0 mt-0.5">4</div>
-                <p className="text-[11px] text-gray-400">Open the Dashboard tab to monitor your companion</p>
+                <p className="text-[11px] text-content-secondary">Open the Dashboard tab to monitor your companion</p>
               </div>
             </div>
 
             {/* Alternative: install on existing OS */}
             {template.installCommand && (
-              <div className="pt-2 border-t border-gray-700/20">
-                <p className="text-[10px] text-gray-500 mb-2">Alternative: install on an existing Raspberry Pi OS setup</p>
+              <div className="pt-2 border-t border-subtle">
+                <p className="text-[10px] text-content-secondary mb-2">Alternative: install on an existing Raspberry Pi OS setup</p>
                 <div className="relative">
-                  <div className="bg-gray-900/60 rounded-lg px-3 py-2 font-mono text-xs text-gray-400 pr-10 select-all overflow-x-auto">
+                  <div className="bg-surface-input rounded-lg px-3 py-2 font-mono text-xs text-content-secondary pr-10 select-all overflow-x-auto">
                     {template.installCommand}
                   </div>
                   <button
                     onClick={() => handleCopy(template.installCommand!)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-gray-700/50 text-gray-600 hover:text-gray-400 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-surface-raised text-content-tertiary hover:text-content-secondary transition-colors"
                   >
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
@@ -522,17 +522,17 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
         {template.flashMethod === 'script' && template.installCommand && (
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <p className="text-[11px] text-gray-400">1. SSH into your {BOARD_FAMILIES[template.board].name}</p>
-              <p className="text-[11px] text-gray-400">2. Run the install command below</p>
-              <p className="text-[11px] text-gray-400">3. Follow the on-screen prompts</p>
+              <p className="text-[11px] text-content-secondary">1. SSH into your {BOARD_FAMILIES[template.board].name}</p>
+              <p className="text-[11px] text-content-secondary">2. Run the install command below</p>
+              <p className="text-[11px] text-content-secondary">3. Follow the on-screen prompts</p>
             </div>
             <div className="relative">
-              <div className="bg-gray-900/60 rounded-lg px-3 py-2 font-mono text-xs text-gray-400 pr-10 select-all overflow-x-auto">
+              <div className="bg-surface-input rounded-lg px-3 py-2 font-mono text-xs text-content-secondary pr-10 select-all overflow-x-auto">
                 {template.installCommand}
               </div>
               <button
                 onClick={() => handleCopy(template.installCommand!)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-gray-700/50 text-gray-600 hover:text-gray-400 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-surface-raised text-content-tertiary hover:text-content-secondary transition-colors"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
@@ -547,7 +547,7 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
           href={template.projectUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 py-2 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+          className="flex items-center justify-center gap-2 py-2 text-xs text-content-secondary hover:text-content transition-colors"
           onClick={(e) => { e.preventDefault(); window.open(template.projectUrl, '_blank'); }}
         >
           View project on GitHub

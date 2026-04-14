@@ -15,8 +15,8 @@ export function OsdDemoPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700">
-        <h3 className="text-xs font-medium text-gray-300">Demo Values</h3>
+      <div className="flex items-center justify-between px-3 py-2 border-b border">
+        <h3 className="text-xs font-medium text-content">Demo Values</h3>
         <button
           onClick={resetDemoValues}
           className="text-[10px] text-blue-400 hover:text-blue-300"
@@ -90,7 +90,7 @@ export function OsdDemoPanel() {
 function SliderGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h4 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-2">{title}</h4>
+      <h4 className="text-[10px] font-medium text-content-secondary uppercase tracking-wider mb-2">{title}</h4>
       <div className="space-y-2">
         {children}
       </div>

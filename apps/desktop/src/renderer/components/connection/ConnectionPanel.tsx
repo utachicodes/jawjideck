@@ -355,8 +355,8 @@ export function ConnectionPanel() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-gray-800/50">
-        <h2 className="text-base font-semibold text-white flex items-center gap-2">
+      <div className="px-5 py-4 border-b border-subtle">
+        <h2 className="text-base font-semibold text-content flex items-center gap-2">
           <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
           </svg>
@@ -399,8 +399,8 @@ export function ConnectionPanel() {
                   </svg>
                 </div>
                 <div className="flex-1 text-left min-w-0">
-                  <div className="text-[13px] font-medium text-white">SITL Simulator</div>
-                  <div className="text-[11px] text-gray-400 mt-0.5">
+                  <div className="text-[13px] font-medium text-content">SITL Simulator</div>
+                  <div className="text-[11px] text-content-secondary mt-0.5">
                     {ardupilotIsDownloading ? `Downloading${ardupilotDownloadProgress ? ` ${ardupilotDownloadProgress.progress}%` : '...'}`
                       : anySitlStarting ? 'Starting...'
                       : inavIsRunning ? 'iNav running on TCP :5760'
@@ -454,7 +454,7 @@ export function ConnectionPanel() {
               {/* Download progress bar */}
               {ardupilotIsDownloading && ardupilotDownloadProgress && (
                 <div className="px-4 pb-3">
-                  <div className="h-1 rounded-full bg-gray-700/50 overflow-hidden">
+                  <div className="h-1 rounded-full bg-surface-raised overflow-hidden">
                     <div
                       className="h-full rounded-full bg-blue-500 transition-all duration-300"
                       style={{ width: `${ardupilotDownloadProgress.progress}%` }}
@@ -471,7 +471,7 @@ export function ConnectionPanel() {
                   className={`px-2.5 py-1 text-[10px] rounded-md transition-colors ${
                     defaultSitlType === 'inav'
                       ? 'bg-purple-500/20 text-purple-300 font-medium'
-                      : 'text-gray-500 hover:text-gray-400 hover:bg-gray-700/30'
+                      : 'text-content-secondary hover:text-content-secondary hover:bg-surface-raised'
                   }`}
                 >
                   iNav
@@ -481,7 +481,7 @@ export function ConnectionPanel() {
                   className={`px-2.5 py-1 text-[10px] rounded-md transition-colors ${
                     defaultSitlType === 'ardupilot'
                       ? 'bg-blue-500/20 text-blue-300 font-medium'
-                      : 'text-gray-500 hover:text-gray-400 hover:bg-gray-700/30'
+                      : 'text-content-secondary hover:text-content-secondary hover:bg-surface-raised'
                   }`}
                 >
                   ArduPilot
@@ -614,7 +614,7 @@ export function ConnectionPanel() {
             </div>
             <div>
               <label className="label">Protocol</label>
-              <div className="flex rounded-lg overflow-hidden border border-gray-700/50">
+              <div className="flex rounded-lg overflow-hidden border border-subtle">
                 {(['mavlink', 'msp'] as const).map((proto) => (
                   <button
                     key={proto}
@@ -623,8 +623,8 @@ export function ConnectionPanel() {
                     className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
                       tcpProtocol === proto
                         ? 'bg-blue-600/30 text-blue-300'
-                        : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/30'
-                    } ${proto === 'mavlink' ? 'border-r border-gray-700/50' : ''}`}
+                        : 'text-content-secondary hover:text-content hover:bg-surface-raised'
+                    } ${proto === 'mavlink' ? 'border-r border-subtle' : ''}`}
                   >
                     {proto === 'mavlink' ? 'MAVLink' : 'MSP'}
                   </button>
@@ -638,14 +638,14 @@ export function ConnectionPanel() {
         {connectionType === 'udp' && (
           <div className="space-y-4">
             {/* UDP mode toggle */}
-            <div className="flex rounded-lg overflow-hidden border border-gray-700/50">
+            <div className="flex rounded-lg overflow-hidden border border-subtle">
               <button
                 onClick={() => setUdpMode('listen')}
                 disabled={connectionState.isConnected}
                 className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
                   udpMode === 'listen'
                     ? 'bg-blue-600/30 text-blue-300 border-r border-blue-500/30'
-                    : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/30 border-r border-gray-700/50'
+                    : 'text-content-secondary hover:text-content hover:bg-surface-raised border-r border-subtle'
                 }`}
               >
                 Listen (Server)
@@ -656,7 +656,7 @@ export function ConnectionPanel() {
                 className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
                   udpMode === 'client'
                     ? 'bg-blue-600/30 text-blue-300'
-                    : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/30'
+                    : 'text-content-secondary hover:text-content hover:bg-surface-raised'
                 }`}
               >
                 Client (Connect)
@@ -675,7 +675,7 @@ export function ConnectionPanel() {
                     disabled={connectionState.isConnected}
                   />
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-content-secondary">
                   Listen for incoming packets on this port
                 </p>
               </>
@@ -702,7 +702,7 @@ export function ConnectionPanel() {
                     disabled={connectionState.isConnected}
                   />
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-content-secondary">
                   Connect to a remote device at this address
                 </p>
               </>
@@ -710,7 +710,7 @@ export function ConnectionPanel() {
 
             <div>
               <label className="label">Protocol</label>
-              <div className="flex rounded-lg overflow-hidden border border-gray-700/50">
+              <div className="flex rounded-lg overflow-hidden border border-subtle">
                 {(['mavlink', 'msp'] as const).map((proto) => (
                   <button
                     key={proto}
@@ -719,8 +719,8 @@ export function ConnectionPanel() {
                     className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
                       udpProtocol === proto
                         ? 'bg-blue-600/30 text-blue-300'
-                        : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/30'
-                    } ${proto === 'mavlink' ? 'border-r border-gray-700/50' : ''}`}
+                        : 'text-content-secondary hover:text-content hover:bg-surface-raised'
+                    } ${proto === 'mavlink' ? 'border-r border-subtle' : ''}`}
                   >
                     {proto === 'mavlink' ? 'MAVLink' : 'MSP'}
                   </button>
@@ -735,27 +735,27 @@ export function ConnectionPanel() {
           (connectionType === 'tcp' && tcpProtocol === 'mavlink') ||
           (connectionType === 'udp' && udpProtocol === 'mavlink')
         ) && (
-          <div className="rounded-xl border border-gray-700/30 overflow-hidden">
+          <div className="rounded-xl border border-subtle overflow-hidden">
             <button
               onClick={() => setShowSigning(!showSigning)}
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-gray-800/30 transition-colors"
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-surface transition-colors"
             >
-              <svg className={`w-4 h-4 ${savedKeys.length > 0 ? 'text-amber-400' : 'text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className={`w-4 h-4 ${savedKeys.length > 0 ? 'text-amber-400' : 'text-content-secondary'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
               </svg>
-              <span className="text-xs font-medium text-gray-300 flex-1 text-left">MAVLink Signing</span>
+              <span className="text-xs font-medium text-content flex-1 text-left">MAVLink Signing</span>
               {savedKeys.length > 0 && (
                 <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${keyMismatch ? 'text-red-400 bg-red-400/10' : 'text-emerald-400 bg-emerald-400/10'}`}>
                   {keyMismatch ? 'Mismatch' : `${savedKeys.length} key${savedKeys.length > 1 ? 's' : ''}`}
                 </span>
               )}
-              <svg className={`w-3.5 h-3.5 text-gray-500 transition-transform ${showSigning ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className={`w-3.5 h-3.5 text-content-secondary transition-transform ${showSigning ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
             {showSigning && (
-              <div className="px-3 pb-3 space-y-2.5 border-t border-gray-700/20 pt-2.5">
-                <p className="text-[11px] text-gray-500">
+              <div className="px-3 pb-3 space-y-2.5 border-t border-subtle pt-2.5">
+                <p className="text-[11px] text-content-secondary">
                   Accepts passphrases, base64 keys (from Mission Planner), or hex keys. All keys are tried automatically on connect.
                 </p>
 
@@ -771,13 +771,13 @@ export function ConnectionPanel() {
                       } catch { /* fallback to hex */ }
                       const isActive = keyBase64?.startsWith(displayKey.slice(0, 4));
                       return (
-                        <div key={k.fingerprint} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gray-800/40">
-                          <svg className={`w-3 h-3 shrink-0 ${isActive ? 'text-emerald-400' : 'text-gray-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div key={k.fingerprint} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-surface">
+                          <svg className={`w-3 h-3 shrink-0 ${isActive ? 'text-emerald-400' : 'text-content-tertiary'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
                           </svg>
-                          <code className="text-[10px] font-mono text-gray-400 flex-1 truncate">{displayKey}</code>
+                          <code className="text-[10px] font-mono text-content-secondary flex-1 truncate">{displayKey}</code>
                           {k.systemIds.length > 0 && (
-                            <span className="text-[9px] text-gray-600" title={`Matched FC sysid: ${k.systemIds.join(', ')}`}>
+                            <span className="text-[9px] text-content-tertiary" title={`Matched FC sysid: ${k.systemIds.join(', ')}`}>
                               sysid {k.systemIds.join(',')}
                             </span>
                           )}
@@ -808,12 +808,12 @@ export function ConnectionPanel() {
                       placeholder="Passphrase, base64, or hex key..."
                       autoComplete="new-password"
                       name={`signing-key-${Date.now()}`}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/50 pr-8"
+                      className="w-full bg-surface-tooltip border border-border rounded-lg px-3 py-1.5 text-xs text-content placeholder-content-tertiary focus:outline-none focus:border-amber-500/50 pr-8"
                       disabled={signingLoading}
                     />
                     <button
                       onClick={() => setShowSigningPassphrase(!showSigningPassphrase)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-content-secondary hover:text-content transition-colors"
                       type="button"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -836,7 +836,7 @@ export function ConnectionPanel() {
                       if (ok && signingInputRef.current) { signingInputRef.current.value = ''; setSigningInputHasValue(false); }
                     }}
                     disabled={signingLoading || !signingInputHasValue}
-                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-xs rounded-lg transition-colors shrink-0"
+                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:bg-surface-raised disabled:text-content-secondary text-white text-xs rounded-lg transition-colors shrink-0"
                   >
                     Add Key
                   </button>
@@ -898,7 +898,7 @@ export function ConnectionPanel() {
                 </svg>
                 <div>
                   <p className="text-sm font-medium text-yellow-400">Waiting for heartbeat...</p>
-                  <p className="text-xs text-gray-500">{connectionState.transport}</p>
+                  <p className="text-xs text-content-secondary">{connectionState.transport}</p>
                 </div>
               </div>
             </div>
@@ -909,32 +909,32 @@ export function ConnectionPanel() {
         {connectionState.isConnected && (
           <div className="card border-emerald-500/30">
             <div className="card-header">
-              <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
+              <h3 className="text-sm font-medium text-content flex items-center gap-2">
                 <div className="status-dot status-dot-connected" />
                 Connected
               </h3>
             </div>
             <div className="card-body space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-500">Transport</span>
-                <span className="text-gray-200 font-medium">{connectionState.transport}</span>
+                <span className="text-content-secondary">Transport</span>
+                <span className="text-content font-medium">{connectionState.transport}</span>
               </div>
               {connectionState.autopilot && (
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Autopilot</span>
-                  <span className="text-gray-200 font-medium">{connectionState.autopilot}</span>
+                  <span className="text-content-secondary">Autopilot</span>
+                  <span className="text-content font-medium">{connectionState.autopilot}</span>
                 </div>
               )}
               {connectionState.vehicleType && (
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Vehicle</span>
-                  <span className="text-gray-200 font-medium">{connectionState.vehicleType}</span>
+                  <span className="text-content-secondary">Vehicle</span>
+                  <span className="text-content font-medium">{connectionState.vehicleType}</span>
                 </div>
               )}
               {connectionState.systemId !== undefined && (
                 <div className="flex justify-between">
-                  <span className="text-gray-500">System ID</span>
-                  <span className="text-gray-200 font-medium">{connectionState.systemId}</span>
+                  <span className="text-content-secondary">System ID</span>
+                  <span className="text-content font-medium">{connectionState.systemId}</span>
                 </div>
               )}
             </div>
@@ -950,10 +950,10 @@ export function ConnectionPanel() {
 
         {/* Manual driver help toggle - only show for serial when not already showing due to error */}
         {connectionType === 'serial' && !connectionState.isConnected && !error && (
-          <div className="pt-2 border-t border-gray-800/50">
+          <div className="pt-2 border-t border-subtle">
             <button
               onClick={() => setShowDriverHelp(!showDriverHelp)}
-              className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+              className="flex items-center gap-2 text-xs text-content-secondary hover:text-content transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

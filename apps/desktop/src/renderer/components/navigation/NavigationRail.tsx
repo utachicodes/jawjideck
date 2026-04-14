@@ -1,6 +1,6 @@
 import { useNavigationStore, type ViewId } from '../../stores/navigation-store';
 import { useConnectionStore } from '../../stores/connection-store';
-import { useSettingsStore } from '../../stores/settings-store';
+import { useSettingsStore, type ThemePreference } from '../../stores/settings-store';
 
 interface NavItem {
   id: ViewId;
@@ -194,7 +194,7 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
   };
 
   return (
-    <nav className="w-14 h-full bg-gray-900/50 border-r border-gray-800/50 flex flex-col items-center py-3 gap-1">
+    <nav className="w-14 h-full bg-surface-nav border-r border-subtle flex flex-col items-center py-3 gap-1">
       {/* Active navigation items */}
       {allNavItems.map((item) => (
         <button
@@ -205,10 +205,10 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
             relative w-10 h-10 rounded-lg flex items-center justify-center
             transition-all duration-200 group
             ${item.disabled
-              ? 'text-gray-700 cursor-not-allowed'
+              ? 'text-content-disabled cursor-not-allowed'
               : currentView === item.id
                 ? 'bg-blue-500/20 text-blue-400'
-                : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/50'
+                : 'text-content-tertiary hover:text-content-secondary hover:bg-surface-raised'
             }
           `}
           title={item.label}
@@ -220,27 +220,27 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
           {item.icon}
 
           {/* Tooltip */}
-          <div className={`absolute left-full ml-2 px-2 py-1 bg-gray-800 text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 ${item.disabled ? 'text-gray-400' : 'text-gray-200'}`}>
+          <div className={`absolute left-full ml-2 px-2 py-1 bg-surface-tooltip text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg ${item.disabled ? 'text-content-tertiary' : 'text-content'}`}>
             {item.label}
           </div>
         </button>
       ))}
 
       {/* Separator */}
-      <div className="w-6 h-px bg-gray-700/50 my-2" />
+      <div className="w-6 h-px bg-surface-raised my-2" />
 
       {/* Future items (disabled) */}
       {futureItems.map((item) => (
         <button
           key={item.id}
           disabled
-          className="relative w-10 h-10 rounded-lg flex items-center justify-center text-gray-700 cursor-not-allowed group"
+          className="relative w-10 h-10 rounded-lg flex items-center justify-center text-content-disabled cursor-not-allowed group"
           title={item.label}
         >
           {item.icon}
 
           {/* Tooltip */}
-          <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-gray-400 text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">
+          <div className="absolute left-full ml-2 px-2 py-1 bg-surface-tooltip text-content-tertiary text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
             {item.label}
           </div>
         </button>
@@ -248,6 +248,9 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
 
       {/* Spacer */}
       <div className="flex-1" />
+
+      {/* Theme toggle */}
+      <ThemeToggle />
 
       {/* Report Bug button */}
       <button
@@ -257,7 +260,7 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
           transition-all duration-200 group mb-2
           ${currentView === 'report'
             ? 'bg-red-500/20 text-red-400'
-            : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/50'
+            : 'text-content-tertiary hover:text-content-secondary hover:bg-surface-raised'
           }
         `}
         title="Report a Bug"
@@ -268,17 +271,62 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-gray-200 text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">
+        <div className="absolute left-full ml-2 px-2 py-1 bg-surface-tooltip text-content text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
           Report a Bug
         </div>
       </button>
 
       {/* ArduDeck logo/branding at bottom */}
-      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-gray-700/30 flex items-center justify-center" title="ArduDeck">
+      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-subtle flex items-center justify-center" title="ArduDeck">
         <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
         </svg>
       </div>
     </nav>
+  );
+}
+
+const THEME_CYCLE: ThemePreference[] = ['dark', 'light', 'system'];
+const THEME_LABELS: Record<ThemePreference, string> = {
+  dark: 'Dark theme',
+  light: 'Light theme',
+  system: 'System theme',
+};
+
+function ThemeToggle() {
+  const theme = useSettingsStore((s) => s.theme);
+  const setTheme = useSettingsStore((s) => s.setTheme);
+
+  const cycle = () => {
+    const idx = THEME_CYCLE.indexOf(theme);
+    const next = THEME_CYCLE[(idx + 1) % THEME_CYCLE.length]!;
+    setTheme(next);
+  };
+
+  return (
+    <button
+      onClick={cycle}
+      className="relative w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 group text-content-tertiary hover:text-content-secondary hover:bg-surface-raised mb-1"
+      title={THEME_LABELS[theme]}
+    >
+      {theme === 'dark' && (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+      )}
+      {theme === 'light' && (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      )}
+      {theme === 'system' && (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      )}
+      <div className="absolute left-full ml-2 px-2 py-1 bg-surface-tooltip text-content text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
+        {THEME_LABELS[theme]}
+      </div>
+    </button>
   );
 }

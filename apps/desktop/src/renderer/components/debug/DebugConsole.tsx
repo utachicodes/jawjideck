@@ -9,7 +9,7 @@ const LOG_COLORS = {
   info: 'text-blue-400',
   warn: 'text-yellow-400',
   error: 'text-red-400',
-  debug: 'text-gray-400',
+  debug: 'text-content-secondary',
   packet: 'text-emerald-400',
 };
 
@@ -31,11 +31,11 @@ function severityColor(severity: number): string {
     case 5:
       return 'text-blue-400';
     case 6:
-      return 'text-gray-300';
+      return 'text-content';
     case 7:
-      return 'text-gray-500';
+      return 'text-content-secondary';
     default:
-      return 'text-gray-400';
+      return 'text-content-secondary';
   }
 }
 
@@ -106,15 +106,15 @@ export function DebugConsole() {
   const lastLog = logs[logs.length - 1];
 
   return (
-    <div className="border-t border-gray-800/50 bg-gray-900/80 backdrop-blur-sm flex flex-col">
+    <div className="border-t border-subtle bg-surface-overlay backdrop-blur-sm flex flex-col">
       {/* Collapsed bar - always visible */}
       <button
         onClick={toggleExpanded}
-        className="h-8 px-4 flex items-center gap-3 hover:bg-gray-800/50 transition-colors cursor-pointer w-full text-left"
+        className="h-8 px-4 flex items-center gap-3 hover:bg-surface transition-colors cursor-pointer w-full text-left"
       >
         {/* Expand/collapse icon */}
         <svg
-          className={`w-3.5 h-3.5 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+          className={`w-3.5 h-3.5 text-content-secondary transition-transform ${isExpanded ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -122,18 +122,18 @@ export function DebugConsole() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
 
-        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Console</span>
+        <span className="text-xs font-medium text-content-secondary uppercase tracking-wide">Console</span>
 
         {/* Last log preview when collapsed */}
         {!isExpanded && lastLog && (
           <span className={`text-xs truncate flex-1 ${LOG_COLORS[lastLog.level]}`}>
-            <span className="text-gray-600 mr-2">{formatTime(lastLog.timestamp)}</span>
+            <span className="text-content-tertiary mr-2">{formatTime(lastLog.timestamp)}</span>
             {lastLog.message}
           </span>
         )}
 
         {/* Log count badge */}
-        <span className="text-xs text-gray-600">
+        <span className="text-xs text-content-tertiary">
           {logs.length} {logs.length === 1 ? 'entry' : 'entries'}
         </span>
 
@@ -149,15 +149,15 @@ export function DebugConsole() {
       {isExpanded && (
         <div className="flex flex-col" style={{ height: '35vh' }}>
           {/* Toolbar */}
-          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-800/50 bg-gray-900/50">
+          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-subtle bg-surface-overlay-subtle">
             {/* Tab buttons */}
             <div className="flex gap-1 mr-2">
               <button
                 onClick={() => setActiveTab('console')}
                 className={`px-2 py-0.5 text-xs rounded transition-colors ${
                   activeTab === 'console'
-                    ? 'bg-gray-700 text-white'
-                    : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/50'
+                    ? 'bg-surface-raised text-content'
+                    : 'text-content-secondary hover:text-content hover:bg-surface'
                 }`}
               >
                 Console
@@ -167,8 +167,8 @@ export function DebugConsole() {
                   onClick={() => setActiveTab('messages')}
                   className={`px-2 py-0.5 text-xs rounded transition-colors flex items-center gap-1.5 ${
                     activeTab === 'messages'
-                      ? 'bg-gray-700 text-white'
-                      : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/50'
+                      ? 'bg-surface-raised text-content'
+                      : 'text-content-secondary hover:text-content hover:bg-surface'
                   }`}
                 >
                   Messages
@@ -183,7 +183,7 @@ export function DebugConsole() {
 
             {/* Separator */}
             {activeTab === 'console' && (
-              <div className="w-px h-4 bg-gray-700/50" />
+              <div className="w-px h-4 bg-surface-raised" />
             )}
 
             {/* Console filter buttons - only show on console tab */}
@@ -195,8 +195,8 @@ export function DebugConsole() {
                     onClick={() => setFilter(f)}
                     className={`px-2 py-0.5 text-xs rounded transition-colors ${
                       filter === f
-                        ? 'bg-gray-700 text-white'
-                        : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/50'
+                        ? 'bg-surface-raised text-content'
+                        : 'text-content-secondary hover:text-content hover:bg-surface'
                     }`}
                   >
                     {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -210,7 +210,7 @@ export function DebugConsole() {
             {/* Clear button */}
             <button
               onClick={activeTab === 'console' ? clearLogs : clearMessages}
-              className="px-2 py-0.5 text-xs text-gray-500 hover:text-gray-300 hover:bg-gray-800/50 rounded transition-colors"
+              className="px-2 py-0.5 text-xs text-content-secondary hover:text-content hover:bg-surface rounded transition-colors"
             >
               Clear
             </button>
@@ -220,12 +220,12 @@ export function DebugConsole() {
           {activeTab === 'console' && (
             <div ref={scrollRef} className="flex-1 overflow-y-auto font-mono text-xs p-2 space-y-0.5">
               {filteredLogs.length === 0 ? (
-                <div className="text-gray-600 text-center py-4">No log entries</div>
+                <div className="text-content-tertiary text-center py-4">No log entries</div>
               ) : (
                 filteredLogs.map((log) => (
-                  <div key={log.id} className="flex gap-2 hover:bg-gray-800/30 px-1 py-0.5 rounded">
+                  <div key={log.id} className="flex gap-2 hover:bg-surface px-1 py-0.5 rounded">
                     {/* Time */}
-                    <span className="text-gray-600 shrink-0">{formatTime(log.timestamp)}</span>
+                    <span className="text-content-tertiary shrink-0">{formatTime(log.timestamp)}</span>
 
                     {/* Level icon */}
                     <span className={`shrink-0 w-4 text-center ${LOG_COLORS[log.level]}`}>
@@ -237,7 +237,7 @@ export function DebugConsole() {
 
                     {/* Details */}
                     {log.details && (
-                      <span className="text-gray-600">{log.details}</span>
+                      <span className="text-content-tertiary">{log.details}</span>
                     )}
                   </div>
                 ))
@@ -249,9 +249,9 @@ export function DebugConsole() {
           {activeTab === 'messages' && (
             <div ref={messagesScrollRef} className="flex-1 overflow-y-auto font-mono text-xs">
               {messages.length === 0 ? (
-                <div className="text-gray-600 text-center py-4">No messages from autopilot</div>
+                <div className="text-content-tertiary text-center py-4">No messages from autopilot</div>
               ) : (
-                <div className="divide-y divide-gray-800/50">
+                <div className="divide-y divide-subtle">
                   {messages.map((msg, i) => {
                     const msgKey = `${msg.text}-${msg.severity}-${i}`;
                     const prearmMatch = matchPreArmError(msg.text);
@@ -260,7 +260,7 @@ export function DebugConsole() {
                     return (
                       <div key={msgKey}>
                         <div
-                          className={`flex items-start gap-2 px-3 py-1.5 hover:bg-gray-800/30 transition-colors ${prearmMatch ? 'cursor-pointer' : ''}`}
+                          className={`flex items-start gap-2 px-3 py-1.5 hover:bg-surface transition-colors ${prearmMatch ? 'cursor-pointer' : ''}`}
                           onClick={prearmMatch ? () => toggleExpand(msgKey) : undefined}
                         >
                           {/* Severity badge */}
@@ -268,7 +268,7 @@ export function DebugConsole() {
                             msg.severity <= 3 ? 'bg-red-500/20 text-red-400'
                               : msg.severity === 4 ? 'bg-yellow-500/20 text-yellow-400'
                               : msg.severity === 5 ? 'bg-blue-500/20 text-blue-400'
-                              : 'bg-gray-500/20 text-gray-400'
+                              : 'bg-content-secondary/20 text-content-secondary'
                           }`}>
                             {msg.severityLabel.slice(0, 4)}
                           </span>
@@ -280,7 +280,7 @@ export function DebugConsole() {
 
                           {/* Count badge */}
                           {msg.count > 1 && (
-                            <span className="shrink-0 text-[9px] bg-gray-700/50 text-gray-400 px-1.5 py-0.5 rounded-full mt-0.5">
+                            <span className="shrink-0 text-[9px] bg-surface-raised text-content-secondary px-1.5 py-0.5 rounded-full mt-0.5">
                               x{msg.count}
                             </span>
                           )}
@@ -293,7 +293,7 @@ export function DebugConsole() {
                           )}
 
                           {/* Timestamp */}
-                          <span className="shrink-0 text-[10px] text-gray-600 mt-0.5">
+                          <span className="shrink-0 text-[10px] text-content-tertiary mt-0.5">
                             {formatTimeShort(msg.timestamp)}
                           </span>
                         </div>

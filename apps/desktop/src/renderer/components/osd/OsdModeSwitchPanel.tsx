@@ -35,7 +35,7 @@ export function OsdModeSwitchPanel() {
   if (!connectionState.isConnected) {
     return (
       <div className="p-3">
-        <p className="text-xs text-gray-500">Connect to FC to see mode switches.</p>
+        <p className="text-xs text-content-secondary">Connect to FC to see mode switches.</p>
       </div>
     );
   }
@@ -43,7 +43,7 @@ export function OsdModeSwitchPanel() {
   if (!modeMappingsLoaded || modeMappings.length === 0) {
     return (
       <div className="p-3 space-y-2">
-        <p className="text-xs text-gray-500">No mode ranges loaded.</p>
+        <p className="text-xs text-content-secondary">No mode ranges loaded.</p>
         <button
           onClick={() => loadModeRanges()}
           className="text-xs text-blue-400 hover:text-blue-300"
@@ -56,7 +56,7 @@ export function OsdModeSwitchPanel() {
 
   return (
     <div className="space-y-1">
-      <h4 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider px-3 py-1">
+      <h4 className="text-[10px] font-medium text-content-secondary uppercase tracking-wider px-3 py-1">
         Mode Switches
       </h4>
       {modeMappings.map((mapping) => (
@@ -118,21 +118,21 @@ function ModeButton({
             ? isArm
               ? 'bg-red-500/20 text-red-400 border border-red-500/40'
               : 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
-            : 'bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700 hover:text-gray-300'
+            : 'bg-surface-tooltip text-content-secondary border border hover:bg-surface-raised hover:text-content'
           }
           ${loading ? 'opacity-50' : ''}
         `}
       >
         <div className="flex items-center justify-between">
           <span>{mapping.name}</span>
-          <span className={`text-[10px] ${isActive ? 'text-green-400' : 'text-gray-600'}`}>
+          <span className={`text-[10px] ${isActive ? 'text-green-400' : 'text-content-tertiary'}`}>
             {isActive ? 'ON' : 'OFF'}
           </span>
         </div>
       </button>
 
       {/* Channel info */}
-      <span className="text-[9px] text-gray-600 font-mono w-20 text-right shrink-0">
+      <span className="text-[9px] text-content-tertiary font-mono w-20 text-right shrink-0">
         AUX{mapping.auxChannel !== null ? mapping.auxChannel + 1 : '?'}
         {' '}
         {mapping.rangeStart}-{mapping.rangeEnd}

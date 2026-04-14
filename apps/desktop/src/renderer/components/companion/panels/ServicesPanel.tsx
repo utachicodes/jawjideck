@@ -5,9 +5,9 @@ import type { ServiceInfo, ServiceAction } from '@ardudeck/companion-types';
 
 const STATUS_COLORS: Record<string, { dot: string; text: string; bg: string }> = {
   running: { dot: 'bg-emerald-400', text: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-  stopped: { dot: 'bg-gray-500', text: 'text-gray-400', bg: 'bg-gray-500/10' },
+  stopped: { dot: 'bg-gray-500', text: 'text-content-secondary', bg: 'bg-gray-500/10' },
   failed: { dot: 'bg-red-400', text: 'text-red-400', bg: 'bg-red-500/10' },
-  unknown: { dot: 'bg-gray-600', text: 'text-gray-500', bg: 'bg-gray-600/10' },
+  unknown: { dot: 'bg-gray-600', text: 'text-content-secondary', bg: 'bg-gray-600/10' },
 };
 
 export function ServicesPanel() {
@@ -58,8 +58,8 @@ export function ServicesPanel() {
   if (!isConnected) {
     return (
       <PanelContainer className="flex items-center justify-center">
-        <div className="text-center text-gray-600 text-xs">
-          <div className="text-gray-500 mb-1">Services unavailable</div>
+        <div className="text-center text-content-tertiary text-xs">
+          <div className="text-content-secondary mb-1">Services unavailable</div>
           <div>Connect to companion agent to manage services.</div>
         </div>
       </PanelContainer>
@@ -69,7 +69,7 @@ export function ServicesPanel() {
   return (
     <PanelContainer className="flex flex-col gap-0 p-0">
       {/* Header bar */}
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-700/40 shrink-0">
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-subtle shrink-0">
         <SectionTitle>Systemd Services</SectionTitle>
         <div className="flex-1" />
         <input
@@ -77,11 +77,11 @@ export function ServicesPanel() {
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder="Filter..."
-          className="bg-gray-800/50 border border-gray-700/50 rounded px-2 py-0.5 text-[11px] text-gray-200 w-32 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+          className="bg-surface border border-subtle rounded px-2 py-0.5 text-[11px] text-content w-32 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
         />
         <button
           onClick={fetchServices}
-          className="text-gray-500 hover:text-gray-300 transition-colors p-0.5"
+          className="text-content-secondary hover:text-content transition-colors p-0.5"
           title="Refresh"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -93,33 +93,33 @@ export function ServicesPanel() {
       {/* Service list */}
       <div className="flex-1 overflow-auto">
         {loading && services.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-600 text-xs">Loading services...</div>
+          <div className="flex items-center justify-center h-full text-content-tertiary text-xs">Loading services...</div>
         ) : filteredServices.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-600 text-xs">
+          <div className="flex items-center justify-center h-full text-content-tertiary text-xs">
             {services.length === 0 ? 'No services found' : 'No services match filter'}
           </div>
         ) : (
-          <div className="divide-y divide-gray-800/30">
+          <div className="divide-y divide-subtle">
             {filteredServices.map((service) => {
               const colors = STATUS_COLORS[service.status] ?? STATUS_COLORS['unknown']!;
               const isActing = actionInProgress?.startsWith(`${service.name}:`);
 
               return (
-                <div key={service.name} className={`px-3 py-2 ${colors.bg} hover:bg-gray-800/30 transition-colors`}>
+                <div key={service.name} className={`px-3 py-2 ${colors.bg} hover:bg-surface/30 transition-colors`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`w-2 h-2 rounded-full shrink-0 ${colors.dot}`} />
                       <div className="min-w-0">
-                        <div className="text-xs text-gray-200 font-medium truncate">{service.name}</div>
+                        <div className="text-xs text-content font-medium truncate">{service.name}</div>
                         {service.description && (
-                          <div className="text-[10px] text-gray-500 truncate">{service.description}</div>
+                          <div className="text-[10px] text-content-secondary truncate">{service.description}</div>
                         )}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-1 shrink-0 ml-2">
                       {service.enabled && (
-                        <span className="text-[9px] text-gray-600 px-1 py-0.5 bg-gray-700/50 rounded">auto</span>
+                        <span className="text-[9px] text-content-tertiary px-1 py-0.5 bg-surface-raised rounded">auto</span>
                       )}
 
                       {isActing ? (

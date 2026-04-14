@@ -62,9 +62,9 @@ export function PreflightCheckCard() {
   return (
     <PanelContainer className="flex flex-col gap-0 p-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700/40 shrink-0">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-subtle shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-200">Pre-flight Checks</span>
+          <span className="text-xs font-medium text-content">Pre-flight Checks</span>
           {isChecking ? (
             <span className="text-[10px] text-blue-400 animate-pulse">Checking...</span>
           ) : issueCount > 0 ? (
@@ -80,7 +80,7 @@ export function PreflightCheckCard() {
         <button
           onClick={handleRecheck}
           disabled={isChecking}
-          className="text-[10px] text-gray-400 hover:text-gray-200 transition-colors px-1.5 py-0.5 rounded hover:bg-gray-700/30 disabled:opacity-50"
+          className="text-[10px] text-content-secondary hover:text-content transition-colors px-1.5 py-0.5 rounded hover:bg-surface-overlay-subtle disabled:opacity-50"
         >
           Recheck
         </button>
@@ -88,7 +88,7 @@ export function PreflightCheckCard() {
 
       {/* Category list */}
       <div className="flex-1 overflow-auto">
-        <div className="divide-y divide-gray-800/50">
+        <div className="divide-y divide-subtle/50">
           {PREARM_CATEGORIES.map(({ id, label }) => {
             const errors = errorsByCategory.get(id);
             const hasFailed = errors && errors.length > 0;
@@ -98,32 +98,32 @@ export function PreflightCheckCard() {
               <div key={id}>
                 <div
                   className={`flex items-center gap-2 px-3 py-1.5 text-xs ${
-                    hasFailed ? 'cursor-pointer hover:bg-gray-800/30' : ''
+                    hasFailed ? 'cursor-pointer hover:bg-surface/30' : ''
                   } transition-colors`}
                   onClick={hasFailed ? () => toggleCategory(id) : undefined}
                 >
                   {isChecking ? (
-                    <span className="w-3.5 text-center text-gray-500">-</span>
+                    <span className="w-3.5 text-center text-content-secondary">-</span>
                   ) : hasFailed ? (
                     <span className="w-3.5 text-center text-red-400 font-bold text-[11px]">✗</span>
                   ) : (
                     <span className="w-3.5 text-center text-emerald-400 text-[11px]">✓</span>
                   )}
 
-                  <span className={`flex-1 ${hasFailed ? 'text-gray-200' : 'text-gray-500'}`}>
+                  <span className={`flex-1 ${hasFailed ? 'text-content' : 'text-content-secondary'}`}>
                     {label}
                   </span>
 
                   {hasFailed && (
-                    <span className="text-[10px] text-gray-500">
+                    <span className="text-[10px] text-content-secondary">
                       {isExpanded ? '▾' : '›'}
                     </span>
                   )}
                 </div>
 
                 {hasFailed && isExpanded && errors.map((err, i) => (
-                  <div key={`${err.reason}-${i}`} className="border-t border-gray-700/20">
-                    <div className="px-3 py-1 pl-8 text-[11px] text-gray-400 font-mono">
+                  <div key={`${err.reason}-${i}`} className="border-t border/20">
+                    <div className="px-3 py-1 pl-8 text-[11px] text-content-secondary font-mono">
                       {err.reason}
                     </div>
                     <div className="pl-5">
@@ -142,7 +142,7 @@ export function PreflightCheckCard() {
         </div>
 
         {allClear && (
-          <div className="px-3 py-2 border-t border-gray-700/40">
+          <div className="px-3 py-2 border-t border-subtle">
             <div className="flex items-center gap-2 text-xs text-emerald-400">
               <span>✓</span>
               <span>Ready to Arm</span>

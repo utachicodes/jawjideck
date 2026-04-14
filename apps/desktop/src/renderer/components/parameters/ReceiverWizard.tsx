@@ -225,16 +225,16 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-zinc-900 rounded-2xl border border-zinc-700 w-full max-w-lg mx-4 shadow-2xl">
+      <div className="bg-surface rounded-2xl border w-full max-w-lg mx-4 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-subtle">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
               <Radio className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Receiver Setup</h2>
-              <p className="text-xs text-zinc-400">
+              <h2 className="text-lg font-semibold text-content">Receiver Setup</h2>
+              <p className="text-xs text-content-secondary">
                 {step === 'select-rx' && 'Step 1 of 4 - Select receiver type'}
                 {step === 'select-port' && 'Step 2 of 4 - Select UART port'}
                 {step === 'verify' && 'Step 3 of 4 - Verify signal'}
@@ -242,8 +242,8 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-zinc-400" />
+          <button onClick={onClose} className="p-2 hover:bg-surface-tooltip rounded-lg transition-colors">
+            <X className="w-5 h-5 text-content-secondary" />
           </button>
         </div>
 
@@ -257,7 +257,7 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
                 <div
                   key={s}
                   className={`h-1 flex-1 rounded-full transition-colors ${
-                    i <= currentIdx ? 'bg-blue-500' : 'bg-zinc-700'
+                    i <= currentIdx ? 'bg-blue-500' : 'bg-surface-raised'
                   }`}
                 />
               );
@@ -277,11 +277,11 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
                   className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${
                     selectedRx?.id === option.id
                       ? 'border-blue-500 bg-blue-500/10'
-                      : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
+                      : 'border bg-surface hover:border'
                   }`}
                 >
-                  <div className="font-medium text-sm text-zinc-200">{option.label}</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">{option.description}</div>
+                  <div className="font-medium text-sm text-content">{option.label}</div>
+                  <div className="text-xs text-content-secondary mt-0.5">{option.description}</div>
                 </button>
               ))}
             </div>
@@ -291,7 +291,7 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
           {step === 'select-port' && (
             <div className="space-y-3">
               {rxSuggestion && (
-                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                <div className="p-3 rounded-lg bg-green-500/10 border-green-500/20">
                   <p className="text-xs text-green-300">
                     Suggested: {rxSuggestion.note}
                   </p>
@@ -314,13 +314,13 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
                           ? 'border-blue-500 bg-blue-500/10'
                           : isSuggested
                           ? 'border-green-500/30 bg-green-500/5 hover:border-green-500/50'
-                          : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
+                          : 'border bg-surface hover:border'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="font-medium text-sm text-zinc-200">{name}</span>
-                          {label && <span className="text-xs text-zinc-500 ml-2">{label}</span>}
+                          <span className="font-medium text-sm text-content">{name}</span>
+                          {label && <span className="text-xs text-content-secondary ml-2">{label}</span>}
                         </div>
                         <div className="flex items-center gap-2">
                           {hasRx && (
@@ -337,7 +337,7 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
               </div>
 
               {applyError && (
-                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                <div className="p-3 rounded-lg bg-red-500/10 border-red-500/20">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
                     <p className="text-xs text-red-300">{applyError}</p>
@@ -350,7 +350,7 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
           {/* Step 3: Verify Signal */}
           {step === 'verify' && (
             <div className="space-y-4">
-              <p className="text-sm text-zinc-400">Move your transmitter sticks to verify signal.</p>
+              <p className="text-sm text-content-secondary">Move your transmitter sticks to verify signal.</p>
 
               {/* Primary sticks (reordered by rxMap) */}
               <div className="grid grid-cols-2 gap-x-6 gap-y-3">
@@ -363,10 +363,10 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
                   return (
                     <div key={i} className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
-                        <span className={isActive ? 'text-green-400' : 'text-zinc-400'}>{name}</span>
-                        <span className="text-zinc-500 font-mono">{value}</span>
+                        <span className={isActive ? 'text-green-400' : 'text-content-secondary'}>{name}</span>
+                        <span className="text-content-secondary font-mono">{value}</span>
                       </div>
-                      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden relative">
+                      <div className="h-2 bg-surface-tooltip rounded-full overflow-hidden relative">
                         <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-600" />
                         <div
                           className={`absolute top-0 bottom-0 w-2 rounded-full transition-all ${
@@ -383,7 +383,7 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
               {/* AUX channels - compact layout */}
               {displayChannels.length > PRIMARY_CHANNEL_COUNT && (
                 <>
-                  <div className="border-t border-zinc-700/50" />
+                  <div className="border-t border-subtle" />
                   <div className="grid grid-cols-4 gap-x-3 gap-y-1.5">
                     {displayChannels.slice(PRIMARY_CHANNEL_COUNT).map((value, i) => {
                       const idx = i + PRIMARY_CHANNEL_COUNT;
@@ -395,11 +395,11 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
                       return (
                         <div key={idx} className="space-y-0.5">
                           <div className="flex items-center justify-between">
-                            <span className={`text-[11px] ${isActive ? 'text-green-400' : 'text-zinc-500'}`}>{name}</span>
-                            <span className="text-[10px] text-zinc-600 font-mono">{value}</span>
+                            <span className={`text-[11px] ${isActive ? 'text-green-400' : 'text-content-secondary'}`}>{name}</span>
+                            <span className="text-[10px] text-content-tertiary font-mono">{value}</span>
                           </div>
-                          <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden relative">
-                            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-700" />
+                          <div className="h-1.5 bg-surface-tooltip rounded-full overflow-hidden relative">
+                            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-surface-raised" />
                             <div
                               className={`absolute top-0 bottom-0 w-1.5 rounded-full transition-all ${
                                 isActive ? 'bg-green-500' : 'bg-zinc-600'
@@ -414,7 +414,7 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
                 </>
               )}
 
-              <div className="text-center text-xs text-zinc-500">
+              <div className="text-center text-xs text-content-secondary">
                 {channelsDetected}/4 channels detected
               </div>
             </div>
@@ -427,20 +427,20 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
                 <Check className="w-8 h-8 text-green-400" />
               </div>
               <div className="text-center">
-                <h3 className="text-lg font-semibold text-white">Receiver Configured</h3>
-                <p className="text-sm text-zinc-400 mt-1">
+                <h3 className="text-lg font-semibold text-content">Receiver Configured</h3>
+                <p className="text-sm text-content-secondary mt-1">
                   {selectedRx?.label} on {selectedPort !== null ? getPortName(selectedPort) : 'MSP'}
                 </p>
               </div>
-              <div className="text-xs text-zinc-500 bg-zinc-800 rounded-lg p-3 w-full max-w-xs">
+              <div className="text-xs text-content-secondary bg-surface-tooltip rounded-lg p-3 w-full max-w-xs">
                 <div className="flex justify-between">
                   <span>Protocol:</span>
-                  <span className="text-zinc-300">{selectedRx?.label}</span>
+                  <span className="text-content">{selectedRx?.label}</span>
                 </div>
                 {selectedPort !== null && (
                   <div className="flex justify-between mt-1">
                     <span>Port:</span>
-                    <span className="text-zinc-300">{getPortName(selectedPort)}</span>
+                    <span className="text-content">{getPortName(selectedPort)}</span>
                   </div>
                 )}
                 <div className="flex justify-between mt-1">
@@ -453,14 +453,14 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-zinc-800 flex justify-between">
+        <div className="px-6 py-4 border-t border-subtle flex justify-between">
           {step !== 'select-rx' && step !== 'done' ? (
             <button
               onClick={() => {
                 if (step === 'select-port') setStep('select-rx');
                 if (step === 'verify') setStep('select-port');
               }}
-              className="px-4 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all flex items-center gap-1"
+              className="px-4 py-2 rounded-lg text-sm text-content-secondary hover:text-content hover:bg-surface-tooltip transition-all flex items-center gap-1"
             >
               <ChevronLeft className="w-4 h-4" />
               Back
@@ -483,7 +483,7 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
               className={`px-4 py-2 rounded-lg text-sm flex items-center gap-1 transition-all ${
                 selectedRx
                   ? 'bg-blue-600 text-white hover:bg-blue-500'
-                  : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                  : 'bg-surface-raised text-content-secondary cursor-not-allowed'
               }`}
             >
               {selectedRx?.id === 'msp' ? 'Apply' : 'Next'}
@@ -498,7 +498,7 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
               className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-all ${
                 selectedPort !== null && !isApplying
                   ? 'bg-blue-600 text-white hover:bg-blue-500'
-                  : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                  : 'bg-surface-raised text-content-secondary cursor-not-allowed'
               }`}
             >
               {isApplying && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -509,7 +509,7 @@ export default function ReceiverWizard({ isOpen, onClose, isInav }: ReceiverWiza
           {step === 'verify' && (
             <button
               onClick={() => setStep('done')}
-              className="px-4 py-2 rounded-lg text-sm bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-all"
+              className="px-4 py-2 rounded-lg text-sm bg-surface-raised text-content hover:bg-surface-raised transition-all"
             >
               Skip
             </button>

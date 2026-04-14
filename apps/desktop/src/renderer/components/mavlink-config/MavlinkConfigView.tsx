@@ -101,7 +101,7 @@ const AIRCRAFT_TABS: Tab[] = [
   { id: 'motor-test', name: 'Motor Test', Icon: Fan, color: 'text-yellow-400', description: 'Spin individual motors with live vibration monitoring' },
   { id: 'tuning', name: 'Tuning', Icon: Sliders, color: 'text-emerald-400', description: 'Performance presets and basic tuning' },
   { id: 'battery', name: 'Battery', Icon: Battery, color: 'text-orange-400', description: 'Battery monitor configuration' },
-  { id: 'parameters', name: 'All Parameters', Icon: Table, color: 'text-zinc-400', description: 'Full parameter list for experts', badge: 'Expert' },
+  { id: 'parameters', name: 'All Parameters', Icon: Table, color: 'text-content-secondary', description: 'Full parameter list for experts', badge: 'Expert' },
 ];
 
 // Rover/Boat tabs
@@ -114,7 +114,7 @@ const ROVER_TABS: Tab[] = [
   { id: 'safety', name: 'Safety', Icon: Shield, color: 'text-amber-400', description: 'Failsafes, arming checks, geofence' },
   { id: 'sensors', name: 'Sensors', Icon: Cpu, color: 'text-cyan-400', description: 'Live telemetry and sensor health' },
   { id: 'battery', name: 'Battery', Icon: Battery, color: 'text-orange-400', description: 'Battery monitor configuration' },
-  { id: 'parameters', name: 'All Parameters', Icon: Table, color: 'text-zinc-400', description: 'Full parameter list for experts', badge: 'Expert' },
+  { id: 'parameters', name: 'All Parameters', Icon: Table, color: 'text-content-secondary', description: 'Full parameter list for experts', badge: 'Expert' },
 ];
 
 export const MavlinkConfigView: React.FC = () => {
@@ -277,19 +277,19 @@ export const MavlinkConfigView: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-zinc-950">
+    <div className="h-full flex flex-col bg-surface-base">
       {/* Header */}
-      <div className="shrink-0 px-6 py-4 border-b border-gray-800/50 bg-gradient-to-r from-gray-900/90 to-gray-900/50">
+      <div className="shrink-0 px-6 py-4 border-b border-subtle bg-gradient-to-r from-surface to-surface">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-              <Cpu className="w-7 h-7 text-white" />
+              <Cpu className="w-7 h-7 text-content" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-xl font-bold text-content">
                 {connectionState.autopilot || 'ArduPilot'} Configuration
               </h2>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 text-sm text-content-secondary">
                 {connectionState.vehicleType && (
                   <>
                     <span className="text-emerald-400">{connectionState.vehicleType}</span>
@@ -309,14 +309,14 @@ export const MavlinkConfigView: React.FC = () => {
 
           <div className="flex items-center gap-3">
             {isLoading && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border-blue-500/30 rounded-lg">
                 <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
                 <span className="text-sm text-blue-400">Loading...</span>
               </div>
             )}
 
             {modified > 0 && (
-              <span className="px-3 py-1 text-sm rounded-lg bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+              <span className="px-3 py-1 text-sm rounded-lg bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
                 Unsaved
               </span>
             )}
@@ -324,7 +324,7 @@ export const MavlinkConfigView: React.FC = () => {
             <button
               onClick={() => fetchParameters()}
               disabled={isLoading}
-              className="px-4 py-2 text-sm rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700"
+              className="px-4 py-2 text-sm rounded-lg bg-surface-tooltip hover:bg-surface-raised text-content border"
             >
               Refresh
             </button>
@@ -332,7 +332,7 @@ export const MavlinkConfigView: React.FC = () => {
             <button
               onClick={handleReboot}
               disabled={rebooting}
-              className="px-4 py-2 text-sm rounded-lg flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700"
+              className="px-4 py-2 text-sm rounded-lg flex items-center gap-2 bg-surface-tooltip hover:bg-surface-raised text-content border"
               title="Reboot flight controller"
             >
               <RotateCw className={`w-4 h-4 ${rebooting ? 'animate-spin' : ''}`} />
@@ -341,7 +341,7 @@ export const MavlinkConfigView: React.FC = () => {
 
             <button
               onClick={() => setShowHistory(true)}
-              className="px-4 py-2 text-sm rounded-lg flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700"
+              className="px-4 py-2 text-sm rounded-lg flex items-center gap-2 bg-surface-tooltip hover:bg-surface-raised text-content border"
               title="View parameter change history"
             >
               <History className="w-4 h-4" />
@@ -354,7 +354,7 @@ export const MavlinkConfigView: React.FC = () => {
               className={`px-5 py-2 text-sm font-medium rounded-lg shadow-lg transition-all flex items-center gap-2 ${
                 modified > 0
                   ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-emerald-500/25'
-                  : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                  : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
               }`}
               title="Save parameters to flight controller's permanent storage"
             >
@@ -374,14 +374,14 @@ export const MavlinkConfigView: React.FC = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
                   isActive
-                    ? 'bg-gray-800 text-white shadow-lg'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                    ? 'bg-surface-tooltip text-content shadow-lg'
+                    : 'text-content-secondary hover:text-content hover:bg-surface'
                 }`}
               >
                 <tab.Icon className={`w-4 h-4 ${isActive ? tab.color : `${tab.color} opacity-50`}`} />
                 <span className="text-sm font-medium">{tab.name}</span>
                 {tab.badge && (
-                  <span className="ml-0.5 px-1.5 py-0.5 text-[10px] bg-zinc-700/50 rounded text-zinc-400">
+                  <span className="ml-0.5 px-1.5 py-0.5 text-[10px] bg-surface-raised rounded text-content-secondary">
                     {tab.badge}
                   </span>
                 )}
@@ -434,13 +434,13 @@ export const MavlinkConfigView: React.FC = () => {
               <>
                 <button
                   onClick={() => setRebootRequiredParams([])}
-                  className="px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+                  className="px-3 py-1.5 text-xs text-content-secondary hover:text-content transition-colors"
                 >
                   Dismiss
                 </button>
                 <button
                   onClick={handleReboot}
-                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 transition-colors flex items-center gap-1.5"
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/30 transition-colors flex items-center gap-1.5"
                 >
                   <RotateCw className="w-3.5 h-3.5" />
                   Reboot Now
@@ -459,10 +459,10 @@ export const MavlinkConfigView: React.FC = () => {
       {/* Write to Flash Confirmation Modal */}
       {showWriteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col">
-            <div className="px-6 py-4 border-b border-zinc-800">
-              <h3 className="text-lg font-semibold text-white">Write Parameters to Flash</h3>
-              <p className="text-sm text-zinc-400 mt-1">
+          <div className="bg-surface border rounded-xl shadow-2xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-subtle">
+              <h3 className="text-lg font-semibold text-content">Write Parameters to Flash</h3>
+              <p className="text-sm text-content-secondary mt-1">
                 The following {modifiedParameters().length} parameter(s) will be saved permanently to the flight controller.
               </p>
               {modifiedParameters().some(p => isRebootRequired(p.id)) && (
@@ -476,17 +476,17 @@ export const MavlinkConfigView: React.FC = () => {
             <div className="flex-1 overflow-auto px-6 py-4">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs text-zinc-500 uppercase">
+                  <tr className="text-left text-xs text-content-secondary uppercase">
                     <th className="pb-2">Parameter</th>
                     <th className="pb-2 text-right">Original</th>
                     <th className="pb-2 text-center px-2">→</th>
                     <th className="pb-2">New</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-800/50">
+                <tbody className="divide-y divide-subtle">
                   {modifiedParameters().map(param => (
                     <tr key={param.id}>
-                      <td className="py-2 font-mono text-zinc-300">
+                      <td className="py-2 font-mono text-content">
                         {param.id}
                         {isRebootRequired(param.id) && (
                           <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-amber-500/20 text-amber-400 rounded">
@@ -494,8 +494,8 @@ export const MavlinkConfigView: React.FC = () => {
                           </span>
                         )}
                       </td>
-                      <td className="py-2 text-right font-mono text-zinc-500">{param.originalValue}</td>
-                      <td className="py-2 text-center text-zinc-600">→</td>
+                      <td className="py-2 text-right font-mono text-content-secondary">{param.originalValue}</td>
+                      <td className="py-2 text-center text-content-tertiary">→</td>
                       <td className="py-2 font-mono text-amber-400">{param.value}</td>
                     </tr>
                   ))}
@@ -503,10 +503,10 @@ export const MavlinkConfigView: React.FC = () => {
               </table>
             </div>
 
-            <div className="px-6 py-4 border-t border-zinc-800 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-subtle flex justify-end gap-3">
               <button
                 onClick={() => setShowWriteConfirm(false)}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+                className="px-4 py-2 text-sm text-content-secondary hover:text-content transition-colors"
               >
                 Cancel
               </button>
@@ -534,9 +534,9 @@ export const MavlinkConfigView: React.FC = () => {
       {/* Toast notification */}
       {toast && (
         <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50 ${
-          toast.type === 'success' ? 'bg-green-500/20 border border-green-500/30 text-green-400' :
-          toast.type === 'error' ? 'bg-red-500/20 border border-red-500/30 text-red-400' :
-          'bg-blue-500/20 border border-blue-500/30 text-blue-400'
+          toast.type === 'success' ? 'bg-green-500/20 border-green-500/30 text-green-400' :
+          toast.type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-400' :
+          'bg-blue-500/20 border-blue-500/30 text-blue-400'
         }`}>
           {toast.type === 'success' && <CheckCircle className="w-5 h-5" />}
           {toast.type === 'error' && <XCircle className="w-5 h-5" />}

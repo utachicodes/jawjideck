@@ -123,7 +123,7 @@ export function OfflineAreaDownload({ bounds, activeLayer }: OfflineAreaDownload
         className={`w-full px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
           open || isDownloading
             ? 'bg-emerald-600 text-white'
-            : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+            : 'bg-surface-overlay text-content hover:bg-surface-overlay-light'
         }`}
         title="Save this area for offline use"
       >
@@ -138,19 +138,19 @@ export function OfflineAreaDownload({ bounds, activeLayer }: OfflineAreaDownload
       {open && (
         <>
           <div className="fixed inset-0 z-[998]" onClick={() => !isDownloading && setOpen(false)} />
-          <div className="absolute right-0 bottom-full mb-1 w-64 bg-gray-800 border border-gray-700/50 rounded-lg shadow-xl z-[999] p-3 space-y-2.5">
-            <div className="text-xs font-medium text-white">Save Area Offline</div>
+          <div className="absolute right-0 bottom-full mb-1 w-64 bg-surface-tooltip border border-subtle rounded-lg shadow-xl z-[999] p-3 space-y-2.5">
+            <div className="text-xs font-medium text-content">Save Area Offline</div>
 
             {!bounds ? (
-              <div className="text-xs text-gray-500">Move the map to the area you want to save.</div>
+              <div className="text-xs text-content-secondary">Move the map to the area you want to save.</div>
             ) : isDownloading && progress ? (
               /* Download in progress */
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-[10px] text-gray-400">
+                <div className="flex items-center justify-between text-[10px] text-content-secondary">
                   <span>{progress.downloadedTiles.toLocaleString()} / {progress.totalTiles.toLocaleString()}</span>
                   <span>{formatBytes(progress.bytesDownloaded)}</span>
                 </div>
-                <div className="w-full h-1.5 bg-gray-700/50 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full bg-emerald-500 transition-all"
                     style={{ width: `${pct}%` }}
@@ -176,7 +176,7 @@ export function OfflineAreaDownload({ bounds, activeLayer }: OfflineAreaDownload
                 </div>
                 <button
                   onClick={() => { setProgress(null); setOpen(false); }}
-                  className="w-full px-2 py-1 text-xs rounded bg-gray-700/50 text-gray-300 hover:bg-gray-700 transition-colors"
+                  className="w-full px-2 py-1 text-xs rounded bg-surface-raised text-content hover:bg-surface-raised transition-colors"
                 >
                   Close
                 </button>
@@ -186,7 +186,7 @@ export function OfflineAreaDownload({ bounds, activeLayer }: OfflineAreaDownload
               <>
                 {/* Layer chips */}
                 <div>
-                  <div className="text-[10px] text-gray-500 mb-1">Layers</div>
+                  <div className="text-[10px] text-content-secondary mb-1">Layers</div>
                   <div className="flex flex-wrap gap-1">
                     {BASE_LAYERS.map((key) => (
                       <button
@@ -195,7 +195,7 @@ export function OfflineAreaDownload({ bounds, activeLayer }: OfflineAreaDownload
                         className={`px-1.5 py-0.5 text-[10px] rounded transition-colors ${
                           selectedLayers.has(key)
                             ? 'bg-blue-600/30 text-blue-300 border border-blue-500/40'
-                            : 'bg-gray-700/40 text-gray-500 border border-gray-700/40'
+                            : 'bg-surface-raised text-content-secondary border border-subtle'
                         }`}
                       >
                         {MAP_LAYERS[key].name}
@@ -206,9 +206,9 @@ export function OfflineAreaDownload({ bounds, activeLayer }: OfflineAreaDownload
 
                 {/* Max zoom */}
                 <div>
-                  <div className="flex items-center justify-between text-[10px] text-gray-500 mb-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-content-secondary mb-0.5">
                     <span>Detail level (max zoom)</span>
-                    <span className="text-gray-300">{maxZoom}</span>
+                    <span className="text-content">{maxZoom}</span>
                   </div>
                   <input
                     type="range"
@@ -222,7 +222,7 @@ export function OfflineAreaDownload({ bounds, activeLayer }: OfflineAreaDownload
 
                 {/* Estimate + Download */}
                 {estimate !== null && (
-                  <div className="text-[10px] text-gray-500">
+                  <div className="text-[10px] text-content-secondary">
                     ~{estimate.toLocaleString()} tiles ({formatBytes(estimate * 15000)})
                   </div>
                 )}

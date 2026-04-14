@@ -12,7 +12,7 @@ function InterfaceIcon({ type }: { type: string }) {
     );
   }
   return (
-    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-4 h-4 text-content-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
     </svg>
   );
@@ -28,59 +28,59 @@ function SignalStrength({ signal }: { signal: number }) {
       {[1, 2, 3, 4].map((level) => (
         <div
           key={level}
-          className={`w-1 rounded-sm ${level <= quality ? color : 'bg-gray-700'}`}
+          className={`w-1 rounded-sm ${level <= quality ? color : 'bg-surface-raised'}`}
           style={{ height: `${level * 25}%` }}
         />
       ))}
-      <span className="text-[10px] text-gray-500 ml-1">{signal} dBm</span>
+      <span className="text-[10px] text-content-secondary ml-1">{signal} dBm</span>
     </div>
   );
 }
 
 function InterfaceCard({ iface }: { iface: NetworkInterface }) {
   return (
-    <div className="p-2.5 bg-gray-800/50 rounded-lg space-y-1.5">
+    <div className="p-2.5 bg-surface rounded-lg space-y-1.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <InterfaceIcon type={iface.type} />
-          <span className="text-sm text-gray-200 font-medium">{iface.name}</span>
-          <span className="text-[10px] text-gray-600 px-1.5 py-0.5 bg-gray-700/50 rounded">
+          <span className="text-sm text-content font-medium">{iface.name}</span>
+          <span className="text-[10px] text-content-tertiary px-1.5 py-0.5 bg-surface-raised rounded">
             {iface.type}
           </span>
         </div>
         {iface.speed > 0 && (
-          <span className="text-[10px] text-gray-500">{iface.speed} Mbps</span>
+          <span className="text-[10px] text-content-secondary">{iface.speed} Mbps</span>
         )}
       </div>
 
       <div className="space-y-0.5 text-xs">
         {iface.ip4 && (
           <div className="flex justify-between">
-            <span className="text-gray-500">IPv4</span>
-            <span className="text-gray-300 font-mono">{iface.ip4}</span>
+            <span className="text-content-secondary">IPv4</span>
+            <span className="text-content font-mono">{iface.ip4}</span>
           </div>
         )}
         {iface.ip6 && (
           <div className="flex justify-between">
-            <span className="text-gray-500">IPv6</span>
-            <span className="text-gray-300 font-mono text-[10px] truncate max-w-[200px]">{iface.ip6}</span>
+            <span className="text-content-secondary">IPv6</span>
+            <span className="text-content font-mono text-[10px] truncate max-w-[200px]">{iface.ip6}</span>
           </div>
         )}
         {iface.mac && (
           <div className="flex justify-between">
-            <span className="text-gray-500">MAC</span>
-            <span className="text-gray-500 font-mono text-[10px]">{iface.mac}</span>
+            <span className="text-content-secondary">MAC</span>
+            <span className="text-content-secondary font-mono text-[10px]">{iface.mac}</span>
           </div>
         )}
         {iface.ssid && (
           <div className="flex justify-between">
-            <span className="text-gray-500">SSID</span>
-            <span className="text-gray-300">{iface.ssid}</span>
+            <span className="text-content-secondary">SSID</span>
+            <span className="text-content">{iface.ssid}</span>
           </div>
         )}
         {iface.signal !== undefined && iface.signal !== 0 && (
           <div className="flex justify-between items-center">
-            <span className="text-gray-500">Signal</span>
+            <span className="text-content-secondary">Signal</span>
             <SignalStrength signal={iface.signal} />
           </div>
         )}
@@ -115,8 +115,8 @@ export function NetworkPanel() {
   if (!network) {
     return (
       <PanelContainer className="flex items-center justify-center">
-        <div className="text-center text-gray-600 text-xs">
-          <div className="text-gray-500 mb-1">No network data</div>
+        <div className="text-center text-content-tertiary text-xs">
+          <div className="text-content-secondary mb-1">No network data</div>
           <div>Waiting for agent connection...</div>
         </div>
       </PanelContainer>
@@ -128,7 +128,7 @@ export function NetworkPanel() {
       <div className="space-y-3">
         <SectionTitle>Network Interfaces</SectionTitle>
         {network.interfaces.length === 0 ? (
-          <div className="text-xs text-gray-600 text-center py-4">
+          <div className="text-xs text-content-tertiary text-center py-4">
             No interfaces found
           </div>
         ) : (

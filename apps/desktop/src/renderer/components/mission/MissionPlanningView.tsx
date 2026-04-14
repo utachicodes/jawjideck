@@ -5,8 +5,11 @@ import {
   IDockviewPanelProps,
   DockviewApi,
   SerializedDockview,
+  themeDark,
+  themeLight,
 } from 'dockview-react';
 import 'dockview-react/dist/styles/dockview.css';
+import { useResolvedTheme } from '../../hooks/useTheme';
 
 import { MissionToolbar } from './MissionToolbar';
 import { MissionStatusBar } from './MissionStatusBar';
@@ -112,7 +115,7 @@ function MissionNotAvailable({ fcVariant, boardId }: { fcVariant: string; boardI
 
   if (isF3Board && canUseInavF3) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-950 p-8">
+      <div className="h-full flex items-center justify-center bg-surface-base p-8">
         <div className="max-w-2xl text-center">
           {/* Icon */}
           <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-orange-500/20 to-yellow-600/20 border border-orange-500/30 flex items-center justify-center">
@@ -120,12 +123,12 @@ function MissionNotAvailable({ fcVariant, boardId }: { fcVariant: string; boardI
           </div>
 
           {/* Title */}
-          <h1 className="text-2xl font-bold text-white mb-3">
+          <h1 className="text-2xl font-bold text-content mb-3">
             Legacy iNav Available
           </h1>
 
           {/* Explanation */}
-          <p className="text-gray-400 mb-6 leading-relaxed">
+          <p className="text-content-secondary mb-6 leading-relaxed">
             Your <span className="text-orange-400 font-medium">{boardId}</span> is an F3 board with 256KB flash.
             You can flash <span className="text-blue-400 font-medium">iNav 2.6.1</span> for basic mission planning and GPS navigation.
           </p>
@@ -141,7 +144,7 @@ function MissionNotAvailable({ fcVariant, boardId }: { fcVariant: string; boardI
           <div className="flex items-center justify-center gap-3">
             <button
               onClick={() => setView('telemetry')}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm transition-colors"
+              className="px-4 py-2 bg-surface-raised hover:bg-surface-raised text-content-secondary rounded-lg text-sm transition-colors"
             >
               ← Back
             </button>
@@ -160,7 +163,7 @@ function MissionNotAvailable({ fcVariant, boardId }: { fcVariant: string; boardI
   // F3 boards WITHOUT iNav support - need hardware upgrade
   if (isF3Board && !canUseInavF3) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-950 p-8">
+      <div className="h-full flex items-center justify-center bg-surface-base p-8">
         <div className="max-w-2xl text-center">
           {/* Icon */}
           <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-red-500/20 to-orange-600/20 border border-red-500/30 flex items-center justify-center">
@@ -168,22 +171,22 @@ function MissionNotAvailable({ fcVariant, boardId }: { fcVariant: string; boardI
           </div>
 
           {/* Title */}
-          <h1 className="text-2xl font-bold text-white mb-3">
+          <h1 className="text-2xl font-bold text-content mb-3">
             Hardware Upgrade Needed
           </h1>
 
           {/* Explanation */}
-          <p className="text-gray-400 mb-6 leading-relaxed">
+          <p className="text-content-secondary mb-6 leading-relaxed">
             Your <span className="text-red-400 font-medium">{boardId}</span> is an F3 board that was never supported by iNav.
             For mission planning, you need an F4 or newer board.
           </p>
 
           {/* Upgrade suggestions */}
-          <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-4 text-left mb-6">
-            <p className="text-sm text-gray-400 mb-3">Recommended upgrades:</p>
+          <div className="bg-surface rounded-xl border border-subtle p-4 text-left mb-6">
+            <p className="text-sm text-content-secondary mb-3">Recommended upgrades:</p>
             <div className="flex flex-wrap gap-2">
               {['SpeedyBee F405 V3', 'Matek F405-SE', 'Kakute F7'].map((board) => (
-                <span key={board} className="px-2 py-1 bg-gray-700 rounded text-gray-300 text-xs">
+                <span key={board} className="px-2 py-1 bg-surface-raised rounded text-content text-xs">
                   {board}
                 </span>
               ))}
@@ -193,7 +196,7 @@ function MissionNotAvailable({ fcVariant, boardId }: { fcVariant: string; boardI
           {/* Actions */}
           <button
             onClick={() => setView('telemetry')}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm transition-colors"
+            className="px-4 py-2 bg-surface-raised hover:bg-surface-raised text-content-secondary rounded-lg text-sm transition-colors"
           >
             ← Back to Telemetry
           </button>
@@ -203,7 +206,7 @@ function MissionNotAvailable({ fcVariant, boardId }: { fcVariant: string; boardI
   }
 
   return (
-    <div className="h-full flex items-center justify-center bg-gray-950 p-8">
+    <div className="h-full flex items-center justify-center bg-surface-base p-8">
       <div className="max-w-2xl text-center">
         {/* Icon */}
         <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-orange-500/20 to-red-600/20 border border-orange-500/30 flex items-center justify-center">
@@ -211,12 +214,12 @@ function MissionNotAvailable({ fcVariant, boardId }: { fcVariant: string; boardI
         </div>
 
         {/* Title */}
-        <h1 className="text-2xl font-bold text-white mb-3">
+        <h1 className="text-2xl font-bold text-content mb-3">
           Mission Planning Not Available
         </h1>
 
         {/* Explanation */}
-        <p className="text-gray-400 mb-6 leading-relaxed">
+        <p className="text-content-secondary mb-6 leading-relaxed">
           Your <span className="text-orange-400 font-medium">{fcVariant === 'BTFL' ? 'Betaflight' : fcVariant}</span> flight controller
           on <span className="text-blue-400">{boardId}</span> doesn't support autonomous waypoint missions.
           {fcVariant === 'BTFL' && (
@@ -225,8 +228,8 @@ function MissionNotAvailable({ fcVariant, boardId }: { fcVariant: string; boardI
         </p>
 
         {/* What you can do */}
-        <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-6 text-left mb-6">
-          <h3 className="text-sm font-medium text-gray-300 mb-4 flex items-center gap-2">
+        <div className="bg-surface rounded-xl border border-subtle p-6 text-left mb-6">
+          <h3 className="text-sm font-medium text-content mb-4 flex items-center gap-2">
             <Lightbulb className="w-4 h-4 text-amber-400 inline" /> Want autonomous missions? Here are your options:
           </h3>
           <div className="space-y-4">
@@ -236,9 +239,9 @@ function MissionNotAvailable({ fcVariant, boardId }: { fcVariant: string; boardI
               </div>
               <div>
                 <h4 className="font-medium text-blue-400">Flash iNav Firmware</h4>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-content-secondary">
                   iNav is a fork of Betaflight with full GPS navigation and mission planning support.
-                  Same board, different firmware. Go to <span className="text-gray-400">Firmware Flash</span> and select iNav.
+                  Same board, different firmware. Go to <span className="text-content-secondary">Firmware Flash</span> and select iNav.
                 </p>
               </div>
             </div>
@@ -248,7 +251,7 @@ function MissionNotAvailable({ fcVariant, boardId }: { fcVariant: string; boardI
               </div>
               <div>
                 <h4 className="font-medium text-green-400">Use ArduPilot Hardware</h4>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-content-secondary">
                   For the most advanced mission planning, consider a Pixhawk or compatible board running ArduPilot.
                   Supports copters, planes, VTOLs, rovers, boats, and submarines.
                 </p>
@@ -258,11 +261,11 @@ function MissionNotAvailable({ fcVariant, boardId }: { fcVariant: string; boardI
         </div>
 
         {/* Supported boards */}
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-content-secondary">
           <p className="mb-2">Boards that support mission planning:</p>
           <div className="flex flex-wrap justify-center gap-2">
             {['Pixhawk', 'Cube', 'Matek F405-WSE', 'Kakute F7', 'Any iNav board'].map((board) => (
-              <span key={board} className="px-2 py-1 bg-gray-800 rounded text-gray-400 text-xs">
+              <span key={board} className="px-2 py-1 bg-surface-tooltip rounded text-content-secondary text-xs">
                 {board}
               </span>
             ))}
@@ -279,7 +282,7 @@ function MissionNotAvailable({ fcVariant, boardId }: { fcVariant: string; boardI
           </button>
           <button
             onClick={() => setView('telemetry')}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm transition-colors"
+            className="px-4 py-2 bg-surface-raised hover:bg-surface-raised text-content-secondary rounded-lg text-sm transition-colors"
           >
             ← Back to Telemetry
           </button>
@@ -291,6 +294,7 @@ function MissionNotAvailable({ fcVariant, boardId }: { fcVariant: string; boardI
 
 export function MissionPlanningView() {
   const apiRef = useRef<DockviewApi | null>(null);
+  const resolvedTheme = useResolvedTheme();
   const { connectionState } = useConnectionStore();
   const { lastSuccessMessage, error, clearLastSuccessMessage, missionItems, fetchMission, isLoading } = useMissionStore();
   const [toast, setToast] = useState<Toast | null>(null);
@@ -423,10 +427,11 @@ export function MissionPlanningView() {
       <MissionToolbar onResetLayout={handleResetLayout} showToast={showToast} />
 
       {/* Dockview container */}
-      <div className="flex-1 dockview-theme-dark">
+      <div className="flex-1">
         <DockviewReact
           components={components}
           onReady={onReady}
+          theme={resolvedTheme === 'light' ? themeLight : themeDark}
           className="h-full"
         />
       </div>

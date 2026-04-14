@@ -227,26 +227,26 @@ function Section({ title, icon, color, defaultOpen = false, badge, badgeColor, c
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="rounded-xl border border-zinc-800 overflow-hidden bg-zinc-900/30">
+    <div className="rounded-xl border-subtle overflow-hidden bg-surface">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-5 py-4 flex items-center gap-3 hover:bg-zinc-800/30 transition-colors`}
+        className={`w-full px-5 py-4 flex items-center gap-3 hover:bg-surface transition-colors`}
       >
         <div className={`w-10 h-10 rounded-lg bg-${color}-500/20 flex items-center justify-center`}>
           {icon}
         </div>
-        <span className="flex-1 text-left font-medium text-zinc-100">{title}</span>
+        <span className="flex-1 text-left font-medium text-content">{title}</span>
         {badge && (
           <span className={`px-2 py-0.5 text-xs rounded-full bg-${badgeColor || color}-500/20 text-${badgeColor || color}-400`}>
             {badge}
           </span>
         )}
         <ChevronDown
-          className={`w-5 h-5 text-zinc-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-5 h-5 text-content-secondary transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
       {isOpen && (
-        <div className="px-5 pb-5 border-t border-zinc-800/50">
+        <div className="px-5 pb-5 border-t border-subtle">
           {children}
         </div>
       )}
@@ -531,7 +531,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="flex items-center gap-3 text-zinc-400">
+        <div className="flex items-center gap-3 text-content-secondary">
           <RefreshCw className="w-5 h-5 animate-spin" />
           <span>Loading safety configuration...</span>
         </div>
@@ -543,7 +543,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
     <div className="space-y-4 p-4 max-w-4xl mx-auto">
       {/* Messages */}
       {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400">
+        <div className="flex items-center gap-3 p-4 bg-red-500/10 border-red-500/30 rounded-xl text-red-400">
           <AlertTriangle className="w-5 h-5 shrink-0" />
           <span className="text-sm">{error}</span>
           <button onClick={() => setError(null)} className="ml-auto p-1 hover:bg-red-500/20 rounded">
@@ -552,7 +552,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
         </div>
       )}
       {success && (
-        <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400">
+        <div className="flex items-center gap-3 p-4 bg-green-500/10 border-green-500/30 rounded-xl text-green-400">
           <Check className="w-5 h-5 shrink-0" />
           <span className="text-sm">{success}</span>
         </div>
@@ -570,7 +570,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
         <div className="mt-4 space-y-6">
           {/* Procedure Selection - Visual Cards */}
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-3">
+            <label className="block text-sm font-medium text-content-secondary mb-3">
               What should happen when signal is lost?
             </label>
             <div className="grid grid-cols-4 gap-2">
@@ -588,8 +588,8 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
                           ? 'bg-green-500/20 border-green-500 text-white'
                           : proc.color === 'amber'
                           ? 'bg-amber-500/20 border-amber-500 text-white'
-                          : 'bg-zinc-700/50 border-zinc-500 text-white'
-                        : 'bg-zinc-800/30 border-zinc-700/50 text-zinc-400 hover:bg-zinc-800/50 hover:border-zinc-600'
+                          : 'bg-surface-raised border text-content'
+                        : 'bg-surface border-subtle text-content-secondary hover:bg-surface hover:border'
                     }`}
                   >
                     <div className="mb-1"><proc.icon className="w-6 h-6 mx-auto" /></div>
@@ -668,7 +668,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
         >
           <div className="mt-4 space-y-6">
             {/* Info Banner */}
-            <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <div className="flex items-start gap-3 p-3 bg-blue-500/10 border-blue-500/20 rounded-lg">
               <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
               <p className="text-sm text-blue-200/80">
                 GPS Rescue automatically flies your quad back home when activated via failsafe or a switch.
@@ -679,7 +679,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
             {/* Altitude & Speed */}
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-4">
-                <h4 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                <h4 className="text-sm font-medium text-content flex items-center gap-2">
                   <ArrowUp className="w-4 h-4 text-blue-400" />
                   Altitude & Climb
                 </h4>
@@ -694,11 +694,11 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
                   color="#3B82F6"
                 />
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-zinc-400 w-28">Altitude Mode</span>
+                  <span className="text-sm text-content-secondary w-28">Altitude Mode</span>
                   <select
                     value={gpsRescue.altitudeMode}
                     onChange={(e) => setGpsRescue(prev => ({ ...prev, altitudeMode: parseInt(e.target.value) }))}
-                    className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm"
+                    className="flex-1 px-3 py-2 bg-surface-tooltip border rounded-lg text-content text-sm"
                   >
                     {ALTITUDE_MODES.map((m) => (
                       <option key={m.value} value={m.value}>{m.label}</option>
@@ -718,7 +718,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
                 />
               </div>
               <div className="space-y-4">
-                <h4 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                <h4 className="text-sm font-medium text-content flex items-center gap-2">
                   <ArrowDown className="w-4 h-4 text-orange-400" />
                   Return & Descent
                 </h4>
@@ -759,7 +759,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
 
             {/* Throttle Settings */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+              <h4 className="text-sm font-medium text-content flex items-center gap-2">
                 <Gauge className="w-4 h-4 text-orange-400" />
                 Throttle Limits
               </h4>
@@ -797,7 +797,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
             {/* GPS & Safety */}
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-4">
-                <h4 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                <h4 className="text-sm font-medium text-content flex items-center gap-2">
                   <Satellite className="w-4 h-4 text-cyan-400" />
                   GPS Requirements
                 </h4>
@@ -822,16 +822,16 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
                 />
               </div>
               <div className="space-y-4">
-                <h4 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                <h4 className="text-sm font-medium text-content flex items-center gap-2">
                   <Shield className="w-4 h-4 text-amber-400" />
                   Safety Checks
                 </h4>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-zinc-400 w-24">Sanity</span>
+                  <span className="text-sm text-content-secondary w-24">Sanity</span>
                   <select
                     value={gpsRescue.sanityChecks}
                     onChange={(e) => setGpsRescue(prev => ({ ...prev, sanityChecks: parseInt(e.target.value) }))}
-                    className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm"
+                    className="flex-1 px-3 py-2 bg-surface-tooltip border rounded-lg text-content text-sm"
                   >
                     {SANITY_CHECKS.map((c) => (
                       <option key={c.value} value={c.value}>{c.label}</option>
@@ -843,7 +843,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
                   className={`w-full px-4 py-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all border ${
                     gpsRescue.allowArmingWithoutFix
                       ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
-                      : 'bg-zinc-800 border-zinc-700 text-zinc-400'
+                      : 'bg-surface-tooltip border text-content-secondary'
                   }`}
                 >
                   {gpsRescue.allowArmingWithoutFix ? (
@@ -864,18 +864,18 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
             {/* Advanced PIDs Toggle */}
             <button
               onClick={() => setShowGpsPids(!showGpsPids)}
-              className="w-full px-4 py-3 flex items-center justify-between bg-zinc-800/50 hover:bg-zinc-800 rounded-lg transition-colors"
+              className="w-full px-4 py-3 flex items-center justify-between bg-surface hover:bg-surface-tooltip rounded-lg transition-colors"
             >
               <div className="flex items-center gap-2">
                 <Settings className="w-4 h-4 text-purple-400" />
-                <span className="text-sm text-zinc-300">GPS Rescue PIDs</span>
-                <span className="text-xs text-zinc-500">(Advanced)</span>
+                <span className="text-sm text-content">GPS Rescue PIDs</span>
+                <span className="text-xs text-content-secondary">(Advanced)</span>
               </div>
-              <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${showGpsPids ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-content-secondary transition-transform ${showGpsPids ? 'rotate-180' : ''}`} />
             </button>
 
             {showGpsPids && (
-              <div className="grid grid-cols-3 gap-6 p-4 bg-zinc-800/30 rounded-lg">
+              <div className="grid grid-cols-3 gap-6 p-4 bg-surface rounded-lg">
                 <div className="space-y-3">
                   <h5 className="text-xs font-medium text-orange-400">Throttle</h5>
                   <DraggableSlider label="P" value={gpsPids.throttleP} onChange={(v) => setGpsPids(prev => ({ ...prev, throttleP: v }))} min={0} max={200} color="#F97316" />
@@ -911,14 +911,14 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
           <div className="mt-4 space-y-6">
             {/* Arming Safety */}
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-3">Navigation Arming Safety</label>
+              <label className="block text-sm font-medium text-content-secondary mb-3">Navigation Arming Safety</label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setArming(prev => ({ ...prev, navExtraArmingSafety: 'ON' }))}
                   className={`p-4 rounded-xl border-2 transition-all ${
                     arming.navExtraArmingSafety === 'ON'
                       ? 'bg-green-500/20 border-green-500 text-white'
-                      : 'bg-zinc-800/30 border-zinc-700/50 text-zinc-400 hover:bg-zinc-800/50'
+                      : 'bg-surface border-subtle text-content-secondary hover:bg-surface'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
@@ -932,7 +932,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
                   className={`p-4 rounded-xl border-2 transition-all ${
                     arming.navExtraArmingSafety === 'ALLOW_BYPASS'
                       ? 'bg-amber-500/20 border-amber-500 text-white'
-                      : 'bg-zinc-800/30 border-zinc-700/50 text-zinc-400 hover:bg-zinc-800/50'
+                      : 'bg-surface border-subtle text-content-secondary hover:bg-surface'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
@@ -945,7 +945,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
             </div>
 
             {arming.navExtraArmingSafety === 'ALLOW_BYPASS' && (
-              <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <div className="flex items-start gap-3 p-3 bg-amber-500/10 border-amber-500/20 rounded-lg">
                 <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-200/80">
                   <strong>Bypass Mode:</strong> Stick commands can override safety checks. Only use for SITL
@@ -965,10 +965,10 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
               hint="Required for arming (0 = no GPS needed)"
             />
 
-            <div className="flex items-start gap-3 p-3 bg-zinc-800/50 border border-zinc-700/50 rounded-lg">
-              <Info className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-zinc-400">
-                Receiver type and protocol settings have moved to the <strong className="text-zinc-300">Receiver</strong> tab.
+            <div className="flex items-start gap-3 p-3 bg-surface border-subtle rounded-lg">
+              <Info className="w-4 h-4 text-content-secondary shrink-0 mt-0.5" />
+              <p className="text-xs text-content-secondary">
+                Receiver type and protocol settings have moved to the <strong className="text-content">Receiver</strong> tab.
               </p>
             </div>
           </div>
@@ -977,7 +977,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
 
       {/* iNav Navigation Note */}
       {isInav && (
-        <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+        <div className="flex items-start gap-3 p-4 bg-blue-500/10 border-blue-500/20 rounded-xl">
           <Home className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
           <div>
             <h4 className="font-medium text-blue-300">Return to Home</h4>

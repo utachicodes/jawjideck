@@ -374,20 +374,20 @@ export default function CliTerminal({ onReady }: CliTerminalProps) {
       {/* Terminal */}
       <div
         ref={terminalRef}
-        className="flex-1 bg-zinc-900 rounded-lg overflow-hidden"
+        className="flex-1 bg-surface-input rounded-lg overflow-hidden"
         style={{ minHeight: '300px' }}
       />
 
       {/* Autocomplete Popup */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute bottom-16 left-4 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl max-h-48 overflow-y-auto z-10">
+        <div className="absolute bottom-16 left-4 bg-surface-tooltip border border rounded-lg shadow-xl max-h-48 overflow-y-auto z-10">
           {suggestions.map((suggestion, index) => (
             <div
               key={suggestion}
               className={`px-3 py-1.5 text-sm cursor-pointer ${
                 index === selectedSuggestion
                   ? 'bg-blue-500/30 text-blue-300'
-                  : 'text-zinc-300 hover:bg-zinc-700'
+                  : 'text-content hover:bg-surface-raised'
               }`}
               onClick={() => {
                 const term = xtermRef.current;
@@ -407,19 +407,19 @@ export default function CliTerminal({ onReady }: CliTerminalProps) {
       )}
 
       {/* Status Bar */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-800/50 border-t border-zinc-700/50 text-xs">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-surface border-t border-subtle text-xs">
         <div className="flex items-center gap-3">
-          <span className={`flex items-center gap-1 ${isCliMode ? 'text-green-400' : 'text-zinc-500'}`}>
+          <span className={`flex items-center gap-1 ${isCliMode ? 'text-green-400' : 'text-content-secondary'}`}>
             <span className={`w-2 h-2 rounded-full ${isCliMode ? 'bg-green-400' : 'bg-zinc-500'}`} />
             {isCliMode ? 'CLI Mode' : 'MSP Mode'}
           </span>
           {connectionState.fcVariant && (
-            <span className="text-zinc-400">
+            <span className="text-content-secondary">
               {connectionState.fcVariant} {connectionState.fcVersion}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 text-zinc-500">
+        <div className="flex items-center gap-2 text-content-secondary">
           <span>Tab: Complete</span>
           <span>|</span>
           <span>Up/Down: History</span>

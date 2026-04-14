@@ -111,9 +111,9 @@ export function BootPadWizard({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-zinc-900 rounded-2xl border border-zinc-700 shadow-2xl max-w-lg w-full mx-4 overflow-hidden">
+      <div className="bg-surface-input rounded-2xl border border shadow-2xl max-w-lg w-full mx-4 overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-zinc-800 bg-zinc-800/50">
+        <div className="px-6 py-4 border-b border-subtle bg-surface">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
@@ -122,13 +122,13 @@ export function BootPadWizard({
                 </svg>
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-white">Boot Pad Flash Wizard</h2>
-                <p className="text-sm text-zinc-400">{boardName}</p>
+                <h2 className="text-lg font-semibold text-content">Boot Pad Flash Wizard</h2>
+                <p className="text-sm text-content-secondary">{boardName}</p>
               </div>
             </div>
             <button
               onClick={handleClose}
-              className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-700 transition-colors"
+              className="text-content-secondary hover:text-content p-1 rounded-lg hover:bg-surface-raised transition-colors"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -138,7 +138,7 @@ export function BootPadWizard({
         </div>
 
         {/* Progress indicator */}
-        <div className="px-6 py-3 bg-zinc-800/30 border-b border-zinc-800">
+        <div className="px-6 py-3 bg-surface border-b border-subtle">
           <div className="flex items-center justify-between">
             {['intro', 'disconnect', 'waiting', 'ready'].map((s, i) => (
               <div key={s} className="flex items-center">
@@ -146,7 +146,7 @@ export function BootPadWizard({
                   w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors
                   ${step === s ? 'bg-blue-500 text-white' :
                     ['intro', 'disconnect', 'waiting', 'ready'].indexOf(step) > i ? 'bg-emerald-500 text-white' :
-                    'bg-zinc-700 text-zinc-400'}
+                    'bg-surface-raised text-content-secondary'}
                 `}>
                   {['intro', 'disconnect', 'waiting', 'ready'].indexOf(step) > i ? (
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -155,7 +155,7 @@ export function BootPadWizard({
                   ) : i + 1}
                 </div>
                 {i < 3 && (
-                  <div className={`w-12 h-0.5 mx-1 ${['intro', 'disconnect', 'waiting', 'ready'].indexOf(step) > i ? 'bg-emerald-500' : 'bg-zinc-700'}`} />
+                  <div className={`w-12 h-0.5 mx-1 ${['intro', 'disconnect', 'waiting', 'ready'].indexOf(step) > i ? 'bg-emerald-500' : 'bg-surface-raised'}`} />
                 )}
               </div>
             ))}
@@ -174,17 +174,17 @@ export function BootPadWizard({
                   </svg>
                   <div>
                     <h3 className="text-amber-400 font-medium">Boot Pads Required</h3>
-                    <p className="text-zinc-300 text-sm mt-1">
-                      Your board (<span className="text-white font-medium">{boardName}</span>) uses a USB-serial adapter
+                    <p className="text-content text-sm mt-1">
+                      Your board (<span className="text-content font-medium">{boardName}</span>) uses a USB-serial adapter
                       and cannot enter bootloader mode via software. You'll need to physically short the boot pads.
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="text-zinc-400 text-sm">
+              <div className="text-content-secondary text-sm">
                 <p className="mb-2">This wizard will guide you through:</p>
-                <ol className="list-decimal list-inside space-y-1 text-zinc-300">
+                <ol className="list-decimal list-inside space-y-1 text-content">
                   <li>Disconnecting your board</li>
                   <li>Shorting the boot pads</li>
                   <li>Reconnecting in bootloader mode</li>
@@ -208,39 +208,39 @@ export function BootPadWizard({
           {step === 'disconnect' && (
             <div className="space-y-4">
               <div className="text-center py-4">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-zinc-800 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-surface-tooltip flex items-center justify-center">
+                  <svg className="w-8 h-8 text-content-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">Disconnect Your Board</h3>
-                <p className="text-zinc-400">Unplug the USB cable from your flight controller</p>
+                <h3 className="text-xl font-semibold text-content mb-2">Disconnect Your Board</h3>
+                <p className="text-content-secondary">Unplug the USB cable from your flight controller</p>
               </div>
 
-              <div className="p-4 bg-zinc-800 rounded-lg space-y-3">
-                <h4 className="text-zinc-300 font-medium">Then short the boot pads:</h4>
+              <div className="p-4 bg-surface-tooltip rounded-lg space-y-3">
+                <h4 className="text-content font-medium">Then short the boot pads:</h4>
                 <div className="flex gap-3 items-start">
                   <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-sm font-medium flex-shrink-0">1</div>
-                  <p className="text-zinc-400 text-sm">Find the <span className="text-white">BOOT</span> pads on your board (usually labeled "BOOT" or "BT" near the MCU)</p>
+                  <p className="text-content-secondary text-sm">Find the <span className="text-content">BOOT</span> pads on your board (usually labeled "BOOT" or "BT" near the MCU)</p>
                 </div>
                 <div className="flex gap-3 items-start">
                   <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-sm font-medium flex-shrink-0">2</div>
-                  <p className="text-zinc-400 text-sm">Use tweezers, a jumper wire, or conductive material to <span className="text-white">short the two pads together</span></p>
+                  <p className="text-content-secondary text-sm">Use tweezers, a jumper wire, or conductive material to <span className="text-content">short the two pads together</span></p>
                 </div>
                 <div className="flex gap-3 items-start">
                   <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-sm font-medium flex-shrink-0">3</div>
-                  <p className="text-zinc-400 text-sm"><span className="text-white">Keep them shorted</span> and plug in the USB cable</p>
+                  <p className="text-content-secondary text-sm"><span className="text-content">Keep them shorted</span> and plug in the USB cable</p>
                 </div>
               </div>
 
-              <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors">
+              <label className="flex items-center gap-3 p-3 bg-surface rounded-lg cursor-pointer hover:bg-surface transition-colors">
                 <input
                   type="checkbox"
                   checked={jumperConfirmed}
                   onChange={(e) => setJumperConfirmed(e.target.checked)}
-                  className="rounded border-zinc-600 bg-zinc-700 text-emerald-500 focus:ring-emerald-500"
+                  className="rounded border bg-surface-raised text-emerald-500 focus:ring-emerald-500"
                 />
-                <span className="text-zinc-300 text-sm">
+                <span className="text-content text-sm">
                   I have shorted the boot pads and reconnected the USB cable
                 </span>
               </label>
@@ -248,7 +248,7 @@ export function BootPadWizard({
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep('intro')}
-                  className="px-4 py-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                  className="px-4 py-2.5 text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
                 >
                   Back
                 </button>
@@ -256,7 +256,7 @@ export function BootPadWizard({
                   onClick={() => setStep('waiting')}
                   disabled={!jumperConfirmed}
                   className={`flex-1 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2
-                    ${jumperConfirmed ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}
+                    ${jumperConfirmed ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'}
                   `}
                 >
                   Detect Board
@@ -275,19 +275,19 @@ export function BootPadWizard({
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-500/20 flex items-center justify-center">
                   <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">Waiting for Bootloader...</h3>
-                <p className="text-zinc-400">Make sure the boot pads are shorted and USB is connected</p>
+                <h3 className="text-xl font-semibold text-content mb-2">Waiting for Bootloader...</h3>
+                <p className="text-content-secondary">Make sure the boot pads are shorted and USB is connected</p>
               </div>
 
-              <div className="p-4 bg-zinc-800/50 rounded-lg text-center">
-                <p className="text-zinc-500 text-sm">
+              <div className="p-4 bg-surface rounded-lg text-center">
+                <p className="text-content-secondary text-sm">
                   Scanning serial ports for STM32 bootloader...
                 </p>
               </div>
 
               <button
                 onClick={() => setStep('disconnect')}
-                className="w-full py-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                className="w-full py-2.5 text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
               >
                 Go Back
               </button>
@@ -303,8 +303,8 @@ export function BootPadWizard({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">Board Detected!</h3>
-                <p className="text-zinc-400">
+                <h3 className="text-xl font-semibold text-content mb-2">Board Detected!</h3>
+                <p className="text-content-secondary">
                   Found <span className="text-emerald-400 font-medium">{detectedMcu || 'STM32'}</span> in bootloader mode
                 </p>
               </div>
@@ -319,7 +319,7 @@ export function BootPadWizard({
                   </div>
                   <div>
                     <h4 className="text-amber-300 font-medium mb-1">Before flashing: Remove the boot jumper!</h4>
-                    <p className="text-zinc-300 text-sm">
+                    <p className="text-content text-sm">
                       Keep the USB connected, but <span className="text-amber-400 font-semibold">remove the jumper wire now</span>.
                       This way, after flashing completes, the board will boot into the new firmware instead of staying in bootloader.
                     </p>
@@ -327,14 +327,14 @@ export function BootPadWizard({
                 </div>
               </div>
 
-              <div className="p-4 bg-zinc-800 rounded-lg">
-                <h4 className="text-zinc-300 font-medium mb-2">Ready to flash:</h4>
+              <div className="p-4 bg-surface-tooltip rounded-lg">
+                <h4 className="text-content font-medium mb-2">Ready to flash:</h4>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-zinc-500">Board:</span>
-                  <span className="text-white">{boardName}</span>
+                  <span className="text-content-secondary">Board:</span>
+                  <span className="text-content">{boardName}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm mt-1">
-                  <span className="text-zinc-500">Firmware:</span>
+                  <span className="text-content-secondary">Firmware:</span>
                   <span className="text-blue-400">{firmwareSource} {firmwareVersion}</span>
                 </div>
               </div>
@@ -344,9 +344,9 @@ export function BootPadWizard({
                   type="checkbox"
                   checked={jumperRemoved}
                   onChange={(e) => setJumperRemoved(e.target.checked)}
-                  className="mt-0.5 rounded border-zinc-600 bg-zinc-700 text-emerald-500 focus:ring-emerald-500"
+                  className="mt-0.5 rounded border bg-surface-raised text-emerald-500 focus:ring-emerald-500"
                 />
-                <span className="text-zinc-300 text-sm">
+                <span className="text-content text-sm">
                   I have <span className="text-emerald-400 font-semibold">removed the boot jumper</span> (USB still connected)
                 </span>
               </label>
@@ -357,7 +357,7 @@ export function BootPadWizard({
                     type="checkbox"
                     checked={riskAccepted}
                     onChange={(e) => setRiskAccepted(e.target.checked)}
-                    className="mt-0.5 rounded border-zinc-600 bg-zinc-700 text-red-500 focus:ring-red-500"
+                    className="mt-0.5 rounded border bg-surface-raised text-red-500 focus:ring-red-500"
                   />
                   <span className="text-red-300 text-sm">
                     I understand that flashing incorrect firmware can <span className="text-red-400 font-medium">brick my board</span> and
@@ -372,7 +372,7 @@ export function BootPadWizard({
                 className={`w-full py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2
                   ${jumperRemoved && riskAccepted
                     ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                    : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}
+                    : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'}
                 `}
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -390,16 +390,16 @@ export function BootPadWizard({
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-500/20 flex items-center justify-center">
                   <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">Flashing...</h3>
-                <p className="text-zinc-400">{flashProgress?.message || 'Please wait...'}</p>
+                <h3 className="text-xl font-semibold text-content mb-2">Flashing...</h3>
+                <p className="text-content-secondary">{flashProgress?.message || 'Please wait...'}</p>
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-zinc-400">Progress</span>
-                  <span className="text-zinc-300">{flashProgress?.progress || 0}%</span>
+                  <span className="text-content-secondary">Progress</span>
+                  <span className="text-content">{flashProgress?.progress || 0}%</span>
                 </div>
-                <div className="h-3 bg-zinc-800 rounded-full overflow-hidden">
+                <div className="h-3 bg-surface-tooltip rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 transition-all duration-300"
                     style={{ width: `${flashProgress?.progress || 0}%` }}
@@ -407,7 +407,7 @@ export function BootPadWizard({
                 </div>
               </div>
 
-              <p className="text-zinc-500 text-sm text-center">
+              <p className="text-content-secondary text-sm text-center">
                 Do not disconnect the board during flashing!
               </p>
             </div>
@@ -422,8 +422,8 @@ export function BootPadWizard({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">Flash Complete!</h3>
-                <p className="text-zinc-400">
+                <h3 className="text-xl font-semibold text-content mb-2">Flash Complete!</h3>
+                <p className="text-content-secondary">
                   Successfully flashed <span className="text-emerald-400">{firmwareSource} {firmwareVersion}</span>
                 </p>
               </div>
@@ -453,8 +453,8 @@ export function BootPadWizard({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">Flash Failed</h3>
-                <p className="text-zinc-400">Something went wrong during flashing</p>
+                <h3 className="text-xl font-semibold text-content mb-2">Flash Failed</h3>
+                <p className="text-content-secondary">Something went wrong during flashing</p>
               </div>
 
               {flashError && (
@@ -468,7 +468,7 @@ export function BootPadWizard({
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep('disconnect')}
-                  className="flex-1 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg font-medium transition-colors"
+                  className="flex-1 py-2.5 bg-surface-tooltip hover:bg-surface-raised text-content rounded-lg font-medium transition-colors"
                 >
                   Try Again
                 </button>

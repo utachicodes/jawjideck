@@ -27,7 +27,7 @@ export function LuaGraphView() {
 
   return (
     <ReactFlowProvider>
-      <div className="h-full flex flex-col bg-gray-950">
+      <div className="h-full flex flex-col bg-surface-base">
         {/* Toolbar */}
         <GraphToolbar />
 
@@ -42,7 +42,7 @@ export function LuaGraphView() {
           </div>
 
           {/* Right: Inspector + Preview */}
-          <div className="w-56 border-l border-gray-700/40 bg-gray-900/60 flex flex-col">
+          <div className="w-56 border-l border-subtle bg-surface flex flex-col">
             {/* Inspector — primary content, takes available space */}
             <div className="flex-1 min-h-0 overflow-hidden">
               <InspectorPanel />
@@ -54,20 +54,20 @@ export function LuaGraphView() {
         </div>
 
         {/* Status Bar */}
-        <div className="flex items-center gap-4 px-3 py-1 bg-gray-900/80 border-t border-gray-700/40 text-[10px] text-gray-500">
+        <div className="flex items-center gap-4 px-3 py-1 bg-surface border-t border-subtle text-[10px] text-content-secondary">
           <span>{nodes.length} node{nodes.length !== 1 ? 's' : ''}</span>
-          <span className="w-px h-3 bg-gray-700/50" />
+          <span className="w-px h-3 bg-subtle" />
           <span
             className={compileResult.success ? 'text-emerald-500' : 'text-red-400'}
           >
             {compileResult.success ? 'Valid' : `${compileResult.errors.length} error(s)`}
           </span>
-          <span className="w-px h-3 bg-gray-700/50" />
+          <span className="w-px h-3 bg-subtle" />
           <span>
             Est. memory: {(compileResult.estimatedMemoryBytes / 1024).toFixed(1)} KB
           </span>
           <div className="flex-1" />
-          <span className="text-gray-600">ArduPilot Lua Scripting</span>
+          <span className="text-content-tertiary">ArduPilot Lua Scripting</span>
         </div>
       </div>
     </ReactFlowProvider>

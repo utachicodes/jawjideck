@@ -200,12 +200,12 @@ function ProfileCompatibilityBanner({
         {/* Message Content */}
         <div className="flex-1">
           <h3 className="text-lg font-medium text-amber-300">Profile Compatibility Issue</h3>
-          <p className="text-sm text-gray-300 mt-1">
+          <p className="text-sm text-content mt-1">
             Your current profile is configured for <span className="font-medium text-amber-400">{VEHICLE_TYPE_NAMES[profileType]}</span>,
             but you're connected to a <span className="font-medium text-blue-400">{FIRMWARE_NAMES[fcVariant] || fcVariant}</span> board
-            {boardId && <span className="text-gray-400"> ({boardId})</span>}.
+            {boardId && <span className="text-content-secondary"> ({boardId})</span>}.
           </p>
-          <p className="text-sm text-gray-400 mt-2">
+          <p className="text-sm text-content-secondary mt-2">
             {FIRMWARE_NAMES[fcVariant] || fcVariant} only supports: {supportedTypes.map(t => VEHICLE_TYPE_NAMES[t]).join(', ')}.
           </p>
 
@@ -263,7 +263,7 @@ function CircularGauge({
             fill="none"
             stroke="currentColor"
             strokeWidth={strokeWidth}
-            className="text-gray-700/50"
+            className="text-content-tertiary"
           />
           {/* Progress circle */}
           <circle
@@ -281,11 +281,11 @@ function CircularGauge({
         </svg>
         {/* Center content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xl font-bold text-white">{safeValue}</span>
-          <span className="text-xs text-gray-400">{unit}</span>
+          <span className="text-xl font-bold text-content">{safeValue}</span>
+          <span className="text-xs text-content-secondary">{unit}</span>
         </div>
       </div>
-      <span className="mt-2 text-sm text-gray-400">{label}</span>
+      <span className="mt-2 text-sm text-content-secondary">{label}</span>
     </div>
   );
 }
@@ -303,13 +303,13 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className="bg-gray-800/30 rounded-lg p-3 flex items-center gap-3">
+    <div className="bg-surface rounded-lg p-3 flex items-center gap-3">
       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
         {icon}
       </div>
       <div>
-        <div className="text-lg font-semibold text-white">{value}</div>
-        <div className="text-xs text-gray-500">{label}</div>
+        <div className="text-lg font-semibold text-content">{value}</div>
+        <div className="text-xs text-content-secondary">{label}</div>
       </div>
     </div>
   );
@@ -524,20 +524,20 @@ function WeatherWidget({ vehicleType }: { vehicleType?: VehicleType }) {
   // No location available at all
   if (effectiveLat === 0 && effectiveLon === 0) {
     return (
-      <div className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-4 h-full">
+      <div className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-4 h-full">
         <div className="flex items-center gap-2 mb-4">
-          <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-5 h-5 text-content-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
           </svg>
-          <span className="text-sm font-medium text-gray-400">Weather</span>
+          <span className="text-sm font-medium text-content-secondary">Weather</span>
         </div>
         <div className="text-center py-6">
-          <svg className="w-12 h-12 text-gray-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-12 h-12 text-content-tertiary mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          <div className="text-gray-500 text-sm">Getting location...</div>
-          <div className="text-gray-600 text-xs mt-1">Connect vehicle or allow location access</div>
+          <div className="text-content-secondary text-sm">Getting location...</div>
+          <div className="text-content-tertiary text-xs mt-1">Connect vehicle or allow location access</div>
         </div>
       </div>
     );
@@ -545,16 +545,16 @@ function WeatherWidget({ vehicleType }: { vehicleType?: VehicleType }) {
 
   if (loading && !weather) {
     return (
-      <div className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-4 h-full">
+      <div className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-4 h-full">
         <div className="flex items-center gap-2 mb-4">
-          <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-5 h-5 text-content-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
           </svg>
-          <span className="text-sm font-medium text-gray-400">Weather</span>
+          <span className="text-sm font-medium text-content-secondary">Weather</span>
         </div>
         <div className="text-center py-6">
           <div className="animate-spin w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full mx-auto mb-2" />
-          <div className="text-gray-400 text-sm">Loading weather...</div>
+          <div className="text-content-secondary text-sm">Loading weather...</div>
         </div>
       </div>
     );
@@ -562,15 +562,15 @@ function WeatherWidget({ vehicleType }: { vehicleType?: VehicleType }) {
 
   if (!weather) {
     return (
-      <div className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-4 h-full">
+      <div className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-4 h-full">
         <div className="flex items-center gap-2 mb-4">
-          <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-5 h-5 text-content-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
           </svg>
-          <span className="text-sm font-medium text-gray-400">Weather</span>
+          <span className="text-sm font-medium text-content-secondary">Weather</span>
         </div>
         <div className="text-center py-6">
-          <div className="text-gray-500 text-sm">Unavailable</div>
+          <div className="text-content-secondary text-sm">Unavailable</div>
         </div>
       </div>
     );
@@ -588,18 +588,18 @@ function WeatherWidget({ vehicleType }: { vehicleType?: VehicleType }) {
 
   // Weather-based gradient colors
   const getWeatherGradient = () => {
-    if (isBad) return 'from-red-900/50 via-red-800/30 to-gray-900/60';
-    if (isCaution) return 'from-amber-900/50 via-amber-800/30 to-gray-900/60';
-    if (weather.condition === 'Clear') return 'from-blue-900/50 via-cyan-900/30 to-gray-900/60';
-    if (weather.condition === 'Partly Cloudy') return 'from-slate-800/50 via-blue-900/30 to-gray-900/60';
-    return 'from-gray-800/60 via-gray-800/40 to-gray-900/60';
+    if (isBad) return 'from-red-900/50 via-red-800/30 to-surface-base';
+    if (isCaution) return 'from-amber-900/50 via-amber-800/30 to-surface-base';
+    if (weather.condition === 'Clear') return 'from-blue-900/50 via-cyan-900/30 to-surface-base';
+    if (weather.condition === 'Partly Cloudy') return 'from-slate-800/50 via-blue-900/30 to-surface-base';
+    return 'from-surface via-surface to-surface-base';
   };
 
   const getBorderColor = () => {
     if (isBad) return 'border-red-500/40';
     if (isCaution) return 'border-amber-500/40';
     if (weather.condition === 'Clear') return 'border-blue-500/40';
-    return 'border-gray-600/50';
+    return 'border-border';
   };
 
   const getStatusColor = () => {
@@ -671,15 +671,15 @@ function WeatherWidget({ vehicleType }: { vehicleType?: VehicleType }) {
         <div className="flex items-center gap-3">
           <WeatherIcon />
           <div>
-            <div className="text-2xl font-bold text-white">{weather.temp}°C</div>
-            <div className="text-sm text-gray-400">{weather.condition}</div>
+            <div className="text-2xl font-bold text-content">{weather.temp}°C</div>
+            <div className="text-sm text-content-secondary">{weather.condition}</div>
           </div>
         </div>
         <div className="text-right">
           <span className={`text-xs px-2.5 py-1 rounded-full font-medium border ${getStatusColor()}`}>
             {isBad ? 'No Go' : isCaution ? 'Caution' : 'Good'}
           </span>
-          <div className="text-[10px] text-gray-500 mt-1 flex items-center justify-end gap-1">
+          <div className="text-[10px] text-content-secondary mt-1 flex items-center justify-end gap-1">
             {locationSource === 'device' && (
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -699,19 +699,19 @@ function WeatherWidget({ vehicleType }: { vehicleType?: VehicleType }) {
       <div className="bg-black/20 rounded-lg p-3 mb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-content-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
             <div>
               {isMaritime ? (
                 <>
-                  <div className="text-lg font-semibold text-white">{kmhToKnots(weather.windSpeed)} <span className="text-sm font-normal text-gray-400">kts</span></div>
-                  <div className="text-xs text-gray-500">Wind from {getWindDirection(weather.windDir)}</div>
+                  <div className="text-lg font-semibold text-content">{kmhToKnots(weather.windSpeed)} <span className="text-sm font-normal text-content-secondary">kts</span></div>
+                  <div className="text-xs text-content-secondary">Wind from {getWindDirection(weather.windDir)}</div>
                 </>
               ) : (
                 <>
-                  <div className="text-lg font-semibold text-white">{weather.windSpeed} <span className="text-sm font-normal text-gray-400">km/h</span></div>
-                  <div className="text-xs text-gray-500">Wind from {getWindDirection(weather.windDir)}</div>
+                  <div className="text-lg font-semibold text-content">{weather.windSpeed} <span className="text-sm font-normal text-content-secondary">km/h</span></div>
+                  <div className="text-xs text-content-secondary">Wind from {getWindDirection(weather.windDir)}</div>
                 </>
               )}
             </div>
@@ -719,17 +719,17 @@ function WeatherWidget({ vehicleType }: { vehicleType?: VehicleType }) {
           <div className="text-right">
             {isMaritime ? (
               <>
-                <div className={`text-lg font-semibold ${weather.windGusts > weather.windSpeed * 1.3 ? 'text-amber-400' : 'text-gray-300'}`}>
-                  {kmhToKnots(weather.windGusts)} <span className="text-sm font-normal text-gray-400">kts</span>
+                <div className={`text-lg font-semibold ${weather.windGusts > weather.windSpeed * 1.3 ? 'text-amber-400' : 'text-content'}`}>
+                  {kmhToKnots(weather.windGusts)} <span className="text-sm font-normal text-content-secondary">kts</span>
                 </div>
-                <div className="text-xs text-gray-500">Gusts</div>
+                <div className="text-xs text-content-secondary">Gusts</div>
               </>
             ) : (
               <>
-                <div className={`text-lg font-semibold ${weather.windGusts > weather.windSpeed * 1.3 ? 'text-amber-400' : 'text-gray-300'}`}>
-                  {weather.windGusts} <span className="text-sm font-normal text-gray-400">km/h</span>
+                <div className={`text-lg font-semibold ${weather.windGusts > weather.windSpeed * 1.3 ? 'text-amber-400' : 'text-content'}`}>
+                  {weather.windGusts} <span className="text-sm font-normal text-content-secondary">km/h</span>
                 </div>
-                <div className="text-xs text-gray-500">Gusts</div>
+                <div className="text-xs text-content-secondary">Gusts</div>
               </>
             )}
           </div>
@@ -746,18 +746,18 @@ function WeatherWidget({ vehicleType }: { vehicleType?: VehicleType }) {
                 <path d="M2 17c1.5-2 3.5-3 5.5-3s4 1 5.5 3c1.5-2 3.5-3 5.5-3s4 1 5.5 3v2c-1.5-2-3.5-3-5.5-3s-4 1-5.5 3c-1.5-2-3.5-3-5.5-3s-4 1-5.5 3v-2z"/>
               </svg>
               <div>
-                <div className={`text-lg font-semibold ${(weather.waveHeight || 0) > 1.5 ? 'text-amber-400' : 'text-white'}`}>
-                  {weather.waveHeight?.toFixed(1) || '—'} <span className="text-sm font-normal text-gray-400">m</span>
+                <div className={`text-lg font-semibold ${(weather.waveHeight || 0) > 1.5 ? 'text-amber-400' : 'text-content'}`}>
+                  {weather.waveHeight?.toFixed(1) || '—'} <span className="text-sm font-normal text-content-secondary">m</span>
                 </div>
-                <div className="text-xs text-gray-500">Wave Height</div>
+                <div className="text-xs text-content-secondary">Wave Height</div>
               </div>
             </div>
             {weather.swellHeight !== undefined && (
               <div className="text-right">
-                <div className={`text-lg font-semibold ${weather.swellHeight > 2 ? 'text-amber-400' : 'text-gray-300'}`}>
-                  {weather.swellHeight?.toFixed(1)} <span className="text-sm font-normal text-gray-400">m</span>
+                <div className={`text-lg font-semibold ${weather.swellHeight > 2 ? 'text-amber-400' : 'text-content'}`}>
+                  {weather.swellHeight?.toFixed(1)} <span className="text-sm font-normal text-content-secondary">m</span>
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-content-secondary">
                   Swell {weather.swellDirection !== undefined ? getWindDirection(weather.swellDirection) : ''}
                   {weather.swellPeriod ? ` ${weather.swellPeriod.toFixed(0)}s` : ''}
                 </div>
@@ -772,35 +772,35 @@ function WeatherWidget({ vehicleType }: { vehicleType?: VehicleType }) {
         {isMaritime ? (
           <>
             <div className="bg-black/20 rounded-lg py-2 px-1">
-              <div className={`text-sm font-semibold ${weather.visibility < 5 ? 'text-amber-400' : 'text-white'}`}>
+              <div className={`text-sm font-semibold ${weather.visibility < 5 ? 'text-amber-400' : 'text-content'}`}>
                 {weather.visibility}km
               </div>
-              <div className="text-[10px] text-gray-500 uppercase">Visibility</div>
+              <div className="text-[10px] text-content-secondary uppercase">Visibility</div>
             </div>
             <div className="bg-black/20 rounded-lg py-2 px-1">
-              <div className="text-sm font-semibold text-white">{weather.pressure}</div>
-              <div className="text-[10px] text-gray-500 uppercase">hPa</div>
+              <div className="text-sm font-semibold text-content">{weather.pressure}</div>
+              <div className="text-[10px] text-content-secondary uppercase">hPa</div>
             </div>
             <div className="bg-black/20 rounded-lg py-2 px-1">
-              <div className="text-sm font-semibold text-white">{weather.temp}°</div>
-              <div className="text-[10px] text-gray-500 uppercase">Air Temp</div>
+              <div className="text-sm font-semibold text-content">{weather.temp}°</div>
+              <div className="text-[10px] text-content-secondary uppercase">Air Temp</div>
             </div>
           </>
         ) : (
           <>
             <div className="bg-black/20 rounded-lg py-2 px-1">
-              <div className={`text-sm font-semibold ${weather.visibility < 5 ? 'text-amber-400' : 'text-white'}`}>
+              <div className={`text-sm font-semibold ${weather.visibility < 5 ? 'text-amber-400' : 'text-content'}`}>
                 {weather.visibility}km
               </div>
-              <div className="text-[10px] text-gray-500 uppercase">Visibility</div>
+              <div className="text-[10px] text-content-secondary uppercase">Visibility</div>
             </div>
             <div className="bg-black/20 rounded-lg py-2 px-1">
-              <div className="text-sm font-semibold text-white">{weather.cloudCover}%</div>
-              <div className="text-[10px] text-gray-500 uppercase">Clouds</div>
+              <div className="text-sm font-semibold text-content">{weather.cloudCover}%</div>
+              <div className="text-[10px] text-content-secondary uppercase">Clouds</div>
             </div>
             <div className="bg-black/20 rounded-lg py-2 px-1">
-              <div className="text-sm font-semibold text-white">{weather.pressure}</div>
-              <div className="text-[10px] text-gray-500 uppercase">hPa</div>
+              <div className="text-sm font-semibold text-content">{weather.pressure}</div>
+              <div className="text-[10px] text-content-secondary uppercase">hPa</div>
             </div>
           </>
         )}
@@ -896,7 +896,7 @@ function TipsSection({ vehicle }: { vehicle: VehicleProfile | null }) {
           }`}
         >
           {getIcon(tip.type)}
-          <span className="text-sm text-gray-300">{tip.message}</span>
+          <span className="text-sm text-content">{tip.message}</span>
         </div>
       ))}
     </div>
@@ -935,8 +935,8 @@ function ArduPilotFlightStats() {
   const statBootCount = parameters.get('STAT_BOOTCNT')?.value ?? 0;
 
   return (
-    <section className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-4">
-      <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Flight Statistics (from FC)</h3>
+    <section className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-4">
+      <h3 className="text-xs font-medium text-content-secondary uppercase tracking-wider mb-3">Flight Statistics (from FC)</h3>
       <div className="grid grid-cols-2 gap-2">
         <StatCard
           icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
@@ -1104,12 +1104,12 @@ export function SettingsView() {
   };
 
   return (
-    <div className="h-full overflow-auto bg-gray-900/30">
+    <div className="h-full overflow-auto bg-surface-input">
       <div className="max-w-6xl mx-auto p-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-white">Settings</h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <h1 className="text-2xl font-semibold text-content">Settings</h1>
+          <p className="text-content-secondary text-sm mt-1">
             Configure mission defaults and vehicle profiles
           </p>
         </div>
@@ -1131,13 +1131,13 @@ export function SettingsView() {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-1.5 h-5 bg-blue-500 rounded-full" />
-            <h2 className="text-sm font-medium text-gray-300 uppercase tracking-wider">Vehicle & Status</h2>
+            <h2 className="text-sm font-medium text-content uppercase tracking-wider">Vehicle & Status</h2>
           </div>
 
           {/* Top row - Active Vehicle + Performance + Weather */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             {/* Active Vehicle Card - Enhanced */}
-            <section className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-5">
+            <section className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-5">
               <div className="flex items-start gap-4">
                 <div className="w-16 h-16 text-blue-400 flex-shrink-0">
                   {activeVehicle ? VEHICLE_ICONS[activeVehicle.type] : VEHICLE_ICONS.copter}
@@ -1145,10 +1145,10 @@ export function SettingsView() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-lg font-medium text-white truncate">
+                      <div className="text-lg font-medium text-content truncate">
                         {activeVehicle?.name || 'No vehicle'}
                       </div>
-                      <div className="text-sm text-gray-400 flex items-center gap-2">
+                      <div className="text-sm text-content-secondary flex items-center gap-2">
                         <span>{activeVehicle ? VEHICLE_TYPE_NAMES[activeVehicle.type] : ''}</span>
                         {activeVehicle?.boardId && (
                           <span className="text-[10px] text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded" title={activeVehicle.boardUid ? `UID: ${activeVehicle.boardUid}` : undefined}>
@@ -1160,7 +1160,7 @@ export function SettingsView() {
                     {activeVehicle && (
                       <button
                         onClick={() => setEditingVehicleId(activeVehicle.id)}
-                        className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded transition-colors"
+                        className="p-1.5 text-content-secondary hover:text-content hover:bg-surface-raised rounded transition-colors"
                         title="Edit vehicle"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1172,11 +1172,11 @@ export function SettingsView() {
                 </div>
               </div>
               {activeVehicle && (
-                <div className="mt-4 pt-4 border-t border-gray-700/50">
+                <div className="mt-4 pt-4 border-t border-subtle">
                   <div className="grid grid-cols-2 gap-3">
                     {/* Type-specific primary spec */}
                     <div className="bg-black/20 rounded-lg p-2">
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-content-secondary">
                         {activeVehicle.type === 'copter' && 'Frame'}
                         {activeVehicle.type === 'plane' && 'Wingspan'}
                         {activeVehicle.type === 'vtol' && 'Wingspan'}
@@ -1184,7 +1184,7 @@ export function SettingsView() {
                         {activeVehicle.type === 'boat' && 'Hull'}
                         {activeVehicle.type === 'sub' && 'Depth'}
                       </div>
-                      <div className="text-sm text-white font-medium">
+                      <div className="text-sm text-content font-medium">
                         {activeVehicle.type === 'copter' && `${fmtLength(activeVehicle.frameSize || 127, displayUnits)} ${activeVehicle.motorCount === 6 ? 'Hex' : activeVehicle.motorCount === 8 ? 'Octo' : 'Quad'}`}
                         {activeVehicle.type === 'plane' && fmtLength(activeVehicle.wingspan || 1200, displayUnits)}
                         {activeVehicle.type === 'vtol' && fmtLength(activeVehicle.wingspan || 1500, displayUnits)}
@@ -1195,17 +1195,17 @@ export function SettingsView() {
                     </div>
                     {/* Weight */}
                     <div className="bg-black/20 rounded-lg p-2">
-                      <div className="text-xs text-gray-500">Weight</div>
-                      <div className="text-sm text-white font-medium">{fmtWeight(activeVehicle.weight, displayUnits)}</div>
+                      <div className="text-xs text-content-secondary">Weight</div>
+                      <div className="text-sm text-content font-medium">{fmtWeight(activeVehicle.weight, displayUnits)}</div>
                     </div>
                     {/* Battery */}
                     <div className="bg-black/20 rounded-lg p-2">
-                      <div className="text-xs text-gray-500">Battery</div>
-                      <div className="text-sm text-white font-medium">{activeVehicle.batteryCells}S{activeVehicle.batteryChemistry && activeVehicle.batteryChemistry !== 'lipo' ? ` ${({ lihv: 'LiHV', lion: 'Li-Ion', life: 'LiFe' } as Record<string, string>)[activeVehicle.batteryChemistry] ?? ''}` : ''} {fmtCapacity(activeVehicle.batteryCapacity, displayUnits)}</div>
+                      <div className="text-xs text-content-secondary">Battery</div>
+                      <div className="text-sm text-content font-medium">{activeVehicle.batteryCells}S{activeVehicle.batteryChemistry && activeVehicle.batteryChemistry !== 'lipo' ? ` ${({ lihv: 'LiHV', lion: 'Li-Ion', life: 'LiFe' } as Record<string, string>)[activeVehicle.batteryChemistry] ?? ''}` : ''} {fmtCapacity(activeVehicle.batteryCapacity, displayUnits)}</div>
                     </div>
                     {/* Type-specific secondary spec */}
                     <div className="bg-black/20 rounded-lg p-2">
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-content-secondary">
                         {['copter', 'plane', 'vtol'].includes(activeVehicle.type) ? 'Est. Cruise' : 'Est. Speed'}
                       </div>
                       <div className="text-sm text-cyan-400 font-medium">
@@ -1217,37 +1217,37 @@ export function SettingsView() {
                   </div>
                   {/* Board Stats (from STAT_* parameters) */}
                   {activeVehicle.boardStats && (activeVehicle.boardStats.totalFlightCount != null || activeVehicle.boardStats.totalFlightTime != null) && (
-                    <div className="mt-3 pt-3 border-t border-gray-700/30">
-                      <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Board Stats</div>
+                    <div className="mt-3 pt-3 border-t border-subtle">
+                      <div className="text-[10px] text-content-secondary uppercase tracking-wider mb-2">Board Stats</div>
                       <div className="grid grid-cols-3 gap-2">
                         {activeVehicle.boardStats.totalFlightCount != null && (
                           <div className="bg-black/20 rounded-lg p-2">
-                            <div className="text-[10px] text-gray-500">Flights</div>
-                            <div className="text-xs text-white font-medium">{activeVehicle.boardStats.totalFlightCount}</div>
+                            <div className="text-[10px] text-content-secondary">Flights</div>
+                            <div className="text-xs text-content font-medium">{activeVehicle.boardStats.totalFlightCount}</div>
                           </div>
                         )}
                         {activeVehicle.boardStats.totalFlightTime != null && (
                           <div className="bg-black/20 rounded-lg p-2">
-                            <div className="text-[10px] text-gray-500">Flight Time</div>
-                            <div className="text-xs text-white font-medium">{formatTime(activeVehicle.boardStats.totalFlightTime)}</div>
+                            <div className="text-[10px] text-content-secondary">Flight Time</div>
+                            <div className="text-xs text-content font-medium">{formatTime(activeVehicle.boardStats.totalFlightTime)}</div>
                           </div>
                         )}
                         {activeVehicle.boardStats.totalRunTime != null && (
                           <div className="bg-black/20 rounded-lg p-2">
-                            <div className="text-[10px] text-gray-500">Run Time</div>
-                            <div className="text-xs text-white font-medium">{formatTime(activeVehicle.boardStats.totalRunTime)}</div>
+                            <div className="text-[10px] text-content-secondary">Run Time</div>
+                            <div className="text-xs text-content font-medium">{formatTime(activeVehicle.boardStats.totalRunTime)}</div>
                           </div>
                         )}
                         {activeVehicle.boardStats.totalDistance != null && (
                           <div className="bg-black/20 rounded-lg p-2">
-                            <div className="text-[10px] text-gray-500">Distance</div>
-                            <div className="text-xs text-white font-medium">{formatDistance(activeVehicle.boardStats.totalDistance)}</div>
+                            <div className="text-[10px] text-content-secondary">Distance</div>
+                            <div className="text-xs text-content font-medium">{formatDistance(activeVehicle.boardStats.totalDistance)}</div>
                           </div>
                         )}
                         {activeVehicle.boardStats.bootCount != null && (
                           <div className="bg-black/20 rounded-lg p-2">
-                            <div className="text-[10px] text-gray-500">Boots</div>
-                            <div className="text-xs text-white font-medium">{activeVehicle.boardStats.bootCount}</div>
+                            <div className="text-[10px] text-content-secondary">Boots</div>
+                            <div className="text-xs text-content font-medium">{activeVehicle.boardStats.bootCount}</div>
                           </div>
                         )}
                       </div>
@@ -1258,7 +1258,7 @@ export function SettingsView() {
             </section>
 
             {/* Performance Gauges */}
-            <section className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-5">
+            <section className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-5">
               <div className="flex items-center justify-around mb-2">
                 <CircularGauge
                   value={Math.round(estimatedFlightTime / 60)}
@@ -1279,7 +1279,7 @@ export function SettingsView() {
               </div>
               {/* Multi-level estimates table */}
               <div className="bg-black/20 rounded-lg overflow-hidden">
-                <div className="grid grid-cols-3 text-[10px] text-gray-500 uppercase tracking-wider px-2 py-1.5 border-b border-gray-700/30">
+                <div className="grid grid-cols-3 text-[10px] text-content-secondary uppercase tracking-wider px-2 py-1.5 border-b border-subtle">
                   <span>Usage</span>
                   <span className="text-center">Time</span>
                   <span className="text-right">Range</span>
@@ -1292,10 +1292,10 @@ export function SettingsView() {
                   const scaledTime = Math.round(estimatedFlightTime * (pct / 80));
                   const scaledRange = Math.round(estimatedRange * (pct / 80));
                   return (
-                    <div key={pct} className="grid grid-cols-3 px-2 py-1.5 text-xs border-b border-gray-700/10 last:border-0">
-                      <span className={`${color} font-medium`}>{label} <span className="text-gray-600 font-normal">{note}</span></span>
-                      <span className="text-center text-gray-300">{formatTime(scaledTime)}</span>
-                      <span className="text-right text-gray-300">{formatDistance(scaledRange)}</span>
+                    <div key={pct} className="grid grid-cols-3 px-2 py-1.5 text-xs border-b border-subtle last:border-0">
+                      <span className={`${color} font-medium`}>{label} <span className="text-content-tertiary font-normal">{note}</span></span>
+                      <span className="text-center text-content">{formatTime(scaledTime)}</span>
+                      <span className="text-right text-content">{formatDistance(scaledRange)}</span>
                     </div>
                   );
                 })}
@@ -1305,7 +1305,7 @@ export function SettingsView() {
                 <svg className="w-3.5 h-3.5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-[11px] text-gray-400 leading-relaxed">
+                <p className="text-[11px] text-content-secondary leading-relaxed">
                   Rough estimates. Better profile = better predictions.
                 </p>
               </div>
@@ -1319,14 +1319,14 @@ export function SettingsView() {
           {connectionState.protocol === 'mavlink' && connectionState.isConnected ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ArduPilotFlightStats />
-              <section className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-4">
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Tips & Recommendations</h3>
+              <section className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-4">
+                <h3 className="text-xs font-medium text-content-secondary uppercase tracking-wider mb-3">Tips & Recommendations</h3>
                 <TipsSection vehicle={activeVehicle} />
               </section>
             </div>
           ) : (
-            <section className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-4">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Tips & Recommendations</h3>
+            <section className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-4">
+              <h3 className="text-xs font-medium text-content-secondary uppercase tracking-wider mb-3">Tips & Recommendations</h3>
               <TipsSection vehicle={activeVehicle} />
             </section>
           )}
@@ -1338,29 +1338,29 @@ export function SettingsView() {
         <div>
           <div className="flex items-center gap-2 mb-4">
             <div className="w-1.5 h-5 bg-emerald-500 rounded-full" />
-            <h2 className="text-sm font-medium text-gray-300 uppercase tracking-wider">Configuration</h2>
+            <h2 className="text-sm font-medium text-content uppercase tracking-wider">Configuration</h2>
           </div>
 
           {/* Display Units Toggle */}
-          <div className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-4 mb-4 flex items-center justify-between">
+          <div className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-4 mb-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
               </svg>
               <div>
-                <div className="text-sm font-medium text-white">Display Units</div>
-                <div className="text-[11px] text-gray-500">
+                <div className="text-sm font-medium text-content">Display Units</div>
+                <div className="text-[11px] text-content-secondary">
                   {displayUnits === 'small' ? 'mm, g, mAh - for small/racing builds' : 'm, kg, Ah - for large aircraft'}
                 </div>
               </div>
             </div>
-            <div className="flex bg-gray-900/50 rounded-lg border border-gray-700/50 overflow-hidden">
+            <div className="flex bg-surface-input rounded-lg border border-subtle overflow-hidden">
               <button
                 onClick={() => setDisplayUnits('small')}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   displayUnits === 'small'
                     ? 'bg-blue-500/20 text-blue-400'
-                    : 'text-gray-400 hover:text-gray-300'
+                    : 'text-content-secondary hover:text-content'
                 }`}
               >
                 mm / g / mAh
@@ -1370,7 +1370,7 @@ export function SettingsView() {
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   displayUnits === 'large'
                     ? 'bg-blue-500/20 text-blue-400'
-                    : 'text-gray-400 hover:text-gray-300'
+                    : 'text-content-secondary hover:text-content'
                 }`}
               >
                 m / kg / Ah
@@ -1379,7 +1379,7 @@ export function SettingsView() {
           </div>
 
           {/* Experience Level & UI Visibility */}
-          <div className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-4 mb-4">
+          <div className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-4 mb-4">
             {/* Preset row */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -1387,11 +1387,11 @@ export function SettingsView() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
                 <div>
-                  <div className="text-sm font-medium text-white">Experience Level</div>
-                  <div className="text-[11px] text-gray-500">Presets control all options below</div>
+                  <div className="text-sm font-medium text-content">Experience Level</div>
+                  <div className="text-[11px] text-content-secondary">Presets control all options below</div>
                 </div>
               </div>
-              <div className="flex bg-gray-900/50 rounded-lg border border-gray-700/50 overflow-hidden">
+              <div className="flex bg-surface-input rounded-lg border border-subtle overflow-hidden">
                 <button
                   onClick={async () => {
                     const v = await window.electronAPI?.getAppVersion() || '0.0.0';
@@ -1400,7 +1400,7 @@ export function SettingsView() {
                   className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                     experienceLevel === 'beginner'
                       ? 'bg-blue-500/20 text-blue-400'
-                      : 'text-gray-400 hover:text-gray-300'
+                      : 'text-content-secondary hover:text-content'
                   }`}
                 >
                   Beginner
@@ -1413,7 +1413,7 @@ export function SettingsView() {
                   className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                     experienceLevel === 'advanced'
                       ? 'bg-purple-500/20 text-purple-400'
-                      : 'text-gray-400 hover:text-gray-300'
+                      : 'text-content-secondary hover:text-content'
                   }`}
                 >
                   Advanced
@@ -1436,11 +1436,11 @@ export function SettingsView() {
                     type="checkbox"
                     checked={uiVisibility[key]}
                     onChange={(e) => setUiVisibility({ [key]: e.target.checked })}
-                    className="mt-0.5 w-3.5 h-3.5 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500/30 focus:ring-offset-0 cursor-pointer"
+                    className="mt-0.5 w-3.5 h-3.5 rounded border-border bg-surface-tooltip text-blue-500 focus:ring-blue-500/30 focus:ring-offset-0 cursor-pointer"
                   />
                   <div className="min-w-0">
-                    <div className="text-xs font-medium text-gray-300 group-hover:text-white transition-colors">{label}</div>
-                    <div className="text-[11px] text-gray-600">{desc}</div>
+                    <div className="text-xs font-medium text-content group-hover:text-content transition-colors">{label}</div>
+                    <div className="text-[11px] text-content-tertiary">{desc}</div>
                   </div>
                 </label>
               ))}
@@ -1449,8 +1449,8 @@ export function SettingsView() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Mission Defaults Section */}
-            <section className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-5">
-              <h2 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
+            <section className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-5">
+              <h2 className="text-sm font-medium text-content mb-4 flex items-center gap-2">
                 <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                 </svg>
@@ -1459,7 +1459,7 @@ export function SettingsView() {
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <label className="block text-xs font-medium text-content-secondary mb-1.5">
                     Safe Alt Buffer
                   </label>
                   <div className="flex items-center gap-2">
@@ -1468,22 +1468,22 @@ export function SettingsView() {
                       value={getMissionDisplayValue('safeAltitudeBuffer')}
                       onChange={(e) => handleMissionChange('safeAltitudeBuffer', e.target.value)}
                       onBlur={() => handleMissionBlur('safeAltitudeBuffer')}
-                      className={`w-full px-2 py-1.5 bg-gray-900/50 border rounded text-white text-sm focus:outline-none ${
-                        missionErrors.safeAltitudeBuffer ? 'border-red-500/60 focus:border-red-500' : 'border-gray-700 focus:border-blue-500'
+                      className={`w-full px-2 py-1.5 bg-surface-input border rounded text-content text-sm focus:outline-none ${
+                        missionErrors.safeAltitudeBuffer ? 'border-red-500/60 focus:border-red-500' : 'border-border focus:border-blue-500'
                       }`}
                       min="0"
                       max="500"
                     />
-                    <span className="text-gray-500 text-xs">m</span>
+                    <span className="text-content-secondary text-xs">m</span>
                   </div>
                   {missionErrors.safeAltitudeBuffer
                     ? <div className="text-[10px] text-red-400 mt-1">{missionErrors.safeAltitudeBuffer}</div>
-                    : <div className="text-[10px] text-gray-600 mt-1">Above terrain for warnings</div>
+                    : <div className="text-[10px] text-content-tertiary mt-1">Above terrain for warnings</div>
                   }
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <label className="block text-xs font-medium text-content-secondary mb-1.5">
                     Waypoint Alt
                   </label>
                   <div className="flex items-center gap-2">
@@ -1492,22 +1492,22 @@ export function SettingsView() {
                       value={getMissionDisplayValue('defaultWaypointAltitude')}
                       onChange={(e) => handleMissionChange('defaultWaypointAltitude', e.target.value)}
                       onBlur={() => handleMissionBlur('defaultWaypointAltitude')}
-                      className={`w-full px-2 py-1.5 bg-gray-900/50 border rounded text-white text-sm focus:outline-none ${
-                        missionErrors.defaultWaypointAltitude ? 'border-red-500/60 focus:border-red-500' : 'border-gray-700 focus:border-blue-500'
+                      className={`w-full px-2 py-1.5 bg-surface-input border rounded text-content text-sm focus:outline-none ${
+                        missionErrors.defaultWaypointAltitude ? 'border-red-500/60 focus:border-red-500' : 'border-border focus:border-blue-500'
                       }`}
                       min="0"
                       max="10000"
                     />
-                    <span className="text-gray-500 text-xs">m</span>
+                    <span className="text-content-secondary text-xs">m</span>
                   </div>
                   {missionErrors.defaultWaypointAltitude
                     ? <div className="text-[10px] text-red-400 mt-1">{missionErrors.defaultWaypointAltitude}</div>
-                    : <div className="text-[10px] text-gray-600 mt-1">Default for new waypoints</div>
+                    : <div className="text-[10px] text-content-tertiary mt-1">Default for new waypoints</div>
                   }
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <label className="block text-xs font-medium text-content-secondary mb-1.5">
                     Takeoff Alt
                   </label>
                   <div className="flex items-center gap-2">
@@ -1516,22 +1516,22 @@ export function SettingsView() {
                       value={getMissionDisplayValue('defaultTakeoffAltitude')}
                       onChange={(e) => handleMissionChange('defaultTakeoffAltitude', e.target.value)}
                       onBlur={() => handleMissionBlur('defaultTakeoffAltitude')}
-                      className={`w-full px-2 py-1.5 bg-gray-900/50 border rounded text-white text-sm focus:outline-none ${
-                        missionErrors.defaultTakeoffAltitude ? 'border-red-500/60 focus:border-red-500' : 'border-gray-700 focus:border-blue-500'
+                      className={`w-full px-2 py-1.5 bg-surface-input border rounded text-content text-sm focus:outline-none ${
+                        missionErrors.defaultTakeoffAltitude ? 'border-red-500/60 focus:border-red-500' : 'border-border focus:border-blue-500'
                       }`}
                       min="0"
                       max="1000"
                     />
-                    <span className="text-gray-500 text-xs">m</span>
+                    <span className="text-content-secondary text-xs">m</span>
                   </div>
                   {missionErrors.defaultTakeoffAltitude
                     ? <div className="text-[10px] text-red-400 mt-1">{missionErrors.defaultTakeoffAltitude}</div>
-                    : <div className="text-[10px] text-gray-600 mt-1">Altitude after launch</div>
+                    : <div className="text-[10px] text-content-tertiary mt-1">Altitude after launch</div>
                   }
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <label className="block text-xs font-medium text-content-secondary mb-1.5">
                     Alt Reference
                   </label>
                   <select
@@ -1539,21 +1539,21 @@ export function SettingsView() {
                     onChange={(e) => updateMissionDefaults({
                       defaultAltitudeReference: e.target.value as 'relative' | 'asl' | 'terrain',
                     })}
-                    className="w-full px-2 py-1.5 bg-gray-900/50 border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full px-2 py-1.5 bg-surface-input border border-border rounded text-content text-sm focus:outline-none focus:border-blue-500"
                   >
                     <option value="relative">Relative to Home</option>
                     <option value="terrain">Above Terrain (AGL)</option>
                     <option value="asl">Above Sea Level</option>
                   </select>
-                  <div className="text-[10px] text-gray-600 mt-1">Default altitude reference</div>
+                  <div className="text-[10px] text-content-tertiary mt-1">Default altitude reference</div>
                 </div>
               </div>
             </section>
 
             {/* Vehicles Section */}
-            <section className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-5">
+            <section className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-medium text-white flex items-center gap-2">
+                <h2 className="text-sm font-medium text-content flex items-center gap-2">
                   <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                   </svg>
@@ -1605,7 +1605,7 @@ export function SettingsView() {
         <div className="mt-8 mb-8">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-1.5 h-5 bg-emerald-500 rounded-full" />
-            <h2 className="text-sm font-medium text-gray-300 uppercase tracking-wider">Offline Maps</h2>
+            <h2 className="text-sm font-medium text-content uppercase tracking-wider">Offline Maps</h2>
           </div>
           <TileCacheCard />
         </div>
@@ -1616,9 +1616,9 @@ export function SettingsView() {
         <div className="mt-8 mb-8">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-1.5 h-5 bg-emerald-500 rounded-full" />
-            <h2 className="text-sm font-medium text-gray-300 uppercase tracking-wider">Map Overlays</h2>
+            <h2 className="text-sm font-medium text-content uppercase tracking-wider">Map Overlays</h2>
           </div>
-          <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+          <div className="bg-surface rounded-xl border border-subtle p-5">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
                 <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1626,8 +1626,8 @@ export function SettingsView() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-200">Map Overlays</h3>
-                <p className="text-xs text-gray-500">API keys for airspace and airport data</p>
+                <h3 className="text-sm font-medium text-content">Map Overlays</h3>
+                <p className="text-xs text-content-secondary">API keys for airspace and airport data</p>
               </div>
             </div>
 
@@ -1678,9 +1678,9 @@ function OpenAipKeyInput() {
 
   return (
     <div>
-      <label className="block text-xs text-gray-400 mb-1.5">
+      <label className="block text-xs text-content-secondary mb-1.5">
         OpenAIP API Key
-        <span className="text-gray-600 ml-1">— free at</span>{' '}
+        <span className="text-content-tertiary ml-1">— free at</span>{' '}
         <a href="https://www.openaip.net" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
           openaip.net
         </a>
@@ -1691,7 +1691,7 @@ function OpenAipKeyInput() {
           value={key}
           onChange={(e) => { setKey(e.target.value); setSaved(false); }}
           placeholder={hasKey ? '••••••••••••••••' : 'Paste your API key'}
-          className="flex-1 px-3 py-1.5 bg-gray-900 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          className="flex-1 px-3 py-1.5 bg-surface-input border border-border rounded-lg text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-blue-500"
         />
         <button
           onClick={handleSave}
@@ -1714,23 +1714,23 @@ function ConsoleSettingsSection() {
   return (
     <div className="mt-8">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-1.5 h-5 bg-gray-500 rounded-full" />
-        <h2 className="text-sm font-medium text-gray-300 uppercase tracking-wider">Console</h2>
+        <div className="w-1.5 h-5 bg-content-secondary rounded-full" />
+        <h2 className="text-sm font-medium text-content uppercase tracking-wider">Console</h2>
       </div>
 
-      <section className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-5">
+      <section className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-5">
         <div className="space-y-3">
-          <div className="flex items-center justify-between bg-gray-900/40 rounded-lg p-3">
+          <div className="flex items-center justify-between bg-surface-input rounded-lg p-3">
             <div className="flex-1 mr-3">
-              <div className="text-sm text-gray-200 font-medium">Verbose Logging</div>
-              <div className="text-xs text-gray-500 mt-0.5">
+              <div className="text-sm text-content font-medium">Verbose Logging</div>
+              <div className="text-xs text-content-secondary mt-0.5">
                 Show debug and packet-level messages in the console. When off, only info, warnings, and errors are shown.
               </div>
             </div>
             <button
               onClick={() => setShowDebugLogs(!showDebugLogs)}
               className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${
-                showDebugLogs ? 'bg-blue-600' : 'bg-gray-600'
+                showDebugLogs ? 'bg-blue-600' : 'bg-surface-raised'
               }`}
             >
               <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${
@@ -1786,12 +1786,12 @@ function AiAnalysisSection() {
     <div className="mt-8">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-1.5 h-5 bg-purple-500 rounded-full" />
-        <h2 className="text-sm font-medium text-gray-300 uppercase tracking-wider">AI Flight Analysis</h2>
+        <h2 className="text-sm font-medium text-content uppercase tracking-wider">AI Flight Analysis</h2>
       </div>
 
-      <section className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-5">
+      <section className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-5">
         <div className="space-y-4">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-content-secondary">
             Enable AI-powered analysis of your flight logs. Your API key is encrypted and stored locally.
           </p>
 
@@ -1808,7 +1808,7 @@ function AiAnalysisSection() {
 
           {/* Provider selection */}
           <div>
-            <div className="text-xs text-gray-400 mb-2">Provider</div>
+            <div className="text-xs text-content-secondary mb-2">Provider</div>
             <div className="flex gap-2">
               {providers.map((p) => (
                 <button
@@ -1816,11 +1816,11 @@ function AiAnalysisSection() {
                   onClick={() => setAiProvider(aiProvider === p.id ? null : p.id)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
                     aiProvider === p.id
-                      ? 'border-purple-500/50 bg-purple-500/10 text-white'
-                      : 'border-gray-700/50 bg-gray-900/40 text-gray-400 hover:text-gray-200 hover:border-gray-600'
+                      ? 'border-purple-500/50 bg-purple-500/10 text-content'
+                      : 'border-subtle bg-surface-input text-content-secondary hover:text-content hover:border-border'
                   }`}
                 >
-                  <span className={`w-2 h-2 rounded-full ${aiProvider === p.id ? p.color : 'bg-gray-600'}`} />
+                  <span className={`w-2 h-2 rounded-full ${aiProvider === p.id ? p.color : 'bg-surface-raised'}`} />
                   {p.name}
                 </button>
               ))}
@@ -1830,13 +1830,13 @@ function AiAnalysisSection() {
           {/* API key input */}
           {aiProvider && (
             <div>
-              <div className="text-xs text-gray-400 mb-2">API Key</div>
+              <div className="text-xs text-content-secondary mb-2">API Key</div>
               {hasKey ? (
-                <div className="flex items-center gap-2 bg-gray-900/40 rounded-lg p-3">
+                <div className="flex items-center gap-2 bg-surface-input rounded-lg p-3">
                   <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
-                  <span className="text-sm text-gray-300 flex-1">Key configured and encrypted</span>
+                  <span className="text-sm text-content flex-1">Key configured and encrypted</span>
                   <button
                     onClick={handleRemoveKey}
                     className="text-xs text-red-400 hover:text-red-300 transition-colors"
@@ -1851,7 +1851,7 @@ function AiAnalysisSection() {
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
                     placeholder={`Enter ${providers.find((p) => p.id === aiProvider)?.name} API key...`}
-                    className="flex-1 bg-gray-900/50 border border-gray-700/50 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-purple-500/50"
+                    className="flex-1 bg-surface-input border border-subtle rounded-lg px-3 py-2 text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-purple-500/50"
                   />
                   <button
                     onClick={handleSaveKey}
@@ -1883,33 +1883,33 @@ function ExperimentalFeaturesSection() {
     <div className="mt-8">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-1.5 h-5 bg-purple-500 rounded-full" />
-        <h2 className="text-sm font-medium text-gray-300 uppercase tracking-wider">Experimental</h2>
+        <h2 className="text-sm font-medium text-content uppercase tracking-wider">Experimental</h2>
       </div>
 
-      <section className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-5">
-        <h2 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
+      <section className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-5">
+        <h2 className="text-sm font-medium text-content mb-4 flex items-center gap-2">
           <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
           </svg>
           Experimental Features
         </h2>
-        <p className="text-xs text-gray-500 mb-4">
+        <p className="text-xs text-content-secondary mb-4">
           These features are under active development and may have rough edges. ArduPilot/MAVLink only.
         </p>
 
         <div className="space-y-3">
           {/* Survey Grid Planner */}
-          <div className="flex items-center justify-between bg-gray-900/40 rounded-lg p-3">
+          <div className="flex items-center justify-between bg-surface-input rounded-lg p-3">
             <div className="flex-1 mr-3">
-              <div className="text-sm text-gray-200 font-medium">Survey Grid Planner</div>
-              <div className="text-xs text-gray-500 mt-0.5">
+              <div className="text-sm text-content font-medium">Survey Grid Planner</div>
+              <div className="text-xs text-content-secondary mt-0.5">
                 Photogrammetry survey grid planning with camera presets, overlap control, and auto-waypoint generation
               </div>
             </div>
             <button
               onClick={() => setSurveyUnlocked(!surveyUnlocked)}
               className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${
-                surveyUnlocked ? 'bg-purple-600' : 'bg-gray-600'
+                surveyUnlocked ? 'bg-purple-600' : 'bg-surface-raised'
               }`}
             >
               <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${
@@ -1919,17 +1919,17 @@ function ExperimentalFeaturesSection() {
           </div>
 
           {/* Companion Computer */}
-          <div className="flex items-center justify-between bg-gray-900/40 rounded-lg p-3">
+          <div className="flex items-center justify-between bg-surface-input rounded-lg p-3">
             <div className="flex-1 mr-3">
-              <div className="text-sm text-gray-200 font-medium">Companion Computer</div>
-              <div className="text-xs text-gray-500 mt-0.5">
+              <div className="text-sm text-content font-medium">Companion Computer</div>
+              <div className="text-xs text-content-secondary mt-0.5">
                 Monitor and manage companion boards (Raspberry Pi, ESP32, Jetson) with remote terminal, metrics, and service control
               </div>
             </div>
             <button
               onClick={() => setCompanionUnlocked(!companionUnlocked)}
               className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${
-                companionUnlocked ? 'bg-purple-600' : 'bg-gray-600'
+                companionUnlocked ? 'bg-purple-600' : 'bg-surface-raised'
               }`}
             >
               <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${
@@ -1939,17 +1939,17 @@ function ExperimentalFeaturesSection() {
           </div>
 
           {/* Flight Log Diagnostics */}
-          <div className="flex items-center justify-between bg-gray-900/40 rounded-lg p-3">
+          <div className="flex items-center justify-between bg-surface-input rounded-lg p-3">
             <div className="flex-1 mr-3">
-              <div className="text-sm text-gray-200 font-medium">Flight Log Diagnostics</div>
-              <div className="text-xs text-gray-500 mt-0.5">
+              <div className="text-sm text-content font-medium">Flight Log Diagnostics</div>
+              <div className="text-xs text-content-secondary mt-0.5">
                 Download and analyze flight logs with automated health reports and interactive data explorer
               </div>
             </div>
             <button
               onClick={() => setExperimentalLogs(!experimentalLogs)}
               className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${
-                experimentalLogs ? 'bg-purple-600' : 'bg-gray-600'
+                experimentalLogs ? 'bg-purple-600' : 'bg-surface-raised'
               }`}
             >
               <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${
@@ -1986,15 +1986,15 @@ function AboutSection() {
   return (
     <div className="mt-8">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-1.5 h-5 bg-gray-500 rounded-full" />
-        <h2 className="text-sm font-medium text-gray-300 uppercase tracking-wider">About</h2>
+        <div className="w-1.5 h-5 bg-content-secondary rounded-full" />
+        <h2 className="text-sm font-medium text-content uppercase tracking-wider">About</h2>
       </div>
 
-      <section className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-5">
+      <section className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-5">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-white">ArduDeck</h3>
-            <p className="text-sm text-gray-400 mt-0.5">
+            <h3 className="text-lg font-semibold text-content">ArduDeck</h3>
+            <p className="text-sm text-content-secondary mt-0.5">
               v{currentVersion || '...'}
             </p>
           </div>
@@ -2004,7 +2004,7 @@ function AboutSection() {
               href="https://github.com/rubenCodeforges/ardudeck"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-1.5 text-xs text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs text-content-secondary hover:text-content border border-border hover:border-border rounded-lg transition-colors"
             >
               GitHub
             </a>
@@ -2023,7 +2023,7 @@ function AboutSection() {
             )}
 
             {isChecking && (
-              <span className="px-3 py-1.5 text-xs text-gray-400 flex items-center gap-2">
+              <span className="px-3 py-1.5 text-xs text-content-secondary flex items-center gap-2">
                 <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -2065,7 +2065,7 @@ function AboutSection() {
         </div>
 
         {/* Status details */}
-        <div className="mt-4 pt-4 border-t border-gray-700/50">
+        <div className="mt-4 pt-4 border-t border-subtle">
           {status === 'not-available' && (
             <div className="flex items-center gap-2 text-sm text-emerald-400">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2082,7 +2082,7 @@ function AboutSection() {
                   v{latestVersion} is available
                 </p>
                 {publishedAt && (
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-content-secondary mt-0.5">
                     Released {new Date(publishedAt).toLocaleDateString()}
                   </p>
                 )}
@@ -2092,7 +2092,7 @@ function AboutSection() {
 
           {status === 'downloading' && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs text-gray-400">
+              <div className="flex items-center justify-between text-xs text-content-secondary">
                 <span>Downloading v{latestVersion}...</span>
                 <span className="tabular-nums">
                   {totalBytes > 0
@@ -2100,7 +2100,7 @@ function AboutSection() {
                     : `${(bytesDownloaded / (1024 * 1024)).toFixed(1)} MB`}
                 </span>
               </div>
-              <div className="h-1.5 bg-gray-700/50 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
                 <div
                   className="h-full bg-blue-500 rounded-full transition-all duration-300"
                   style={{ width: `${Math.round(downloadProgress)}%` }}
@@ -2251,11 +2251,11 @@ function PropSizeInput({
 
   return (
     <div>
-      <label className="block text-xs text-gray-400 mb-1">Propeller</label>
+      <label className="block text-xs text-content-secondary mb-1">Propeller</label>
       <select
         value={showCustomInput ? '__custom__' : (value || '')}
         onChange={(e) => handleSelect(e.target.value)}
-        className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+        className="w-full px-3 py-2 bg-surface-input border border-border rounded-lg text-content text-sm focus:outline-none focus:border-blue-500"
       >
         <option value="">None</option>
         {presets.map((p) => (
@@ -2271,8 +2271,8 @@ function PropSizeInput({
           onBlur={handleCustomBlur}
           placeholder="DxP (e.g. 9.5x4.7)"
           autoFocus={customMode}
-          className={`w-full mt-1.5 px-3 py-2 bg-gray-900 border rounded-lg text-sm focus:outline-none ${
-            error ? 'border-red-500/60 text-white' : 'border-gray-600 text-white focus:border-blue-500'
+          className={`w-full mt-1.5 px-3 py-2 bg-surface-input border rounded-lg text-sm focus:outline-none ${
+            error ? 'border-red-500/60 text-content' : 'border-border text-content focus:border-blue-500'
           }`}
         />
       )}
@@ -2306,7 +2306,7 @@ function FrameSizeInput({
 
   return (
     <div>
-      <label className="block text-xs text-gray-400 mb-1">Frame Size</label>
+      <label className="block text-xs text-content-secondary mb-1">Frame Size</label>
       <div className="relative">
         <input
           type="number"
@@ -2315,12 +2315,12 @@ function FrameSizeInput({
           placeholder={unit === 'mm' ? '450' : '5'}
           min={0}
           step={unit === 'mm' ? 10 : 0.5}
-          className="w-full px-3 py-2 pr-12 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+          className="w-full px-3 py-2 pr-12 bg-surface-input border border-border rounded-lg text-content text-sm focus:outline-none focus:border-blue-500"
         />
         <button
           type="button"
           onClick={() => setUnit(unit === 'mm' ? 'in' : 'mm')}
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs hover:text-blue-400 transition-colors px-1"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-content-secondary text-xs hover:text-blue-400 transition-colors px-1"
           title="Toggle mm / inches"
         >
           {unit}
@@ -2357,7 +2357,7 @@ function VehicleInputField({
 }) {
   return (
     <div>
-      <label className="block text-xs text-gray-400 mb-1">{label}</label>
+      <label className="block text-xs text-content-secondary mb-1">{label}</label>
       <div className="relative">
         <input
           type={type}
@@ -2368,14 +2368,14 @@ function VehicleInputField({
           min={min}
           max={max}
           step={step}
-          className={`w-full px-3 py-2 bg-gray-900 border rounded-lg text-white text-sm focus:outline-none ${
+          className={`w-full px-3 py-2 bg-surface-input border rounded-lg text-content text-sm focus:outline-none ${
             unit ? 'pr-12' : ''
           } ${
-            error ? 'border-red-500/60 focus:border-red-500' : 'border-gray-600 focus:border-blue-500'
+            error ? 'border-red-500/60 focus:border-red-500' : 'border-border focus:border-blue-500'
           }`}
         />
         {unit && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none">{unit}</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-content-secondary text-xs pointer-events-none">{unit}</span>
         )}
       </div>
       {error && <div className="text-[10px] text-red-400 mt-0.5">{error}</div>}
@@ -2397,11 +2397,11 @@ function VehicleSelectField({
 }) {
   return (
     <div>
-      <label className="block text-xs text-gray-400 mb-1">{label}</label>
+      <label className="block text-xs text-content-secondary mb-1">{label}</label>
       <select
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+        className="w-full px-3 py-2 bg-surface-input border border-border rounded-lg text-content text-sm focus:outline-none focus:border-blue-500"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -2544,18 +2544,18 @@ function VehicleEditModal({
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-lg mx-4 overflow-hidden shadow-2xl"
+        className="bg-surface-tooltip rounded-xl border border-border w-full max-w-lg mx-4 overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 text-blue-400">
               {VEHICLE_ICONS[vehicle.type]}
             </div>
-            <h2 className="text-lg font-semibold text-white">Edit {VEHICLE_TYPE_NAMES[vehicle.type]}</h2>
+            <h2 className="text-lg font-semibold text-content">Edit {VEHICLE_TYPE_NAMES[vehicle.type]}</h2>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button onClick={onClose} className="text-content-secondary hover:text-content">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -2567,25 +2567,25 @@ function VehicleEditModal({
           {/* Basic Info - Common to all */}
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 sm:col-span-1">
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">Vehicle Name</label>
+              <label className="block text-sm font-medium text-content mb-1.5">Vehicle Name</label>
               <input
                 type="text"
                 value={nameValue}
                 onChange={(e) => handleChange('name', e.target.value.slice(0, 50), true)}
                 onBlur={() => handleBlur('name', true)}
                 placeholder="My Vehicle"
-                className={`w-full px-3 py-2 bg-gray-900 border rounded-lg text-white focus:outline-none ${
-                  nameError ? 'border-red-500/60 focus:border-red-500' : 'border-gray-600 focus:border-blue-500'
+                className={`w-full px-3 py-2 bg-surface-input border rounded-lg text-content focus:outline-none ${
+                  nameError ? 'border-red-500/60 focus:border-red-500' : 'border-border focus:border-blue-500'
                 }`}
               />
               {nameError && <div className="text-[10px] text-red-400 mt-0.5">{nameError}</div>}
             </div>
             <div className="col-span-2 sm:col-span-1">
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">Vehicle Type</label>
+              <label className="block text-sm font-medium text-content mb-1.5">Vehicle Type</label>
               <select
                 value={vehicle.type}
                 onChange={(e) => onUpdate({ type: e.target.value as VehicleType })}
-                className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 bg-surface-input border border-border rounded-lg text-content focus:outline-none focus:border-blue-500"
               >
                 {Object.entries(VEHICLE_TYPE_NAMES).map(([key, name]) => (
                   <option key={key} value={key}>{name}</option>
@@ -2597,7 +2597,7 @@ function VehicleEditModal({
           {/* ========== COPTER-SPECIFIC ========== */}
           {isCopter && (
             <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-medium text-content-secondary mb-3 flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
@@ -2645,7 +2645,7 @@ function VehicleEditModal({
           {/* ========== PLANE-SPECIFIC ========== */}
           {isPlane && (
             <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-medium text-content-secondary mb-3 flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
@@ -2705,7 +2705,7 @@ function VehicleEditModal({
           {/* ========== VTOL-SPECIFIC ========== */}
           {isVtol && (
             <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-medium text-content-secondary mb-3 flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
@@ -2765,7 +2765,7 @@ function VehicleEditModal({
           {/* ========== ROVER-SPECIFIC ========== */}
           {isRover && (
             <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-medium text-content-secondary mb-3 flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
@@ -2825,7 +2825,7 @@ function VehicleEditModal({
           {/* ========== BOAT-SPECIFIC ========== */}
           {isBoat && (
             <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-medium text-content-secondary mb-3 flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
@@ -2896,7 +2896,7 @@ function VehicleEditModal({
           {/* ========== SUB-SPECIFIC ========== */}
           {isSub && (
             <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-medium text-content-secondary mb-3 flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
@@ -2966,7 +2966,7 @@ function VehicleEditModal({
 
           {/* Battery - Common to all */}
           <div>
-            <h3 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-medium text-content-secondary mb-3 flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
@@ -3015,7 +3015,7 @@ function VehicleEditModal({
 
           {/* Advanced - Vehicle-type specific */}
           <details className="group">
-            <summary className="text-sm font-medium text-gray-500 cursor-pointer hover:text-gray-300 flex items-center gap-2">
+            <summary className="text-sm font-medium text-content-secondary cursor-pointer hover:text-content flex items-center gap-2">
               <svg className="w-4 h-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
@@ -3102,13 +3102,13 @@ function VehicleEditModal({
 
               {/* Notes - Common to all */}
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Notes</label>
+                <label className="block text-xs text-content-secondary mb-1">Notes</label>
                 <textarea
                   value={vehicle.notes || ''}
                   onChange={(e) => onUpdate({ notes: e.target.value || undefined })}
                   placeholder="Additional notes about this vehicle..."
                   rows={2}
-                  className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 resize-none"
+                  className="w-full px-3 py-2 bg-surface-input border border-border rounded-lg text-content text-sm focus:outline-none focus:border-blue-500 resize-none"
                 />
               </div>
             </div>
@@ -3116,10 +3116,10 @@ function VehicleEditModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-700 flex justify-end">
+        <div className="px-6 py-4 border-t border-border flex justify-end">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors"
+            className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-content font-medium rounded-lg transition-colors"
           >
             Done
           </button>
@@ -3218,19 +3218,19 @@ function VehicleCard({
         <VehicleEditModal vehicle={vehicle} onUpdate={onUpdate} onClose={onSave} />
       )}
       <div
-        className={`bg-gray-900/50 rounded-lg border p-3 transition-colors cursor-pointer ${
-          isActive ? 'border-emerald-500/50 bg-emerald-900/10' : 'border-gray-700/50 hover:border-gray-600/50'
+        className={`bg-surface-input rounded-lg border p-3 transition-colors cursor-pointer ${
+          isActive ? 'border-emerald-500/50 bg-emerald-900/10' : 'border-subtle hover:border-border'
         }`}
         onClick={onSelect}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 ${isActive ? 'text-emerald-400' : 'text-gray-500'}`}>
+            <div className={`w-8 h-8 ${isActive ? 'text-emerald-400' : 'text-content-secondary'}`}>
               {VEHICLE_ICONS[vehicle.type]}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-white font-medium text-sm">{vehicle.name}</span>
+                <span className="text-content font-medium text-sm">{vehicle.name}</span>
                 {isActive && (
                   <span className="text-[10px] text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">Active</span>
                 )}
@@ -3240,19 +3240,19 @@ function VehicleCard({
                   </span>
                 )}
               </div>
-              <div className="text-gray-500 text-xs">
+              <div className="text-content-secondary text-xs">
                 {getVehicleSpecs()}
               </div>
             </div>
           </div>
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-            <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-white transition-colors" title="Edit">
+            <button onClick={onEdit} className="p-1.5 text-content-secondary hover:text-content transition-colors" title="Edit">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
             </button>
             {canDelete && (
-              <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-400 transition-colors" title="Delete">
+              <button onClick={onDelete} className="p-1.5 text-content-secondary hover:text-red-400 transition-colors" title="Delete">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>

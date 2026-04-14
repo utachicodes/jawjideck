@@ -111,7 +111,7 @@ export function GraphToolbar() {
   return (
     <>
       <div
-        className="flex items-center gap-1 px-3 py-1.5 bg-gray-900/60 border-b border-gray-700/40"
+        className="flex items-center gap-1 px-3 py-1.5 bg-surface border-b border-subtle"
         onKeyDown={handleKeyDown}
         tabIndex={-1}
       >
@@ -120,14 +120,14 @@ export function GraphToolbar() {
           type="text"
           value={graphName}
           onChange={(e) => setGraphName(e.target.value)}
-          className="text-sm font-medium text-white bg-transparent border-b border-transparent hover:border-gray-600 focus:border-blue-500/50 focus:outline-none mr-3 w-48"
+          className="text-sm font-medium text-content bg-transparent border-b border-transparent hover:border-default focus:border-blue-500/50 focus:outline-none mr-3 w-48"
         />
 
         {isDirty && (
           <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mr-2" title="Unsaved changes" />
         )}
 
-        <div className="w-px h-5 bg-gray-700/50 mx-1" />
+        <div className="w-px h-5 bg-subtle mx-1" />
 
         {/* File operations */}
         <ToolbarButton icon={FilePlus} label="New" onClick={handleNew} />
@@ -136,11 +136,11 @@ export function GraphToolbar() {
         <ToolbarButton icon={BookTemplate} label="Templates" onClick={() => setShowTemplates(true)} />
         <ToolbarButton icon={BookOpen} label="Docs" onClick={() => setShowDocs(true)} />
 
-        <div className="w-px h-5 bg-gray-700/50 mx-1" />
+        <div className="w-px h-5 bg-subtle mx-1" />
 
         <ToolbarButton icon={FileCode} label="Export Lua" onClick={handleExportLua} accent />
 
-        <div className="w-px h-5 bg-gray-700/50 mx-1" />
+        <div className="w-px h-5 bg-subtle mx-1" />
 
         {/* Undo / Redo */}
         <ToolbarButton icon={Undo2} label="Undo" onClick={undo} disabled={!canUndo()} />
@@ -149,7 +149,7 @@ export function GraphToolbar() {
         <div className="flex-1" />
 
         {/* Node count */}
-        <span className="text-[10px] text-gray-500">
+        <span className="text-[10px] text-content-secondary">
           {nodes.length} node{nodes.length !== 1 ? 's' : ''} | {edges.length} connection{edges.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -207,10 +207,10 @@ function ToolbarButton({
       className={`
         flex items-center gap-1.5 px-2 py-1 rounded text-[11px] transition-colors
         ${disabled
-          ? 'text-gray-700 cursor-not-allowed'
+          ? 'text-content-tertiary cursor-not-allowed'
           : accent
             ? 'text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300'
-            : 'text-gray-400 hover:bg-gray-700/40 hover:text-gray-200'
+            : 'text-content-secondary hover:bg-surface-raised hover:text-content'
         }
       `}
       title={label}

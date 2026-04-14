@@ -6,6 +6,8 @@ import {
   DockviewApi,
   SerializedDockview,
   Orientation,
+  themeDark,
+  themeLight,
 } from 'dockview-react';
 import 'dockview-react/dist/styles/dockview.css';
 
@@ -13,6 +15,7 @@ import { useTelemetryStore } from '../../stores/telemetry-store';
 import { useLayoutStore } from '../../stores/layout-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useSettingsStore } from '../../stores/settings-store';
+import { useResolvedTheme } from '../../hooks/useTheme';
 import type { TelemetrySpeed } from '../../../shared/ipc-channels';
 
 // Reserved layout name for auto-save (separate from user-named layouts)
@@ -355,13 +358,13 @@ function LayoutToolbar({
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/60 border-b border-gray-700/50">
-      <span className="text-xs text-gray-500">Layout:</span>
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-surface border-b border-subtle">
+      <span className="text-xs text-content-secondary">Layout:</span>
 
       <select
         value={activeLayout}
         onChange={(e) => onLoad(e.target.value)}
-        className="bg-gray-700/50 border border-gray-600/50 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+        className="bg-surface-raised border border-default rounded px-2 py-1 text-xs text-content focus:outline-none focus:ring-1 focus:ring-blue-500/50"
       >
         <optgroup label="Presets">
           {availablePresets.map(([key, name]) => (
@@ -384,7 +387,7 @@ function LayoutToolbar({
             value={layoutName}
             onChange={(e) => setLayoutName(e.target.value)}
             placeholder="Layout name"
-            className="bg-gray-700/50 border border-gray-600/50 rounded px-2 py-1 text-xs text-gray-200 w-32 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+            className="bg-surface-input border border-default rounded px-2 py-1 text-xs text-content w-32 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
             autoFocus
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSave();
@@ -399,7 +402,7 @@ function LayoutToolbar({
           </button>
           <button
             onClick={() => setShowSaveDialog(false)}
-            className="px-2 py-1 bg-gray-600/50 hover:bg-gray-500/50 text-gray-300 text-xs rounded transition-colors"
+            className="px-2 py-1 bg-surface-raised hover:bg-surface-raised text-content text-xs rounded transition-colors"
           >
             Cancel
           </button>
@@ -408,13 +411,13 @@ function LayoutToolbar({
         <>
           <button
             onClick={() => setShowSaveDialog(true)}
-            className="px-2 py-1 bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 text-xs rounded transition-colors"
+            className="px-2 py-1 bg-surface-raised hover:bg-surface-raised text-content text-xs rounded transition-colors"
           >
             Save As...
           </button>
           <button
             onClick={onReset}
-            className="px-2 py-1 bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 text-xs rounded transition-colors"
+            className="px-2 py-1 bg-surface-raised hover:bg-surface-raised text-content text-xs rounded transition-colors"
           >
             Reset
           </button>
@@ -455,7 +458,7 @@ function AddPanelDropdown({ onAddPanel, supportsMissionPlanning, isMavlink }: { 
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="px-2 py-1 bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 text-xs rounded transition-colors flex items-center gap-1"
+        className="px-2 py-1 bg-surface-raised hover:bg-surface-raised text-content text-xs rounded transition-colors flex items-center gap-1"
       >
         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -466,7 +469,7 @@ function AddPanelDropdown({ onAddPanel, supportsMissionPlanning, isMavlink }: { 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700/50 rounded-lg shadow-xl z-20 py-1 min-w-[150px]">
+          <div className="absolute right-0 top-full mt-1 bg-surface border border-subtle rounded-lg shadow-xl z-20 py-1 min-w-[150px]">
             {availablePanels.map(([id, { component, title }]) => (
               <button
                 key={id}
@@ -474,7 +477,7 @@ function AddPanelDropdown({ onAddPanel, supportsMissionPlanning, isMavlink }: { 
                   onAddPanel(id, component, title);
                   setIsOpen(false);
                 }}
-                className="w-full px-3 py-1.5 text-left text-xs text-gray-300 hover:bg-gray-700/50 transition-colors"
+                className="w-full px-3 py-1.5 text-left text-xs text-content hover:bg-surface-raised transition-colors"
               >
                 {title}
               </button>
@@ -513,41 +516,41 @@ function QuickStatsBar() {
     <div className={`shrink-0 px-4 py-2 flex items-center justify-between border-b ${
       flight.armed
         ? 'bg-red-500/10 border-red-500/30'
-        : 'bg-gray-800/40 border-gray-700/40'
+        : 'bg-surface border-subtle'
     }`}>
       <div className="flex items-center gap-3">
         <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide ${
-          flight.armed ? 'bg-red-500 text-white' : 'bg-gray-700 text-gray-400'
+          flight.armed ? 'bg-red-500 text-white' : 'bg-surface-raised text-content-secondary'
         }`}>
           {flight.armed ? 'Armed' : 'Disarmed'}
         </span>
-        <span className="text-lg font-medium text-white">{flight.mode}</span>
+        <span className="text-lg font-medium text-content">{flight.mode}</span>
       </div>
       <div className="flex items-center gap-6 text-xs">
         <div className="flex items-baseline gap-1.5">
-          <span className="text-gray-500">HDG</span>
-          <span className="font-mono text-sm text-gray-200">{vfrHud.heading.toFixed(0)}°</span>
+          <span className="text-content-secondary">HDG</span>
+          <span className="font-mono text-sm text-content">{vfrHud.heading.toFixed(0)}°</span>
         </div>
         <div className="flex items-baseline gap-1.5">
-          <span className="text-gray-500">ALT</span>
-          <span className="font-mono text-sm text-gray-200">{vfrHud.alt.toFixed(1)}m</span>
+          <span className="text-content-secondary">ALT</span>
+          <span className="font-mono text-sm text-content">{vfrHud.alt.toFixed(1)}m</span>
         </div>
         <div className="flex items-baseline gap-1.5">
-          <span className="text-gray-500">SPD</span>
-          <span className="font-mono text-sm text-gray-200">{vfrHud.groundspeed.toFixed(1)}m/s</span>
+          <span className="text-content-secondary">SPD</span>
+          <span className="font-mono text-sm text-content">{vfrHud.groundspeed.toFixed(1)}m/s</span>
         </div>
         <div className="flex items-baseline gap-1.5">
-          <span className="text-gray-500">THR</span>
-          <span className="font-mono text-sm text-gray-200">{vfrHud.throttle}%</span>
+          <span className="text-content-secondary">THR</span>
+          <span className="font-mono text-sm text-content">{vfrHud.throttle}%</span>
         </div>
         <div className="flex items-baseline gap-1.5">
-          <span className="text-gray-500">BAT</span>
+          <span className="text-content-secondary">BAT</span>
           <span className={`font-mono text-sm ${batteryColor}`}>{battery.voltage.toFixed(1)}V</span>
         </div>
         {isMavlink && (
           <div className="flex items-center gap-1.5 ml-2">
-            <span className="text-gray-500">RATE</span>
-            <div className="flex bg-gray-700/30 rounded-lg p-0.5">
+            <span className="text-content-secondary">RATE</span>
+            <div className="flex bg-surface-raised rounded-lg p-0.5">
               {SPEED_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
@@ -555,7 +558,7 @@ function QuickStatsBar() {
                   className={`px-2 py-0.5 text-xs rounded transition-colors ${
                     telemetrySpeed === opt.value
                       ? 'bg-blue-500/20 text-blue-400'
-                      : 'text-gray-400 hover:text-gray-200'
+                      : 'text-content-secondary hover:text-content'
                   }`}
                 >
                   {opt.label}
@@ -570,6 +573,7 @@ function QuickStatsBar() {
 }
 
 export function TelemetryDashboard() {
+  const resolvedTheme = useResolvedTheme();
   const apiRef = useRef<DockviewApi | null>(null);
   const { layouts, activeLayoutName, loadLayouts, saveLayout, setActiveLayout } = useLayoutStore();
   const connectionState = useConnectionStore((s) => s.connectionState);
@@ -710,10 +714,11 @@ export function TelemetryDashboard() {
       />
 
       {/* Dockview container */}
-      <div className="flex-1 dockview-theme-dark">
+      <div className="flex-1">
         <DockviewReact
           components={components}
           onReady={onReady}
+          theme={resolvedTheme === 'light' ? themeLight : themeDark}
           className="h-full"
         />
       </div>

@@ -45,8 +45,8 @@ export function ExtensionsPanel() {
   if (!isConnected) {
     return (
       <PanelContainer className="flex items-center justify-center">
-        <div className="text-center text-gray-600 text-xs">
-          <div className="text-gray-500 mb-1">Extensions unavailable</div>
+        <div className="text-center text-content-tertiary text-xs">
+          <div className="text-content-secondary mb-1">Extensions unavailable</div>
           <div>Connect to companion agent to manage BlueOS extensions.</div>
         </div>
       </PanelContainer>
@@ -56,10 +56,10 @@ export function ExtensionsPanel() {
   if (!blueosDetected && extensions.length === 0) {
     return (
       <PanelContainer className="flex items-center justify-center">
-        <div className="text-center text-gray-600 text-xs">
-          <div className="text-gray-500 mb-1">BlueOS not detected</div>
+        <div className="text-center text-content-tertiary text-xs">
+          <div className="text-content-secondary mb-1">BlueOS not detected</div>
           <div>BlueOS is not running on the companion computer.</div>
-          <div className="mt-1 text-[10px] text-gray-600">Extensions are only available with BlueOS.</div>
+          <div className="mt-1 text-[10px] text-content-tertiary">Extensions are only available with BlueOS.</div>
         </div>
       </PanelContainer>
     );
@@ -68,13 +68,13 @@ export function ExtensionsPanel() {
   return (
     <PanelContainer className="flex flex-col gap-0 p-0">
       {/* Tab bar */}
-      <div className="flex items-center gap-0 border-b border-gray-700/40 shrink-0">
+      <div className="flex items-center gap-0 border-b border-subtle shrink-0">
         <button
           onClick={() => setTab('installed')}
           className={`px-3 py-1.5 text-xs transition-colors ${
             tab === 'installed'
               ? 'text-blue-400 border-b-2 border-blue-400'
-              : 'text-gray-500 hover:text-gray-300'
+              : 'text-content-secondary hover:text-content'
           }`}
         >
           Installed ({extensions.length})
@@ -84,7 +84,7 @@ export function ExtensionsPanel() {
           className={`px-3 py-1.5 text-xs transition-colors ${
             tab === 'available'
               ? 'text-blue-400 border-b-2 border-blue-400'
-              : 'text-gray-500 hover:text-gray-300'
+              : 'text-content-secondary hover:text-content'
           }`}
         >
           Available
@@ -92,7 +92,7 @@ export function ExtensionsPanel() {
         <div className="flex-1" />
         <button
           onClick={fetchExtensions}
-          className="text-gray-500 hover:text-gray-300 transition-colors p-1.5 mr-1"
+          className="text-content-secondary hover:text-content transition-colors p-1.5 mr-1"
           title="Refresh"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -105,21 +105,21 @@ export function ExtensionsPanel() {
       <div className="flex-1 overflow-auto">
         {tab === 'installed' ? (
           extensions.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-gray-600 text-xs">
+            <div className="flex items-center justify-center h-full text-content-tertiary text-xs">
               No extensions installed
             </div>
           ) : (
-            <div className="divide-y divide-gray-800/30">
+            <div className="divide-y divide-subtle">
               {extensions.map((ext) => {
                 const isRemoving = actionInProgress === `remove:${ext.identifier}`;
 
                 return (
-                  <div key={ext.identifier} className="px-3 py-2.5 hover:bg-gray-800/30 transition-colors">
+                  <div key={ext.identifier} className="px-3 py-2.5 hover:bg-surface/30 transition-colors">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2 min-w-0">
                         <div className={`w-2 h-2 rounded-full shrink-0 ${ext.enabled ? 'bg-emerald-400' : 'bg-gray-500'}`} />
-                        <span className="text-xs text-gray-200 font-medium truncate">{ext.name}</span>
-                        <span className="text-[10px] text-gray-600">v{ext.version}</span>
+                        <span className="text-xs text-content font-medium truncate">{ext.name}</span>
+                        <span className="text-[10px] text-content-tertiary">v{ext.version}</span>
                       </div>
 
                       <div className="shrink-0 ml-2">
@@ -137,10 +137,10 @@ export function ExtensionsPanel() {
                     </div>
 
                     {ext.description && (
-                      <div className="text-[10px] text-gray-500 ml-4 line-clamp-2">{ext.description}</div>
+                      <div className="text-[10px] text-content-secondary ml-4 line-clamp-2">{ext.description}</div>
                     )}
 
-                    <div className="text-[10px] text-gray-600 ml-4 mt-0.5 font-mono truncate">
+                    <div className="text-[10px] text-content-tertiary ml-4 mt-0.5 font-mono truncate">
                       {ext.docker_image}
                     </div>
                   </div>
@@ -149,11 +149,11 @@ export function ExtensionsPanel() {
             </div>
           )
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-600 text-xs">
+          <div className="flex items-center justify-center h-full text-content-tertiary text-xs">
             <div className="text-center">
-              <div className="text-gray-500 mb-1">Available extensions</div>
+              <div className="text-content-secondary mb-1">Available extensions</div>
               <div className="text-[10px]">Browse and install extensions from the BlueOS marketplace.</div>
-              <div className="text-[10px] mt-1 text-gray-600">Coming in a future update.</div>
+              <div className="text-[10px] mt-1 text-content-tertiary">Coming in a future update.</div>
             </div>
           </div>
         )}

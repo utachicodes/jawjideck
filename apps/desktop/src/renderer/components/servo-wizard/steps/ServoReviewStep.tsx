@@ -52,35 +52,35 @@ export default function ServoReviewStep() {
   };
 
   if (!selectedPreset) {
-    return <div className="text-zinc-400">No configuration to review</div>;
+    return <div className="text-content-secondary">No configuration to review</div>;
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-xl font-bold text-white">Review Your Configuration</h2>
-        <p className="text-sm text-zinc-400 mt-2">
+        <h2 className="text-xl font-bold text-content">Review Your Configuration</h2>
+        <p className="text-sm text-content-secondary mt-2">
           Verify your servo configuration before saving to the flight controller.
         </p>
       </div>
 
       {/* Aircraft type badge */}
       <div className="flex justify-center">
-        <div className="inline-flex items-center gap-3 px-4 py-2 bg-zinc-800/50 rounded-full border border-zinc-700/50">
+        <div className="inline-flex items-center gap-3 px-4 py-2 bg-surface rounded-full border border-subtle">
           <span className="text-2xl">{selectedPreset.icon}</span>
-          <span className="text-sm font-medium text-white">{selectedPreset.name}</span>
-          <span className="text-xs text-zinc-400">
+          <span className="text-sm font-medium text-content">{selectedPreset.name}</span>
+          <span className="text-xs text-content-secondary">
             {selectedPreset.servoCount} servo{selectedPreset.servoCount !== 1 ? 's' : ''}
           </span>
         </div>
       </div>
 
       {/* Configuration summary table */}
-      <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 overflow-hidden">
+      <div className="bg-surface-input rounded-xl border border-subtle overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-zinc-800/50 text-zinc-400 text-xs uppercase tracking-wide">
+            <tr className="bg-surface text-content-secondary text-xs uppercase tracking-wide">
               <th className="px-4 py-3 text-left">Control Surface</th>
               <th className="px-4 py-3 text-left">Servo</th>
               <th className="px-4 py-3 text-left">Input</th>
@@ -89,16 +89,16 @@ export default function ServoReviewStep() {
               <th className="px-4 py-3 text-center">Center</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800/50">
+          <tbody className="divide-y divide-subtle">
             {assignments.map((assignment) => {
               const surfaceInfo = CONTROL_SURFACE_INFO[assignment.surface];
               const defaultRule = selectedPreset.defaultRules[assignment.surface];
 
               return (
-                <tr key={assignment.surface} className="hover:bg-zinc-800/30">
+                <tr key={assignment.surface} className="hover:bg-surface/30">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-medium">{surfaceInfo.name}</span>
+                      <span className="text-content font-medium">{surfaceInfo.name}</span>
                       {assignment.reversed && (
                         <span className="text-xs px-1.5 py-0.5 bg-yellow-500/20 rounded text-yellow-400">
                           REV
@@ -109,18 +109,18 @@ export default function ServoReviewStep() {
                   <td className="px-4 py-3">
                     <span className="font-mono text-blue-400">S{assignment.servoIndex}</span>
                   </td>
-                  <td className="px-4 py-3 text-zinc-400">
+                  <td className="px-4 py-3 text-content-secondary">
                     {defaultRule?.[0] ? getInputName(defaultRule[0].inputSource) : '-'}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span className={`font-mono ${
-                      assignment.reversed ? 'text-yellow-400' : 'text-zinc-300'
+                      assignment.reversed ? 'text-yellow-400' : 'text-content'
                     }`}>
                       {assignment.reversed ? '-' : ''}{(assignment as any).rate || 100}%
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <span className="font-mono text-zinc-400">
+                    <span className="font-mono text-content-secondary">
                       {assignment.min} - {assignment.max}
                     </span>
                   </td>
@@ -135,9 +135,9 @@ export default function ServoReviewStep() {
       </div>
 
       {/* Mixer rules preview */}
-      <div className="bg-zinc-800/30 rounded-xl p-4">
-        <h3 className="text-sm font-medium text-zinc-300 mb-3">Mixer Rules Preview</h3>
-        <div className="font-mono text-xs text-zinc-500 space-y-1">
+      <div className="bg-surface rounded-xl p-4">
+        <h3 className="text-sm font-medium text-content mb-3">Mixer Rules Preview</h3>
+        <div className="font-mono text-xs text-content-secondary space-y-1">
           {assignments.map((assignment) => {
             const defaultRule = selectedPreset.defaultRules[assignment.surface];
             if (!defaultRule) return null;
@@ -148,10 +148,10 @@ export default function ServoReviewStep() {
 
             return (
               <div key={assignment.surface}>
-                <span className="text-zinc-400">Servo {assignment.servoIndex}</span>
-                <span className="text-zinc-600"> → </span>
+                <span className="text-content-secondary">Servo {assignment.servoIndex}</span>
+                <span className="text-content-tertiary"> → </span>
                 <span className="text-blue-400">{getInputName(defaultRule[0]!.inputSource)}</span>
-                <span className="text-zinc-600"> @ </span>
+                <span className="text-content-tertiary"> @ </span>
                 <span className={rate < 0 ? 'text-yellow-400' : 'text-green-400'}>
                   {rate}%
                 </span>
@@ -167,7 +167,7 @@ export default function ServoReviewStep() {
           <Check className="w-6 h-6 text-green-400" />
           <div>
             <p className="text-sm text-green-400 font-medium">Configuration saved successfully!</p>
-            <p className="text-xs text-zinc-400 mt-1">
+            <p className="text-xs text-content-secondary mt-1">
               Settings have been written to the flight controller. You can now close this wizard.
             </p>
           </div>
@@ -179,7 +179,7 @@ export default function ServoReviewStep() {
           <X className="w-6 h-6 text-red-400" />
           <div>
             <p className="text-sm text-red-400 font-medium">Failed to save configuration</p>
-            <p className="text-xs text-zinc-400 mt-1">{errorMessage}</p>
+            <p className="text-xs text-content-secondary mt-1">{errorMessage}</p>
           </div>
         </div>
       )}
@@ -189,7 +189,7 @@ export default function ServoReviewStep() {
         <Info className="w-5 h-5 text-blue-400 shrink-0" />
         <div>
           <p className="text-sm text-blue-400 font-medium">Before saving:</p>
-          <ul className="text-xs text-zinc-400 mt-1 space-y-1 list-disc list-inside">
+          <ul className="text-xs text-content-secondary mt-1 space-y-1 list-disc list-inside">
             <li>Ensure your flight controller is connected</li>
             <li>Disconnect propellers for safety</li>
             <li>After saving, test all controls before flight</li>
@@ -203,7 +203,7 @@ export default function ServoReviewStep() {
         <button
           onClick={prevStep}
           disabled={isSaving}
-          className="px-6 py-2.5 rounded-lg font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700 disabled:opacity-50"
+          className="px-6 py-2.5 rounded-lg font-medium bg-surface-tooltip text-content hover:bg-surface-raised disabled:opacity-50"
         >
           ← Back
         </button>

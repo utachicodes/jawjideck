@@ -47,9 +47,9 @@ export function RallyListPanel({
   const selectedPoint = rallyPoints.find((p) => p.seq === selectedSeq);
 
   return (
-    <div className="h-full flex flex-col bg-gray-900/50 text-gray-200">
+    <div className="h-full flex flex-col bg-surface text-content">
       {/* Header */}
-      <div className="p-3 border-b border-gray-700/50">
+      <div className="p-3 border-b border-subtle">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium">Rally Points</h3>
           {isDirty && (
@@ -58,7 +58,7 @@ export function RallyListPanel({
             </span>
           )}
         </div>
-        <p className="text-xs text-gray-500 mt-1">Emergency landing locations</p>
+        <p className="text-xs text-content-secondary mt-1">Emergency landing locations</p>
       </div>
 
       {/* Success message */}
@@ -80,16 +80,16 @@ export function RallyListPanel({
 
       {/* Progress bar */}
       {progress && (
-        <div className="m-2 p-2 bg-gray-800/50 rounded">
+        <div className="m-2 p-2 bg-surface rounded">
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-gray-400">
+            <span className="text-content-secondary">
               {progress.operation === 'download' ? 'Downloading' : 'Uploading'}...
             </span>
-            <span className="text-gray-300">
+            <span className="text-content">
               {progress.transferred}/{progress.total}
             </span>
           </div>
-          <div className="h-1 bg-gray-700 rounded overflow-hidden">
+          <div className="h-1 bg-surface-raised rounded overflow-hidden">
             <div
               className="h-full bg-orange-500 transition-all duration-200"
               style={{
@@ -103,7 +103,7 @@ export function RallyListPanel({
       {/* Rally Points List */}
       <div className="flex-1 overflow-y-auto">
         {rallyPoints.length === 0 ? (
-          <div className="p-4 text-center text-gray-500 text-xs">
+          <div className="p-4 text-center text-content-secondary text-xs">
             <svg className="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
@@ -119,7 +119,7 @@ export function RallyListPanel({
               />
             </svg>
             <p>No rally points</p>
-            <p className="mt-1 text-gray-600">Click "Add Rally Point" to create one</p>
+            <p className="mt-1 text-content-tertiary">Click "Add Rally Point" to create one</p>
           </div>
         ) : (
           <div className="p-2 space-y-1">
@@ -146,7 +146,7 @@ export function RallyListPanel({
       )}
 
       {/* Status Bar */}
-      <div className="p-2 border-t border-gray-700/50 text-xs text-gray-400 flex items-center justify-between">
+      <div className="p-2 border-t border-subtle text-xs text-content-secondary flex items-center justify-between">
         <span>
           {rallyPoints.length} point{rallyPoints.length !== 1 ? 's' : ''}
         </span>
@@ -188,7 +188,7 @@ function RallyListItem({ point, isSelected, readOnly, onSelect, onRemove }: Rall
       className={`flex items-center justify-between p-2 rounded cursor-pointer ${
         isSelected
           ? 'bg-orange-500/20 ring-1 ring-orange-500'
-          : 'bg-gray-800/50 hover:bg-gray-700/50'
+          : 'bg-surface hover:bg-surface-raised'
       }`}
       onClick={onSelect}
     >
@@ -203,10 +203,10 @@ function RallyListItem({ point, isSelected, readOnly, onSelect, onRemove }: Rall
           R{point.seq + 1}
         </div>
         <div className="text-xs">
-          <div className="text-gray-200">
+          <div className="text-content">
             {point.latitude.toFixed(6)}, {point.longitude.toFixed(6)}
           </div>
-          <div className="text-gray-500">Alt: {point.altitude}m</div>
+          <div className="text-content-secondary">Alt: {point.altitude}m</div>
         </div>
       </div>
       {!readOnly && (
@@ -215,7 +215,7 @@ function RallyListItem({ point, isSelected, readOnly, onSelect, onRemove }: Rall
             e.stopPropagation();
             onRemove();
           }}
-          className="p-1 text-gray-400 hover:text-red-400"
+          className="p-1 text-content-secondary hover:text-red-400"
           title="Remove"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -280,7 +280,7 @@ function RallyDetailsPanel({ point, onUpdate }: RallyDetailsPanelProps) {
   };
 
   return (
-    <div className="p-3 border-t border-gray-700/50 bg-gray-800/30">
+    <div className="p-3 border-t border-subtle bg-surface">
       <div className="text-xs font-medium text-orange-400 mb-2">
         Rally Point R{point.seq + 1}
       </div>
@@ -288,30 +288,30 @@ function RallyDetailsPanel({ point, onUpdate }: RallyDetailsPanelProps) {
       <div className="space-y-2">
         {/* Position (read-only, drag on map to change) */}
         <div className="flex items-center justify-between">
-          <label className="text-xs text-gray-400">Position</label>
-          <span className="text-xs text-gray-300">
+          <label className="text-xs text-content-secondary">Position</label>
+          <span className="text-xs text-content">
             {point.latitude.toFixed(6)}, {point.longitude.toFixed(6)}
           </span>
         </div>
 
         {/* Altitude */}
         <div className="flex items-center justify-between">
-          <label className="text-xs text-gray-400">Altitude (m)</label>
+          <label className="text-xs text-content-secondary">Altitude (m)</label>
           <input
             type="number"
             value={localAlt}
             onChange={(e) => setLocalAlt(e.target.value)}
             onBlur={handleAltBlur}
             onKeyDown={(e) => e.key === 'Enter' && handleAltBlur()}
-            className="w-20 px-2 py-1 text-xs bg-gray-700 border border-gray-600 rounded text-right"
+            className="w-20 px-2 py-1 text-xs bg-surface-raised border border rounded text-right"
           />
         </div>
 
         {/* Break Altitude */}
         <div className="flex items-center justify-between">
-          <label className="text-xs text-gray-400">
+          <label className="text-xs text-content-secondary">
             Break Alt (m)
-            <span className="ml-1 text-gray-600" title="Altitude to exit loiter and begin landing">
+            <span className="ml-1 text-content-tertiary" title="Altitude to exit loiter and begin landing">
               ?
             </span>
           </label>
@@ -321,15 +321,15 @@ function RallyDetailsPanel({ point, onUpdate }: RallyDetailsPanelProps) {
             onChange={(e) => setLocalBreakAlt(e.target.value)}
             onBlur={handleBreakAltBlur}
             onKeyDown={(e) => e.key === 'Enter' && handleBreakAltBlur()}
-            className="w-20 px-2 py-1 text-xs bg-gray-700 border border-gray-600 rounded text-right"
+            className="w-20 px-2 py-1 text-xs bg-surface-raised border border rounded text-right"
           />
         </div>
 
         {/* Land Direction */}
         <div className="flex items-center justify-between">
-          <label className="text-xs text-gray-400">
+          <label className="text-xs text-content-secondary">
             Land Heading (°)
-            <span className="ml-1 text-gray-600" title="0 = any direction">
+            <span className="ml-1 text-content-tertiary" title="0 = any direction">
               ?
             </span>
           </label>
@@ -341,31 +341,31 @@ function RallyDetailsPanel({ point, onUpdate }: RallyDetailsPanelProps) {
             onChange={(e) => setLocalDirection(e.target.value)}
             onBlur={handleDirectionBlur}
             onKeyDown={(e) => e.key === 'Enter' && handleDirectionBlur()}
-            className="w-20 px-2 py-1 text-xs bg-gray-700 border border-gray-600 rounded text-right"
+            className="w-20 px-2 py-1 text-xs bg-surface-raised border border rounded text-right"
           />
         </div>
 
         {/* Flags */}
         <div>
-          <label className="text-xs text-gray-400 block mb-1">Flags</label>
+          <label className="text-xs text-content-secondary block mb-1">Flags</label>
           <div className="space-y-1">
             <label className="flex items-center gap-2 text-xs">
               <input
                 type="checkbox"
                 checked={(point.flags & RALLY_FLAGS.FAVORABLE_WIND) !== 0}
                 onChange={() => toggleFlag(RALLY_FLAGS.FAVORABLE_WIND)}
-                className="rounded bg-gray-700 border-gray-600"
+                className="rounded bg-surface-raised border"
               />
-              <span className="text-gray-300">Land into wind</span>
+              <span className="text-content">Land into wind</span>
             </label>
             <label className="flex items-center gap-2 text-xs">
               <input
                 type="checkbox"
                 checked={(point.flags & RALLY_FLAGS.LAND_IMMEDIATELY) !== 0}
                 onChange={() => toggleFlag(RALLY_FLAGS.LAND_IMMEDIATELY)}
-                className="rounded bg-gray-700 border-gray-600"
+                className="rounded bg-surface-raised border"
               />
-              <span className="text-gray-300">Land immediately (no loiter)</span>
+              <span className="text-content">Land immediately (no loiter)</span>
             </label>
           </div>
         </div>

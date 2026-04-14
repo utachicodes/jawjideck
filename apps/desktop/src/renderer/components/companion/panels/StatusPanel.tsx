@@ -50,7 +50,7 @@ export function StatusPanel() {
     ? 'text-yellow-400'
     : heartbeatOnline
     ? 'text-blue-400'
-    : 'text-gray-500';
+    : 'text-content-secondary';
 
   return (
     <PanelContainer>
@@ -61,7 +61,7 @@ export function StatusPanel() {
           <div>
             <div className={`text-sm font-medium ${statusTextColor}`}>{statusLabel}</div>
             {connectionState.host && (
-              <div className="text-xs text-gray-500">{connectionState.host}:{connectionState.port}</div>
+              <div className="text-xs text-content-secondary">{connectionState.host}:{connectionState.port}</div>
             )}
           </div>
         </div>
@@ -96,12 +96,12 @@ export function StatusPanel() {
               {lastHeartbeat && (
                 <StatRow label="Last Seen" value={formatTimeSince(lastHeartbeat)} />
               )}
-              <div className="mt-3 p-2 bg-gray-800/50 rounded text-xs text-gray-500">
+              <div className="mt-3 p-2 bg-surface rounded text-xs text-content-secondary">
                 Install the ArduDeck Agent on the companion for full monitoring.
               </div>
             </>
           ) : (
-            <div className="flex items-center justify-center h-20 text-gray-600 text-xs">
+            <div className="flex items-center justify-center h-20 text-content-tertiary text-xs">
               No companion detected
             </div>
           )}

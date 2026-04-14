@@ -128,7 +128,7 @@ Return 3-6 cards. Most important issues first.`;
 
   if (!healthResults || !currentLog) {
     return (
-      <div className="h-full flex items-center justify-center text-gray-500">
+      <div className="h-full flex items-center justify-center text-content-secondary">
         No log loaded. Download or open a .bin file first.
       </div>
     );
@@ -166,7 +166,7 @@ Return 3-6 cards. Most important issues first.`;
       )}
 
       {/* Log info header */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+      <div className="bg-surface rounded-xl border border-subtle p-5">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
             <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -174,10 +174,10 @@ Return 3-6 cards. Most important issues first.`;
             </svg>
           </div>
           <div>
-            <h3 className="text-white font-semibold">
+            <h3 className="text-content font-semibold">
               {meta.firmwareString || `${meta.vehicleType} ${meta.firmwareVersion}` || 'Flight Log'}
             </h3>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-content-secondary">
               {currentLogPath?.split('/').pop() ?? 'Unknown file'}
               {durationMin > 0 && ` \u00b7 ${durationMin.toFixed(1)} min`}
               {currentLog.messageTypes.length > 0 && ` \u00b7 ${currentLog.messageTypes.length} message types`}
@@ -206,33 +206,33 @@ Return 3-6 cards. Most important issues first.`;
 
         {/* Flight stats */}
         {flightStats && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-gray-700/30">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-subtle">
             <div>
-              <div className="text-xs text-gray-500">Max Altitude</div>
-              <div className="text-sm text-white font-medium">{flightStats.maxAlt.toFixed(1)} m</div>
+              <div className="text-xs text-content-secondary">Max Altitude</div>
+              <div className="text-sm text-content font-medium">{flightStats.maxAlt.toFixed(1)} m</div>
             </div>
             <div>
-              <div className="text-xs text-gray-500">Max Speed</div>
-              <div className="text-sm text-white font-medium">{flightStats.maxSpd.toFixed(1)} m/s</div>
+              <div className="text-xs text-content-secondary">Max Speed</div>
+              <div className="text-sm text-content font-medium">{flightStats.maxSpd.toFixed(1)} m/s</div>
             </div>
             <div>
-              <div className="text-xs text-gray-500">Distance</div>
-              <div className="text-sm text-white font-medium">
+              <div className="text-xs text-content-secondary">Distance</div>
+              <div className="text-sm text-content font-medium">
                 {flightStats.totalDist > 1000
                   ? `${(flightStats.totalDist / 1000).toFixed(2)} km`
                   : `${flightStats.totalDist.toFixed(0)} m`}
               </div>
             </div>
             <div>
-              <div className="text-xs text-gray-500">Battery Used</div>
-              <div className="text-sm text-white font-medium">{flightStats.totalMah.toFixed(0)} mAh</div>
+              <div className="text-xs text-content-secondary">Battery Used</div>
+              <div className="text-sm text-content font-medium">{flightStats.totalMah.toFixed(0)} mAh</div>
             </div>
           </div>
         )}
 
         {/* AI Analyze button */}
         {aiProvider && (
-          <div className="mt-4 pt-4 border-t border-gray-700/30">
+          <div className="mt-4 pt-4 border-t border-subtle">
             {aiInsightCards.length > 0 ? (
               <button
                 onClick={() => requireWarning(handleAiAnalyze)}
@@ -309,7 +309,7 @@ Return 3-6 cards. Most important issues first.`;
       {/* Automated health check cards */}
       {aiProvider && (aiInsightCards.length > 0 || isAiInsightLoading) && (
         <div className="flex items-center gap-2 mb-0">
-          <h3 className="text-sm font-semibold text-gray-400">Automated Checks</h3>
+          <h3 className="text-sm font-semibold text-content-secondary">Automated Checks</h3>
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -341,8 +341,8 @@ Return 3-6 cards. Most important issues first.`;
 
       {/* Skipped checks */}
       {skipCount > 0 && (
-        <details className="text-sm text-gray-500">
-          <summary className="cursor-pointer hover:text-gray-400">
+        <details className="text-sm text-content-secondary">
+          <summary className="cursor-pointer hover:text-content-secondary">
             {skipCount} check{skipCount > 1 ? 's' : ''} skipped (no data)
           </summary>
           <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3">

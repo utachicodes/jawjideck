@@ -188,17 +188,17 @@ export function NodePalette() {
     : null;
 
   return (
-    <div className="w-56 h-full bg-gray-900/60 border-r border-gray-700/40 flex flex-col">
+    <div className="w-56 h-full bg-surface border-r border-subtle flex flex-col">
       {/* Search */}
       <div className="p-2">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-secondary" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search nodes..."
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-800/60 border border-gray-700/40 rounded-md text-gray-300 placeholder:text-gray-600 focus:outline-none focus:border-blue-500/40"
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-surface-input border border-subtle rounded-md text-content placeholder:text-content-tertiary focus:outline-none focus:border-blue-500/40"
           />
         </div>
       </div>
@@ -209,7 +209,7 @@ export function NodePalette() {
           // Search results — flat list
           <div className="flex flex-col gap-0.5 px-1">
             {filteredBySearch.length === 0 && (
-              <div className="text-xs text-gray-600 text-center py-4">No matching nodes</div>
+              <div className="text-xs text-content-tertiary text-center py-4">No matching nodes</div>
             )}
             {filteredBySearch.map((node) => (
               <NodeItem
@@ -235,19 +235,19 @@ export function NodePalette() {
               <div key={cat} className="mb-0.5">
                 <button
                   onClick={() => toggleCategory(cat)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs font-medium text-gray-300 hover:bg-gray-800/40 transition-colors"
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs font-medium text-content hover:bg-surface transition-colors"
                 >
                   <CatIcon className="w-3.5 h-3.5 shrink-0" style={{ color }} />
                   <span className="flex-1 text-left">{CATEGORY_LABELS[cat]}</span>
                   <svg
-                    className={`w-3 h-3 text-gray-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                    className={`w-3 h-3 text-content-secondary transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                  <span className="text-[10px] text-gray-600">{nodes.length}</span>
+                  <span className="text-[10px] text-content-tertiary">{nodes.length}</span>
                 </button>
 
                 {isExpanded && (
@@ -298,7 +298,7 @@ function NodeItem({
       draggable
       onDragStart={(e) => onDragStart(e, definitionType)}
       onDoubleClick={() => onDoubleClick(definitionType)}
-      className="flex items-center gap-2 px-2 py-1.5 rounded cursor-grab active:cursor-grabbing hover:bg-gray-800/50 transition-colors group"
+      className="flex items-center gap-2 px-2 py-1.5 rounded cursor-grab active:cursor-grabbing hover:bg-surface transition-colors group"
       title={description}
     >
       {Icon ? (
@@ -312,7 +312,7 @@ function NodeItem({
           style={{ background: color }}
         />
       )}
-      <span className="text-[11px] text-gray-400 group-hover:text-gray-200 truncate transition-colors">
+      <span className="text-[11px] text-content-secondary group-hover:text-content truncate transition-colors">
         {label}
       </span>
     </div>

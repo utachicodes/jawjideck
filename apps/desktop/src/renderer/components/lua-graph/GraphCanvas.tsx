@@ -189,12 +189,12 @@ export function GraphCanvas() {
           size={1}
         />
         <Controls
-          className="!bg-gray-800/80 !border-gray-700/50 !rounded-lg !shadow-lg [&>button]:!bg-gray-700/60 [&>button]:!border-gray-600/40 [&>button]:!text-gray-300 [&>button:hover]:!bg-gray-600/60"
+          className="!bg-surface !border-subtle !rounded-lg !shadow-lg [&>button]:!bg-surface-raised [&>button]:!border [&>button]:!text-content [&>button:hover]:!bg-surface-raised"
         />
         <MiniMap
           nodeColor={minimapNodeColor}
           maskColor="rgba(0, 0, 0, 0.7)"
-          className="!bg-gray-900/80 !border-gray-700/50 !rounded-lg"
+          className="!bg-surface !border-subtle !rounded-lg"
           pannable
           zoomable
         />

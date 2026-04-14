@@ -141,15 +141,15 @@ export function TileCacheCard() {
   const usagePercent = stats ? Math.min(100, (stats.totalSizeBytes / maxSizeBytes) * 100) : 0;
 
   return (
-    <section className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-gray-700/50 p-5">
+    <section className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-5">
       {/* Header */}
-      <h2 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
+      <h2 className="text-sm font-medium text-content mb-4 flex items-center gap-2">
         <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
         </svg>
         Offline Maps
         {stats && (
-          <span className="ml-auto px-2 py-0.5 rounded text-xs font-mono bg-gray-700/50 text-gray-300">
+          <span className="ml-auto px-2 py-0.5 rounded text-xs font-mono bg-surface-raised text-content">
             {formatBytes(stats.totalSizeBytes)}
           </span>
         )}
@@ -158,11 +158,11 @@ export function TileCacheCard() {
       {/* Cache Usage Bar */}
       {stats && settings && (
         <div className="mb-4">
-          <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+          <div className="flex items-center justify-between text-xs text-content-secondary mb-1">
             <span>{stats.totalTiles.toLocaleString()} tiles</span>
             <span>{formatBytes(stats.totalSizeBytes)} / {settings.maxCacheSizeGB} GB</span>
           </div>
-          <div className="w-full h-2 bg-gray-700/50 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-surface-raised rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${
                 usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-yellow-500' : 'bg-emerald-500'
@@ -178,7 +178,7 @@ export function TileCacheCard() {
         <div className="mb-4">
           <button
             onClick={() => setShowPerLayer(!showPerLayer)}
-            className="text-xs text-gray-400 hover:text-gray-300 transition-colors flex items-center gap-1"
+            className="text-xs text-content-secondary hover:text-content transition-colors flex items-center gap-1"
           >
             <svg className={`w-3 h-3 transition-transform ${showPerLayer ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -190,9 +190,9 @@ export function TileCacheCard() {
             <div className="mt-2 space-y-1.5">
               {Object.entries(stats.layers).map(([layer, data]) => (
                 <div key={layer} className="flex items-center justify-between text-xs">
-                  <span className="text-gray-300">{MAP_LAYERS[layer as LayerKey]?.name ?? layer}</span>
+                  <span className="text-content">{MAP_LAYERS[layer as LayerKey]?.name ?? layer}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-500 font-mono">
+                    <span className="text-content-secondary font-mono">
                       {data.tiles.toLocaleString()} tiles / {formatBytes(data.bytes)}
                     </span>
                     <button
@@ -227,14 +227,14 @@ export function TileCacheCard() {
           className={`px-3 py-1.5 text-xs rounded transition-colors border ${
             showDownload
               ? 'bg-blue-600/20 text-blue-400 border-blue-600/30'
-              : 'bg-gray-700/30 text-gray-300 hover:bg-gray-700/50 border-gray-700/30'
+              : 'bg-surface-raised text-content hover:bg-surface-raised border-subtle'
           }`}
         >
           Download Region
         </button>
         <button
           onClick={refreshStats}
-          className="px-3 py-1.5 text-xs rounded bg-gray-700/30 text-gray-300 hover:bg-gray-700/50 border border-gray-700/30 transition-colors"
+          className="px-3 py-1.5 text-xs rounded bg-surface-raised text-content hover:bg-surface-raised border border-subtle transition-colors"
         >
           Refresh
         </button>
@@ -242,52 +242,52 @@ export function TileCacheCard() {
 
       {/* Download Region Panel */}
       {showDownload && (
-        <div className="rounded-lg border border-gray-700/30 p-4 mb-4 space-y-3">
-          <h4 className="text-xs font-medium text-gray-300 uppercase tracking-wider">Download Region for Offline Use</h4>
+        <div className="rounded-lg border border-subtle p-4 mb-4 space-y-3">
+          <h4 className="text-xs font-medium text-content uppercase tracking-wider">Download Region for Offline Use</h4>
 
           {/* Bounding box inputs */}
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] text-gray-500 block mb-0.5">North Lat</label>
+              <label className="text-[10px] text-content-secondary block mb-0.5">North Lat</label>
               <input
                 type="number"
                 step="0.001"
                 value={dlBounds.north || ''}
                 onChange={(e) => setDlBounds((b) => ({ ...b, north: parseFloat(e.target.value) || 0 }))}
-                className="w-full px-2 py-1 text-xs bg-gray-800/50 border border-gray-700/50 rounded text-white focus:border-blue-500/50 focus:outline-none"
+                className="w-full px-2 py-1 text-xs bg-surface-input border border-subtle rounded text-content focus:border-blue-500/50 focus:outline-none"
                 placeholder="e.g. 51.52"
               />
             </div>
             <div>
-              <label className="text-[10px] text-gray-500 block mb-0.5">South Lat</label>
+              <label className="text-[10px] text-content-secondary block mb-0.5">South Lat</label>
               <input
                 type="number"
                 step="0.001"
                 value={dlBounds.south || ''}
                 onChange={(e) => setDlBounds((b) => ({ ...b, south: parseFloat(e.target.value) || 0 }))}
-                className="w-full px-2 py-1 text-xs bg-gray-800/50 border border-gray-700/50 rounded text-white focus:border-blue-500/50 focus:outline-none"
+                className="w-full px-2 py-1 text-xs bg-surface-input border border-subtle rounded text-content focus:border-blue-500/50 focus:outline-none"
                 placeholder="e.g. 51.49"
               />
             </div>
             <div>
-              <label className="text-[10px] text-gray-500 block mb-0.5">West Lon</label>
+              <label className="text-[10px] text-content-secondary block mb-0.5">West Lon</label>
               <input
                 type="number"
                 step="0.001"
                 value={dlBounds.west || ''}
                 onChange={(e) => setDlBounds((b) => ({ ...b, west: parseFloat(e.target.value) || 0 }))}
-                className="w-full px-2 py-1 text-xs bg-gray-800/50 border border-gray-700/50 rounded text-white focus:border-blue-500/50 focus:outline-none"
+                className="w-full px-2 py-1 text-xs bg-surface-input border border-subtle rounded text-content focus:border-blue-500/50 focus:outline-none"
                 placeholder="e.g. -0.12"
               />
             </div>
             <div>
-              <label className="text-[10px] text-gray-500 block mb-0.5">East Lon</label>
+              <label className="text-[10px] text-content-secondary block mb-0.5">East Lon</label>
               <input
                 type="number"
                 step="0.001"
                 value={dlBounds.east || ''}
                 onChange={(e) => setDlBounds((b) => ({ ...b, east: parseFloat(e.target.value) || 0 }))}
-                className="w-full px-2 py-1 text-xs bg-gray-800/50 border border-gray-700/50 rounded text-white focus:border-blue-500/50 focus:outline-none"
+                className="w-full px-2 py-1 text-xs bg-surface-input border border-subtle rounded text-content focus:border-blue-500/50 focus:outline-none"
                 placeholder="e.g. -0.07"
               />
             </div>
@@ -295,7 +295,7 @@ export function TileCacheCard() {
 
           {/* Layer selection */}
           <div>
-            <label className="text-[10px] text-gray-500 block mb-1">Layers to download</label>
+            <label className="text-[10px] text-content-secondary block mb-1">Layers to download</label>
             <div className="flex flex-wrap gap-1.5">
               {DOWNLOADABLE_LAYERS.map((key) => (
                 <button
@@ -304,7 +304,7 @@ export function TileCacheCard() {
                   className={`px-2 py-0.5 text-xs rounded transition-colors ${
                     dlLayers.has(key)
                       ? 'bg-blue-600/30 text-blue-300 border border-blue-500/30'
-                      : 'bg-gray-700/30 text-gray-500 border border-gray-700/30 hover:text-gray-300'
+                      : 'bg-surface-raised text-content-secondary border border-subtle hover:text-content'
                   }`}
                 >
                   {MAP_LAYERS[key].name}
@@ -316,7 +316,7 @@ export function TileCacheCard() {
                 className={`px-2 py-0.5 text-xs rounded transition-colors ${
                   dlLayers.has('dem')
                     ? 'bg-blue-600/30 text-blue-300 border border-blue-500/30'
-                    : 'bg-gray-700/30 text-gray-500 border border-gray-700/30 hover:text-gray-300'
+                    : 'bg-surface-raised text-content-secondary border border-subtle hover:text-content'
                 }`}
               >
                 Elevation (DEM)
@@ -327,7 +327,7 @@ export function TileCacheCard() {
           {/* Zoom range */}
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] text-gray-500 block mb-0.5">Min Zoom: {dlMinZoom}</label>
+              <label className="text-[10px] text-content-secondary block mb-0.5">Min Zoom: {dlMinZoom}</label>
               <input
                 type="range"
                 min={1}
@@ -338,7 +338,7 @@ export function TileCacheCard() {
               />
             </div>
             <div>
-              <label className="text-[10px] text-gray-500 block mb-0.5">Max Zoom: {dlMaxZoom}</label>
+              <label className="text-[10px] text-content-secondary block mb-0.5">Max Zoom: {dlMaxZoom}</label>
               <input
                 type="range"
                 min={1}
@@ -352,8 +352,8 @@ export function TileCacheCard() {
 
           {/* Estimate */}
           {dlEstimate !== null && (
-            <div className="text-xs text-gray-400">
-              Estimated: <span className="text-white font-mono">{dlEstimate.toLocaleString()}</span> tiles
+            <div className="text-xs text-content-secondary">
+              Estimated: <span className="text-content font-mono">{dlEstimate.toLocaleString()}</span> tiles
               (~{formatBytes(dlEstimate * 15000)})
             </div>
           )}
@@ -362,15 +362,15 @@ export function TileCacheCard() {
           {activeDownloadId && dlProgress ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-400">
+                <span className="text-content-secondary">
                   {dlProgress.downloadedTiles.toLocaleString()} / {dlProgress.totalTiles.toLocaleString()}
                   {dlProgress.failedTiles > 0 && (
                     <span className="text-red-400 ml-1">({dlProgress.failedTiles} failed)</span>
                   )}
                 </span>
-                <span className="text-gray-500 font-mono">{formatBytes(dlProgress.bytesDownloaded)}</span>
+                <span className="text-content-secondary font-mono">{formatBytes(dlProgress.bytesDownloaded)}</span>
               </div>
-              <div className="w-full h-2 bg-gray-700/50 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-surface-raised rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full bg-blue-500 transition-all"
                   style={{
@@ -408,13 +408,13 @@ export function TileCacheCard() {
 
       {/* Settings */}
       {settings && (
-        <div className="space-y-3 pt-3 border-t border-gray-700/30">
-          <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Cache Settings</h4>
+        <div className="space-y-3 pt-3 border-t border-subtle">
+          <h4 className="text-xs font-medium text-content-secondary uppercase tracking-wider">Cache Settings</h4>
 
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-xs text-gray-300">Max cache size</span>
-              <span className="text-xs text-gray-500 ml-1.5">{settings.maxCacheSizeGB} GB</span>
+              <span className="text-xs text-content">Max cache size</span>
+              <span className="text-xs text-content-secondary ml-1.5">{settings.maxCacheSizeGB} GB</span>
             </div>
             <input
               type="range"
@@ -427,11 +427,11 @@ export function TileCacheCard() {
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-300">Auto-cache tiles while browsing</span>
+            <span className="text-xs text-content">Auto-cache tiles while browsing</span>
             <button
               onClick={() => handleSettingChange('enableAutoCache', !settings.enableAutoCache)}
               className={`relative w-8 h-4 rounded-full transition-colors ${
-                settings.enableAutoCache ? 'bg-blue-600' : 'bg-gray-600'
+                settings.enableAutoCache ? 'bg-blue-600' : 'bg-surface-raised'
               }`}
             >
               <div
@@ -444,8 +444,8 @@ export function TileCacheCard() {
 
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-xs text-gray-300">Max auto-cache zoom</span>
-              <span className="text-xs text-gray-500 ml-1.5">{settings.maxZoomAutoCache}</span>
+              <span className="text-xs text-content">Max auto-cache zoom</span>
+              <span className="text-xs text-content-secondary ml-1.5">{settings.maxZoomAutoCache}</span>
             </div>
             <input
               type="range"
@@ -481,7 +481,7 @@ function SavedRegions() {
     <div className="mb-4">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="text-xs text-gray-400 hover:text-gray-300 transition-colors flex items-center gap-1"
+        className="text-xs text-content-secondary hover:text-content transition-colors flex items-center gap-1"
       >
         <svg className={`w-3 h-3 transition-transform ${expanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -492,10 +492,10 @@ function SavedRegions() {
       {expanded && (
         <div className="mt-2 space-y-1.5">
           {regions.map((r) => (
-            <div key={r.id} className="flex items-center justify-between text-xs bg-gray-800/30 rounded px-2.5 py-1.5">
+            <div key={r.id} className="flex items-center justify-between text-xs bg-surface rounded px-2.5 py-1.5">
               <div className="min-w-0">
-                <div className="text-gray-300 font-mono text-[10px] truncate">{formatBounds(r.bounds)}</div>
-                <div className="text-gray-500 text-[10px]">
+                <div className="text-content font-mono text-[10px] truncate">{formatBounds(r.bounds)}</div>
+                <div className="text-content-secondary text-[10px]">
                   {r.tileCount.toLocaleString()} tiles &middot; z{r.minZoom}-{r.maxZoom} &middot; {new Date(r.downloadedAt).toLocaleDateString()}
                 </div>
               </div>

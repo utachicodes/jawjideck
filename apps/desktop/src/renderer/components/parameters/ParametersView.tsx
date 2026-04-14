@@ -56,18 +56,18 @@ function SortIndicator({ column, currentColumn, direction }: {
 
 // Static Tailwind color map - dynamic class names get purged so we map them explicitly
 const GROUP_COLOR_CLASSES: Record<string, { active: string; badge: string; icon: string }> = {
-  blue:    { active: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',       badge: 'bg-blue-500/30 text-blue-300',    icon: 'text-blue-400' },
-  green:   { active: 'bg-green-500/20 text-green-400 border border-green-500/30',     badge: 'bg-green-500/30 text-green-300',   icon: 'text-green-400' },
-  orange:  { active: 'bg-orange-500/20 text-orange-400 border border-orange-500/30',   badge: 'bg-orange-500/30 text-orange-300',  icon: 'text-orange-400' },
-  red:     { active: 'bg-red-500/20 text-red-400 border border-red-500/30',       badge: 'bg-red-500/30 text-red-300',    icon: 'text-red-400' },
-  purple:  { active: 'bg-purple-500/20 text-purple-400 border border-purple-500/30',   badge: 'bg-purple-500/30 text-purple-300',  icon: 'text-purple-400' },
-  cyan:    { active: 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30',      badge: 'bg-cyan-500/30 text-cyan-300',    icon: 'text-cyan-400' },
-  emerald: { active: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', badge: 'bg-emerald-500/30 text-emerald-300', icon: 'text-emerald-400' },
-  indigo:  { active: 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30',   badge: 'bg-indigo-500/30 text-indigo-300',  icon: 'text-indigo-400' },
-  teal:    { active: 'bg-teal-500/20 text-teal-400 border border-teal-500/30',      badge: 'bg-teal-500/30 text-teal-300',    icon: 'text-teal-400' },
-  yellow:  { active: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',   badge: 'bg-yellow-500/30 text-yellow-300',  icon: 'text-yellow-400' },
-  sky:     { active: 'bg-sky-500/20 text-sky-400 border border-sky-500/30',       badge: 'bg-sky-500/30 text-sky-300',    icon: 'text-sky-400' },
-  amber:   { active: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',    badge: 'bg-amber-500/30 text-amber-300',   icon: 'text-amber-400' },
+  blue:    { active: 'bg-blue-500/20 text-blue-400 border-blue-500/30',       badge: 'bg-blue-500/30 text-blue-300',    icon: 'text-blue-400' },
+  green:   { active: 'bg-green-500/20 text-green-400 border-green-500/30',     badge: 'bg-green-500/30 text-green-300',   icon: 'text-green-400' },
+  orange:  { active: 'bg-orange-500/20 text-orange-400 border-orange-500/30',   badge: 'bg-orange-500/30 text-orange-300',  icon: 'text-orange-400' },
+  red:     { active: 'bg-red-500/20 text-red-400 border-red-500/30',       badge: 'bg-red-500/30 text-red-300',    icon: 'text-red-400' },
+  purple:  { active: 'bg-purple-500/20 text-purple-400 border-purple-500/30',   badge: 'bg-purple-500/30 text-purple-300',  icon: 'text-purple-400' },
+  cyan:    { active: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',      badge: 'bg-cyan-500/30 text-cyan-300',    icon: 'text-cyan-400' },
+  emerald: { active: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', badge: 'bg-emerald-500/30 text-emerald-300', icon: 'text-emerald-400' },
+  indigo:  { active: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',   badge: 'bg-indigo-500/30 text-indigo-300',  icon: 'text-indigo-400' },
+  teal:    { active: 'bg-teal-500/20 text-teal-400 border-teal-500/30',      badge: 'bg-teal-500/30 text-teal-300',    icon: 'text-teal-400' },
+  yellow:  { active: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',   badge: 'bg-yellow-500/30 text-yellow-300',  icon: 'text-yellow-400' },
+  sky:     { active: 'bg-sky-500/20 text-sky-400 border-sky-500/30',       badge: 'bg-sky-500/30 text-sky-300',    icon: 'text-sky-400' },
+  amber:   { active: 'bg-amber-500/20 text-amber-400 border-amber-500/30',    badge: 'bg-amber-500/30 text-amber-300',   icon: 'text-amber-400' },
 };
 
 export function ParametersView() {
@@ -420,23 +420,23 @@ export function ParametersView() {
     return (
       <div className="h-full flex items-center justify-center p-8">
         <div className="text-center max-w-md">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-gray-700/50 flex items-center justify-center mb-6">
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border-subtle flex items-center justify-center mb-6">
             <svg className="w-8 h-8 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
           </div>
 
-          <h2 className="text-2xl font-semibold text-white mb-3">
+          <h2 className="text-2xl font-semibold text-content mb-3">
             Configuration
           </h2>
-          <p className="text-gray-400 mb-6 leading-relaxed">
+          <p className="text-content-secondary mb-6 leading-relaxed">
             Connect to your flight controller to configure your vehicle,
             or open a parameter file to view and edit offline.
           </p>
 
           <button
             onClick={handleOpenOfflineFile}
-            className="w-full mb-4 px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 border border-blue-500/20 hover:border-blue-500/30"
+            className="w-full mb-4 px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 border-blue-500/20 hover:border-blue-500/30"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
@@ -444,12 +444,12 @@ export function ParametersView() {
             Open Parameter File
           </button>
 
-          <div className="p-4 rounded-xl bg-gray-800/30 border border-gray-700/30 text-left">
-            <h3 className="text-sm font-medium text-gray-200 mb-2">What you can do:</h3>
-            <ul className="text-xs text-gray-500 space-y-1">
-              <li>- <span className="text-gray-400">ArduPilot/PX4:</span> Full parameter management</li>
-              <li>- <span className="text-gray-400">Betaflight/iNav:</span> PID tuning, rates, flight modes</li>
-              <li>- <span className="text-gray-400">Offline:</span> View, edit, and compare .param files</li>
+          <div className="p-4 rounded-xl bg-surface border-subtle text-left">
+            <h3 className="text-sm font-medium text-content mb-2">What you can do:</h3>
+            <ul className="text-xs text-content-secondary space-y-1">
+              <li>- <span className="text-content-secondary">ArduPilot/PX4:</span> Full parameter management</li>
+              <li>- <span className="text-content-secondary">Betaflight/iNav:</span> PID tuning, rates, flight modes</li>
+              <li>- <span className="text-content-secondary">Offline:</span> View, edit, and compare .param files</li>
               <li>- Search, filter, and edit with validation</li>
             </ul>
           </div>
@@ -479,7 +479,7 @@ export function ParametersView() {
           <select
             value={offlineVehicleType ?? ''}
             onChange={(e) => setOfflineVehicleType(e.target.value)}
-            className="text-xs text-gray-300 bg-gray-800/50 border border-gray-700/50 px-2 py-1 rounded cursor-pointer focus:outline-none focus:border-blue-500/50"
+            className="text-xs text-content bg-surface border-subtle px-2 py-1 rounded cursor-pointer focus:outline-none focus:border-blue-500/50"
             title="Vehicle type (used for parameter descriptions and validation)"
           >
             <option value="">Vehicle Type</option>
@@ -491,7 +491,7 @@ export function ParametersView() {
           </select>
           <button
             onClick={closeOfflineMode}
-            className="text-xs text-gray-400 hover:text-gray-200 transition-colors"
+            className="text-xs text-content-secondary hover:text-content transition-colors"
             title="Close file"
           >
             Close
@@ -500,14 +500,14 @@ export function ParametersView() {
       )}
 
       {/* Toolbar */}
-      <div className="shrink-0 px-4 py-3 border-b border-gray-800/50 bg-gray-900/30">
+      <div className="shrink-0 px-4 py-3 border-b border-subtle bg-surface">
         <div className="flex items-center gap-2">
           {offlineMode ? (<>
             {/* Offline toolbar: Save, Save As, Open, Compare */}
             <button
               onClick={handleOfflineSave}
               disabled={!offlineHasUnsavedChanges}
-              className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 disabled:bg-gray-700/30 text-green-400 disabled:text-gray-500 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 disabled:bg-surface-raised text-green-400 disabled:text-white-secondary rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               title="Save to current file"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -518,7 +518,7 @@ export function ParametersView() {
 
             <button
               onClick={handleOfflineSaveAs}
-              className="px-3 py-2 bg-gray-700/30 hover:bg-gray-700/50 text-gray-300 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-3 py-2 bg-surface-raised hover:bg-surface-raised text-content rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               title="Save to a new file"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -527,11 +527,11 @@ export function ParametersView() {
               Save As
             </button>
 
-            <div className="w-px h-6 bg-gray-700/50 mx-1" />
+            <div className="w-px h-6 bg-surface-raised mx-1" />
 
             <button
               onClick={handleOpenOfflineFile}
-              className="px-3 py-2 bg-gray-700/30 hover:bg-gray-700/50 text-gray-300 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-3 py-2 bg-surface-raised hover:bg-surface-raised text-content rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               title="Open another parameter file"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -543,7 +543,7 @@ export function ParametersView() {
             <button
               onClick={handleOfflineCompare}
               disabled={paramCount === 0}
-              className="px-3 py-2 bg-gray-700/30 hover:bg-gray-700/50 disabled:bg-gray-800/30 text-gray-300 disabled:text-gray-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-3 py-2 bg-surface-raised hover:bg-surface-raised disabled:bg-surface text-content disabled:text-content-tertiary rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               title="Compare with another parameter file"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -556,7 +556,7 @@ export function ParametersView() {
             <button
               onClick={handleRefresh}
               disabled={isLoading}
-              className="px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-gray-700/30 text-blue-400 disabled:text-gray-500 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-surface-raised text-blue-400 disabled:text-white-secondary rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               title="Download parameters from flight controller"
             >
               <svg className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -570,7 +570,7 @@ export function ParametersView() {
               <button
                 onClick={handleWriteToFlashClick}
                 disabled={isWritingFlash}
-                className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 disabled:bg-gray-700/30 text-green-400 disabled:text-gray-500 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 disabled:bg-surface-raised text-green-400 disabled:text-white-secondary rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 title="Save parameters to flight controller's permanent storage (EEPROM)"
               >
                 <svg className={`w-4 h-4 ${isWritingFlash ? 'animate-pulse' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -580,7 +580,7 @@ export function ParametersView() {
               </button>
             )}
 
-            <div className="w-px h-6 bg-gray-700/50 mx-1" />
+            <div className="w-px h-6 bg-surface-raised mx-1" />
 
             {/* File operations - split Save button with dropdown */}
             <div className="relative" ref={saveDropdownRef}>
@@ -588,7 +588,7 @@ export function ParametersView() {
                 <button
                   onClick={() => handleSaveToFile('all')}
                   disabled={isSavingFile || paramCount === 0}
-                  className="px-3 py-2 bg-gray-700/30 hover:bg-gray-700/50 disabled:bg-gray-800/30 text-gray-300 disabled:text-gray-600 rounded-l-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  className="px-3 py-2 bg-surface-raised hover:bg-surface-raised disabled:bg-surface text-content disabled:text-content-tertiary rounded-l-lg text-sm font-medium transition-colors flex items-center gap-2"
                   title="Save all parameters to file"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -599,7 +599,7 @@ export function ParametersView() {
                 <button
                   onClick={() => setSaveDropdownOpen(prev => !prev)}
                   disabled={isSavingFile || paramCount === 0}
-                  className="px-1.5 py-2 bg-gray-700/30 hover:bg-gray-700/50 disabled:bg-gray-800/30 text-gray-300 disabled:text-gray-600 rounded-r-lg border-l border-gray-600/30 text-sm transition-colors"
+                  className="px-1.5 py-2 bg-surface-raised hover:bg-surface-raised disabled:bg-surface text-content disabled:text-content-tertiary rounded-r-lg border-l border/30 text-sm transition-colors"
                   title="Save options"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -608,17 +608,17 @@ export function ParametersView() {
                 </button>
               </div>
               {saveDropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 w-56 bg-gray-800 border border-gray-700/50 rounded-lg shadow-xl z-50 py-1">
+                <div className="absolute top-full left-0 mt-1 w-56 bg-surface-tooltip border-subtle rounded-lg shadow-xl z-50 py-1">
                   <button
                     onClick={() => handleSaveToFile('all')}
-                    className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700/50 transition-colors"
+                    className="w-full px-3 py-2 text-left text-sm text-content hover:bg-surface-raised transition-colors"
                   >
                     Save All Parameters
                   </button>
                   <button
                     onClick={() => handleSaveToFile('changed')}
                     disabled={modified === 0}
-                    className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700/50 disabled:text-gray-600 disabled:hover:bg-transparent transition-colors"
+                    className="w-full px-3 py-2 text-left text-sm text-content hover:bg-surface-raised disabled:text-content-tertiary disabled:hover:bg-transparent transition-colors"
                   >
                     Save Changed Only
                     {modified > 0 && <span className="ml-1 text-xs text-yellow-400">({modified})</span>}
@@ -626,7 +626,7 @@ export function ParametersView() {
                   <button
                     onClick={() => handleSaveToFile('nondefault')}
                     disabled={!hasDefaults}
-                    className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700/50 disabled:text-gray-600 disabled:hover:bg-transparent transition-colors"
+                    className="w-full px-3 py-2 text-left text-sm text-content hover:bg-surface-raised disabled:text-content-tertiary disabled:hover:bg-transparent transition-colors"
                     title={!hasDefaults ? 'Defaults not available - requires MAVLink FTP' : undefined}
                   >
                     Save Non-Default Only
@@ -639,7 +639,7 @@ export function ParametersView() {
             <button
               onClick={handleLoadFromFile}
               disabled={isLoadingFile}
-              className="px-3 py-2 bg-gray-700/30 hover:bg-gray-700/50 disabled:bg-gray-800/30 text-gray-300 disabled:text-gray-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-3 py-2 bg-surface-raised hover:bg-surface-raised disabled:bg-surface text-content disabled:text-content-tertiary rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               title="Load parameters from file"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -655,9 +655,9 @@ export function ParametersView() {
               value={searchQuery}
               onChange={handleSearch}
               placeholder="Search parameters... (regex supported)"
-              className="w-full max-w-md px-4 py-2 pl-10 bg-gray-800/50 border border-gray-700/50 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500/50"
+              className="w-full max-w-md px-4 py-2 pl-10 bg-surface border-subtle rounded-lg text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-blue-500/50"
             />
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
@@ -700,11 +700,11 @@ export function ParametersView() {
         {/* Progress bar */}
         {isLoading && progress && (
           <div className="mt-3">
-            <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+            <div className="flex items-center justify-between text-xs text-content-secondary mb-1">
               <span>Downloading parameters...</span>
               <span>{progress.received} / {progress.total} ({progress.percentage}%)</span>
             </div>
-            <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-surface-tooltip rounded-full overflow-hidden">
               <div
                 className="h-full bg-blue-500 transition-all duration-150"
                 style={{ width: `${progress.percentage}%` }}
@@ -715,7 +715,7 @@ export function ParametersView() {
 
         {/* Error message */}
         {error && (
-          <div className="mt-3 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">
+          <div className="mt-3 px-3 py-2 bg-red-500/10 border-red-500/20 rounded-lg text-sm text-red-400">
             {error}
           </div>
         )}
@@ -723,7 +723,7 @@ export function ParametersView() {
 
       {/* Group tabs */}
       {paramCount > 0 && (
-        <div className="shrink-0 px-4 py-2 border-b border-gray-800/50 bg-gray-900/20 overflow-x-auto">
+        <div className="shrink-0 px-4 py-2 border-b border-subtle bg-surface/20 overflow-x-auto">
           <div className="flex gap-1">
             {PARAMETER_GROUPS.map((group) => {
               const count = groupCounts().get(group.id) ?? 0;
@@ -739,7 +739,7 @@ export function ParametersView() {
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap ${
                     isActive
                       ? colors.active
-                      : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                      : 'text-content-secondary hover:text-content hover:bg-surface'
                   }`}
                   title={group.description}
                 >
@@ -749,7 +749,7 @@ export function ParametersView() {
                   {group.name}
                   {count > 0 && (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                      isActive ? colors.badge : 'bg-gray-700/50 text-gray-500'
+                      isActive ? colors.badge : 'bg-surface-raised text-content-secondary'
                     }`}>
                       {count}
                     </span>
@@ -796,13 +796,13 @@ export function ParametersView() {
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => setRebootRequiredParams([])}
-                className="px-2.5 py-1 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                className="px-2.5 py-1 text-xs text-content-secondary hover:text-content transition-colors"
               >
                 Dismiss
               </button>
               <button
                 onClick={handleReboot}
-                className="px-2.5 py-1 text-xs font-medium rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 transition-colors flex items-center gap-1.5"
+                className="px-2.5 py-1 text-xs font-medium rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/30 transition-colors flex items-center gap-1.5"
               >
                 <RotateCw className="w-3 h-3" />
                 Reboot Now
@@ -815,23 +815,23 @@ export function ParametersView() {
       {/* Parameter table */}
       <div className="flex-1 overflow-auto">
         {paramCount === 0 && !isLoading ? (
-          <div className="h-full flex items-center justify-center text-gray-500">
+          <div className="h-full flex items-center justify-center text-content-secondary">
             <div className="text-center">
-              <svg className="w-16 h-16 mx-auto mb-4 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-16 h-16 mx-auto mb-4 text-content-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
               </svg>
               <p className="text-lg mb-2">Loading parameters...</p>
-              <p className="text-sm text-gray-600">Parameters will download automatically when connected</p>
+              <p className="text-sm text-content-tertiary">Parameters will download automatically when connected</p>
             </div>
           </div>
         ) : (
           <table className="w-full">
-            <thead className="sticky top-0 bg-gray-900/95 backdrop-blur border-b border-gray-800/50">
-              <tr className="text-left text-xs text-gray-500 uppercase tracking-wider">
+            <thead className="sticky top-0 bg-surface/95 backdrop-blur border-b border-subtle">
+              <tr className="text-left text-xs text-content-secondary uppercase tracking-wider">
                 <th className="px-4 py-3 font-medium w-[220px]">
                   <button
                     onClick={() => toggleSort('name')}
-                    className="group flex items-center hover:text-gray-300 transition-colors"
+                    className="group flex items-center hover:text-content transition-colors"
                   >
                     Name
                     <SortIndicator column="name" currentColumn={sortColumn} direction={sortDirection} />
@@ -840,7 +840,7 @@ export function ParametersView() {
                 <th className="px-4 py-3 font-medium w-[200px]">
                   <button
                     onClick={() => toggleSort('status')}
-                    className="group flex items-center hover:text-gray-300 transition-colors"
+                    className="group flex items-center hover:text-content transition-colors"
                   >
                     Value
                     <SortIndicator column="status" currentColumn={sortColumn} direction={sortDirection} />
@@ -850,24 +850,24 @@ export function ParametersView() {
                 <th className="px-4 py-3 font-medium">Description</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800/30">
+            <tbody className="divide-y divide-subtle/30">
               {displayParams.map((param) => (
                 <tr
                   key={param.id}
-                  className="hover:bg-gray-800/20 transition-colors"
+                  className="hover:bg-surface-overlay-subtle transition-colors"
                 >
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleFavourite(param.id); }}
-                        className="shrink-0 p-0.5 rounded transition-colors hover:bg-gray-700/50"
+                        className="shrink-0 p-0.5 rounded transition-colors hover:bg-surface-raised"
                         title={isFavourite(param.id) ? 'Remove from favourites' : 'Add to favourites'}
                       >
-                        <Star className={`w-3.5 h-3.5 ${isFavourite(param.id) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-600 hover:text-gray-400'}`} />
+                        <Star className={`w-3.5 h-3.5 ${isFavourite(param.id) ? 'fill-yellow-400 text-yellow-400' : 'text-content-tertiary hover:text-content-secondary'}`} />
                       </button>
-                      <span className="font-mono text-sm text-gray-200">{param.id}</span>
+                      <span className="font-mono text-sm text-content">{param.id}</span>
                       {isRebootRequired(param.id) && (
-                        <span className="px-1 py-0.5 text-[9px] leading-none bg-amber-500/15 text-amber-500/70 rounded border border-amber-500/20" title="Requires reboot to take effect">
+                        <span className="px-1 py-0.5 text-[9px] leading-none bg-amber-500/15 text-amber-500/70 rounded border-amber-500/20" title="Requires reboot to take effect">
                           Reboot
                         </span>
                       )}
@@ -876,7 +876,7 @@ export function ParametersView() {
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
                       {param.isReadOnly ? (
-                        <span className="font-mono text-sm text-gray-500 tabular-nums" title="Read-only parameter">
+                        <span className="font-mono text-sm text-content-secondary tabular-nums" title="Read-only parameter">
                           {formatParamValue(param.value)}
                         </span>
                       ) : editingParam === param.id ? (
@@ -888,7 +888,7 @@ export function ParametersView() {
                             onKeyDown={(e) => handleKeyDown(e, param.id)}
                             onBlur={() => !editError && saveEdit(param.id)}
                             autoFocus
-                            className={`w-full px-2 py-1 bg-gray-800 border rounded text-sm font-mono text-gray-200 focus:outline-none ${
+                            className={`w-full px-2 py-1 bg-surface-tooltip border rounded text-sm font-mono text-content focus:outline-none ${
                               editError ? 'border-red-500/50' : editWarning ? 'border-amber-500/50' : 'border-blue-500/50'
                             }`}
                           />
@@ -903,7 +903,7 @@ export function ParametersView() {
                       ) : (
                         <button
                           onClick={() => startEdit(param.id, param.value)}
-                          className="font-mono text-sm text-gray-300 hover:text-blue-400 transition-colors tabular-nums"
+                          className="font-mono text-sm text-content hover:text-blue-400 transition-colors tabular-nums"
                           title={(() => {
                             const meta = getParameterMetadata(param.id);
                             if (!meta) return undefined;
@@ -918,7 +918,7 @@ export function ParametersView() {
                         </button>
                       )}
                       {param.isReadOnly ? (
-                        <span className="px-1.5 py-0.5 bg-gray-700/50 text-gray-500 rounded text-[10px] shrink-0">
+                        <span className="px-1.5 py-0.5 bg-surface-raised text-content-secondary rounded text-[10px] shrink-0">
                           RO
                         </span>
                       ) : param.isModified ? (
@@ -928,7 +928,7 @@ export function ParametersView() {
                           </span>
                           <button
                             onClick={() => revertParameter(param.id)}
-                            className="text-[10px] text-gray-500 hover:text-gray-300"
+                            className="text-[10px] text-content-secondary hover:text-content"
                             title={`Revert to ${formatParamValue(param.originalValue ?? param.value)}`}
                           >
                             (revert)
@@ -938,14 +938,14 @@ export function ParametersView() {
                     </div>
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className="text-xs text-gray-500">{getParamTypeName(param.type)}</span>
+                    <span className="text-xs text-content-secondary">{getParamTypeName(param.type)}</span>
                   </td>
                   <td className="px-4 py-2.5">
                     <span
                       className={`text-sm line-clamp-2 ${
                         hasOfficialDescription(param.id)
-                          ? 'text-gray-400'
-                          : 'text-gray-500 italic'
+                          ? 'text-content-secondary'
+                          : 'text-content-secondary italic'
                       }`}
                       title={hasOfficialDescription(param.id) ? undefined : 'Auto-generated description'}
                     >
@@ -960,41 +960,41 @@ export function ParametersView() {
       </div>
 
       {/* Status bar */}
-      <div className="shrink-0 px-4 py-2 border-t border-gray-800/50 bg-gray-900/30 text-xs text-gray-500 flex items-center gap-4">
+      <div className="shrink-0 px-4 py-2 border-t border-subtle bg-surface text-xs text-content-secondary flex items-center gap-4">
         <span>{paramCount} parameters</span>
         {(searchQuery || selectedGroup !== 'all' || showOnlyModified || showOnlyFavourites) && displayParams.length !== paramCount && (
           <>
-            <span className="text-gray-700">|</span>
+            <span className="text-content-tertiary">|</span>
             <span>{displayParams.length} shown</span>
           </>
         )}
         {showOnlyFavourites && (
           <>
-            <span className="text-gray-700">|</span>
+            <span className="text-content-tertiary">|</span>
             <span className="text-yellow-400">Favourites only</span>
           </>
         )}
         {showOnlyModified && (
           <>
-            <span className="text-gray-700">|</span>
+            <span className="text-content-tertiary">|</span>
             <span className="text-amber-400">Modified only</span>
           </>
         )}
         {selectedGroup !== 'all' && (
           <>
-            <span className="text-gray-700">|</span>
+            <span className="text-content-tertiary">|</span>
             <span>Group: {PARAMETER_GROUPS.find(g => g.id === selectedGroup)?.name}</span>
           </>
         )}
         {offlineMode ? (<>
-          <span className="text-gray-700">|</span>
+          <span className="text-content-tertiary">|</span>
           <span className="text-blue-400">Offline</span>
         </>) : (<>
-          <span className="text-gray-700">|</span>
+          <span className="text-content-tertiary">|</span>
           <span>System ID: {connectionState.systemId ?? '-'}</span>
           {lastRefresh > 0 && (
             <>
-              <span className="text-gray-700">|</span>
+              <span className="text-content-tertiary">|</span>
               <span>Last refresh: {new Date(lastRefresh).toLocaleTimeString()}</span>
             </>
           )}
@@ -1004,10 +1004,10 @@ export function ParametersView() {
       {/* Write to Flash Confirmation Modal */}
       {showWriteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-800">
-              <h3 className="text-lg font-semibold text-white">Write Parameters to Flash</h3>
-              <p className="text-sm text-gray-400 mt-1">
+          <div className="bg-surface border rounded-xl shadow-2xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-subtle">
+              <h3 className="text-lg font-semibold text-content">Write Parameters to Flash</h3>
+              <p className="text-sm text-content-secondary mt-1">
                 The following {modifiedParameters().length} parameter(s) will be saved permanently to the flight controller.
               </p>
               {modifiedParameters().some(p => isRebootRequired(p.id)) && (
@@ -1021,17 +1021,17 @@ export function ParametersView() {
             <div className="flex-1 overflow-auto px-6 py-4">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs text-gray-500 uppercase">
+                  <tr className="text-left text-xs text-content-secondary uppercase">
                     <th className="pb-2">Parameter</th>
                     <th className="pb-2 text-right">Original</th>
                     <th className="pb-2 text-center px-2">→</th>
                     <th className="pb-2">New</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800/50">
+                <tbody className="divide-y divide-subtle">
                   {modifiedParameters().map(param => (
                     <tr key={param.id}>
-                      <td className="py-2 font-mono text-gray-300">
+                      <td className="py-2 font-mono text-content">
                         {param.id}
                         {isRebootRequired(param.id) && (
                           <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-amber-500/20 text-amber-400 rounded">
@@ -1039,8 +1039,8 @@ export function ParametersView() {
                           </span>
                         )}
                       </td>
-                      <td className="py-2 text-right font-mono text-gray-500">{formatParamValue(param.originalValue ?? param.value)}</td>
-                      <td className="py-2 text-center text-gray-600">→</td>
+                      <td className="py-2 text-right font-mono text-content-secondary">{formatParamValue(param.originalValue ?? param.value)}</td>
+                      <td className="py-2 text-center text-content-tertiary">→</td>
                       <td className="py-2 font-mono text-amber-400">{formatParamValue(param.value)}</td>
                     </tr>
                   ))}
@@ -1048,10 +1048,10 @@ export function ParametersView() {
               </table>
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-800 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-subtle flex justify-end gap-3">
               <button
                 onClick={() => setShowWriteConfirm(false)}
-                className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200 transition-colors"
+                className="px-4 py-2 text-sm text-content-secondary hover:text-content transition-colors"
               >
                 Cancel
               </button>
@@ -1069,10 +1069,10 @@ export function ParametersView() {
       {/* File Compare Modal */}
       {showCompareModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-800">
-              <h3 className="text-lg font-semibold text-white">Compare Parameters</h3>
-              <p className="text-sm text-gray-400 mt-1">
+          <div className="bg-surface border rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-subtle">
+              <h3 className="text-lg font-semibold text-content">Compare Parameters</h3>
+              <p className="text-sm text-content-secondary mt-1">
                 {fileParamDiffs.length === 0
                   ? `No differences found - all file parameters match ${offlineMode ? 'the current file' : 'the vehicle'}.`
                   : `${fileParamDiffs.length} parameter${fileParamDiffs.length !== 1 ? 's' : ''} differ between files. Select which to apply.`
@@ -1081,7 +1081,7 @@ export function ParametersView() {
               {(() => {
                 const currentVehicle = offlineMode ? offlineVehicleType : (connectionState.vehicleType || connectionState.fcVariant);
                 return fileVehicleType && currentVehicle && fileVehicleType !== currentVehicle ? (
-                  <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                  <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border-amber-500/30 rounded-lg">
                     <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
                     <span className="text-xs text-amber-300">
                       File was saved from <span className="font-semibold">{fileVehicleType}</span> but vehicle is <span className="font-semibold">{currentVehicle}</span>
@@ -1090,7 +1090,7 @@ export function ParametersView() {
                 ) : null;
               })()}
               {fileSkippedCount > 0 && (
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-content-secondary mt-2">
                   {fileTotalCount} params in file: {fileTotalCount - fileSkippedCount} matched vehicle, {fileSkippedCount} skipped (not found on this firmware)
                 </p>
               )}
@@ -1099,21 +1099,21 @@ export function ParametersView() {
             {fileParamDiffs.length > 0 && (
               <>
                 {/* Select all / Deselect all */}
-                <div className="px-6 py-2 border-b border-gray-800/50 flex items-center gap-3">
+                <div className="px-6 py-2 border-b border-subtle flex items-center gap-3">
                   <button
                     onClick={selectAllDiffs}
                     className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
                   >
                     Select all
                   </button>
-                  <span className="text-gray-700">|</span>
+                  <span className="text-content-tertiary">|</span>
                   <button
                     onClick={deselectAllDiffs}
-                    className="text-xs text-gray-400 hover:text-gray-300 transition-colors"
+                    className="text-xs text-content-secondary hover:text-content transition-colors"
                   >
                     Deselect all
                   </button>
-                  <span className="ml-auto text-xs text-gray-500">
+                  <span className="ml-auto text-xs text-content-secondary">
                     {fileParamDiffs.filter(d => d.selected).length} of {fileParamDiffs.length} selected
                   </span>
                 </div>
@@ -1121,7 +1121,7 @@ export function ParametersView() {
                 <div className="flex-1 overflow-auto px-6 py-2">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left text-xs text-gray-500 uppercase">
+                      <tr className="text-left text-xs text-content-secondary uppercase">
                         <th className="pb-2 w-8"></th>
                         <th className="pb-2">Parameter</th>
                         <th className="pb-2 text-right">{offlineMode ? 'Current' : 'Vehicle'}</th>
@@ -1129,18 +1129,18 @@ export function ParametersView() {
                         <th className="pb-2">Compare</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-800/50">
+                    <tbody className="divide-y divide-subtle">
                       {fileParamDiffs.map(diff => (
                         <tr
                           key={diff.paramId}
-                          className={`cursor-pointer transition-colors ${diff.selected ? 'hover:bg-gray-800/30' : 'opacity-50 hover:opacity-75'}`}
+                          className={`cursor-pointer transition-colors ${diff.selected ? 'hover:bg-surface' : 'opacity-50 hover:opacity-75'}`}
                           onClick={() => toggleDiffSelection(diff.paramId)}
                         >
                           <td className="py-2 pr-2">
                             <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
                               diff.selected
                                 ? 'bg-blue-500/30 border-blue-500/50'
-                                : 'border-gray-600 bg-gray-800/50'
+                                : 'border bg-surface'
                             }`}>
                               {diff.selected && (
                                 <svg className="w-3 h-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1149,9 +1149,9 @@ export function ParametersView() {
                               )}
                             </div>
                           </td>
-                          <td className="py-2 font-mono text-gray-300">{diff.paramId}</td>
-                          <td className="py-2 text-right font-mono text-gray-500">{formatParamValue(diff.currentValue)}</td>
-                          <td className="py-2 text-center text-gray-600">
+                          <td className="py-2 font-mono text-content">{diff.paramId}</td>
+                          <td className="py-2 text-right font-mono text-content-secondary">{formatParamValue(diff.currentValue)}</td>
+                          <td className="py-2 text-center text-content-tertiary">
                             <svg className="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                             </svg>
@@ -1167,12 +1167,12 @@ export function ParametersView() {
 
             {/* Progress bar while applying */}
             {isApplyingFileParams && applyProgress && (
-              <div className="px-6 py-2 border-t border-gray-800/50">
-                <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+              <div className="px-6 py-2 border-t border-subtle">
+                <div className="flex items-center justify-between text-xs text-content-secondary mb-1">
                   <span>Applying parameters...</span>
                   <span>{applyProgress.applied} / {applyProgress.total}</span>
                 </div>
-                <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-surface-tooltip rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 transition-all duration-150"
                     style={{ width: `${(applyProgress.applied / applyProgress.total) * 100}%` }}
@@ -1181,11 +1181,11 @@ export function ParametersView() {
               </div>
             )}
 
-            <div className="px-6 py-4 border-t border-gray-800 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-subtle flex justify-end gap-3">
               <button
                 onClick={closeCompareModal}
                 disabled={isApplyingFileParams}
-                className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200 disabled:text-gray-600 transition-colors"
+                className="px-4 py-2 text-sm text-content-secondary hover:text-content disabled:text-content-tertiary transition-colors"
               >
                 {fileParamDiffs.length === 0 ? 'Close' : 'Cancel'}
               </button>
@@ -1193,7 +1193,7 @@ export function ParametersView() {
                 <button
                   onClick={handleApplySelectedParams}
                   disabled={isApplyingFileParams || fileParamDiffs.filter(d => d.selected).length === 0}
-                  className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-gray-700/30 text-blue-400 disabled:text-gray-500 rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-surface-raised text-blue-400 disabled:text-white-secondary rounded-lg text-sm font-medium transition-colors"
                 >
                   {isApplyingFileParams
                     ? 'Applying...'
@@ -1209,9 +1209,9 @@ export function ParametersView() {
       {/* Toast notification */}
       {toast && (
         <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50 ${
-          toast.type === 'success' ? 'bg-green-500/20 border border-green-500/30 text-green-400' :
-          toast.type === 'error' ? 'bg-red-500/20 border border-red-500/30 text-red-400' :
-          'bg-blue-500/20 border border-blue-500/30 text-blue-400'
+          toast.type === 'success' ? 'bg-green-500/20 border-green-500/30 text-green-400' :
+          toast.type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-400' :
+          'bg-blue-500/20 border-blue-500/30 text-blue-400'
         }`}>
           {toast.type === 'success' && (
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

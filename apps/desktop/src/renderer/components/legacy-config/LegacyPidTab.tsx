@@ -89,7 +89,7 @@ export default function LegacyPidTab() {
 
   if (!pid) {
     return (
-      <div className="text-center py-8 text-zinc-500">
+      <div className="text-center py-8 text-content-secondary">
         No PID data loaded. Run dump command first.
       </div>
     );
@@ -197,7 +197,7 @@ export default function LegacyPidTab() {
       {/* Presets */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-zinc-300">Quick Presets</h3>
+          <h3 className="text-sm font-medium text-content">Quick Presets</h3>
           <button
             onClick={() => setShowSaveDialog(true)}
             className="text-xs text-blue-400 hover:text-blue-300"
@@ -212,9 +212,9 @@ export default function LegacyPidTab() {
               onClick={() => applyPreset(preset)}
               className={`p-3 rounded-lg border bg-gradient-to-br ${preset.color} hover:scale-[1.02] transition-all text-left`}
             >
-              <div className="mb-1"><preset.icon className="w-6 h-6 text-zinc-300 mx-auto" /></div>
-              <div className="font-medium text-white text-sm">{preset.name}</div>
-              <div className="text-xs text-zinc-400 mt-0.5">{preset.description}</div>
+              <div className="mb-1"><preset.icon className="w-6 h-6 text-content mx-auto" /></div>
+              <div className="font-medium text-content text-sm">{preset.name}</div>
+              <div className="text-xs text-content-secondary mt-0.5">{preset.description}</div>
             </button>
           ))}
         </div>
@@ -223,19 +223,19 @@ export default function LegacyPidTab() {
       {/* Custom Profiles */}
       {Object.keys(customProfiles).length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-zinc-300 mb-3">Your Profiles</h3>
+          <h3 className="text-sm font-medium text-content mb-3">Your Profiles</h3>
           <div className="flex flex-wrap gap-2">
             {Object.entries(customProfiles).map(([id, profile]) => (
-              <div key={id} className="flex items-center gap-1 bg-zinc-800 rounded-lg overflow-hidden">
+              <div key={id} className="flex items-center gap-1 bg-surface-tooltip rounded-lg overflow-hidden">
                 <button
                   onClick={() => loadProfile(profile.data)}
-                  className="px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700"
+                  className="px-3 py-1.5 text-sm text-content hover:bg-surface-raised"
                 >
                   {profile.name}
                 </button>
                 <button
                   onClick={() => deleteProfile(id)}
-                  className="px-2 py-1.5 text-zinc-500 hover:text-red-400 hover:bg-zinc-700"
+                  className="px-2 py-1.5 text-content-secondary hover:text-red-400 hover:bg-surface-raised"
                 >
                   ×
                 </button>
@@ -247,15 +247,15 @@ export default function LegacyPidTab() {
 
       {/* Save Profile Dialog */}
       {showSaveDialog && (
-        <div className="p-4 bg-zinc-800 rounded-lg border border-zinc-700">
-          <h4 className="text-sm font-medium text-white mb-3">Save Current PIDs as Profile</h4>
+        <div className="p-4 bg-surface-tooltip rounded-lg border border">
+          <h4 className="text-sm font-medium text-content mb-3">Save Current PIDs as Profile</h4>
           <div className="flex gap-2">
             <input
               type="text"
               value={newProfileName}
               onChange={(e) => setNewProfileName(e.target.value)}
               placeholder="Profile name..."
-              className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-white text-sm"
+              className="flex-1 px-3 py-2 bg-surface-input border border rounded text-content text-sm"
               autoFocus
             />
             <button
@@ -266,7 +266,7 @@ export default function LegacyPidTab() {
             </button>
             <button
               onClick={() => setShowSaveDialog(false)}
-              className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded text-sm"
+              className="px-4 py-2 bg-surface-raised hover:bg-surface-raised text-content rounded text-sm"
             >
               Cancel
             </button>
@@ -277,13 +277,13 @@ export default function LegacyPidTab() {
       {/* PID Sliders */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {(['roll', 'pitch', 'yaw'] as const).map((axis) => (
-          <div key={axis} className="bg-zinc-900/50 rounded-xl p-5 border border-zinc-800">
+          <div key={axis} className="bg-surface-input rounded-xl p-5 border border-subtle">
             <div className="flex items-center gap-2 mb-4">
               <div
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: axisColors[axis] }}
               />
-              <h3 className="text-lg font-semibold text-white capitalize">{axis}</h3>
+              <h3 className="text-lg font-semibold text-content capitalize">{axis}</h3>
             </div>
             <div className="space-y-5">
               <DraggableSlider
@@ -328,10 +328,10 @@ export default function LegacyPidTab() {
 
       {/* Level Mode PIDs */}
       {pid.level && (
-        <div className="bg-zinc-900/50 rounded-xl p-5 border border-zinc-800">
+        <div className="bg-surface-input rounded-xl p-5 border border-subtle">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-3 h-3 rounded-full bg-purple-500" />
-            <h3 className="text-lg font-semibold text-white">Level (Angle Mode)</h3>
+            <h3 className="text-lg font-semibold text-content">Level (Angle Mode)</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <DraggableSlider

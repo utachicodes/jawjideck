@@ -36,9 +36,9 @@ export const FrameDiagram: React.FC<FrameDiagramProps> = ({
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="text-center">
-        <div className="text-xs uppercase tracking-wider text-gray-500">Frame</div>
-        <div className="text-sm text-gray-300">
-          {layout.ClassName} <span className="text-gray-500">·</span> {layout.TypeName}
+        <div className="text-xs uppercase tracking-wider text-content-secondary">Frame</div>
+        <div className="text-sm text-content">
+          {layout.ClassName} <span className="text-content-secondary">·</span> {layout.TypeName}
         </div>
       </div>
 
@@ -46,7 +46,7 @@ export const FrameDiagram: React.FC<FrameDiagramProps> = ({
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
-        className="rounded-xl bg-gray-900/40 border border-gray-700/30"
+        className="rounded-xl bg-surface border-subtle"
       >
         {/* Center reference circle (vehicle body) */}
         <circle
@@ -210,7 +210,7 @@ export const FrameDiagram: React.FC<FrameDiagramProps> = ({
       </svg>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 text-[11px] text-gray-400">
+      <div className="flex items-center gap-4 text-[11px] text-content-secondary">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full border-2 border-blue-500" />
           CW
@@ -219,7 +219,7 @@ export const FrameDiagram: React.FC<FrameDiagramProps> = ({
           <div className="w-3 h-3 rounded-full border-2 border-emerald-500" />
           CCW
         </div>
-        <div className="text-gray-600">Click a motor to test</div>
+        <div className="text-content-tertiary">Click a motor to test</div>
       </div>
     </div>
   );

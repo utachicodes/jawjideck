@@ -54,12 +54,12 @@ const ChannelBar: React.FC<{
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
-        <span className={isActive ? 'text-green-400' : 'text-zinc-400'}>
+        <span className={isActive ? 'text-green-400' : 'text-content-secondary'}>
           {name}
         </span>
-        <span className="text-zinc-500 font-mono">{value}</span>
+        <span className="text-content-secondary font-mono">{value}</span>
       </div>
-      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden relative">
+      <div className="h-2 bg-surface-tooltip rounded-full overflow-hidden relative">
         <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-600" />
         <div
           className={`absolute top-0 bottom-0 w-2 rounded-full transition-all ${
@@ -84,13 +84,13 @@ const CompactChannelBar: React.FC<{
   return (
     <div className="space-y-0.5">
       <div className="flex items-center justify-between">
-        <span className={`text-[11px] ${isActive ? 'text-green-400' : 'text-zinc-500'}`}>
+        <span className={`text-[11px] ${isActive ? 'text-green-400' : 'text-content-secondary'}`}>
           {name}
         </span>
-        <span className="text-[10px] text-zinc-600 font-mono">{value}</span>
+        <span className="text-[10px] text-content-tertiary font-mono">{value}</span>
       </div>
-      <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden relative">
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-700" />
+      <div className="h-1.5 bg-surface-tooltip rounded-full overflow-hidden relative">
+        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-surface-raised" />
         <div
           className={`absolute top-0 bottom-0 w-1.5 rounded-full transition-all ${
             isActive ? 'bg-green-500' : 'bg-zinc-600'
@@ -119,7 +119,7 @@ function InfoBanner({ children, color = 'teal' }: { children: React.ReactNode; c
   return (
     <div className={`flex items-start gap-2.5 px-4 py-3 rounded-xl ${s.bg} ${s.border} border`}>
       <HelpCircle className={`w-4 h-4 ${s.icon} shrink-0 mt-0.5`} />
-      <p className="text-xs text-zinc-300 leading-relaxed">
+      <p className="text-xs text-content leading-relaxed">
         <span className={`font-semibold ${s.label}`}>How this works: </span>
         {children}
       </p>
@@ -227,14 +227,14 @@ const ReceiverTab: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       {/* RC Protocol Card */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+      <div className="bg-surface rounded-xl border-subtle p-5">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-lg bg-teal-500/20 flex items-center justify-center">
             <Radio className="w-5 h-5 text-teal-400" />
           </div>
           <div>
-            <h3 className="font-medium text-white">Receiver Protocol</h3>
-            <p className="text-xs text-gray-500">Select the receiver protocol used by your RC receiver</p>
+            <h3 className="font-medium text-content">Receiver Protocol</h3>
+            <p className="text-xs text-content-secondary">Select the receiver protocol used by your RC receiver</p>
           </div>
         </div>
         <div className="space-y-4">
@@ -244,7 +244,7 @@ const ReceiverTab: React.FC = () => {
           </InfoBanner>
           {/* Quick select buttons */}
           <div>
-            <label className="text-xs text-zinc-400 mb-2 block">Quick Select</label>
+            <label className="text-xs text-content-secondary mb-2 block">Quick Select</label>
             <div className="flex flex-wrap gap-2">
               {[
                 { label: 'Auto-Detect', value: 0 },
@@ -258,7 +258,7 @@ const ReceiverTab: React.FC = () => {
                   className={`px-4 py-2 rounded-lg text-sm transition-all ${
                     Number(rcProtocols) === opt.value
                       ? 'bg-teal-600 text-white'
-                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                      : 'bg-surface-tooltip text-content-secondary hover:bg-surface-raised'
                   }`}
                 >
                   {opt.label}
@@ -269,11 +269,11 @@ const ReceiverTab: React.FC = () => {
 
           {/* Full dropdown */}
           <div>
-            <label className="text-xs text-zinc-400 mb-2 block">All Protocols</label>
+            <label className="text-xs text-content-secondary mb-2 block">All Protocols</label>
             <select
               value={Number(rcProtocols)}
               onChange={(e) => setParameter('RC_PROTOCOLS', Number(e.target.value))}
-              className="w-full bg-zinc-800 text-zinc-200 rounded-lg px-3 py-2 text-sm border border-zinc-700 focus:border-teal-500 focus:outline-none"
+              className="w-full bg-surface-tooltip text-content rounded-lg px-3 py-2 text-sm border focus:border-teal-500 focus:outline-none"
             >
               {RC_PROTOCOL_OPTIONS.map((p) => (
                 <option key={p.value} value={p.value}>
@@ -286,7 +286,7 @@ const ReceiverTab: React.FC = () => {
       </div>
 
       {/* Live RC Channels Card */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+      <div className="bg-surface rounded-xl border-subtle p-5">
         <div className="flex items-center gap-3 mb-5">
           <div className={`w-10 h-10 rounded-lg bg-${signalBadge.color}-500/20 flex items-center justify-center`}>
             {signalStatus === 'active'
@@ -295,7 +295,7 @@ const ReceiverTab: React.FC = () => {
               ? <Activity className="w-5 h-5 text-amber-400" />
               : <SignalZero className="w-5 h-5 text-red-400" />}
           </div>
-          <span className="flex-1 font-medium text-white">Live RC Channels</span>
+          <span className="flex-1 font-medium text-content">Live RC Channels</span>
           <span className={`px-2 py-0.5 text-xs rounded-full bg-${signalBadge.color}-500/20 text-${signalBadge.color}-400`}>
             {signalBadge.text}
           </span>
@@ -303,7 +303,7 @@ const ReceiverTab: React.FC = () => {
         {rcChannels.chancount > 0 ? (
           <div className="space-y-4">
             {/* Info row */}
-            <div className="flex items-center gap-3 text-xs text-zinc-500">
+            <div className="flex items-center gap-3 text-xs text-content-secondary">
               {rcChannels.rssi > 0 && <span>RSSI: {rcChannels.rssi}</span>}
               <span>{rcChannels.chancount} channels</span>
             </div>
@@ -324,7 +324,7 @@ const ReceiverTab: React.FC = () => {
             {/* AUX channels - compact 3-column grid (physical order) */}
             {rcChannels.chancount > PRIMARY_CHANNEL_COUNT && (
               <>
-                <div className="border-t border-zinc-700/50" />
+                <div className="border-t border-subtle" />
                 <div className="grid grid-cols-3 gap-x-4 gap-y-2">
                   {rcChannels.channels.slice(PRIMARY_CHANNEL_COUNT, rcChannels.chancount).map((value, i) => (
                     <CompactChannelBar
@@ -340,13 +340,13 @@ const ReceiverTab: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+          <div className="p-4 rounded-xl bg-amber-500/10 border-amber-500/30">
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-amber-300">No RC signal detected</p>
-                <p className="text-xs text-zinc-400 mt-1">Check that:</p>
-                <ul className="text-xs text-zinc-400 mt-1 space-y-0.5 list-disc list-inside">
+                <p className="text-xs text-content-secondary mt-1">Check that:</p>
+                <ul className="text-xs text-content-secondary mt-1 space-y-0.5 list-disc list-inside">
                   <li>Receiver is powered and bound to transmitter</li>
                   <li>Correct SERIAL port has RCIN protocol set</li>
                   <li>RC_PROTOCOLS matches your receiver hardware</li>
@@ -358,23 +358,23 @@ const ReceiverTab: React.FC = () => {
       </div>
 
       {/* RC Calibration Card */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+      <div className="bg-surface rounded-xl border-subtle p-5">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
             <Activity className="w-5 h-5 text-blue-400" />
           </div>
           <div>
-            <h3 className="font-medium text-white">RC Calibration</h3>
-            <p className="text-xs text-gray-500">Current calibration values stored on the flight controller</p>
+            <h3 className="font-medium text-content">RC Calibration</h3>
+            <p className="text-xs text-content-secondary">Current calibration values stored on the flight controller</p>
           </div>
         </div>
         <InfoBanner color="blue">
           These are the min/max/center values your flight controller learned during RC calibration. If your sticks don't reach full range or center is off, recalibrate in Mission Planner or via the RC_CAL parameters.
         </InfoBanner>
-        <div className="mt-4 rounded-lg border border-gray-700/30 overflow-hidden">
+        <div className="mt-4 rounded-lg border-subtle overflow-hidden">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-zinc-800/50 text-zinc-400">
+              <tr className="bg-surface text-content-secondary">
                 <th className="px-3 py-2 text-left font-medium">Channel</th>
                 <th className="px-3 py-2 text-right font-medium">Min</th>
                 <th className="px-3 py-2 text-right font-medium">Trim</th>
@@ -383,11 +383,11 @@ const ReceiverTab: React.FC = () => {
             </thead>
             <tbody>
               {calData.map((cal, i) => (
-                <tr key={i} className="border-t border-zinc-800/50">
-                  <td className="px-3 py-1.5 text-zinc-300">{physicalChannelNames[i] ?? `CH${i + 1}`}</td>
-                  <td className="px-3 py-1.5 text-right font-mono text-zinc-400">{cal.min}</td>
-                  <td className="px-3 py-1.5 text-right font-mono text-zinc-400">{cal.trim}</td>
-                  <td className="px-3 py-1.5 text-right font-mono text-zinc-400">{cal.max}</td>
+                <tr key={i} className="border-t border-subtle">
+                  <td className="px-3 py-1.5 text-content">{physicalChannelNames[i] ?? `CH${i + 1}`}</td>
+                  <td className="px-3 py-1.5 text-right font-mono text-content-secondary">{cal.min}</td>
+                  <td className="px-3 py-1.5 text-right font-mono text-content-secondary">{cal.trim}</td>
+                  <td className="px-3 py-1.5 text-right font-mono text-content-secondary">{cal.max}</td>
                 </tr>
               ))}
             </tbody>

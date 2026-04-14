@@ -91,7 +91,7 @@ export function SigningSection() {
   const fullyConfigured = hasKey && sentToFc;
 
   return (
-    <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4 space-y-4">
+    <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
@@ -100,14 +100,14 @@ export function SigningSection() {
           </svg>
         </div>
         <div>
-          <h3 className="text-sm font-medium text-white">MAVLink Signing</h3>
-          <p className="text-xs text-zinc-500">
+          <h3 className="text-sm font-medium text-content">MAVLink Signing</h3>
+          <p className="text-xs text-content-secondary">
             Prevent unauthorized access to your vehicle
           </p>
         </div>
         <div className="ml-auto">
           {isV1Only ? (
-            <span className="text-[10px] font-medium text-zinc-500 bg-zinc-500/10 px-2 py-1 rounded-full">
+            <span className="text-[10px] font-medium text-content-secondary bg-content-secondary/10 px-2 py-1 rounded-full">
               Unavailable
             </span>
           ) : fullyConfigured && enabled ? (
@@ -123,7 +123,7 @@ export function SigningSection() {
               Key Set
             </span>
           ) : (
-            <span className="text-[10px] font-medium text-zinc-500 bg-zinc-500/10 px-2 py-1 rounded-full">
+            <span className="text-[10px] font-medium text-content-secondary bg-content-secondary/10 px-2 py-1 rounded-full">
               Not Configured
             </span>
           )}
@@ -131,8 +131,8 @@ export function SigningSection() {
       </div>
 
       {isV1Only && (
-        <div className="rounded-lg border border-zinc-700/30 bg-zinc-800/30 px-3 py-2.5">
-          <p className="text-xs text-zinc-400">
+        <div className="rounded-lg border border-subtle bg-surface px-3 py-2.5">
+          <p className="text-xs text-content-secondary">
             This board communicates using MAVLink v1 which does not support packet signing.
             Signing requires a MAVLink v2 capable flight controller.
           </p>
@@ -143,7 +143,7 @@ export function SigningSection() {
       {!isV1Only && keyMismatch && (
         <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2.5">
           <p className="text-xs text-red-400 font-medium mb-1">Signing key mismatch</p>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-content-secondary">
             Your signing key doesn't match the vehicle/proxy key. Paste the base64 key from Mission Planner,
             or enter the same passphrase used on the proxy.
           </p>
@@ -153,7 +153,7 @@ export function SigningSection() {
       {/* Network connection info */}
       {!isV1Only && isConnected && (connectionState.connectionType === 'tcp' || connectionState.connectionType === 'udp') && (
         <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2.5">
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-content-secondary">
             Connected over {connectionState.connectionType === 'tcp' ? 'TCP' : 'UDP'}.
             If using a proxy (UDPProxy/mavproxy), enter the same passphrase or paste the base64 key from Mission Planner.
             All saved keys are tried automatically on connect.
@@ -165,16 +165,16 @@ export function SigningSection() {
       {!isV1Only && (<>
       <div className="space-y-3">
         {/* Step 1: Set passphrase */}
-        <div className={`rounded-lg border p-3 ${hasKey ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-zinc-700/50 bg-zinc-800/30'}`}>
+        <div className={`rounded-lg border p-3 ${hasKey ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-subtle bg-surface'}`}>
           <div className="flex items-center gap-2.5 mb-2">
             <StepIndicator step={1} done={hasKey} active={!hasKey} />
-            <span className="text-xs font-medium text-zinc-300">Set signing passphrase</span>
+            <span className="text-xs font-medium text-content">Set signing passphrase</span>
           </div>
           <div className="ml-7">
             {hasKey && keyBase64 && (
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] text-zinc-500">Key:</span>
-                <code className="text-[10px] font-mono text-zinc-400 bg-zinc-800/80 px-1.5 py-0.5 rounded max-w-[220px] truncate" title={keyBase64}>
+                <span className="text-[10px] text-content-secondary">Key:</span>
+                <code className="text-[10px] font-mono text-content-secondary bg-surface px-1.5 py-0.5 rounded max-w-[220px] truncate" title={keyBase64}>
                   {keyBase64}
                 </code>
                 <button
@@ -184,7 +184,7 @@ export function SigningSection() {
                     setKeyCopied(true);
                     setTimeout(() => setKeyCopied(false), 2000);
                   }}
-                  className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors shrink-0"
+                  className="text-[10px] text-content-secondary hover:text-content transition-colors shrink-0"
                   title="Copy key (Base64 - same format as Mission Planner)"
                 >
                   {keyCopied ? (
@@ -199,7 +199,7 @@ export function SigningSection() {
                 </button>
               </div>
             )}
-            <p className="text-xs text-zinc-500 mb-2">
+            <p className="text-xs text-content-secondary mb-2">
               {hasKey
                 ? 'Add another passphrase, base64, or hex key.'
                 : 'Enter a passphrase, or paste a base64/hex key from Mission Planner.'}
@@ -212,12 +212,12 @@ export function SigningSection() {
                   onChange={(e) => setPassphrase(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSetKey(); }}
                   placeholder={hasKey ? 'Passphrase, base64, or hex key...' : 'Passphrase, base64, or hex key...'}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/50"
+                  className="w-full bg-surface-input border border-border rounded-lg px-3 py-1.5 text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-amber-500/50"
                   disabled={loading}
                 />
                 <button
                   onClick={() => setShowPassphrase(!showPassphrase)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-content-secondary hover:text-content transition-colors"
                   type="button"
                 >
                   {showPassphrase ? (
@@ -235,7 +235,7 @@ export function SigningSection() {
               <button
                 onClick={handleSetKey}
                 disabled={loading || !passphrase.trim()}
-                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white text-xs rounded-lg transition-colors"
+                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:bg-surface-raised disabled:text-content-secondary text-white text-xs rounded-lg transition-colors"
               >
                 {hasKey ? 'Add Key' : 'Set Key'}
               </button>
@@ -245,12 +245,12 @@ export function SigningSection() {
 
         {/* Saved keys list */}
         {savedKeys.length > 1 && (
-          <div className="rounded-lg border border-zinc-700/30 bg-zinc-800/20 p-3">
+          <div className="rounded-lg border border-subtle bg-surface p-3">
             <div className="flex items-center gap-2 mb-2">
-              <svg className="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-3.5 h-3.5 text-content-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
               </svg>
-              <span className="text-[11px] text-zinc-400">{savedKeys.length} saved keys (auto-tried on connect)</span>
+              <span className="text-[11px] text-content-secondary">{savedKeys.length} saved keys (auto-tried on connect)</span>
             </div>
             <div className="space-y-1">
               {savedKeys.map((k) => {
@@ -261,10 +261,10 @@ export function SigningSection() {
                 } catch { /* fallback */ }
                 const isActive = keyBase64?.startsWith(b64.slice(0, 4));
                 return (
-                  <div key={k.fingerprint} className="flex items-center gap-2 px-2 py-1 rounded bg-zinc-800/40">
-                    <code className={`text-[10px] font-mono flex-1 ${isActive ? 'text-emerald-400' : 'text-zinc-500'}`}>{b64}</code>
+                  <div key={k.fingerprint} className="flex items-center gap-2 px-2 py-1 rounded bg-surface">
+                    <code className={`text-[10px] font-mono flex-1 ${isActive ? 'text-emerald-400' : 'text-content-secondary'}`}>{b64}</code>
                     {k.systemIds.length > 0 && (
-                      <span className="text-[9px] text-zinc-600">sysid {k.systemIds.join(',')}</span>
+                      <span className="text-[9px] text-content-tertiary">sysid {k.systemIds.join(',')}</span>
                     )}
                     {isActive && <span className="text-[9px] text-emerald-500">active</span>}
                   </div>
@@ -276,28 +276,28 @@ export function SigningSection() {
 
         {/* Step 2: Send to FC (auto-enables signing) - only when connected */}
         {isConnected && (
-        <div className={`rounded-lg border p-3 ${sentToFc ? 'border-emerald-500/20 bg-emerald-500/5' : !hasKey ? 'border-zinc-800/30 bg-zinc-800/10 opacity-40' : 'border-zinc-700/50 bg-zinc-800/30'}`}>
+        <div className={`rounded-lg border p-3 ${sentToFc ? 'border-emerald-500/20 bg-emerald-500/5' : !hasKey ? 'border-subtle bg-surface opacity-40' : 'border-subtle bg-surface'}`}>
           <div className="flex items-center gap-2.5">
             <StepIndicator step={2} done={sentToFc} active={hasKey && !sentToFc} />
-            <span className="text-xs font-medium text-zinc-300">Activate on flight controller</span>
+            <span className="text-xs font-medium text-content">Activate on flight controller</span>
             {hasKey && (
               <button
                 onClick={handleSendToFc}
                 disabled={loading || !hasKey}
-                className="ml-auto px-3 py-1 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white text-[11px] rounded-lg transition-colors"
+                className="ml-auto px-3 py-1 bg-blue-600 hover:bg-blue-500 disabled:bg-surface-raised disabled:text-content-secondary text-white text-[11px] rounded-lg transition-colors"
               >
                 {sentToFc ? 'Re-send' : 'Send to FC'}
               </button>
             )}
           </div>
           <div className="ml-7 mt-1">
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-content-secondary">
               {sentToFc
                 ? 'Both GCS and flight controller share the signing key. Signing is active.'
                 : 'Sends the key to the FC and enables signing. Both sides must share the same key.'}
             </p>
             {(connectionState.connectionType === 'tcp' || connectionState.connectionType === 'udp') && (
-              <p className="text-[10px] text-zinc-600 mt-0.5">
+              <p className="text-[10px] text-content-tertiary mt-0.5">
                 Sends your key to the FC/proxy. If the proxy rejects it, paste the proxy's key instead.
               </p>
             )}
@@ -310,26 +310,26 @@ export function SigningSection() {
       {isConnected && fullyConfigured && (
         <div className="space-y-2">
           {/* Pause/resume toggle */}
-          <div className="flex items-center justify-between rounded-lg border border-zinc-700/30 bg-zinc-800/30 px-3 py-2.5">
+          <div className="flex items-center justify-between rounded-lg border border-subtle bg-surface px-3 py-2.5">
             <div>
-              <span className="text-xs font-medium text-zinc-300">Packet signing</span>
-              <p className="text-[10px] text-zinc-500 mt-0.5">
+              <span className="text-xs font-medium text-content">Packet signing</span>
+              <p className="text-[10px] text-content-secondary mt-0.5">
                 {enabled ? 'All outgoing packets are signed with SHA-256' : 'Signing is paused. Outgoing packets are unsigned.'}
               </p>
             </div>
             <button
               onClick={handleToggleSigning}
               disabled={loading}
-              className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${enabled ? 'bg-emerald-500' : 'bg-zinc-700'}`}
+              className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${enabled ? 'bg-emerald-500' : 'bg-surface-raised'}`}
             >
               <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
             </button>
           </div>
 
           {/* FC signing verification */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800/20">
-            <div className={`w-2 h-2 rounded-full ${connectionState.fcSigning ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
-            <span className="text-[10px] text-zinc-500">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface">
+            <div className={`w-2 h-2 rounded-full ${connectionState.fcSigning ? 'bg-emerald-400' : 'bg-surface-raised'}`} />
+            <span className="text-[10px] text-content-secondary">
               {connectionState.fcSigning
                 ? 'Vehicle is sending signed packets'
                 : 'Waiting for signed packets from vehicle...'}
@@ -339,7 +339,7 @@ export function SigningSection() {
           {/* Disable signing completely */}
           {confirmDisable ? (
             <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-3">
-              <p className="text-xs text-zinc-300 mb-2">
+              <p className="text-xs text-content mb-2">
                 This will disable signing on the flight controller and remove your local key.
                 Any GCS will be able to connect without a key.
               </p>
@@ -353,7 +353,7 @@ export function SigningSection() {
                 </button>
                 <button
                   onClick={() => setConfirmDisable(false)}
-                  className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-xs rounded-lg transition-colors"
+                  className="px-3 py-1.5 bg-surface-raised hover:bg-surface-raised text-content text-xs rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -363,7 +363,7 @@ export function SigningSection() {
             <button
               onClick={() => setConfirmDisable(true)}
               disabled={loading}
-              className="w-full px-3 py-2 rounded-lg border border-zinc-700/30 bg-zinc-800/30 text-xs text-zinc-500 hover:text-red-400 hover:border-red-500/30 transition-colors disabled:opacity-50"
+              className="w-full px-3 py-2 rounded-lg border border-subtle bg-surface text-xs text-content-secondary hover:text-red-400 hover:border-red-500/30 transition-colors disabled:opacity-50"
             >
               Disable signing and remove key
             </button>
@@ -399,7 +399,7 @@ function StepIndicator({ step, done, active }: { step: number; done: boolean; ac
     );
   }
   return (
-    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${active ? 'bg-amber-500/20 text-amber-400' : 'bg-zinc-700/50 text-zinc-600'}`}>
+    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${active ? 'bg-amber-500/20 text-amber-400' : 'bg-surface-raised text-content-tertiary'}`}>
       {step}
     </div>
   );

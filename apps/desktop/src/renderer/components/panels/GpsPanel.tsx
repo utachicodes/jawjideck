@@ -12,7 +12,7 @@ export function GpsPanel() {
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <div className={`w-2.5 h-2.5 rounded-full ${fixColor}`} />
-          <span className="text-sm text-gray-200">{GPS_FIX_TYPES[gps.fixType] || 'No GPS'}</span>
+          <span className="text-sm text-content">{GPS_FIX_TYPES[gps.fixType] || 'No GPS'}</span>
         </div>
 
         <div className="space-y-1">

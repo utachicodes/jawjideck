@@ -122,9 +122,9 @@ export default function ReportBugView() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-zinc-950 overflow-auto">
+    <div className="h-full flex flex-col bg-surface-base overflow-auto">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-subtle">
         <div className="flex items-center gap-3">
           {/* Bug icon */}
           <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
@@ -133,13 +133,13 @@ export default function ReportBugView() {
             </svg>
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-zinc-100">Report a Bug</h1>
-            <p className="text-xs text-zinc-500">Create an encrypted report to share with developers</p>
+            <h1 className="text-lg font-semibold text-content">Report a Bug</h1>
+            <p className="text-xs text-content-secondary">Create an encrypted report to share with developers</p>
           </div>
         </div>
 
         {/* Connection status */}
-        <div className="text-sm text-zinc-400">
+        <div className="text-sm text-content-secondary">
           {isConnected ? (
             <span className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500" />
@@ -147,7 +147,7 @@ export default function ReportBugView() {
             </span>
           ) : (
             <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-zinc-600" />
+              <span className="w-2 h-2 rounded-full bg-content-tertiary" />
               Not connected
             </span>
           )}
@@ -166,20 +166,20 @@ export default function ReportBugView() {
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-2">
+          <label className="block text-sm font-medium text-content mb-2">
             Describe the issue
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What happened? What were you trying to do? Include any error messages you saw..."
-            className="w-full h-32 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 resize-none"
+            className="w-full h-32 px-3 py-2 bg-surface-input border border-border rounded-lg text-content placeholder-content-tertiary focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 resize-none"
           />
         </div>
 
         {/* Options */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-zinc-300">What to include</h3>
+          <h3 className="text-sm font-medium text-content">What to include</h3>
 
           {/* Include logs */}
           <label className="flex items-start gap-3 cursor-pointer">
@@ -187,16 +187,16 @@ export default function ReportBugView() {
               type="checkbox"
               checked={includeLogs}
               onChange={(e) => setIncludeLogs(e.target.checked)}
-              className="mt-1 w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500/50"
+              className="mt-1 w-4 h-4 rounded border-border bg-surface-input text-blue-500 focus:ring-blue-500/50"
             />
             <div>
-              <span className="text-zinc-200">App logs</span>
-              <p className="text-xs text-zinc-500">
+              <span className="text-content">App logs</span>
+              <p className="text-xs text-content-secondary">
                 Includes error messages and diagnostic information from the last{' '}
                 <select
                   value={logHours}
                   onChange={(e) => setLogHours(Number(e.target.value))}
-                  className="bg-zinc-800 border border-zinc-700 rounded px-1 text-zinc-300"
+                  className="bg-surface-input border border-border rounded px-1 text-content"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <option value={1}>1 hour</option>
@@ -216,11 +216,11 @@ export default function ReportBugView() {
               checked={includeBoardDump}
               onChange={(e) => setIncludeBoardDump(e.target.checked)}
               disabled={!isConnected}
-              className="mt-1 w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500/50 disabled:opacity-50"
+              className="mt-1 w-4 h-4 rounded border-border bg-surface-input text-blue-500 focus:ring-blue-500/50 disabled:opacity-50"
             />
             <div>
-              <span className="text-zinc-200">Board configuration</span>
-              <p className="text-xs text-zinc-500">
+              <span className="text-content">Board configuration</span>
+              <p className="text-xs text-content-secondary">
                 {!isConnected ? (
                   'Connect to a board to include configuration'
                 ) : isMspBoard ? (
@@ -236,10 +236,10 @@ export default function ReportBugView() {
         </div>
 
         {/* What we collect (expandable) */}
-        <div className="border border-zinc-800 rounded-lg overflow-hidden">
+        <div className="border border-subtle rounded-lg overflow-hidden">
           <button
             onClick={() => setShowWhatWeCollect(!showWhatWeCollect)}
-            className="w-full flex items-center justify-between px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800/50 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 text-sm text-content hover:bg-surface-input transition-colors"
           >
             <span>What data will be collected?</span>
             <svg
@@ -252,8 +252,8 @@ export default function ReportBugView() {
             </svg>
           </button>
           {showWhatWeCollect && (
-            <div className="px-4 pb-4 text-xs text-zinc-500 space-y-2 border-t border-zinc-800 pt-3">
-              <p><strong className="text-zinc-400">Included:</strong></p>
+            <div className="px-4 pb-4 text-xs text-content-secondary space-y-2 border-t border-subtle pt-3">
+              <p><strong className="text-content-secondary">Included:</strong></p>
               <ul className="list-disc list-inside space-y-1 ml-2">
                 <li>Error messages and stack traces</li>
                 <li>App version and session info</li>
@@ -263,7 +263,7 @@ export default function ReportBugView() {
                 <li>Board configuration (if selected)</li>
                 <li>Your description of the issue</li>
               </ul>
-              <p className="mt-3"><strong className="text-zinc-400">Privacy protected:</strong></p>
+              <p className="mt-3"><strong className="text-content-secondary">Privacy protected:</strong></p>
               <ul className="list-disc list-inside space-y-1 ml-2">
                 <li>Home directory paths are sanitized</li>
                 <li>GPS coordinates are redacted</li>
@@ -271,7 +271,7 @@ export default function ReportBugView() {
                 <li>IP addresses are redacted</li>
                 <li>Passwords and credentials are redacted</li>
               </ul>
-              <p className="mt-3"><strong className="text-zinc-400">Encryption:</strong></p>
+              <p className="mt-3"><strong className="text-content-secondary">Encryption:</strong></p>
               <p className="ml-2">
                 The report is securely encrypted and can only be decrypted by the ArduDeck development team.
               </p>
@@ -280,14 +280,14 @@ export default function ReportBugView() {
         </div>
 
         {/* Consent */}
-        <label className="flex items-start gap-3 cursor-pointer p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg">
+        <label className="flex items-start gap-3 cursor-pointer p-3 bg-surface-input border border-subtle rounded-lg">
           <input
             type="checkbox"
             checked={hasConsented}
             onChange={(e) => setHasConsented(e.target.checked)}
-            className="mt-1 w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500/50"
+            className="mt-1 w-4 h-4 rounded border-border bg-surface-input text-blue-500 focus:ring-blue-500/50"
           />
-          <div className="text-sm text-zinc-300">
+          <div className="text-sm text-content">
             I understand that the collected data will be encrypted and shared with the ArduDeck development team
             for debugging purposes. No personal information beyond what is listed above will be included.
           </div>
@@ -322,7 +322,7 @@ export default function ReportBugView() {
         <button
           onClick={handleGenerateReport}
           disabled={isGenerating || !hasConsented}
-          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-surface-raised disabled:text-content-secondary text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
         >
           {isGenerating ? (
             <>
@@ -343,8 +343,8 @@ export default function ReportBugView() {
         </button>
 
         {/* Info about the file */}
-        <p className="text-xs text-zinc-500 text-center">
-          The report will be saved as a <code className="bg-zinc-800 px-1 rounded">.deckreport</code> file
+        <p className="text-xs text-content-secondary text-center">
+          The report will be saved as a <code className="bg-surface-input px-1 rounded">.deckreport</code> file
           that you can share with the development team.
         </p>
       </div>

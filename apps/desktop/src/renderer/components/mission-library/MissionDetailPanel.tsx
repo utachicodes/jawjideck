@@ -97,20 +97,20 @@ export function MissionDetailPanel({ onLoadToEditor }: MissionDetailPanelProps) 
   };
 
   return (
-    <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 overflow-hidden">
+    <div className="bg-surface rounded-xl border border-subtle overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-gray-700/30 flex items-center justify-between">
+      <div className="px-5 py-4 border-b border-subtle flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
           {isEditing ? (
             <input
               type="text"
               value={editName}
               onChange={e => setEditName(e.target.value)}
-              className="text-base font-semibold text-white bg-gray-900/50 border border-gray-600 rounded-lg px-2.5 py-1 focus:outline-none focus:border-blue-500/50 min-w-0"
+              className="text-base font-semibold text-content bg-surface-input border border rounded-lg px-2.5 py-1 focus:outline-none focus:border-blue-500/50 min-w-0"
               autoFocus
             />
           ) : (
-            <h3 className="text-base font-semibold text-white truncate">{selectedMission.name}</h3>
+            <h3 className="text-base font-semibold text-content truncate">{selectedMission.name}</h3>
           )}
           {selectedMission.lastFlightStatus && !isEditing && (
             <span className={`text-xs font-medium ${STATUS_COLORS[selectedMission.lastFlightStatus]}`}>
@@ -122,7 +122,7 @@ export function MissionDetailPanel({ onLoadToEditor }: MissionDetailPanelProps) 
           {!isEditing && (
             <button
               onClick={handleStartEdit}
-              className="p-1.5 rounded-md hover:bg-gray-700/50 text-gray-500 hover:text-gray-300 transition-colors"
+              className="p-1.5 rounded-md hover:bg-surface-raised text-content-secondary hover:text-content transition-colors"
               title="Edit"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -132,7 +132,7 @@ export function MissionDetailPanel({ onLoadToEditor }: MissionDetailPanelProps) 
           )}
           <button
             onClick={clearSelection}
-            className="p-1.5 rounded-md hover:bg-gray-700/50 text-gray-500 hover:text-gray-300 transition-colors"
+            className="p-1.5 rounded-md hover:bg-surface-raised text-content-secondary hover:text-content transition-colors"
             title="Close"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -142,49 +142,49 @@ export function MissionDetailPanel({ onLoadToEditor }: MissionDetailPanelProps) 
         </div>
       </div>
 
-      <div className="flex divide-x divide-gray-700/30">
+      <div className="flex divide-x divide-subtle">
         {/* Left: Mission details */}
         <div className="flex-1 p-5 space-y-4">
           {/* Description */}
           {isEditing ? (
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
+              <label className="block text-xs font-medium text-content-secondary mb-1">Description</label>
               <textarea
                 value={editDescription}
                 onChange={e => setEditDescription(e.target.value)}
                 rows={3}
                 placeholder="Optional mission description..."
-                className="w-full px-2.5 py-1.5 bg-gray-900/50 border border-gray-600 rounded-lg text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/50 resize-none"
+                className="w-full px-2.5 py-1.5 bg-surface-input border border rounded-lg text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-blue-500/50 resize-none"
               />
             </div>
           ) : selectedMission.description ? (
-            <p className="text-sm text-gray-400">{selectedMission.description}</p>
+            <p className="text-sm text-content-secondary">{selectedMission.description}</p>
           ) : null}
 
           {/* Metadata grid */}
           <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="bg-gray-900/30 rounded-lg px-3 py-2">
-              <span className="text-gray-500 block">Waypoints</span>
-              <span className="text-white font-medium">{selectedMission.waypointCount}</span>
+            <div className="bg-surface rounded-lg px-3 py-2">
+              <span className="text-content-secondary block">Waypoints</span>
+              <span className="text-content font-medium">{selectedMission.waypointCount}</span>
             </div>
-            <div className="bg-gray-900/30 rounded-lg px-3 py-2">
-              <span className="text-gray-500 block">Distance</span>
-              <span className="text-white font-medium">{formatDistance(selectedMission.totalDistanceMeters)}</span>
+            <div className="bg-surface rounded-lg px-3 py-2">
+              <span className="text-content-secondary block">Distance</span>
+              <span className="text-content font-medium">{formatDistance(selectedMission.totalDistanceMeters)}</span>
             </div>
-            <div className="bg-gray-900/30 rounded-lg px-3 py-2">
-              <span className="text-gray-500 block">Vehicle</span>
-              <span className="text-white font-medium">{vehicle?.name ?? 'None'}</span>
+            <div className="bg-surface rounded-lg px-3 py-2">
+              <span className="text-content-secondary block">Vehicle</span>
+              <span className="text-content font-medium">{vehicle?.name ?? 'None'}</span>
             </div>
-            <div className="bg-gray-900/30 rounded-lg px-3 py-2">
-              <span className="text-gray-500 block">Flights</span>
-              <span className="text-white font-medium">{selectedMission.flightCount}</span>
+            <div className="bg-surface rounded-lg px-3 py-2">
+              <span className="text-content-secondary block">Flights</span>
+              <span className="text-content font-medium">{selectedMission.flightCount}</span>
             </div>
           </div>
 
           {/* Tags */}
           {isEditing ? (
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Tags</label>
+              <label className="block text-xs font-medium text-content-secondary mb-1">Tags</label>
               <TagInput
                 tags={editTags}
                 onChange={setEditTags}
@@ -197,7 +197,7 @@ export function MissionDetailPanel({ onLoadToEditor }: MissionDetailPanelProps) 
               {selectedMission.tags.map(tag => (
                 <span
                   key={tag}
-                  className="px-2 py-0.5 text-xs bg-gray-700/50 text-gray-400 rounded"
+                  className="px-2 py-0.5 text-xs bg-surface-raised text-content-secondary rounded"
                 >
                   {tag}
                 </span>
@@ -207,7 +207,7 @@ export function MissionDetailPanel({ onLoadToEditor }: MissionDetailPanelProps) 
 
           {/* Dates */}
           {!isEditing && (
-            <div className="text-[11px] text-gray-500 space-y-0.5">
+            <div className="text-[11px] text-content-secondary space-y-0.5">
               <div>Created: {new Date(selectedMission.createdAt).toLocaleDateString()}</div>
               <div>Updated: {new Date(selectedMission.updatedAt).toLocaleDateString()}</div>
             </div>
@@ -230,7 +230,7 @@ export function MissionDetailPanel({ onLoadToEditor }: MissionDetailPanelProps) 
                 </button>
                 <button
                   onClick={handleCancelEdit}
-                  className="px-3 py-1.5 text-xs font-medium bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs font-medium bg-surface-raised hover:bg-surface-raised text-content rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -248,7 +248,7 @@ export function MissionDetailPanel({ onLoadToEditor }: MissionDetailPanelProps) 
                 </button>
                 <button
                   onClick={handleStartEdit}
-                  className="px-3 py-1.5 text-xs font-medium bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 rounded-lg transition-colors flex items-center gap-1.5"
+                  className="px-3 py-1.5 text-xs font-medium bg-surface-raised hover:bg-surface-raised text-content rounded-lg transition-colors flex items-center gap-1.5"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -257,7 +257,7 @@ export function MissionDetailPanel({ onLoadToEditor }: MissionDetailPanelProps) 
                 </button>
                 <button
                   onClick={handleDuplicate}
-                  className="px-3 py-1.5 text-xs font-medium bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs font-medium bg-surface-raised hover:bg-surface-raised text-content rounded-lg transition-colors"
                 >
                   Duplicate
                 </button>

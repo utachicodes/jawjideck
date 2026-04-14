@@ -67,41 +67,41 @@ export function MissionCard({ mission, isSelected, onClick, onLoad, onDuplicate,
   // Left accent: colored if has status, transparent if never flown
   const leftBorder = status
     ? `border-l-[3px] ${STATUS_LEFT_BORDER[status]}`
-    : 'border-l-[3px] border-l-gray-700/40';
+    : 'border-l-[3px] border-l-subtle';
 
   return (
     <div
       onClick={onClick}
-      className={`group relative bg-gray-800/30 rounded-xl border p-4 cursor-pointer transition-all hover:bg-gray-800/50 ${leftBorder} ${
+      className={`group relative bg-surface rounded-xl border p-4 cursor-pointer transition-all hover:bg-surface-raised ${leftBorder} ${
         isSelected
           ? 'border-blue-500/50 ring-1 ring-blue-500/20'
-          : 'border-gray-700/30 hover:border-gray-600/50'
+          : 'border-subtle hover:border'
       }`}
     >
       {/* Top row: name + badge + date */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 min-w-0">
-          <h3 className="text-sm font-medium text-white truncate">{mission.name}</h3>
+          <h3 className="text-sm font-medium text-content truncate">{mission.name}</h3>
           {status ? (
             <span className={`shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded border ${STATUS_BADGE_STYLES[status]}`}>
               {STATUS_LABELS[status]}
             </span>
           ) : (
-            <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded border bg-gray-700/30 text-gray-500 border-gray-600/30">
+            <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded border bg-surface-raised text-content-secondary border-subtle">
               New
             </span>
           )}
         </div>
-        <span className="text-[10px] text-gray-500 shrink-0">{formatRelativeDate(mission.updatedAt)}</span>
+        <span className="text-[10px] text-content-secondary shrink-0">{formatRelativeDate(mission.updatedAt)}</span>
       </div>
 
       {/* Description (truncated) */}
       {mission.description && (
-        <p className="text-xs text-gray-400 mb-3 line-clamp-2">{mission.description}</p>
+        <p className="text-xs text-content-secondary mb-3 line-clamp-2">{mission.description}</p>
       )}
 
       {/* Stats row */}
-      <div className="flex items-center gap-3 text-[11px] text-gray-500 mb-3">
+      <div className="flex items-center gap-3 text-[11px] text-content-secondary mb-3">
         <span className="flex items-center gap-1">
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -118,7 +118,7 @@ export function MissionCard({ mission, isSelected, onClick, onLoad, onDuplicate,
           </span>
         )}
         {vehicle && (
-          <span className="text-gray-600">{vehicle.name}</span>
+          <span className="text-content-tertiary">{vehicle.name}</span>
         )}
       </div>
 
@@ -128,7 +128,7 @@ export function MissionCard({ mission, isSelected, onClick, onLoad, onDuplicate,
           {mission.tags.map(tag => (
             <span
               key={tag}
-              className="px-1.5 py-0.5 text-[10px] bg-gray-700/50 text-gray-400 rounded"
+              className="px-1.5 py-0.5 text-[10px] bg-surface-raised text-content-secondary rounded"
             >
               {tag}
             </span>
@@ -149,7 +149,7 @@ export function MissionCard({ mission, isSelected, onClick, onLoad, onDuplicate,
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-          className="p-1.5 rounded-md bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 transition-colors"
+          className="p-1.5 rounded-md bg-surface-raised hover:bg-surface-raised text-content-secondary transition-colors"
           title="Duplicate"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -26,7 +26,7 @@ const MODE_INFO: Record<number, { name: string; icon: LucideIcon; color: string;
   11: { name: 'NAV POSHOLD', icon: MapPin, color: 'bg-teal-500', description: 'Hold GPS position' },
   12: { name: 'MANUAL', icon: Hand, color: 'bg-gray-500', description: 'Direct passthrough' },
   13: { name: 'BEEPER', icon: Volume2, color: 'bg-yellow-500', description: 'Find my quad' },
-  19: { name: 'OSD SW', icon: Monitor, color: 'bg-gray-600', description: 'Toggle OSD' },
+  19: { name: 'OSD SW', icon: Monitor, color: 'bg-surface-raised', description: 'Toggle OSD' },
   20: { name: 'TELEMETRY', icon: Radio, color: 'bg-blue-400', description: 'Enable telemetry' },
   26: { name: 'BLACKBOX', icon: Package, color: 'bg-pink-500', description: 'Log flight data' },
   27: { name: 'FAILSAFE', icon: ShieldAlert, color: 'bg-red-600', description: 'Emergency failsafe' },
@@ -74,7 +74,7 @@ function RangeSlider({
 
   return (
     <div className="space-y-2">
-      <div className="relative h-8 bg-zinc-800 rounded-lg overflow-hidden">
+      <div className="relative h-8 bg-surface-tooltip rounded-lg overflow-hidden">
         {/* Range highlight */}
         {!isDisabled && (
           <div
@@ -89,7 +89,7 @@ function RangeSlider({
         )}
 
         {/* Center line */}
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-600" />
+        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-surface-raised" />
 
         {/* Tick marks */}
         {[900, 1100, 1300, 1500, 1700, 1900, 2100].map((tick) => {
@@ -97,7 +97,7 @@ function RangeSlider({
           return (
             <div
               key={tick}
-              className="absolute top-0 w-px h-2 bg-zinc-600"
+              className="absolute top-0 w-px h-2 bg-surface-raised"
               style={{ left: `${percent}%` }}
             />
           );
@@ -105,7 +105,7 @@ function RangeSlider({
 
         {/* Start handle */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 w-4 h-6 rounded cursor-ew-resize border-2 border-white/50 bg-zinc-700 hover:bg-zinc-600 transition-colors"
+          className="absolute top-1/2 -translate-y-1/2 w-4 h-6 rounded cursor-ew-resize border-2 border-white/50 bg-surface-raised hover:bg-surface-raised transition-colors"
           style={{ left: `calc(${startPercent}% - 8px)` }}
           onMouseDown={(e) => {
             const bar = e.currentTarget.parentElement!;
@@ -126,7 +126,7 @@ function RangeSlider({
 
         {/* End handle */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 w-4 h-6 rounded cursor-ew-resize border-2 border-white/50 bg-zinc-700 hover:bg-zinc-600 transition-colors"
+          className="absolute top-1/2 -translate-y-1/2 w-4 h-6 rounded cursor-ew-resize border-2 border-white/50 bg-surface-raised hover:bg-surface-raised transition-colors"
           style={{ left: `calc(${endPercent}% - 8px)` }}
           onMouseDown={(e) => {
             const bar = e.currentTarget.parentElement!;
@@ -147,7 +147,7 @@ function RangeSlider({
       </div>
 
       {/* Labels */}
-      <div className="flex justify-between text-xs text-zinc-500">
+      <div className="flex justify-between text-xs text-content-secondary">
         <span>900</span>
         <span>1500</span>
         <span>2100</span>
@@ -186,12 +186,12 @@ export default function LegacyModesTab() {
         key={mode.index}
         className={`rounded-xl border transition-all ${
           isActive
-            ? 'bg-zinc-900/70 border-zinc-700'
-            : 'bg-zinc-900/30 border-zinc-800'
+            ? 'bg-surface border'
+            : 'bg-surface border-subtle'
         }`}
       >
         {/* Header */}
-        <div className="p-4 border-b border-zinc-800">
+        <div className="p-4 border-b border-subtle">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-lg ${info.color} flex items-center justify-center`}>
@@ -199,10 +199,10 @@ export default function LegacyModesTab() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-white">{info.name}</span>
-                  <span className="text-xs text-zinc-500 font-mono">#{mode.index}</span>
+                  <span className="font-semibold text-content">{info.name}</span>
+                  <span className="text-xs text-content-secondary font-mono">#{mode.index}</span>
                 </div>
-                <p className="text-xs text-zinc-400">{info.description}</p>
+                <p className="text-xs text-content-secondary">{info.description}</p>
               </div>
             </div>
             {isActive && (
@@ -218,11 +218,11 @@ export default function LegacyModesTab() {
           <div className="grid grid-cols-2 gap-4">
             {/* Mode selector */}
             <div>
-              <label className="block text-xs text-zinc-500 mb-1.5">Mode</label>
+              <label className="block text-xs text-content-secondary mb-1.5">Mode</label>
               <select
                 value={mode.modeId}
                 onChange={(e) => handleChange({ ...mode, modeId: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
               >
                 {allModes.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -234,11 +234,11 @@ export default function LegacyModesTab() {
 
             {/* Channel selector */}
             <div>
-              <label className="block text-xs text-zinc-500 mb-1.5">Switch Channel</label>
+              <label className="block text-xs text-content-secondary mb-1.5">Switch Channel</label>
               <select
                 value={mode.auxChannel}
                 onChange={(e) => handleChange({ ...mode, auxChannel: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
               >
                 {AUX_CHANNELS.map((ch) => (
                   <option key={ch.value} value={ch.value}>
@@ -252,7 +252,7 @@ export default function LegacyModesTab() {
           {/* Range slider */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs text-zinc-500">Activation Range</label>
+              <label className="text-xs text-content-secondary">Activation Range</label>
               <div className="flex items-center gap-2 text-xs">
                 <input
                   type="number"
@@ -261,9 +261,9 @@ export default function LegacyModesTab() {
                   step="25"
                   value={mode.rangeStart}
                   onChange={(e) => handleChange({ ...mode, rangeStart: parseInt(e.target.value) || 900 })}
-                  className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-center"
+                  className="w-16 px-2 py-1 bg-surface-tooltip border border rounded text-content text-center"
                 />
-                <span className="text-zinc-500">-</span>
+                <span className="text-content-secondary">-</span>
                 <input
                   type="number"
                   min="900"
@@ -271,7 +271,7 @@ export default function LegacyModesTab() {
                   step="25"
                   value={mode.rangeEnd}
                   onChange={(e) => handleChange({ ...mode, rangeEnd: parseInt(e.target.value) || 900 })}
-                  className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-center"
+                  className="w-16 px-2 py-1 bg-surface-tooltip border border rounded text-content text-center"
                 />
               </div>
             </div>
@@ -288,7 +288,7 @@ export default function LegacyModesTab() {
           {isActive && (
             <button
               onClick={() => handleChange({ ...mode, rangeStart: 900, rangeEnd: 900 })}
-              className="w-full py-2 text-sm text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+              className="w-full py-2 text-sm text-content-secondary hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
             >
               Disable Mode
             </button>
@@ -315,8 +315,8 @@ export default function LegacyModesTab() {
       </div>
 
       {auxModes.length === 0 ? (
-        <div className="text-center py-12 text-zinc-500">
-          <SlidersHorizontal className="w-10 h-10 text-zinc-500 mb-3" />
+        <div className="text-center py-12 text-content-secondary">
+          <SlidersHorizontal className="w-10 h-10 text-content-secondary mb-3" />
           <p>No aux mode rules found.</p>
           <p className="text-sm mt-1">Run the dump command to load configuration.</p>
         </div>
@@ -325,7 +325,7 @@ export default function LegacyModesTab() {
           {/* Active Modes */}
           {activeModes.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-zinc-300 mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-medium text-content mb-3 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-green-500" />
                 Active Modes ({activeModes.length})
               </h3>
@@ -338,8 +338,8 @@ export default function LegacyModesTab() {
           {/* Inactive Modes */}
           {inactiveModes.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-zinc-400 mb-3 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-zinc-600" />
+              <h3 className="text-sm font-medium text-content-secondary mb-3 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-surface-raised" />
                 Disabled ({inactiveModes.length})
               </h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -348,7 +348,7 @@ export default function LegacyModesTab() {
                   return (
                     <div
                       key={mode.index}
-                      className="flex items-center gap-3 p-3 bg-zinc-900/30 border border-zinc-800 rounded-lg hover:bg-zinc-900/50 transition-colors cursor-pointer"
+                      className="flex items-center gap-3 p-3 bg-surface border border-subtle rounded-lg hover:bg-surface-input transition-colors cursor-pointer"
                       onClick={() => {
                         // Quick enable with default range
                         handleChange({ ...mode, rangeStart: 1700, rangeEnd: 2100 });
@@ -358,8 +358,8 @@ export default function LegacyModesTab() {
                         <info.icon className="w-4 h-4 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm text-zinc-400 truncate">{info.name}</div>
-                        <div className="text-xs text-zinc-600">#{mode.index} - Click to enable</div>
+                        <div className="text-sm text-content-secondary truncate">{info.name}</div>
+                        <div className="text-xs text-content-tertiary">#{mode.index} - Click to enable</div>
                       </div>
                     </div>
                   );

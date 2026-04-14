@@ -69,13 +69,13 @@ const BitmaskEditor: React.FC<BitmaskEditorProps> = ({ paramId, value, bitmask, 
   return (
     <div
       ref={popoverRef}
-      className="absolute left-0 top-full mt-1 z-50 bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl min-w-[320px] max-w-[400px]"
+      className="absolute left-0 top-full mt-1 z-50 bg-surface border rounded-lg shadow-2xl min-w-[320px] max-w-[400px]"
     >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-zinc-800">
+      <div className="px-4 py-3 border-b border-subtle">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-zinc-200">{paramId}</span>
-          <span className="text-xs font-mono text-zinc-500">= {currentValue}</span>
+          <span className="text-sm font-medium text-content">{paramId}</span>
+          <span className="text-xs font-mono text-content-secondary">= {currentValue}</span>
         </div>
         <div className="flex items-center gap-3 mt-2">
           <button
@@ -98,32 +98,32 @@ const BitmaskEditor: React.FC<BitmaskEditorProps> = ({ paramId, value, bitmask, 
         {bitEntries.map(({ bit, label }) => (
           <label
             key={bit}
-            className="flex items-center gap-3 py-1.5 cursor-pointer hover:bg-zinc-800/50 rounded px-1 -mx-1 transition-colors"
+            className="flex items-center gap-3 py-1.5 cursor-pointer hover:bg-surface rounded px-1 -mx-1 transition-colors"
           >
             <input
               type="checkbox"
               checked={isBitSet(bit)}
               onChange={() => toggleBit(bit)}
-              className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500/30 focus:ring-offset-0 cursor-pointer"
+              className="w-4 h-4 rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500/30 focus:ring-offset-0 cursor-pointer"
             />
-            <span className="text-xs text-zinc-500 font-mono w-5 shrink-0">{bit}</span>
-            <span className="text-sm text-zinc-300">{label}</span>
+            <span className="text-xs text-content-secondary font-mono w-5 shrink-0">{bit}</span>
+            <span className="text-sm text-content">{label}</span>
           </label>
         ))}
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-zinc-800 flex items-center justify-end gap-2">
+      <div className="px-4 py-3 border-t border-subtle flex items-center justify-end gap-2">
         <button
           onClick={onCancel}
-          className="px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+          className="px-3 py-1.5 text-sm text-content-secondary hover:text-content transition-colors"
         >
           Cancel
         </button>
         <button
           onClick={() => onSave(currentValue)}
           disabled={!hasChanges}
-          className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-zinc-800 text-blue-400 disabled:text-zinc-600 rounded-lg text-sm font-medium transition-colors"
+          className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-surface-tooltip text-blue-400 disabled:text-white-tertiary rounded-lg text-sm font-medium transition-colors"
         >
           Apply
         </button>

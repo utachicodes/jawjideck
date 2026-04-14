@@ -48,24 +48,24 @@ export const AuxChannelPicker: React.FC<AuxChannelPickerProps> = ({
       <button
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`w-full px-4 py-3 bg-zinc-800 rounded-lg border ${
-          isOpen ? 'border-blue-500' : 'border-zinc-700'
-        } text-left transition-colors hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed`}
+        className={`w-full px-4 py-3 bg-surface-tooltip rounded-lg border ${
+          isOpen ? 'border-blue-500' : 'border'
+        } text-left transition-colors hover:bg-surface-raised disabled:opacity-50 disabled:cursor-not-allowed`}
       >
         <div className="flex items-center justify-between">
           <div>
-            <div className="font-medium text-zinc-200">{selectedChannel!.name}</div>
-            <div className="text-xs text-zinc-500">{selectedChannel!.description}</div>
+            <div className="font-medium text-content">{selectedChannel!.name}</div>
+            <div className="text-xs text-content-secondary">{selectedChannel!.description}</div>
           </div>
           <div className="flex items-center gap-3">
             {/* Live RC value */}
             <div className="text-right">
-              <div className="text-xs text-zinc-500">Current</div>
+              <div className="text-xs text-content-secondary">Current</div>
               <div className="font-mono text-sm text-yellow-400">{currentRcValue}</div>
             </div>
             {/* Dropdown arrow */}
             <svg
-              className={`w-4 h-4 text-zinc-400 transition-transform ${
+              className={`w-4 h-4 text-content-secondary transition-transform ${
                 isOpen ? 'rotate-180' : ''
               }`}
               fill="none"
@@ -85,7 +85,7 @@ export const AuxChannelPicker: React.FC<AuxChannelPickerProps> = ({
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl overflow-hidden">
+        <div className="absolute z-50 mt-1 w-full bg-surface-tooltip border border rounded-lg shadow-xl overflow-hidden">
           {AUX_CHANNELS.map((channel) => {
             const rcValue = getRcValue(channel.index);
             const isSelected = channel.index === selected;
@@ -100,24 +100,24 @@ export const AuxChannelPicker: React.FC<AuxChannelPickerProps> = ({
                 className={`w-full px-4 py-3 text-left transition-colors ${
                   isSelected
                     ? 'bg-blue-500/20 border-l-2 border-blue-500'
-                    : 'hover:bg-zinc-700 border-l-2 border-transparent'
+                    : 'hover:bg-surface-raised border-l-2 border-transparent'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div>
                     <div
                       className={`font-medium ${
-                        isSelected ? 'text-blue-300' : 'text-zinc-200'
+                        isSelected ? 'text-blue-300' : 'text-content'
                       }`}
                     >
                       {channel.name}
                     </div>
-                    <div className="text-xs text-zinc-500">{channel.description}</div>
+                    <div className="text-xs text-content-secondary">{channel.description}</div>
                   </div>
                   <div className="flex items-center gap-3">
                     {/* Live RC value with visual bar */}
                     <div className="w-20">
-                      <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
+                      <div className="h-2 bg-surface-raised rounded-full overflow-hidden">
                         <div
                           className="h-full bg-yellow-500/60 transition-all duration-75"
                           style={{

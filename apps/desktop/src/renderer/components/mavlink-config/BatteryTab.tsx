@@ -91,21 +91,21 @@ const BatteryTab: React.FC = () => {
 
       <div className="grid grid-cols-2 gap-4">
         {/* Monitor Type Card */}
-        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4 space-y-4">
+        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-white">Monitor Type</h3>
-              <p className="text-xs text-zinc-500">How is battery connected?</p>
+              <h3 className="text-sm font-medium text-content">Monitor Type</h3>
+              <p className="text-xs text-content-secondary">How is battery connected?</p>
             </div>
           </div>
 
           <select
             value={batteryValues.battMonitor}
             onChange={(e) => setParameter('BATT_MONITOR', Number(e.target.value))}
-            className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+            className="w-full px-3 py-2.5 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
           >
             {Object.entries(BATTERY_MONITORS).map(([num, monitor]) => (
               <option key={num} value={num}>
@@ -114,14 +114,14 @@ const BatteryTab: React.FC = () => {
             ))}
           </select>
 
-          <div className="bg-zinc-800/50 rounded-lg p-3">
-            <p className="text-xs text-zinc-500">
+          <div className="bg-surface rounded-lg p-3">
+            <p className="text-xs text-content-secondary">
               {BATTERY_MONITORS[batteryValues.battMonitor]?.description || 'Select a monitor type'}
             </p>
           </div>
 
           {batteryValues.battMonitor === 0 && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center gap-2">
+            <div className="bg-amber-500/10 border-amber-500/30 rounded-lg p-3 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
               <p className="text-xs text-amber-400">
                 Battery monitoring disabled. You won't see voltage or remaining capacity!
@@ -131,14 +131,14 @@ const BatteryTab: React.FC = () => {
         </div>
 
         {/* Capacity Card */}
-        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4 space-y-4">
+        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
               <Zap className="w-5 h-5 text-green-400" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-white">Battery Capacity</h3>
-              <p className="text-xs text-zinc-500">For accurate mAh remaining</p>
+              <h3 className="text-sm font-medium text-content">Battery Capacity</h3>
+              <p className="text-xs text-content-secondary">For accurate mAh remaining</p>
             </div>
           </div>
 
@@ -162,7 +162,7 @@ const BatteryTab: React.FC = () => {
                 className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
                   batteryValues.battCapacity === cap
                     ? 'bg-blue-500 text-white'
-                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                    : 'bg-surface-tooltip text-content-secondary hover:bg-surface-raised'
                 }`}
               >
                 {cap} mAh
@@ -173,19 +173,19 @@ const BatteryTab: React.FC = () => {
       </div>
 
       {/* Battery Chemistry & Cell Configuration */}
-      <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4 space-y-4">
+      <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
               <Plug className="w-5 h-5 text-amber-400" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-white">Battery Chemistry & Cell Count</h3>
-              <p className="text-xs text-zinc-500">Select chemistry, then cell count to auto-calculate thresholds</p>
+              <h3 className="text-sm font-medium text-content">Battery Chemistry & Cell Count</h3>
+              <p className="text-xs text-content-secondary">Select chemistry, then cell count to auto-calculate thresholds</p>
             </div>
           </div>
           {estimatedCells > 0 && (
-            <span className="px-2 py-1 text-xs bg-zinc-800 rounded text-zinc-400">
+            <span className="px-2 py-1 text-xs bg-surface-tooltip rounded text-content-secondary">
               Currently: ~{estimatedCells}S {chemInfo.name}
             </span>
           )}
@@ -200,11 +200,11 @@ const BatteryTab: React.FC = () => {
               className={`flex-1 p-2.5 rounded-lg border text-center transition-all ${
                 chemistry === key
                   ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
-                  : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:border-zinc-600'
+                  : 'bg-surface border text-content hover:border'
               }`}
             >
               <div className="text-sm font-medium">{chem.name}</div>
-              <div className="text-[10px] text-zinc-500 mt-0.5">
+              <div className="text-[10px] text-content-secondary mt-0.5">
                 {chem.cellNominal}V/cell
               </div>
             </button>
@@ -212,8 +212,8 @@ const BatteryTab: React.FC = () => {
         </div>
 
         {/* Chemistry description */}
-        <div className="bg-zinc-800/50 rounded-lg p-2.5">
-          <p className="text-xs text-zinc-500">{chemInfo.description}</p>
+        <div className="bg-surface rounded-lg p-2.5">
+          <p className="text-xs text-content-secondary">{chemInfo.description}</p>
         </div>
 
         {/* Cell Count - Low range */}
@@ -228,11 +228,11 @@ const BatteryTab: React.FC = () => {
                 className={`flex-1 p-3 rounded-lg border text-center transition-all ${
                   isActive
                     ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
-                    : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:border-zinc-600'
+                    : 'bg-surface border text-content hover:border'
                 }`}
               >
                 <div className="text-lg font-bold">{cells}S</div>
-                <div className="text-[10px] text-zinc-500 mt-1">
+                <div className="text-[10px] text-content-secondary mt-1">
                   {voltages.nominal.toFixed(1)}V
                 </div>
               </button>
@@ -252,11 +252,11 @@ const BatteryTab: React.FC = () => {
                 className={`flex-1 p-3 rounded-lg border text-center transition-all ${
                   isActive
                     ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
-                    : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:border-zinc-600'
+                    : 'bg-surface border text-content hover:border'
                 }`}
               >
                 <div className="text-lg font-bold">{cells}S</div>
-                <div className="text-[10px] text-zinc-500 mt-1">
+                <div className="text-[10px] text-content-secondary mt-1">
                   {voltages.nominal.toFixed(1)}V
                 </div>
               </button>
@@ -266,7 +266,7 @@ const BatteryTab: React.FC = () => {
 
         {/* Voltage Reference */}
         {estimatedCells > 0 && (
-          <div className="bg-zinc-800/50 rounded-lg p-3">
+          <div className="bg-surface rounded-lg p-3">
             <div className="grid grid-cols-4 gap-3 text-center">
               {[
                 { label: 'Full', voltage: getCellVoltages(estimatedCells, chemistry).full, color: 'text-green-400' },
@@ -276,7 +276,7 @@ const BatteryTab: React.FC = () => {
               ].map((v) => (
                 <div key={v.label}>
                   <div className={`text-sm font-mono ${v.color}`}>{v.voltage.toFixed(1)}V</div>
-                  <div className="text-[10px] text-zinc-500">{v.label}</div>
+                  <div className="text-[10px] text-content-secondary">{v.label}</div>
                 </div>
               ))}
             </div>
@@ -284,8 +284,8 @@ const BatteryTab: React.FC = () => {
         )}
 
         {/* ArduPilot threshold philosophy note */}
-        <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3">
-          <p className="text-xs text-zinc-400">
+        <div className="bg-blue-500/5 border-blue-500/20 rounded-lg p-3">
+          <p className="text-xs text-content-secondary">
             <span className="text-blue-400">ArduPilot note:</span> Thresholds are set conservatively to ensure enough
             battery remains for RTL. Low triggers RTL warning, Critical triggers emergency land. Unlike Betaflight,
             these must account for the energy needed to fly home.
@@ -294,14 +294,14 @@ const BatteryTab: React.FC = () => {
       </div>
 
       {/* Voltage Thresholds */}
-      <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4 space-y-4">
+      <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
             <AlertTriangle className="w-5 h-5 text-red-400" />
           </div>
           <div>
-            <h3 className="text-sm font-medium text-white">Voltage Thresholds</h3>
-            <p className="text-xs text-zinc-500">When to warn and take action</p>
+            <h3 className="text-sm font-medium text-content">Voltage Thresholds</h3>
+            <p className="text-xs text-content-secondary">When to warn and take action</p>
           </div>
         </div>
 
@@ -341,7 +341,7 @@ const BatteryTab: React.FC = () => {
         </div>
 
         {/* Visual voltage bar */}
-        <div className="relative h-3 bg-zinc-800 rounded-full overflow-hidden">
+        <div className="relative h-3 bg-surface-tooltip rounded-full overflow-hidden">
           <div className="absolute inset-0 flex">
             <div className="h-full bg-red-500/50" style={{ width: '15%' }} />
             <div className="h-full bg-amber-500/50" style={{ width: '15%' }} />
@@ -363,18 +363,18 @@ const BatteryTab: React.FC = () => {
       </div>
 
       {/* Calibration (Advanced) */}
-      <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4 space-y-4">
+      <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
               <Wrench className="w-5 h-5 text-purple-400" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-white">Calibration</h3>
-              <p className="text-xs text-zinc-500">Fine-tune voltage/current readings</p>
+              <h3 className="text-sm font-medium text-content">Calibration</h3>
+              <p className="text-xs text-content-secondary">Fine-tune voltage/current readings</p>
             </div>
           </div>
-          <span className="px-2 py-0.5 text-[10px] bg-zinc-700/50 text-zinc-400 rounded">Advanced</span>
+          <span className="px-2 py-0.5 text-[10px] bg-surface-raised text-content-secondary rounded">Advanced</span>
         </div>
 
         <div className="space-y-4">
@@ -412,8 +412,8 @@ const BatteryTab: React.FC = () => {
           />
         </div>
 
-        <div className="bg-zinc-800/50 rounded-lg p-3">
-          <p className="text-xs text-zinc-500">
+        <div className="bg-surface rounded-lg p-3">
+          <p className="text-xs text-content-secondary">
             <span className="text-blue-400">Tip:</span> To calibrate voltage, measure your battery with a
             multimeter and adjust the multiplier until readings match. For current, compare with a watt
             meter during a hover test.
@@ -423,7 +423,7 @@ const BatteryTab: React.FC = () => {
 
       {/* Save Reminder */}
       {modified > 0 && (
-        <div className="bg-amber-500/10 rounded-xl border border-amber-500/30 p-4 flex items-center gap-3">
+        <div className="bg-amber-500/10 rounded-xl border-amber-500/30 p-4 flex items-center gap-3">
           <Save className="w-5 h-5 text-amber-400" />
           <p className="text-sm text-amber-400">
             You have unsaved changes. Click <span className="font-medium">"Write to Flash"</span> in the header to save.

@@ -382,20 +382,20 @@ function CommandDropdown({
           }
           setIsOpen(!isOpen);
         }}
-        className="w-full flex items-center justify-between bg-gray-700 text-gray-200 text-sm px-2 py-1.5 rounded border border-gray-600 hover:border-gray-500 focus:border-blue-500 focus:outline-none"
+        className="w-full flex items-center justify-between bg-surface-raised text-content text-sm px-2 py-1.5 rounded border border-default hover:border-default focus:border-blue-500 focus:outline-none"
       >
         <span className="truncate">{currentLabel}</span>
-        <svg className={`w-4 h-4 shrink-0 ml-1 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className={`w-4 h-4 shrink-0 ml-1 text-content-secondary transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {isOpen && createPortal(
-        <div ref={popupRef} className="z-[9999] bg-gray-800 border border-gray-600 rounded-lg shadow-xl flex flex-col overflow-hidden" style={popupStyle}>
+        <div ref={popupRef} className="z-[9999] bg-surface-tooltip border border-default rounded-lg shadow-xl flex flex-col overflow-hidden" style={popupStyle}>
           {/* Search input */}
-          <div className="p-1.5 border-b border-gray-700/50 shrink-0">
+          <div className="p-1.5 border-b border-subtle shrink-0">
             <div className="relative">
-              <svg className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
@@ -419,7 +419,7 @@ function CommandDropdown({
                   }
                 }}
                 placeholder="Search commands..."
-                className="w-full bg-gray-700/60 text-gray-200 text-xs pl-7 pr-2 py-1.5 rounded border border-gray-600/50 focus:border-blue-500/50 focus:outline-none placeholder-gray-500"
+                className="w-full bg-surface-input text-content text-xs pl-7 pr-2 py-1.5 rounded border border-subtle focus:border-blue-500/50 focus:outline-none placeholder-content-secondary"
               />
             </div>
           </div>
@@ -427,11 +427,11 @@ function CommandDropdown({
           {/* Results */}
           <div className="overflow-auto flex-1 min-h-0">
             {filteredGroups.length === 0 ? (
-              <div className="px-3 py-4 text-xs text-gray-500 text-center">No commands match "{search}"</div>
+              <div className="px-3 py-4 text-xs text-content-secondary text-center">No commands match "{search}"</div>
             ) : (
               filteredGroups.map((group) => (
                 <div key={group.group}>
-                  <div className="px-2 py-1 text-[10px] font-semibold text-gray-500 uppercase tracking-wider sticky top-0 bg-gray-800">
+                  <div className="px-2 py-1 text-[10px] font-semibold text-content-secondary uppercase tracking-wider sticky top-0 bg-surface-tooltip">
                     {group.group}
                   </div>
                   {group.commands.map((cmd) => (
@@ -445,11 +445,11 @@ function CommandDropdown({
                       className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${
                         cmd.value === value
                           ? 'bg-blue-600/30 text-blue-300'
-                          : 'text-gray-300 hover:bg-gray-700'
+                          : 'text-content hover:bg-surface-raised'
                       }`}
                     >
                       <span className="font-medium whitespace-nowrap" title={advanced ? cmd.desc : undefined}>{cmd.label}</span>
-                      {!advanced && <span className="text-xs text-gray-500 truncate">{cmd.desc}</span>}
+                      {!advanced && <span className="text-xs text-content-secondary truncate">{cmd.desc}</span>}
                     </button>
                   ))}
                 </div>
@@ -943,7 +943,7 @@ export function WaypointTablePanel({ readOnly = false }: WaypointTablePanelProps
   }, [activeMode, setFenceDrawMode, setRallyAddMode]);
 
   return (
-    <div className="h-full flex flex-col bg-gray-900/50">
+    <div className="h-full flex flex-col bg-surface">
       {/* Content based on active mode - no tabs, controlled by toolbar */}
       <div className="flex-1 overflow-hidden">
         {activeMode === 'mission' && <WaypointListContent readOnly={readOnly} />}
@@ -1099,23 +1099,23 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
   const getCommandInfo = (cmd: number) => ALL_AVAILABLE_COMMANDS.find(c => c.value === cmd);
 
   return (
-    <div className="h-full flex flex-col bg-gray-900/50">
+    <div className="h-full flex flex-col bg-surface">
       {/* Collapse / Expand controls */}
       {missionItems.length > 0 && (
-        <div className="shrink-0 px-3 py-1.5 border-b border-gray-800/50 flex items-center justify-between">
-          <span className="text-[10px] text-gray-500">{missionItems.length} items</span>
+        <div className="shrink-0 px-3 py-1.5 border-b border-subtle flex items-center justify-between">
+          <span className="text-[10px] text-content-secondary">{missionItems.length} items</span>
           <div className="flex items-center gap-2">
             <button
               onClick={collapseAll}
-              className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
+              className="text-[10px] text-content-secondary hover:text-content transition-colors"
               title="Collapse all groups"
             >
               Collapse all
             </button>
-            <span className="text-gray-700 text-[10px]">|</span>
+            <span className="text-content-tertiary text-[10px]">|</span>
             <button
               onClick={expandAll}
-              className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
+              className="text-[10px] text-content-secondary hover:text-content transition-colors"
               title="Expand all groups"
             >
               Expand all
@@ -1127,24 +1127,24 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
       {/* Waypoint list */}
       <div className="flex-1 overflow-auto" ref={tableRef}>
         {missionItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500 p-4">
-            <svg className="w-12 h-12 mb-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="flex flex-col items-center justify-center h-full text-content-secondary p-4">
+            <svg className="w-12 h-12 mb-3 text-content-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
             </svg>
             {readOnly ? (
               <>
                 <p className="text-sm font-medium mb-1">No mission loaded</p>
-                <p className="text-xs text-gray-600 text-center">No mission on flight controller</p>
+                <p className="text-xs text-content-tertiary text-center">No mission on flight controller</p>
               </>
             ) : (
               <>
                 <p className="text-sm font-medium mb-1">No waypoints yet</p>
-                <p className="text-xs text-gray-600 text-center">Click "Add" below or click on the map to add waypoints</p>
+                <p className="text-xs text-content-tertiary text-center">Click "Add" below or click on the map to add waypoints</p>
               </>
             )}
           </div>
         ) : (
-          <div className="divide-y divide-gray-800/50">
+          <div className="divide-y divide-subtle">
             {missionItems.map((wp, idx) => {
               const isSelected = wp.seq === selectedSeq;
               const isCurrent = wp.seq === currentSeq;
@@ -1179,7 +1179,7 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
                   onDrop={(e) => !readOnly && handleDrop(e, wp.seq)}
                   onDragEnd={!readOnly ? handleDragEnd : undefined}
                   className={`flex items-center gap-2 py-2 transition-colors ${
-                    isChild ? 'px-2 pl-8 bg-gray-800/[0.06]' : 'px-2'
+                    isChild ? 'px-2 pl-8 bg-surface/[0.06]' : 'px-2'
                   } ${
                     isParentWithGap ? 'mt-1' : ''
                   } ${
@@ -1188,21 +1188,21 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
                     isDropTarget ? 'border-t-2 border-t-blue-500' : ''
                   } ${
                     isDragging
-                      ? 'opacity-50 bg-gray-800/50'
+                      ? 'opacity-50 bg-surface'
                       : isCurrent
                       ? 'bg-orange-500/10 border-l-2 border-l-orange-500'
                       : isSelected && !readOnly
                       ? 'bg-blue-500/20 border-l-2 border-l-blue-500'
                       : isChild
-                      ? 'border-l-2 border-l-gray-700/50 ml-[14px] hover:bg-gray-800/20'
+                      ? 'border-l-2 border-l-subtle ml-[14px] hover:bg-surface'
                       : readOnly
                       ? 'border-l-2 border-l-transparent'
-                      : 'hover:bg-gray-800/30 border-l-2 border-l-transparent'
+                      : 'hover:bg-surface border-l-2 border-l-transparent'
                   }`}
                 >
                   {/* Drag handle - hidden in readOnly mode */}
                   {!readOnly && (
-                    <div className="text-gray-600 cursor-grab active:cursor-grabbing">
+                    <div className="text-content-tertiary cursor-grab active:cursor-grabbing">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" />
                       </svg>
@@ -1213,7 +1213,7 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
                   {!isChild && hasChildren ? (
                     <button
                       onClick={(e) => toggleCollapse(wp.seq, e)}
-                      className="w-4 h-4 flex items-center justify-center text-gray-500 hover:text-gray-300 transition-colors shrink-0"
+                      className="w-4 h-4 flex items-center justify-center text-content-secondary hover:text-content transition-colors shrink-0"
                       title={isCollapsed ? `Expand (${childCount} items)` : 'Collapse'}
                     >
                       <svg className={`w-3 h-3 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1237,7 +1237,7 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
                           ) : (
                             <div
                               className={`w-1.5 h-1.5 rounded-full ${
-                                isCurrent ? 'bg-orange-400' : isSelected && !readOnly ? 'bg-blue-400' : !segColor ? 'bg-gray-500' : ''
+                                isCurrent ? 'bg-orange-400' : isSelected && !readOnly ? 'bg-blue-400' : !segColor ? 'bg-content-secondary' : ''
                               }`}
                               style={segColor ? { backgroundColor: segColor } : undefined}
                             />
@@ -1254,7 +1254,7 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
                           ? 'bg-blue-500 text-white'
                           : segColor
                           ? 'text-white'
-                          : 'bg-gray-700 text-gray-300'
+                          : 'bg-surface-raised text-content'
                       }`}
                       style={segColor ? { backgroundColor: segColor } : undefined}
                     >
@@ -1265,7 +1265,7 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
                   {/* Description */}
                   <div className="flex-1 min-w-0">
                     <div className={`flex items-center gap-1.5 ${
-                      isChild ? 'text-xs text-gray-400' : 'text-sm text-gray-200'
+                      isChild ? 'text-xs text-content-secondary' : 'text-sm text-content'
                     }`}>
                       <span className="truncate">{getWaypointSummary(wp, advancedLabels)}</span>
                       {wp.command === MAV_CMD.CONDITION_YAW && wp.param3 !== 0 && (
@@ -1279,13 +1279,13 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
                       )}
                       {/* Collapsed child count badge */}
                       {isCollapsed && childCount > 0 && (
-                        <span className="px-1.5 py-0 text-[9px] rounded bg-gray-700/50 text-gray-500 shrink-0">
+                        <span className="px-1.5 py-0 text-[9px] rounded bg-surface-raised text-content-secondary shrink-0">
                           +{childCount}
                         </span>
                       )}
                     </div>
                     {commandHasLocation(wp.command) && (
-                      <div className="text-[10px] text-gray-500 font-mono">
+                      <div className="text-[10px] text-content-secondary font-mono">
                         {wp.latitude.toFixed(5)}, {wp.longitude.toFixed(5)}
                       </div>
                     )}
@@ -1298,7 +1298,7 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
                         e.stopPropagation();
                         handleDelete(wp.seq);
                       }}
-                      className="p-1 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors shrink-0"
+                      className="p-1 text-content-secondary hover:text-red-400 hover:bg-red-500/10 rounded transition-colors shrink-0"
                       title="Delete"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1315,14 +1315,14 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
 
       {/* Details panel for selected waypoint */}
       {selectedWaypoint && (
-        <div className="border-t border-gray-700/50 bg-gray-800/40 p-3">
+        <div className="border-t border-subtle bg-surface p-3">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-gray-400">
+            <span className="text-xs font-medium text-content-secondary">
               Editing Waypoint {selectedWaypoint.seq + 1}
             </span>
             <button
               onClick={() => setSelectedSeq(null)}
-              className="text-gray-500 hover:text-gray-300"
+              className="text-content-secondary hover:text-content"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1332,7 +1332,7 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
 
           {/* Command selector */}
           <div className="mb-3">
-            <label className="block text-[11px] text-gray-500 mb-1">Action</label>
+            <label className="block text-[11px] text-content-secondary mb-1">Action</label>
             <CommandDropdown
               value={selectedWaypoint.command}
               onChange={(cmd) => handleCommandChange(selectedWaypoint.seq, cmd)}
@@ -1347,8 +1347,8 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
               .filter(p => p.show)
               .map((param) => (
                 <div key={param.key}>
-                  <label className="block text-[11px] text-gray-500 mb-1">
-                    {param.label} {param.unit && <span className="text-gray-600">({param.unit})</span>}
+                  <label className="block text-[11px] text-content-secondary mb-1">
+                    {param.label} {param.unit && <span className="text-content-tertiary">({param.unit})</span>}
                   </label>
                   <input
                     type="number"
@@ -1357,7 +1357,7 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
                     min={param.min}
                     max={param.max}
                     step={param.step}
-                    className="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1.5 rounded border border-gray-600 focus:border-blue-500 focus:outline-none font-mono"
+                    className="w-full bg-surface-input text-content text-sm px-2 py-1.5 rounded border border-default focus:border-blue-500 focus:outline-none font-mono"
                   />
                 </div>
               ))}
@@ -1366,23 +1366,23 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
             {commandHasLocation(selectedWaypoint.command) && (
               <>
                 <div>
-                  <label className="block text-[11px] text-gray-500 mb-1">Latitude</label>
+                  <label className="block text-[11px] text-content-secondary mb-1">Latitude</label>
                   <input
                     type="number"
                     value={selectedWaypoint.latitude}
                     onChange={(e) => handleParamChange(selectedWaypoint.seq, 'latitude', Number(e.target.value))}
                     step={0.00001}
-                    className="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1.5 rounded border border-gray-600 focus:border-blue-500 focus:outline-none font-mono"
+                    className="w-full bg-surface-input text-content text-sm px-2 py-1.5 rounded border border-default focus:border-blue-500 focus:outline-none font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-gray-500 mb-1">Longitude</label>
+                  <label className="block text-[11px] text-content-secondary mb-1">Longitude</label>
                   <input
                     type="number"
                     value={selectedWaypoint.longitude}
                     onChange={(e) => handleParamChange(selectedWaypoint.seq, 'longitude', Number(e.target.value))}
                     step={0.00001}
-                    className="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1.5 rounded border border-gray-600 focus:border-blue-500 focus:outline-none font-mono"
+                    className="w-full bg-surface-input text-content text-sm px-2 py-1.5 rounded border border-default focus:border-blue-500 focus:outline-none font-mono"
                   />
                 </div>
               </>
@@ -1391,7 +1391,7 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
 
           {/* Help text */}
           {COMMAND_DESCRIPTIONS[selectedWaypoint.command] && (
-            <p className="mt-3 text-[11px] text-gray-500 italic">
+            <p className="mt-3 text-[11px] text-content-secondary italic">
               {COMMAND_DESCRIPTIONS[selectedWaypoint.command]}
             </p>
           )}
@@ -1400,10 +1400,10 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
 
       {/* Add waypoint button - hidden in readOnly mode */}
       {!readOnly && (
-        <div className="p-2 border-t border-gray-700/50">
+        <div className="p-2 border-t border-subtle">
           <button
             onClick={handleAddWaypoint}
-            className="w-full py-2 text-sm text-gray-300 hover:text-white bg-gray-700/50 hover:bg-gray-600/50 rounded transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2 text-sm text-content hover:text-content bg-surface-raised hover:bg-surface-raised rounded transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

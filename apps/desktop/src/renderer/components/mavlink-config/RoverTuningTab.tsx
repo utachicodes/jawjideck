@@ -54,8 +54,8 @@ const RoverTuningTab: React.FC<RoverTuningTabProps> = ({ section = 'speed-steeri
         </InfoCard>
 
         {/* Waypoint Settings */}
-        <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
-          <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+        <div className="bg-surface rounded-xl border-subtle p-5">
+          <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
             <Navigation className="w-5 h-5 text-blue-400" /> Waypoint Settings
           </h3>
           <div className="grid grid-cols-2 gap-6">
@@ -83,8 +83,8 @@ const RoverTuningTab: React.FC<RoverTuningTabProps> = ({ section = 'speed-steeri
         </div>
 
         {/* Loiter Settings */}
-        <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
-          <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+        <div className="bg-surface rounded-xl border-subtle p-5">
+          <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
             <Compass className="w-5 h-5 text-emerald-400" /> Loiter / Position Hold
           </h3>
           <div className="grid grid-cols-2 gap-6">
@@ -112,8 +112,8 @@ const RoverTuningTab: React.FC<RoverTuningTabProps> = ({ section = 'speed-steeri
         </div>
 
         {/* L1 Controller */}
-        <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
-          <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+        <div className="bg-surface rounded-xl border-subtle p-5">
+          <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-amber-400" /> L1 Path Following (Advanced)
           </h3>
           <div className="grid grid-cols-2 gap-6">
@@ -157,8 +157,8 @@ const RoverTuningTab: React.FC<RoverTuningTabProps> = ({ section = 'speed-steeri
       </InfoCard>
 
       {/* Speed Settings */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
-        <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+      <div className="bg-surface rounded-xl border-subtle p-5">
+        <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
           <Gauge className="w-5 h-5 text-blue-400" /> Speed Control
         </h3>
         <div className="space-y-4">
@@ -196,8 +196,8 @@ const RoverTuningTab: React.FC<RoverTuningTabProps> = ({ section = 'speed-steeri
       </div>
 
       {/* Steering Settings */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
-        <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+      <div className="bg-surface rounded-xl border-subtle p-5">
+        <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
           <RotateCw className="w-5 h-5 text-emerald-400" /> Steering
         </h3>
         <div className="space-y-4">
@@ -225,11 +225,11 @@ const RoverTuningTab: React.FC<RoverTuningTabProps> = ({ section = 'speed-steeri
       </div>
 
       {/* Pivot Turn Settings */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
-        <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+      <div className="bg-surface rounded-xl border-subtle p-5">
+        <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
           <RotateCw className="w-5 h-5 text-orange-400" /> Pivot Turns (Skid Steer)
         </h3>
-        <p className="text-sm text-zinc-400 mb-4">
+        <p className="text-sm text-content-secondary mb-4">
           For differential drive rovers that can spin in place.
         </p>
         <div className="space-y-4">
@@ -257,24 +257,24 @@ const RoverTuningTab: React.FC<RoverTuningTabProps> = ({ section = 'speed-steeri
       </div>
 
       {/* Current settings summary */}
-      <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4">
-        <h3 className="text-sm font-medium text-zinc-300 mb-3">Current Settings Summary</h3>
+      <div className="bg-surface rounded-xl border-subtle p-4">
+        <h3 className="text-sm font-medium text-content mb-3">Current Settings Summary</h3>
         <div className="grid grid-cols-4 gap-4 text-center">
           <div>
             <div className="text-2xl font-mono text-blue-400">{values.CRUISE_SPEED}</div>
-            <div className="text-xs text-zinc-500">Cruise (m/s)</div>
+            <div className="text-xs text-content-secondary">Cruise (m/s)</div>
           </div>
           <div>
             <div className="text-2xl font-mono text-blue-400">{values.SPEED_MAX}</div>
-            <div className="text-xs text-zinc-500">Max (m/s)</div>
+            <div className="text-xs text-content-secondary">Max (m/s)</div>
           </div>
           <div>
             <div className="text-2xl font-mono text-emerald-400">{values.TURN_RADIUS}</div>
-            <div className="text-xs text-zinc-500">Turn Radius (m)</div>
+            <div className="text-xs text-content-secondary">Turn Radius (m)</div>
           </div>
           <div>
             <div className="text-2xl font-mono text-orange-400">{values.PIVOT_TURN_ANGLE}</div>
-            <div className="text-xs text-zinc-500">Pivot Threshold</div>
+            <div className="text-xs text-content-secondary">Pivot Threshold</div>
           </div>
         </div>
       </div>

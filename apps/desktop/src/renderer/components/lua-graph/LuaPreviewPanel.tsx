@@ -34,15 +34,15 @@ export function LuaPreviewPanel() {
   }, [result.code]);
 
   return (
-    <div className={`border-t border-gray-700/40 flex flex-col ${expanded ? 'h-52' : ''}`}>
+    <div className={`border-t border-subtle flex flex-col ${expanded ? 'h-52' : ''}`}>
       {/* Header — always visible, click to toggle */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center justify-between px-3 py-1.5 hover:bg-gray-800/40 transition-colors shrink-0"
+        className="flex items-center justify-between px-3 py-1.5 hover:bg-surface transition-colors shrink-0"
       >
         <div className="flex items-center gap-2">
-          <Code2 className="w-3 h-3 text-gray-500" />
-          <span className="text-[10px] font-medium uppercase tracking-wider text-gray-500">
+          <Code2 className="w-3 h-3 text-content-secondary" />
+          <span className="text-[10px] font-medium uppercase tracking-wider text-content-secondary">
             Lua Preview
           </span>
           {result.errors.length > 0 && (
@@ -58,20 +58,20 @@ export function LuaPreviewPanel() {
                 e.stopPropagation();
                 handleCopy();
               }}
-              className="p-0.5 rounded hover:bg-gray-700/40 transition-colors"
+              className="p-0.5 rounded hover:bg-surface-raised transition-colors"
               title="Copy to clipboard"
             >
               {copied ? (
                 <Check className="w-3 h-3 text-emerald-400" />
               ) : (
-                <Copy className="w-3 h-3 text-gray-500" />
+                <Copy className="w-3 h-3 text-content-secondary" />
               )}
             </button>
           )}
           {expanded ? (
-            <ChevronDown className="w-3 h-3 text-gray-600" />
+            <ChevronDown className="w-3 h-3 text-content-tertiary" />
           ) : (
-            <ChevronUp className="w-3 h-3 text-gray-600" />
+            <ChevronUp className="w-3 h-3 text-content-tertiary" />
           )}
         </div>
       </button>
@@ -91,11 +91,11 @@ export function LuaPreviewPanel() {
           {/* Code */}
           <div className="flex-1 overflow-auto px-3 py-2 min-h-0">
             {highlighted ? (
-              <pre className="text-[10px] leading-4 text-gray-400 font-mono whitespace-pre">
+              <pre className="text-[10px] leading-4 text-content-secondary font-mono whitespace-pre">
                 {highlighted}
               </pre>
             ) : (
-              <div className="text-[10px] text-gray-600 italic">
+              <div className="text-[10px] text-content-tertiary italic">
                 Add nodes to see generated Lua code
               </div>
             )}

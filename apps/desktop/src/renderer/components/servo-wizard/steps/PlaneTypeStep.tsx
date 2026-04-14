@@ -24,14 +24,14 @@ function PresetCard({
       className={`p-3 rounded-lg border-2 transition-all text-left ${
         isSelected
           ? 'border-blue-500 bg-blue-500/20'
-          : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600 hover:bg-zinc-800'
+          : 'border bg-surface hover:border hover:bg-surface'
       }`}
     >
       <div className="flex items-center gap-2">
         <span className="text-2xl">{preset.icon}</span>
         <div>
-          <div className="text-sm font-medium text-white">{preset.name}</div>
-          <div className="text-xs text-zinc-500">{preset.servoCount} servo{preset.servoCount !== 1 ? 's' : ''}</div>
+          <div className="text-sm font-medium text-content">{preset.name}</div>
+          <div className="text-xs text-content-secondary">{preset.servoCount} servo{preset.servoCount !== 1 ? 's' : ''}</div>
         </div>
       </div>
     </button>
@@ -51,8 +51,8 @@ export default function PlaneTypeStep() {
       <div className="space-y-4">
         {/* Header */}
         <div className="text-center">
-          <h2 className="text-lg font-bold text-white">Gimbal Servo Setup</h2>
-          <p className="text-sm text-zinc-400 mt-1">
+          <h2 className="text-lg font-bold text-content">Gimbal Servo Setup</h2>
+          <p className="text-sm text-content-secondary mt-1">
             Your board is configured as a multirotor. You can set up gimbal servos for camera control.
           </p>
         </div>
@@ -73,7 +73,7 @@ export default function PlaneTypeStep() {
         <div className="flex items-center justify-between gap-4 pt-2">
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg px-3 py-2 flex items-center gap-2 flex-1">
             <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-content-secondary">
               Gimbal uses RC stick input to control pan/tilt servos for camera stabilization.
             </p>
           </div>
@@ -83,7 +83,7 @@ export default function PlaneTypeStep() {
             className={`px-6 py-2.5 rounded-lg font-medium transition-all whitespace-nowrap ${
               selectedPresetId
                 ? 'bg-blue-500 text-white hover:bg-blue-400'
-                : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
             }`}
           >
             Continue →
@@ -103,8 +103,8 @@ export default function PlaneTypeStep() {
     <div className="space-y-4">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-lg font-bold text-white">What type of aircraft do you have?</h2>
-        <p className="text-sm text-zinc-400 mt-1">Select your aircraft type for the correct servo setup.</p>
+        <h2 className="text-lg font-bold text-content">What type of aircraft do you have?</h2>
+        <p className="text-sm text-content-secondary mt-1">Select your aircraft type for the correct servo setup.</p>
       </div>
 
       {/* All categories in a compact grid */}
@@ -131,12 +131,12 @@ export default function PlaneTypeStep() {
           />
         ))}
         {/* Quad/Hex placeholder */}
-        <div className="p-3 rounded-lg border-2 border-zinc-800 bg-zinc-900/50 opacity-40">
+        <div className="p-3 rounded-lg border-2 border-subtle bg-surface-input opacity-40">
           <div className="flex items-center gap-2">
             <RotateCcw className="w-6 h-6 text-blue-400" />
             <div>
-              <div className="text-sm font-medium text-zinc-500">Quad/Hex</div>
-              <div className="text-xs text-zinc-600">No servos</div>
+              <div className="text-sm font-medium text-content-secondary">Quad/Hex</div>
+              <div className="text-xs text-content-tertiary">No servos</div>
             </div>
           </div>
         </div>
@@ -155,9 +155,9 @@ export default function PlaneTypeStep() {
       <div className="flex items-center justify-between gap-4 pt-2">
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg px-3 py-2 flex items-center gap-2 flex-1">
           <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
-          <p className="text-xs text-zinc-400">
-            <strong className="text-zinc-300">Quad with camera?</strong> Select Gimbal.
-            <strong className="text-zinc-300 ml-2">Plane?</strong> Most are Traditional.
+          <p className="text-xs text-content-secondary">
+            <strong className="text-content">Quad with camera?</strong> Select Gimbal.
+            <strong className="text-content ml-2">Plane?</strong> Most are Traditional.
           </p>
         </div>
         <button
@@ -166,7 +166,7 @@ export default function PlaneTypeStep() {
           className={`px-6 py-2.5 rounded-lg font-medium transition-all whitespace-nowrap ${
             selectedPresetId
               ? 'bg-blue-500 text-white hover:bg-blue-400'
-              : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+              : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
           }`}
         >
           Continue →

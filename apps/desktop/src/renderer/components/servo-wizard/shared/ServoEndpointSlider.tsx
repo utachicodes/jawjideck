@@ -85,36 +85,36 @@ export default function ServoEndpointSlider({
       {/* Number inputs */}
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <label className="text-xs text-zinc-400 block mb-1">Min (µs)</label>
+          <label className="text-xs text-content-secondary block mb-1">Min (µs)</label>
           <input
             type="number"
             value={min}
             onChange={(e) => onChange({ min: snap(Number(e.target.value)), center, max })}
-            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
             min={rangeLimits.min}
             max={center - 50}
             step={10}
           />
         </div>
         <div>
-          <label className="text-xs text-zinc-400 block mb-1">Center (µs)</label>
+          <label className="text-xs text-content-secondary block mb-1">Center (µs)</label>
           <input
             type="number"
             value={center}
             onChange={(e) => onChange({ min, center: snap(Number(e.target.value)), max })}
-            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-green-500"
+            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-sm text-content focus:outline-none focus:border-green-500"
             min={min + 50}
             max={max - 50}
             step={10}
           />
         </div>
         <div>
-          <label className="text-xs text-zinc-400 block mb-1">Max (µs)</label>
+          <label className="text-xs text-content-secondary block mb-1">Max (µs)</label>
           <input
             type="number"
             value={max}
             onChange={(e) => onChange({ min, center, max: snap(Number(e.target.value)) })}
-            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
             min={center + 50}
             max={rangeLimits.max}
             step={10}
@@ -130,7 +130,7 @@ export default function ServoEndpointSlider({
         onMouseLeave={handleMouseUp}
       >
         {/* Track background */}
-        <div className="absolute top-1/2 -translate-y-1/2 w-full h-3 bg-zinc-800 rounded-full">
+        <div className="absolute top-1/2 -translate-y-1/2 w-full h-3 bg-surface-tooltip rounded-full">
           {/* Active range */}
           <div
             className="absolute h-full bg-blue-500/30 rounded-full"
@@ -143,13 +143,13 @@ export default function ServoEndpointSlider({
 
         {/* Min handle */}
         <div
-          className={`absolute top-1/2 -translate-y-1/2 w-4 h-8 bg-zinc-600 rounded cursor-ew-resize border-2 ${
+          className={`absolute top-1/2 -translate-y-1/2 w-4 h-8 bg-surface-raised rounded cursor-ew-resize border-2 ${
             dragging === 'min' ? 'border-blue-400 bg-zinc-500' : 'border-zinc-500'
           }`}
           style={{ left: `${minPercent}%`, marginLeft: -8 }}
           onMouseDown={handleMouseDown('min')}
         >
-          <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-zinc-400 whitespace-nowrap">
+          <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-content-secondary whitespace-nowrap">
             min
           </div>
         </div>
@@ -169,13 +169,13 @@ export default function ServoEndpointSlider({
 
         {/* Max handle */}
         <div
-          className={`absolute top-1/2 -translate-y-1/2 w-4 h-8 bg-zinc-600 rounded cursor-ew-resize border-2 ${
+          className={`absolute top-1/2 -translate-y-1/2 w-4 h-8 bg-surface-raised rounded cursor-ew-resize border-2 ${
             dragging === 'max' ? 'border-blue-400 bg-zinc-500' : 'border-zinc-500'
           }`}
           style={{ left: `${maxPercent}%`, marginLeft: -8 }}
           onMouseDown={handleMouseDown('max')}
         >
-          <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-zinc-400 whitespace-nowrap">
+          <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-content-secondary whitespace-nowrap">
             max
           </div>
         </div>
@@ -192,7 +192,7 @@ export default function ServoEndpointSlider({
         <div className="flex gap-2 mt-6">
           <button
             onClick={() => onTestPosition('min')}
-            className="flex-1 px-3 py-2 text-sm bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 border border-zinc-700"
+            className="flex-1 px-3 py-2 text-sm bg-surface-tooltip text-content rounded-lg hover:bg-surface-raised border border"
           >
             Test Min
           </button>
@@ -204,7 +204,7 @@ export default function ServoEndpointSlider({
           </button>
           <button
             onClick={() => onTestPosition('max')}
-            className="flex-1 px-3 py-2 text-sm bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 border border-zinc-700"
+            className="flex-1 px-3 py-2 text-sm bg-surface-tooltip text-content rounded-lg hover:bg-surface-raised border border"
           >
             Test Max
           </button>

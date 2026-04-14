@@ -140,7 +140,7 @@ export function LogListPanel() {
           <button
             onClick={handleRefresh}
             disabled={isListLoading}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-surface-raised disabled:text-content-secondary text-white text-sm font-medium rounded-lg transition-colors"
           >
             {isListLoading ? 'Loading...' : 'List Logs from FC'}
           </button>
@@ -148,7 +148,7 @@ export function LogListPanel() {
         <button
           onClick={handleOpenFile}
           disabled={isParsingLog}
-          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 text-gray-200 text-sm font-medium rounded-lg transition-colors"
+          className="px-4 py-2 bg-surface-raised hover:bg-surface-raised disabled:bg-surface-tooltip disabled:text-content-tertiary text-content text-sm font-medium rounded-lg transition-colors"
         >
           Open .bin File
         </button>
@@ -156,12 +156,12 @@ export function LogListPanel() {
 
       {/* Parse progress */}
       {isParsingLog && (
-        <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-4">
+        <div className="bg-surface rounded-xl border border-subtle p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-300">Parsing log...</span>
-            <span className="text-sm text-gray-400">{parseProgress.toFixed(0)}%</span>
+            <span className="text-sm text-content">Parsing log...</span>
+            <span className="text-sm text-content-secondary">{parseProgress.toFixed(0)}%</span>
           </div>
-          <div className="w-full bg-gray-700 rounded-full h-2">
+          <div className="w-full bg-surface-raised rounded-full h-2">
             <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${parseProgress}%` }} />
           </div>
         </div>
@@ -169,8 +169,8 @@ export function LogListPanel() {
 
       {/* Not connected hint */}
       {!isConnected && availableLogs.length === 0 && recentLogs.length === 0 && !isParsingLog && (
-        <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-6 text-center">
-          <p className="text-gray-400 text-sm">
+        <div className="bg-surface rounded-xl border border-subtle p-6 text-center">
+          <p className="text-content-secondary text-sm">
             Connect to a flight controller to download logs, or open a .bin file from disk.
           </p>
         </div>
@@ -179,28 +179,28 @@ export function LogListPanel() {
       {/* Recent logs */}
       {recentLogs.length > 0 && (
         <div>
-          <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Recently Opened</div>
-          <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 overflow-hidden">
+          <div className="text-xs text-content-secondary uppercase tracking-wider mb-2">Recently Opened</div>
+          <div className="bg-surface rounded-xl border border-subtle overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-700/50">
-                  <th className="text-left px-4 py-2.5 text-gray-400 font-medium">File</th>
-                  <th className="text-right px-4 py-2.5 text-gray-400 font-medium">Size</th>
-                  <th className="text-right px-4 py-2.5 text-gray-400 font-medium">Opened</th>
-                  <th className="text-right px-4 py-2.5 text-gray-400 font-medium">Action</th>
+                <tr className="border-b border-subtle">
+                  <th className="text-left px-4 py-2.5 text-content-secondary font-medium">File</th>
+                  <th className="text-right px-4 py-2.5 text-content-secondary font-medium">Size</th>
+                  <th className="text-right px-4 py-2.5 text-content-secondary font-medium">Opened</th>
+                  <th className="text-right px-4 py-2.5 text-content-secondary font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {recentLogs.map((log) => (
-                  <tr key={log.path} className="border-b border-gray-800/50 hover:bg-gray-800/30">
+                  <tr key={log.path} className="border-b border-subtle hover:bg-surface/30">
                     <td className="px-4 py-2.5">
-                      <div className="text-gray-300 truncate max-w-[240px]" title={log.path}>{log.name}</div>
-                      <div className="text-[11px] text-gray-600 truncate max-w-[240px]" title={log.path}>
+                      <div className="text-content truncate max-w-[240px]" title={log.path}>{log.name}</div>
+                      <div className="text-[11px] text-content-tertiary truncate max-w-[240px]" title={log.path}>
                         {log.path.split(/[\\/]/).slice(0, -1).join('/')}
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 text-gray-400 text-right whitespace-nowrap">{formatBytes(log.size)}</td>
-                    <td className="px-4 py-2.5 text-gray-500 text-right whitespace-nowrap text-xs">
+                    <td className="px-4 py-2.5 text-content-secondary text-right whitespace-nowrap">{formatBytes(log.size)}</td>
+                    <td className="px-4 py-2.5 text-content-secondary text-right whitespace-nowrap text-xs">
                       {new Date(log.openedAt).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-2.5 text-right">
@@ -222,9 +222,9 @@ export function LogListPanel() {
 
       {/* No logs found after request */}
       {listRequested && !isListLoading && availableLogs.length === 0 && (
-        <div className="bg-gray-800/30 rounded-xl border border-amber-500/30 p-6 text-center">
+        <div className="bg-surface rounded-xl border border-amber-500/30 p-6 text-center">
           <p className="text-amber-400 text-sm font-medium mb-1">No logs found</p>
-          <p className="text-gray-500 text-xs">
+          <p className="text-content-secondary text-xs">
             The flight controller did not return any logs. This can happen if no flights have been recorded or the FC timed out.
           </p>
         </div>
@@ -232,26 +232,26 @@ export function LogListPanel() {
 
       {/* Log list */}
       {availableLogs.length > 0 && (
-        <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 overflow-hidden">
+        <div className="bg-surface rounded-xl border border-subtle overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-700/50">
-                <th className="text-left px-4 py-3 text-gray-400 font-medium">#</th>
-                <th className="text-left px-4 py-3 text-gray-400 font-medium">Date</th>
-                <th className="text-right px-4 py-3 text-gray-400 font-medium">Size</th>
-                <th className="text-right px-4 py-3 text-gray-400 font-medium">Action</th>
+              <tr className="border-b border-subtle">
+                <th className="text-left px-4 py-3 text-content-secondary font-medium">#</th>
+                <th className="text-left px-4 py-3 text-content-secondary font-medium">Date</th>
+                <th className="text-right px-4 py-3 text-content-secondary font-medium">Size</th>
+                <th className="text-right px-4 py-3 text-content-secondary font-medium">Action</th>
               </tr>
             </thead>
             <tbody>
               {availableLogs.map((log) => (
-                <tr key={log.id} className="border-b border-gray-800/50 hover:bg-gray-800/30">
-                  <td className="px-4 py-3 text-gray-300">{log.id}</td>
-                  <td className="px-4 py-3 text-gray-300">{formatDate(log.timeUtc)}</td>
-                  <td className="px-4 py-3 text-gray-400 text-right">{formatBytes(log.size)}</td>
+                <tr key={log.id} className="border-b border-subtle hover:bg-surface/30">
+                  <td className="px-4 py-3 text-content">{log.id}</td>
+                  <td className="px-4 py-3 text-content">{formatDate(log.timeUtc)}</td>
+                  <td className="px-4 py-3 text-content-secondary text-right">{formatBytes(log.size)}</td>
                   <td className="px-4 py-3 text-right">
                     {downloadingLogId === log.id ? (
                       <div className="flex items-center justify-end gap-2">
-                        <div className="w-24 bg-gray-700 rounded-full h-1.5">
+                        <div className="w-24 bg-surface-raised rounded-full h-1.5">
                           <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: `${downloadProgress}%` }} />
                         </div>
                         <button onClick={handleCancel} className="text-xs text-red-400 hover:text-red-300">

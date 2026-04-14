@@ -34,11 +34,11 @@ function SignalBars({ rssi }: { rssi: number }) {
       {[1, 2, 3, 4].map((level) => (
         <div
           key={level}
-          className={`w-1 rounded-sm ${level <= quality ? color : 'bg-gray-700'}`}
+          className={`w-1 rounded-sm ${level <= quality ? color : 'bg-surface-raised'}`}
           style={{ height: `${level * 25}%` }}
         />
       ))}
-      <span className="text-[10px] text-gray-500 ml-1">{rssi} dBm</span>
+      <span className="text-[10px] text-content-secondary ml-1">{rssi} dBm</span>
     </div>
   );
 }
@@ -46,7 +46,7 @@ function SignalBars({ rssi }: { rssi: number }) {
 function StationRow({ station }: { station: DroneBridgeStation }) {
   return (
     <div className="flex items-center justify-between py-1">
-      <span className="text-xs text-gray-300 font-mono">{station.sta_mac}</span>
+      <span className="text-xs text-content font-mono">{station.sta_mac}</span>
       <SignalBars rssi={station.sta_rssi} />
     </div>
   );
@@ -149,7 +149,7 @@ export function DroneBridgeStatusPanel() {
   if (!droneBridgeIp) {
     return (
       <PanelContainer>
-        <div className="flex items-center justify-center h-full text-xs text-gray-600">
+        <div className="flex items-center justify-center h-full text-xs text-content-tertiary">
           No DroneBridge IP configured
         </div>
       </PanelContainer>
@@ -168,7 +168,7 @@ export function DroneBridgeStatusPanel() {
             <div className={`text-sm font-medium ${reachable ? 'text-emerald-400' : 'text-red-400'}`}>
               {reachable ? 'Connected' : 'Connecting...'}
             </div>
-            <div className="text-xs text-gray-500 font-mono">{droneBridgeIp}</div>
+            <div className="text-xs text-content-secondary font-mono">{droneBridgeIp}</div>
             {!reachable && fetchError && (
               <div className="text-[10px] text-red-400/70 mt-0.5">{fetchError}</div>
             )}
@@ -194,7 +194,7 @@ export function DroneBridgeStatusPanel() {
           <div className="space-y-1">
             <SectionTitle>WiFi Signal</SectionTitle>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">RSSI</span>
+              <span className="text-xs text-content-secondary">RSSI</span>
               <SignalBars rssi={droneBridgeStats.esp_rssi} />
             </div>
           </div>
@@ -218,17 +218,17 @@ export function DroneBridgeStatusPanel() {
             <StatRow label="UDP" value={droneBridgeStats.udp_connected} />
 
             {droneBridgeStats.udp_clients.length > 0 && (
-              <div className="mt-1.5 p-2 bg-gray-800/50 rounded-lg">
-                <div className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">UDP Clients</div>
+              <div className="mt-1.5 p-2 bg-surface rounded-lg">
+                <div className="text-[10px] text-content-tertiary uppercase tracking-wider mb-1">UDP Clients</div>
                 {droneBridgeStats.udp_clients.map((client) => (
-                  <div key={client} className="text-xs text-gray-400 font-mono py-0.5">{client}</div>
+                  <div key={client} className="text-xs text-content-secondary font-mono py-0.5">{client}</div>
                 ))}
               </div>
             )}
 
             {droneBridgeStats.connected_sta.length > 0 && (
-              <div className="mt-1.5 p-2 bg-gray-800/50 rounded-lg">
-                <div className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Connected Stations</div>
+              <div className="mt-1.5 p-2 bg-surface rounded-lg">
+                <div className="text-[10px] text-content-tertiary uppercase tracking-wider mb-1">Connected Stations</div>
                 {droneBridgeStats.connected_sta.map((sta) => (
                   <StationRow key={sta.sta_mac} station={sta} />
                 ))}

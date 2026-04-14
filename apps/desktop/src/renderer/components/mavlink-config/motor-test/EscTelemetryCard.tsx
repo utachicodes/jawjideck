@@ -17,7 +17,7 @@ interface EscTelemetryCardProps {
 }
 
 function tempColor(tempC: number): string {
-  if (tempC === 0) return 'text-gray-500';
+  if (tempC === 0) return 'text-content-secondary';
   if (tempC < 70) return 'text-emerald-400';
   if (tempC < 90) return 'text-amber-400';
   return 'text-red-400';
@@ -28,7 +28,7 @@ function tempColor(tempC: number): string {
  * Idle ≈ 1000 = gray, mid = blue, high = yellow→red.
  */
 function pwmColor(pwm: number): string {
-  if (pwm < 1050) return 'text-gray-500';
+  if (pwm < 1050) return 'text-content-secondary';
   if (pwm < 1300) return 'text-blue-400';
   if (pwm < 1600) return 'text-cyan-400';
   if (pwm < 1800) return 'text-amber-400';
@@ -46,21 +46,21 @@ export const EscTelemetryCard: React.FC<EscTelemetryCardProps> = ({ layout }) =>
   const hasServoOutput = lastServoOutput > 0 && Date.now() - lastServoOutput < 3000;
 
   return (
-    <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+    <div className="bg-surface rounded-xl border-subtle p-5">
       <div className="flex items-center gap-3 mb-5">
-        <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border-cyan-500/20 flex items-center justify-center">
           <Thermometer className="w-5 h-5 text-cyan-400" />
         </div>
         <div>
-          <div className="text-sm font-semibold text-gray-200">Motor Outputs</div>
-          <div className="text-[11px] text-gray-500">
+          <div className="text-sm font-semibold text-content">Motor Outputs</div>
+          <div className="text-[11px] text-content-secondary">
             {hasAnyEsc ? 'ESC telemetry · PWM · RPM · temp · V · A' : 'PWM output (no ESC telemetry)'}
           </div>
         </div>
       </div>
 
       {escStale && !hasAnyEsc && (
-        <div className="text-[11px] text-gray-500 italic mb-3 leading-snug">
+        <div className="text-[11px] text-content-secondary italic mb-3 leading-snug">
           ESC telemetry not available. Requires BLHeli_32 ESCs with the telemetry wire connected
           to a UART (SERVO_BLH_AUTO=1, SERIALn_PROTOCOL=16). PWM values below come from the FC.
         </div>
@@ -78,14 +78,14 @@ export const EscTelemetryCard: React.FC<EscTelemetryCardProps> = ({ layout }) =>
             return (
               <div
                 key={m.Number}
-                className="bg-gray-900/40 rounded-lg p-3 border border-gray-700/20"
+                className="bg-surface rounded-lg p-3 border/20"
               >
                 <div className="flex items-baseline justify-between mb-2">
-                  <div className="text-xs font-mono font-semibold text-gray-300">
+                  <div className="text-xs font-mono font-semibold text-content">
                     M{m.Number}
-                    <span className="text-gray-500 ml-1">{testOrderToLabel(m.TestOrder)}</span>
+                    <span className="text-content-secondary ml-1">{testOrderToLabel(m.TestOrder)}</span>
                   </div>
-                  <div className="text-[9px] uppercase tracking-wider text-gray-600">
+                  <div className="text-[9px] uppercase tracking-wider text-content-tertiary">
                     {m.Rotation}
                   </div>
                 </div>
@@ -93,36 +93,36 @@ export const EscTelemetryCard: React.FC<EscTelemetryCardProps> = ({ layout }) =>
                 <div className="space-y-1">
                   {/* PWM is always shown when available */}
                   <div className="flex items-baseline justify-between">
-                    <span className="text-[10px] text-gray-500">PWM</span>
-                    <span className={`text-sm font-mono font-semibold ${hasPwm ? pwmColor(pwm) : 'text-gray-600'}`}>
+                    <span className="text-[10px] text-content-secondary">PWM</span>
+                    <span className={`text-sm font-mono font-semibold ${hasPwm ? pwmColor(pwm) : 'text-content-tertiary'}`}>
                       {hasPwm ? `${pwm}` : '—'}
-                      {hasPwm && <span className="text-[9px] text-gray-600 ml-0.5">µs</span>}
+                      {hasPwm && <span className="text-[9px] text-content-tertiary ml-0.5">µs</span>}
                     </span>
                   </div>
 
                   {data ? (
                     <>
                       <div className="flex items-baseline justify-between">
-                        <span className="text-[10px] text-gray-500">RPM</span>
+                        <span className="text-[10px] text-content-secondary">RPM</span>
                         <span className="text-sm font-mono font-semibold text-amber-400">
                           {data.rpm}
                         </span>
                       </div>
                       <div className="flex items-baseline justify-between">
-                        <span className="text-[10px] text-gray-500">Temp</span>
+                        <span className="text-[10px] text-content-secondary">Temp</span>
                         <span className={`text-sm font-mono font-semibold ${tempColor(data.tempC)}`}>
                           {data.tempC}°C
                         </span>
                       </div>
                       <div className="flex items-baseline justify-between">
-                        <span className="text-[10px] text-gray-500">V / A</span>
-                        <span className="text-xs font-mono text-gray-300">
+                        <span className="text-[10px] text-content-secondary">V / A</span>
+                        <span className="text-xs font-mono text-content">
                           {data.voltageV.toFixed(1)} / {data.currentA.toFixed(1)}
                         </span>
                       </div>
                     </>
                   ) : !hasPwm && !hasServoOutput ? (
-                    <div className="text-[10px] text-gray-600 italic text-center py-2">
+                    <div className="text-[10px] text-content-tertiary italic text-center py-2">
                       no data
                     </div>
                   ) : null}

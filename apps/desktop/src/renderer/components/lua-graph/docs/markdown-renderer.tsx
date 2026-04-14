@@ -28,16 +28,16 @@ function parseInline(text: string, keyBase: number): ReactNode[] {
     if (match[1] !== undefined) {
       // Inline code
       elements.push(
-        <code key={key++} className="px-1.5 py-0.5 rounded bg-gray-800 text-amber-400 text-[12px] font-mono">
+        <code key={key++} className="px-1.5 py-0.5 rounded bg-surface-tooltip text-amber-400 text-[12px] font-mono">
           {match[1]}
         </code>,
       );
     } else if (match[2] !== undefined) {
       // Bold
-      elements.push(<strong key={key++} className="text-gray-200 font-semibold">{match[2]}</strong>);
+      elements.push(<strong key={key++} className="text-content font-semibold">{match[2]}</strong>);
     } else if (match[3] !== undefined) {
       // Italic
-      elements.push(<em key={key++} className="text-gray-300 italic">{match[3]}</em>);
+      elements.push(<em key={key++} className="text-content italic">{match[3]}</em>);
     } else if (match[4] !== undefined && match[5] !== undefined) {
       // Link
       elements.push(
@@ -71,12 +71,12 @@ function parseTable(lines: string[], startKey: number): ReactNode {
   const rows = lines.slice(2).map(parseRow);
 
   return (
-    <div key={startKey} className="my-3 rounded-lg border border-gray-700/30 overflow-hidden">
+    <div key={startKey} className="my-3 rounded-lg border border-subtle overflow-hidden">
       <table className="w-full text-[12px]">
         <thead>
-          <tr className="bg-gray-800/50">
+          <tr className="bg-surface">
             {headers.map((h, i) => (
-              <th key={i} className="px-3 py-2 text-left text-gray-400 font-medium border-b border-gray-700/30">
+              <th key={i} className="px-3 py-2 text-left text-content-secondary font-medium border-b border-subtle">
                 {parseInline(h, startKey + 1000 + i * 100)}
               </th>
             ))}
@@ -84,9 +84,9 @@ function parseTable(lines: string[], startKey: number): ReactNode {
         </thead>
         <tbody>
           {rows.map((row, ri) => (
-            <tr key={ri} className="border-b border-gray-700/20 last:border-b-0">
+            <tr key={ri} className="border-b border-subtle last:border-b-0">
               {row.map((cell, ci) => (
-                <td key={ci} className="px-3 py-1.5 text-gray-400">
+                <td key={ci} className="px-3 py-1.5 text-content-secondary">
                   {parseInline(cell, startKey + 2000 + ri * 100 + ci)}
                 </td>
               ))}
@@ -124,13 +124,13 @@ export function renderMarkdown(markdown: string): ReactNode[] {
       const isLua = lang === 'lua';
 
       elements.push(
-        <div key={key++} className="my-3 rounded-lg bg-gray-950 border border-gray-700/30 overflow-hidden">
+        <div key={key++} className="my-3 rounded-lg bg-surface-base border border-subtle overflow-hidden">
           {lang && (
-            <div className="px-3 py-1 text-[10px] text-gray-600 border-b border-gray-800 font-mono">
+            <div className="px-3 py-1 text-[10px] text-content-tertiary border-b border-subtle font-mono">
               {lang}
             </div>
           )}
-          <pre className="px-4 py-3 text-[12px] leading-relaxed font-mono text-gray-300 overflow-x-auto">
+          <pre className="px-4 py-3 text-[12px] leading-relaxed font-mono text-content overflow-x-auto">
             <code>{isLua ? highlightLua(code) : code}</code>
           </pre>
         </div>,
@@ -141,7 +141,7 @@ export function renderMarkdown(markdown: string): ReactNode[] {
     // ── Headers ──────────────────────────────────────────────
     if (line.startsWith('### ')) {
       elements.push(
-        <h3 key={key++} className="text-[13px] font-semibold text-gray-200 mt-5 mb-2">
+        <h3 key={key++} className="text-[13px] font-semibold text-content mt-5 mb-2">
           {parseInline(line.slice(4), key * 100)}
         </h3>,
       );
@@ -150,7 +150,7 @@ export function renderMarkdown(markdown: string): ReactNode[] {
     }
     if (line.startsWith('## ')) {
       elements.push(
-        <h2 key={key++} className="text-[15px] font-bold text-gray-100 mt-6 mb-3 pb-2 border-b border-gray-800">
+        <h2 key={key++} className="text-[15px] font-bold text-content mt-6 mb-3 pb-2 border-b border-subtle">
           {parseInline(line.slice(3), key * 100)}
         </h2>,
       );
@@ -159,7 +159,7 @@ export function renderMarkdown(markdown: string): ReactNode[] {
     }
     if (line.startsWith('# ')) {
       elements.push(
-        <h1 key={key++} className="text-lg font-bold text-white mt-4 mb-3">
+        <h1 key={key++} className="text-lg font-bold text-content mt-4 mb-3">
           {parseInline(line.slice(2), key * 100)}
         </h1>,
       );
@@ -169,7 +169,7 @@ export function renderMarkdown(markdown: string): ReactNode[] {
 
     // ── Horizontal rule ──────────────────────────────────────
     if (/^---+$/.test(line.trim())) {
-      elements.push(<hr key={key++} className="my-4 border-gray-800" />);
+      elements.push(<hr key={key++} className="my-4 border-subtle" />);
       i++;
       continue;
     }
@@ -193,7 +193,7 @@ export function renderMarkdown(markdown: string): ReactNode[] {
         i++;
       }
       elements.push(
-        <blockquote key={key++} className="my-3 pl-4 border-l-2 border-blue-500/40 text-gray-400 text-[12px] leading-relaxed">
+        <blockquote key={key++} className="my-3 pl-4 border-l-2 border-blue-500/40 text-content-secondary text-[12px] leading-relaxed">
           {quoteLines.map((ql, qi) => (
             <p key={qi}>{parseInline(ql, key * 100 + qi)}</p>
           ))}
@@ -212,7 +212,7 @@ export function renderMarkdown(markdown: string): ReactNode[] {
       elements.push(
         <ul key={key++} className="my-2 pl-4 space-y-1">
           {items.map((item, ii) => (
-            <li key={ii} className="text-[12px] text-gray-400 leading-relaxed list-disc">
+            <li key={ii} className="text-[12px] text-content-secondary leading-relaxed list-disc">
               {parseInline(item, key * 100 + ii)}
             </li>
           ))}
@@ -231,7 +231,7 @@ export function renderMarkdown(markdown: string): ReactNode[] {
       elements.push(
         <ol key={key++} className="my-2 pl-4 space-y-1">
           {items.map((item, ii) => (
-            <li key={ii} className="text-[12px] text-gray-400 leading-relaxed list-decimal">
+            <li key={ii} className="text-[12px] text-content-secondary leading-relaxed list-decimal">
               {parseInline(item, key * 100 + ii)}
             </li>
           ))}
@@ -248,7 +248,7 @@ export function renderMarkdown(markdown: string): ReactNode[] {
 
     // ── Paragraph (default) ──────────────────────────────────
     elements.push(
-      <p key={key++} className="text-[12px] text-gray-400 leading-relaxed my-2">
+      <p key={key++} className="text-[12px] text-content-secondary leading-relaxed my-2">
         {parseInline(line, key * 100)}
       </p>,
     );

@@ -196,24 +196,24 @@ function PortRow({ port, boardLabel, isVcp, isSoftSerial, onUpdateFunction, onUp
     onUpdateFunction(port.identifier, newMask);
   };
 
-  const selectStyle = 'bg-zinc-800 text-zinc-300 text-xs rounded px-1.5 py-1 border border-zinc-700 focus:border-blue-500 focus:outline-none w-full';
+  const selectStyle = 'bg-surface-tooltip text-content text-xs rounded px-1.5 py-1 border focus:border-blue-500 focus:outline-none w-full';
 
   return (
-    <tr className="border-b border-zinc-800/50 hover:bg-zinc-800/20">
+    <tr className="border-b border-subtle hover:bg-surface-overlay-subtle">
       {/* Port name */}
       <td className="px-3 py-2.5">
         <div className="flex items-center gap-2">
           {isVcp ? (
-            <Usb className="w-3.5 h-3.5 text-zinc-500" />
+            <Usb className="w-3.5 h-3.5 text-content-secondary" />
           ) : isSoftSerial ? (
             <Cpu className="w-3.5 h-3.5 text-amber-500" />
           ) : (
-            <Cable className="w-3.5 h-3.5 text-zinc-500" />
+            <Cable className="w-3.5 h-3.5 text-content-secondary" />
           )}
           <div>
-            <span className="text-sm text-zinc-200">{portName}</span>
+            <span className="text-sm text-content">{portName}</span>
             {boardLabel && (
-              <p className="text-[10px] text-zinc-500 leading-tight">{boardLabel}</p>
+              <p className="text-[10px] text-content-secondary leading-tight">{boardLabel}</p>
             )}
           </div>
         </div>
@@ -226,7 +226,7 @@ function PortRow({ port, boardLabel, isVcp, isSoftSerial, onUpdateFunction, onUp
           checked={hasMsp}
           onChange={handleMspToggle}
           disabled={isVcp}
-          className="rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+          className="rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
         />
       </td>
 
@@ -254,7 +254,7 @@ function PortRow({ port, boardLabel, isVcp, isSoftSerial, onUpdateFunction, onUp
           type="checkbox"
           checked={hasRx}
           onChange={handleRxToggle}
-          className="rounded border-zinc-600 bg-zinc-800 text-green-500 focus:ring-green-500 focus:ring-offset-0"
+          className="rounded border bg-surface-tooltip text-green-500 focus:ring-green-500 focus:ring-offset-0"
         />
       </td>
 
@@ -336,7 +336,7 @@ export default function PortsTab({ modified, setModified }: PortsTabProps) {
 
   if (isLoading || !serialConfig) {
     return (
-      <div className="flex items-center justify-center h-64 text-zinc-500">
+      <div className="flex items-center justify-center h-64 text-content-secondary">
         Loading port configuration...
       </div>
     );
@@ -352,31 +352,31 @@ export default function PortsTab({ modified, setModified }: PortsTabProps) {
   return (
     <div className="max-w-full space-y-4">
       {/* Port table card */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+      <div className="bg-surface rounded-xl border-subtle p-5">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-lg bg-sky-500/20 flex items-center justify-center">
             <Cable className="w-5 h-5 text-sky-400" />
           </div>
           <div>
-            <h3 className="font-medium text-white">UART Port Configuration</h3>
-            <p className="text-xs text-gray-500">Configure UART functions. Only one port can have Serial RX enabled. Save + reboot to apply.</p>
+            <h3 className="font-medium text-content">UART Port Configuration</h3>
+            <p className="text-xs text-content-secondary">Configure UART functions. Only one port can have Serial RX enabled. Save + reboot to apply.</p>
           </div>
         </div>
         {/* How this works banner */}
         {showTips && (
-          <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-sky-500/5 border border-sky-500/20 mb-4">
+          <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-sky-500/5 border-sky-500/20 mb-4">
             <HelpCircle className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
-            <p className="text-xs text-zinc-300 leading-relaxed">
+            <p className="text-xs text-content leading-relaxed">
               <span className="font-semibold text-sky-300">How this works: </span>
-              Each row is a physical UART connector on your board. Enable <span className="text-zinc-200">RX</span> on the UART your receiver is wired to.
-              Set <span className="text-zinc-200">Sensors</span> for GPS or rangefinder, and <span className="text-zinc-200">Peripherals</span> for OSD or VTX control. Save and reboot to apply.
+              Each row is a physical UART connector on your board. Enable <span className="text-content">RX</span> on the UART your receiver is wired to.
+              Set <span className="text-content">Sensors</span> for GPS or rangefinder, and <span className="text-content">Peripherals</span> for OSD or VTX control. Save and reboot to apply.
             </p>
           </div>
         )}
-        <div className="rounded-lg border border-gray-700/30 overflow-hidden">
+        <div className="rounded-lg border-subtle overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-zinc-800/50 text-zinc-400 text-xs">
+              <tr className="bg-surface text-content-secondary text-xs">
                 <th className="px-3 py-2.5 text-left font-medium w-40">Port</th>
                 <th className="px-3 py-2.5 text-center font-medium w-16">MSP</th>
                 <th className="px-2 py-2.5 text-left font-medium w-28">Sensors</th>
@@ -408,19 +408,19 @@ export default function PortsTab({ modified, setModified }: PortsTabProps) {
       </div>
 
       {/* Common setup examples */}
-      <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-blue-500/5 border border-blue-500/20">
+      <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-blue-500/5 border-blue-500/20">
         <HelpCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-        <div className="text-xs text-zinc-300 leading-relaxed space-y-1">
+        <div className="text-xs text-content leading-relaxed space-y-1">
           <p className="font-semibold text-blue-300">Common setups</p>
-          <p>SBUS receiver: Enable <span className="text-zinc-200">RX</span> on the UART with the SBUS pad (usually has a built-in inverter)</p>
-          <p>GPS module: Set <span className="text-zinc-200">Sensors → GPS</span> on the UART it's connected to, baud <span className="text-zinc-200">115200</span></p>
-          <p>DJI goggles: Set <span className="text-zinc-200">Peripherals → MSP Displayport</span> on the DJI UART</p>
+          <p>SBUS receiver: Enable <span className="text-content">RX</span> on the UART with the SBUS pad (usually has a built-in inverter)</p>
+          <p>GPS module: Set <span className="text-content">Sensors → GPS</span> on the UART it's connected to, baud <span className="text-content">115200</span></p>
+          <p>DJI goggles: Set <span className="text-content">Peripherals → MSP Displayport</span> on the DJI UART</p>
         </div>
       </div>
 
       {/* Soft serial warning */}
       {sortedPorts.some((p) => p.identifier >= 30) && (
-        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+        <div className="p-3 rounded-lg bg-amber-500/10 border-amber-500/20">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
             <p className="text-xs text-amber-300">

@@ -130,20 +130,20 @@ export function BetaflightDashboard() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">Betaflight / MSP</h1>
-            <p className="text-gray-400 text-sm mt-1">
+            <h1 className="text-2xl font-bold text-content">Betaflight / MSP</h1>
+            <p className="text-content-secondary text-sm mt-1">
               Connect to Betaflight, iNav, or Cleanflight boards
             </p>
           </div>
         </div>
 
         {/* Connection Panel */}
-        <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-5">
+        <div className="bg-surface rounded-xl border border-subtle p-5">
           <div className="flex items-center gap-3 mb-4">
             <div className={`w-3 h-3 rounded-full ${connection.isConnected ? 'bg-emerald-400' : 'bg-gray-500'}`} />
-            <h2 className="text-lg font-semibold text-white">Connection</h2>
+            <h2 className="text-lg font-semibold text-content">Connection</h2>
             {connection.isConnected && (
-              <span className="text-sm text-gray-400">
+              <span className="text-sm text-content-secondary">
                 {connection.fcVariant} {connection.fcVersion} on {connection.boardId}
               </span>
             )}
@@ -153,12 +153,12 @@ export function BetaflightDashboard() {
             <div className="flex items-center gap-4">
               {/* Port select */}
               <div className="flex-1">
-                <label className="block text-xs text-gray-400 mb-1">Port</label>
+                <label className="block text-xs text-content-secondary mb-1">Port</label>
                 <div className="flex gap-2">
                   <select
                     value={selectedPort}
                     onChange={(e) => setSelectedPort(e.target.value)}
-                    className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white"
+                    className="flex-1 bg-surface-raised border border rounded-lg px-3 py-2 text-sm text-content"
                   >
                     {ports.map((port) => (
                       <option key={port.path} value={port.path}>
@@ -168,7 +168,7 @@ export function BetaflightDashboard() {
                   </select>
                   <button
                     onClick={refreshPorts}
-                    className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300 transition-colors"
+                    className="px-3 py-2 bg-surface-raised hover:bg-surface-raised rounded-lg text-content transition-colors"
                     title="Refresh ports"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -180,11 +180,11 @@ export function BetaflightDashboard() {
 
               {/* Baud rate */}
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Baud Rate</label>
+                <label className="block text-xs text-content-secondary mb-1">Baud Rate</label>
                 <select
                   value={baudRate}
                   onChange={(e) => setBaudRate(Number(e.target.value))}
-                  className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white"
+                  className="bg-surface-raised border border rounded-lg px-3 py-2 text-sm text-content"
                 >
                   <option value={115200}>115200</option>
                   <option value={230400}>230400</option>
@@ -200,7 +200,7 @@ export function BetaflightDashboard() {
                 <button
                   onClick={handleConnect}
                   disabled={connecting || !selectedPort}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-surface-raised text-white rounded-lg font-medium transition-colors"
                 >
                   {connecting ? 'Connecting...' : 'Connect'}
                 </button>
@@ -221,14 +221,14 @@ export function BetaflightDashboard() {
 
               <button
                 onClick={handleCalibrateAcc}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+                className="px-4 py-2 bg-surface-raised hover:bg-surface-raised text-content rounded-lg transition-colors"
               >
                 Calibrate ACC
               </button>
 
               <button
                 onClick={handleReboot}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+                className="px-4 py-2 bg-surface-raised hover:bg-surface-raised text-content rounded-lg transition-colors"
               >
                 Reboot
               </button>
@@ -255,120 +255,120 @@ export function BetaflightDashboard() {
         {connection.isConnected && (
           <div className="grid grid-cols-4 gap-4">
             {/* Attitude */}
-            <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-4">
-              <h3 className="text-sm font-medium text-gray-400 mb-3">Attitude</h3>
+            <div className="bg-surface rounded-xl border border-subtle p-4">
+              <h3 className="text-sm font-medium text-content-secondary mb-3">Attitude</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Roll</span>
-                  <span className="text-white font-mono">{attitude.roll.toFixed(1)}°</span>
+                  <span className="text-content-secondary">Roll</span>
+                  <span className="text-content font-mono">{attitude.roll.toFixed(1)}°</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Pitch</span>
-                  <span className="text-white font-mono">{attitude.pitch.toFixed(1)}°</span>
+                  <span className="text-content-secondary">Pitch</span>
+                  <span className="text-content font-mono">{attitude.pitch.toFixed(1)}°</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Yaw</span>
-                  <span className="text-white font-mono">{attitude.yaw.toFixed(1)}°</span>
+                  <span className="text-content-secondary">Yaw</span>
+                  <span className="text-content font-mono">{attitude.yaw.toFixed(1)}°</span>
                 </div>
               </div>
             </div>
 
             {/* Battery/Analog */}
-            <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-4">
-              <h3 className="text-sm font-medium text-gray-400 mb-3">Battery</h3>
+            <div className="bg-surface rounded-xl border border-subtle p-4">
+              <h3 className="text-sm font-medium text-content-secondary mb-3">Battery</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Voltage</span>
-                  <span className="text-white font-mono">{(analog.voltage / 10).toFixed(1)}V</span>
+                  <span className="text-content-secondary">Voltage</span>
+                  <span className="text-content font-mono">{(analog.voltage / 10).toFixed(1)}V</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Current</span>
-                  <span className="text-white font-mono">{(analog.current / 100).toFixed(1)}A</span>
+                  <span className="text-content-secondary">Current</span>
+                  <span className="text-content font-mono">{(analog.current / 100).toFixed(1)}A</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">mAh Used</span>
-                  <span className="text-white font-mono">{analog.mAhDrawn}</span>
+                  <span className="text-content-secondary">mAh Used</span>
+                  <span className="text-content font-mono">{analog.mAhDrawn}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">RSSI</span>
-                  <span className="text-white font-mono">{analog.rssi}%</span>
+                  <span className="text-content-secondary">RSSI</span>
+                  <span className="text-content font-mono">{analog.rssi}%</span>
                 </div>
               </div>
             </div>
 
             {/* Status */}
-            <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-4">
-              <h3 className="text-sm font-medium text-gray-400 mb-3">Status</h3>
+            <div className="bg-surface rounded-xl border border-subtle p-4">
+              <h3 className="text-sm font-medium text-content-secondary mb-3">Status</h3>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500">Armed</span>
+                  <span className="text-content-secondary">Armed</span>
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                    status.isArmed ? 'bg-red-500/20 text-red-400' : 'bg-gray-600 text-gray-400'
+                    status.isArmed ? 'bg-red-500/20 text-red-400' : 'bg-surface-raised text-content-secondary'
                   }`}>
                     {status.isArmed ? 'ARMED' : 'DISARMED'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">CPU Load</span>
-                  <span className="text-white font-mono">{status.cpuLoad}%</span>
+                  <span className="text-content-secondary">CPU Load</span>
+                  <span className="text-content font-mono">{status.cpuLoad}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Cycle Time</span>
-                  <span className="text-white font-mono">{status.cycleTime}µs</span>
+                  <span className="text-content-secondary">Cycle Time</span>
+                  <span className="text-content font-mono">{status.cycleTime}µs</span>
                 </div>
               </div>
             </div>
 
             {/* GPS */}
-            <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-4">
-              <h3 className="text-sm font-medium text-gray-400 mb-3">GPS</h3>
+            <div className="bg-surface rounded-xl border border-subtle p-4">
+              <h3 className="text-sm font-medium text-content-secondary mb-3">GPS</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Fix</span>
-                  <span className="text-white font-mono">{gps.fixType}</span>
+                  <span className="text-content-secondary">Fix</span>
+                  <span className="text-content font-mono">{gps.fixType}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Satellites</span>
-                  <span className="text-white font-mono">{gps.satellites}</span>
+                  <span className="text-content-secondary">Satellites</span>
+                  <span className="text-content font-mono">{gps.satellites}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Lat</span>
-                  <span className="text-white font-mono">{gps.lat.toFixed(6)}</span>
+                  <span className="text-content-secondary">Lat</span>
+                  <span className="text-content font-mono">{gps.lat.toFixed(6)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Lon</span>
-                  <span className="text-white font-mono">{gps.lon.toFixed(6)}</span>
+                  <span className="text-content-secondary">Lon</span>
+                  <span className="text-content font-mono">{gps.lon.toFixed(6)}</span>
                 </div>
               </div>
             </div>
 
             {/* Altitude */}
-            <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-4">
-              <h3 className="text-sm font-medium text-gray-400 mb-3">Altitude</h3>
+            <div className="bg-surface rounded-xl border border-subtle p-4">
+              <h3 className="text-sm font-medium text-content-secondary mb-3">Altitude</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Altitude</span>
-                  <span className="text-white font-mono">{altitude.altitude.toFixed(1)}m</span>
+                  <span className="text-content-secondary">Altitude</span>
+                  <span className="text-content font-mono">{altitude.altitude.toFixed(1)}m</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Vario</span>
-                  <span className="text-white font-mono">{altitude.vario.toFixed(1)}m/s</span>
+                  <span className="text-content-secondary">Vario</span>
+                  <span className="text-content font-mono">{altitude.vario.toFixed(1)}m/s</span>
                 </div>
               </div>
             </div>
 
             {/* RC Channels */}
-            <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-4 col-span-2">
-              <h3 className="text-sm font-medium text-gray-400 mb-3">RC Channels</h3>
+            <div className="bg-surface rounded-xl border border-subtle p-4 col-span-2">
+              <h3 className="text-sm font-medium text-content-secondary mb-3">RC Channels</h3>
               {/* Primary sticks */}
               <div className="grid grid-cols-4 gap-2">
                 {displayRcChannels.slice(0, PRIMARY_CHANNEL_COUNT).map((value, i) => (
                   <div key={i} className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">{getChannelName(i, 'msp')}</span>
-                      <span className="text-gray-400 font-mono">{value}</span>
+                      <span className="text-content-secondary">{getChannelName(i, 'msp')}</span>
+                      <span className="text-content-secondary font-mono">{value}</span>
                     </div>
-                    <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
                       <div
                         className="h-full bg-blue-500 transition-all"
                         style={{ width: `${((value - 1000) / 1000) * 100}%` }}
@@ -380,15 +380,15 @@ export function BetaflightDashboard() {
               {/* AUX channels */}
               {displayRcChannels.length > PRIMARY_CHANNEL_COUNT && (
                 <>
-                  <div className="border-t border-gray-700/50 my-2" />
+                  <div className="border-t border-subtle my-2" />
                   <div className="grid grid-cols-4 gap-2">
                     {displayRcChannels.slice(PRIMARY_CHANNEL_COUNT).map((value, i) => (
                       <div key={i + PRIMARY_CHANNEL_COUNT} className="space-y-0.5">
                         <div className="flex justify-between">
-                          <span className="text-[11px] text-gray-500">{getChannelName(i + PRIMARY_CHANNEL_COUNT, 'msp')}</span>
-                          <span className="text-[10px] text-gray-500 font-mono">{value}</span>
+                          <span className="text-[11px] text-content-secondary">{getChannelName(i + PRIMARY_CHANNEL_COUNT, 'msp')}</span>
+                          <span className="text-[10px] text-content-secondary font-mono">{value}</span>
                         </div>
-                        <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-1 bg-surface-raised rounded-full overflow-hidden">
                           <div
                             className="h-full bg-blue-500/70 transition-all"
                             style={{ width: `${((value - 1000) / 1000) * 100}%` }}
@@ -402,16 +402,16 @@ export function BetaflightDashboard() {
             </div>
 
             {/* Motors */}
-            <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-4">
-              <h3 className="text-sm font-medium text-gray-400 mb-3">Motors</h3>
+            <div className="bg-surface rounded-xl border border-subtle p-4">
+              <h3 className="text-sm font-medium text-content-secondary mb-3">Motors</h3>
               <div className="grid grid-cols-2 gap-2">
                 {motors.values.slice(0, 4).map((value, i) => (
                   <div key={i} className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">M{i + 1}</span>
-                      <span className="text-gray-400 font-mono">{value}</span>
+                      <span className="text-content-secondary">M{i + 1}</span>
+                      <span className="text-content-secondary font-mono">{value}</span>
                     </div>
-                    <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
                       <div
                         className="h-full bg-emerald-500 transition-all"
                         style={{ width: `${((value - 1000) / 1000) * 100}%` }}
@@ -426,7 +426,7 @@ export function BetaflightDashboard() {
 
         {/* Last update */}
         {connection.isConnected && lastUpdate > 0 && (
-          <div className="text-center text-xs text-gray-500">
+          <div className="text-center text-xs text-content-secondary">
             Last update: {new Date(lastUpdate).toLocaleTimeString()}
           </div>
         )}

@@ -36,7 +36,7 @@ interface SparklineProps {
 
 const Sparkline: React.FC<SparklineProps> = ({ history, width, height, color }) => {
   if (history.length < 2) {
-    return <div style={{ width, height }} className="bg-gray-900/50 rounded" />;
+    return <div style={{ width, height }} className="bg-surface rounded" />;
   }
 
   const max = Math.max(MAX_DISPLAY, ...history);
@@ -47,7 +47,7 @@ const Sparkline: React.FC<SparklineProps> = ({ history, width, height, color }) 
     .join(' ');
 
   return (
-    <svg width={width} height={height} className="bg-gray-900/50 rounded">
+    <svg width={width} height={height} className="bg-surface rounded">
       {/* Threshold line at GOOD_THRESHOLD */}
       <line
         x1={0}
@@ -84,19 +84,19 @@ export const VibrationCard: React.FC = () => {
   const stale = lastVibration === 0 || Date.now() - lastVibration > 3000;
 
   return (
-    <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+    <div className="bg-surface rounded-xl border-subtle p-5">
       <div className="flex items-center gap-3 mb-5">
-        <div className="w-10 h-10 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-lg bg-orange-500/10 border-orange-500/20 flex items-center justify-center">
           <Activity className="w-5 h-5 text-orange-400" />
         </div>
         <div>
-          <div className="text-sm font-semibold text-gray-200">Vibration</div>
-          <div className="text-[11px] text-gray-500">m/s² · good &lt;30 · bad &gt;60</div>
+          <div className="text-sm font-semibold text-content">Vibration</div>
+          <div className="text-[11px] text-content-secondary">m/s² · good &lt;30 · bad &gt;60</div>
         </div>
       </div>
 
       {stale && (
-        <div className="text-xs text-gray-500 italic mb-3">No VIBRATION telemetry received yet…</div>
+        <div className="text-xs text-content-secondary italic mb-3">No VIBRATION telemetry received yet…</div>
       )}
 
       <div className="space-y-3">
@@ -109,12 +109,12 @@ export const VibrationCard: React.FC = () => {
           return (
             <div key={axis}>
               <div className="flex items-baseline justify-between mb-1">
-                <div className="text-[11px] uppercase tracking-wider text-gray-500">Vib {axis.toUpperCase()}</div>
+                <div className="text-[11px] uppercase tracking-wider text-content-secondary">Vib {axis.toUpperCase()}</div>
                 <div className="text-sm font-mono font-semibold" style={{ color }}>
                   {value.toFixed(1)}
                 </div>
               </div>
-              <div className="h-2 bg-gray-900/60 rounded-full overflow-hidden">
+              <div className="h-2 bg-surface rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-150"
                   style={{ width: `${pct}%`, backgroundColor: color }}
@@ -128,14 +128,14 @@ export const VibrationCard: React.FC = () => {
         })}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-700/30 grid grid-cols-3 gap-2 text-center">
+      <div className="mt-4 pt-4 border-t border-subtle grid grid-cols-3 gap-2 text-center">
         {(['clip0', 'clip1', 'clip2'] as const).map((key, i) => {
           const value = vibration?.[key] ?? 0;
           const bad = value > 0;
           return (
-            <div key={key} className="bg-gray-900/40 rounded-lg py-2">
-              <div className="text-[10px] uppercase tracking-wider text-gray-500">Clip {i + 1}</div>
-              <div className={`text-sm font-mono font-semibold ${bad ? 'text-red-400' : 'text-gray-400'}`}>
+            <div key={key} className="bg-surface rounded-lg py-2">
+              <div className="text-[10px] uppercase tracking-wider text-content-secondary">Clip {i + 1}</div>
+              <div className={`text-sm font-mono font-semibold ${bad ? 'text-red-400' : 'text-content-secondary'}`}>
                 {value}
               </div>
             </div>

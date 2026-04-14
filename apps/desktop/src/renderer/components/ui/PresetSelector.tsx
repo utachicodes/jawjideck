@@ -49,7 +49,7 @@ export function PresetSelector<T extends Record<string, Preset>>({
           </div>
           <div>
             <p className="text-indigo-300 font-medium">{label}</p>
-            <p className="text-xs text-gray-500">{hint}</p>
+            <p className="text-xs text-content-secondary">{hint}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -66,7 +66,7 @@ export function PresetSelector<T extends Record<string, Preset>>({
                 title={preset.description}
               >
                 <IconComponent className={`w-4 h-4 ${preset.iconColor}`} />
-                <span className="text-sm text-gray-200 group-hover:text-white">{preset.name}</span>
+                <span className="text-sm text-content group-hover:text-content">{preset.name}</span>
               </button>
             );
           })}
@@ -102,7 +102,7 @@ export function CompactPresetSelector<T extends Record<string, Preset>>({
             title={preset.description}
           >
             <IconComponent className={`w-4 h-4 ${preset.iconColor}`} />
-            <span className="text-sm text-gray-200 group-hover:text-white">{preset.name}</span>
+            <span className="text-sm text-content group-hover:text-content">{preset.name}</span>
           </button>
         );
       })}

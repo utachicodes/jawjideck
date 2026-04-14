@@ -32,7 +32,7 @@ const TaskStatusIcon: React.FC<{ status: 'pending' | 'in_progress' | 'completed'
     case 'error':
       return <XCircle className="w-4 h-4 text-red-400" />;
     default:
-      return <div className="w-4 h-4 rounded-full border-2 border-zinc-600" />;
+      return <div className="w-4 h-4 rounded-full border-2 border" />;
   }
 };
 
@@ -74,7 +74,7 @@ export const ApplyStep: React.FC = () => {
   if (!selectedPreset) {
     return (
       <div className="text-center py-8">
-        <p className="text-zinc-400">No preset selected.</p>
+        <p className="text-content-secondary">No preset selected.</p>
       </div>
     );
   }
@@ -106,7 +106,7 @@ export const ApplyStep: React.FC = () => {
               <AlertTriangle className="w-8 h-8 text-amber-400" />
             )}
           </div>
-          <h2 className="text-xl font-semibold text-zinc-100">
+          <h2 className="text-xl font-semibold text-content">
             {platformChangeState === 'error'
               ? 'Platform Change Failed'
               : platformChangeState === 'disconnected'
@@ -119,7 +119,7 @@ export const ApplyStep: React.FC = () => {
               ? 'Changing Platform...'
               : 'Platform Mismatch'}
           </h2>
-          <p className="text-sm text-zinc-400 mt-2 max-w-md mx-auto">
+          <p className="text-sm text-content-secondary mt-2 max-w-md mx-auto">
             {platformChangeState === 'error'
               ? platformChangeError || 'An error occurred while changing the platform.'
               : platformChangeState === 'disconnected'
@@ -134,21 +134,21 @@ export const ApplyStep: React.FC = () => {
 
         {/* Platform comparison */}
         {platformChangeState === 'idle' && (
-          <div className="p-4 bg-zinc-800/50 rounded-xl">
+          <div className="p-4 bg-surface rounded-xl">
             <div className="flex items-center justify-center gap-8">
               <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-zinc-700/50 flex items-center justify-center mx-auto mb-2">
-                  <Plane className="w-6 h-6 text-zinc-400" />
+                <div className="w-12 h-12 rounded-full bg-surface-raised flex items-center justify-center mx-auto mb-2">
+                  <Plane className="w-6 h-6 text-content-secondary" />
                 </div>
-                <p className="text-xs text-zinc-500">Current</p>
-                <p className="text-sm font-medium text-zinc-300">{platformMismatch.currentName}</p>
+                <p className="text-xs text-content-secondary">Current</p>
+                <p className="text-sm font-medium text-content">{platformMismatch.currentName}</p>
               </div>
-              <div className="text-2xl text-zinc-600">→</div>
+              <div className="text-2xl text-content-tertiary">→</div>
               <div className="text-center">
                 <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-2">
                   <Plane className="w-6 h-6 text-amber-400" />
                 </div>
-                <p className="text-xs text-zinc-500">Required</p>
+                <p className="text-xs text-content-secondary">Required</p>
                 <p className="text-sm font-medium text-amber-300">{platformMismatch.requiredName}</p>
               </div>
             </div>
@@ -157,10 +157,10 @@ export const ApplyStep: React.FC = () => {
 
         {/* Progress indicator during platform change */}
         {isPlatformChanging && (
-          <div className="p-4 bg-zinc-800/50 rounded-xl">
+          <div className="p-4 bg-surface rounded-xl">
             <div className="flex items-center gap-3">
               <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
-              <span className="text-sm text-zinc-300">
+              <span className="text-sm text-content">
                 {platformChangeState === 'changing' && 'Setting platform type...'}
                 {platformChangeState === 'saving' && 'Saving to EEPROM...'}
                 {platformChangeState === 'rebooting' && 'Rebooting flight controller...'}
@@ -202,12 +202,12 @@ export const ApplyStep: React.FC = () => {
         )}
 
         {/* Navigation buttons */}
-        <div className="flex items-center justify-between pt-4 border-t border-zinc-700">
+        <div className="flex items-center justify-between pt-4 border-t border">
           {platformChangeState === 'error' ? (
             <>
               <button
                 onClick={dismissPlatformMismatch}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Cancel
@@ -223,7 +223,7 @@ export const ApplyStep: React.FC = () => {
           ) : isPlatformChanging ? (
             <>
               <div /> {/* Spacer */}
-              <div className="flex items-center gap-2 text-sm text-zinc-500">
+              <div className="flex items-center gap-2 text-sm text-content-secondary">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Please wait...
               </div>
@@ -232,7 +232,7 @@ export const ApplyStep: React.FC = () => {
             <>
               <button
                 onClick={dismissPlatformMismatch}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Cancel
@@ -272,14 +272,14 @@ export const ApplyStep: React.FC = () => {
             <Rocket className="w-8 h-8 text-blue-400 animate-bounce" />
           )}
         </div>
-        <h2 className="text-xl font-semibold text-zinc-100">
+        <h2 className="text-xl font-semibold text-content">
           {applySuccess
             ? 'Configuration Applied!'
             : applyError
             ? 'Configuration Failed'
             : 'Applying Configuration...'}
         </h2>
-        <p className="text-sm text-zinc-400 mt-2 max-w-md mx-auto">
+        <p className="text-sm text-content-secondary mt-2 max-w-md mx-auto">
           {applySuccess
             ? `Your ${selectedPreset.name} preset has been successfully applied to your flight controller.`
             : applyError
@@ -292,10 +292,10 @@ export const ApplyStep: React.FC = () => {
       {!applySuccess && !applyError && (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-zinc-400">{applyProgress.currentTask || 'Starting...'}</span>
-            <span className="text-zinc-500">{progressPercent}%</span>
+            <span className="text-content-secondary">{applyProgress.currentTask || 'Starting...'}</span>
+            <span className="text-content-secondary">{progressPercent}%</span>
           </div>
-          <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-surface-tooltip rounded-full overflow-hidden">
             <div
               className="h-full bg-blue-500 rounded-full transition-all duration-300"
               style={{ width: `${progressPercent}%` }}
@@ -305,8 +305,8 @@ export const ApplyStep: React.FC = () => {
       )}
 
       {/* Task list */}
-      <div className="p-4 bg-zinc-800/50 rounded-xl">
-        <h3 className="text-sm font-medium text-zinc-300 mb-3">Configuration Tasks</h3>
+      <div className="p-4 bg-surface rounded-xl">
+        <h3 className="text-sm font-medium text-content mb-3">Configuration Tasks</h3>
         <div className="space-y-2">
           {applyProgress.tasks.map((task, index) => (
             <div
@@ -325,12 +325,12 @@ export const ApplyStep: React.FC = () => {
               <span
                 className={`text-sm ${
                   task.status === 'completed'
-                    ? 'text-zinc-400'
+                    ? 'text-content-secondary'
                     : task.status === 'in_progress'
-                    ? 'text-zinc-200'
+                    ? 'text-content'
                     : task.status === 'error'
                     ? 'text-red-300'
-                    : 'text-zinc-500'
+                    : 'text-content-secondary'
                 }`}
               >
                 {task.name}
@@ -393,7 +393,7 @@ export const ApplyStep: React.FC = () => {
       )}
 
       {/* Navigation buttons */}
-      <div className="flex items-center justify-between pt-4 border-t border-zinc-700">
+      <div className="flex items-center justify-between pt-4 border-t border">
         {applySuccess ? (
           <>
             <div /> {/* Spacer */}
@@ -409,7 +409,7 @@ export const ApplyStep: React.FC = () => {
           <>
             <button
               onClick={prevStep}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Back
@@ -430,12 +430,12 @@ export const ApplyStep: React.FC = () => {
             <button
               onClick={prevStep}
               disabled={isApplying}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ArrowLeft className="w-4 h-4" />
               Cancel
             </button>
-            <div className="flex items-center gap-2 text-sm text-zinc-500">
+            <div className="flex items-center gap-2 text-sm text-content-secondary">
               <Loader2 className="w-4 h-4 animate-spin" />
               Please wait...
             </div>

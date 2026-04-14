@@ -22,22 +22,22 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
-      <div className="bg-gray-800 rounded-xl border border-gray-700/50 w-full max-w-sm mx-4 shadow-2xl">
+      <div className="bg-surface-tooltip rounded-xl border border-subtle w-full max-w-sm mx-4 shadow-2xl">
         <div className="px-5 pt-5 pb-4">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0 mt-0.5">
               <AlertTriangle className="w-4 h-4 text-amber-400" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white">{title}</h3>
-              <p className="text-xs text-gray-400 mt-1 leading-relaxed">{message}</p>
+              <h3 className="text-sm font-semibold text-content">{title}</h3>
+              <p className="text-xs text-content-secondary mt-1 leading-relaxed">{message}</p>
             </div>
           </div>
         </div>
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-700/40">
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-subtle">
           <button
             onClick={onCancel}
-            className="px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-700/40 transition-colors"
+            className="px-3 py-1.5 rounded-lg text-xs text-content-secondary hover:text-content hover:bg-surface-raised transition-colors"
           >
             {cancelLabel}
           </button>

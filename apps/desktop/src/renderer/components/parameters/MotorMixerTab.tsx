@@ -211,7 +211,7 @@ function MotorLayoutDiagram({
 
   return (
     <div
-      className="relative bg-zinc-900/80 rounded-xl"
+      className="relative bg-surface/80 rounded-xl"
       style={{ width: size, height: size }}
     >
       {/* Front indicator */}
@@ -270,10 +270,10 @@ function MixBar({ value, color, label }: { value: number; color: string; label: 
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
-        <span className="text-zinc-400">{label}</span>
+        <span className="text-content-secondary">{label}</span>
         <span className="font-mono" style={{ color }}>{value.toFixed(3)}</span>
       </div>
-      <div className="relative h-2 bg-zinc-800 rounded-full overflow-hidden">
+      <div className="relative h-2 bg-surface-tooltip rounded-full overflow-hidden">
         <div
           className="absolute top-0 h-full rounded-full transition-all"
           style={{
@@ -482,13 +482,13 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
           )}
         </div>
         <div className="text-center">
-          <h3 className="text-lg font-semibold text-white mb-1">
+          <h3 className="text-lg font-semibold text-content mb-1">
             {saveState === 'saving' && 'Saving Motor Mixer'}
             {saveState === 'rebooting' && 'Rebooting Board'}
             {saveState === 'reconnecting' && 'Reconnecting'}
             {saveState === 'error' && 'Save Failed'}
           </h3>
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-content-secondary">
             {saveState === 'saving' && 'Writing configuration...'}
             {saveState === 'rebooting' && 'Waiting for board to restart...'}
             {saveState === 'reconnecting' && 'Connecting to board...'}
@@ -505,7 +505,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
         {saveState === 'error' && (
           <button
             onClick={() => setSaveState('idle')}
-            className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-sm"
+            className="px-4 py-2 bg-surface-raised hover:bg-surface-raised text-content rounded-lg text-sm"
           >
             Dismiss
           </button>
@@ -518,7 +518,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
-        <p className="text-sm text-zinc-500">Loading motor mixer...</p>
+        <p className="text-sm text-content-secondary">Loading motor mixer...</p>
       </div>
     );
   }
@@ -532,8 +532,8 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
             <Cog className="w-5 h-5 text-rose-400" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-white">Motor Mixer</h2>
-            <p className="text-sm text-zinc-400">Configure motor output mixing</p>
+            <h2 className="text-lg font-semibold text-content">Motor Mixer</h2>
+            <p className="text-sm text-content-secondary">Configure motor output mixing</p>
           </div>
         </div>
 
@@ -541,7 +541,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
           <button
             onClick={loadMotorMixer}
             disabled={loading}
-            className="px-3 py-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors flex items-center gap-2"
+            className="px-3 py-2 text-content-secondary hover:text-content hover:bg-surface-tooltip rounded-lg transition-colors flex items-center gap-2"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Reload
@@ -552,7 +552,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
             className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
               modified
                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
             }`}
           >
             <Download className="w-4 h-4" />
@@ -563,7 +563,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
 
       {/* Error */}
       {error && saveState === 'idle' && (
-        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-300 flex items-center gap-2">
+        <div className="p-3 bg-red-500/10 border-red-500/30 rounded-lg text-sm text-red-300 flex items-center gap-2">
           <span>Error:</span> {error}
           <button onClick={() => setError(null)} className="ml-auto hover:text-red-200">×</button>
         </div>
@@ -571,7 +571,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
 
       {/* Beginner Help */}
       {showInfoCards && (
-        <div className="bg-blue-500/10 rounded-xl border border-blue-500/20 p-4">
+        <div className="bg-blue-500/10 rounded-xl border-blue-500/20 p-4">
           <div className="flex items-start gap-3">
             <Lightbulb className="w-5 h-5 text-blue-400 mt-0.5 shrink-0" />
             <div>
@@ -589,12 +589,12 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
       {/* Frame Selection - Visual Presets */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-zinc-300">
+          <h3 className="text-sm font-medium text-content">
             {currentPlatform === 'airplane' ? 'How many motors does your airplane have?' : 'What type of frame do you have?'}
           </h3>
           <button
             onClick={resetAll}
-            className="px-3 py-1.5 text-xs bg-zinc-700/50 hover:bg-red-500/20 rounded-lg text-zinc-400 hover:text-red-400 transition-colors flex items-center gap-1.5"
+            className="px-3 py-1.5 text-xs bg-surface-raised hover:bg-red-500/20 rounded-lg text-white-secondary hover:text-red-400 transition-colors flex items-center gap-1.5"
           >
             <RotateCcw className="w-3 h-3" />
             Clear All
@@ -620,12 +620,12 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
                 className={`rounded-xl border text-left transition-all overflow-hidden ${
                   isSelected
                     ? 'bg-emerald-500/10 border-emerald-500/50 ring-2 ring-emerald-500/30'
-                    : 'bg-zinc-800/50 border-zinc-700/50 hover:border-zinc-500'
+                    : 'bg-surface border-subtle hover:border'
                 }`}
               >
                 {/* Diagram Header - Full Width, Bigger */}
                 <div className={`flex items-center justify-center py-8 ${
-                  isSelected ? 'bg-emerald-500/10' : 'bg-zinc-900/50'
+                  isSelected ? 'bg-emerald-500/10' : 'bg-surface'
                 }`}>
                   <MotorLayoutDiagram positions={preset.positions} size={140} />
                 </div>
@@ -634,8 +634,8 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
                 <div className="p-4">
                   {/* Header */}
                   <div className="flex items-center gap-2 mb-2">
-                    <IconComponent className={`w-4 h-4 ${isSelected ? 'text-emerald-400' : 'text-zinc-400'}`} />
-                    <span className={`font-semibold ${isSelected ? 'text-emerald-300' : 'text-white'}`}>
+                    <IconComponent className={`w-4 h-4 ${isSelected ? 'text-emerald-400' : 'text-content-secondary'}`} />
+                    <span className={`font-semibold ${isSelected ? 'text-emerald-300' : 'text-content'}`}>
                       {preset.name}
                     </span>
                     {preset.recommended && (
@@ -646,12 +646,12 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
                   </div>
 
                   {/* Description */}
-                  <p className="text-xs text-zinc-400 mb-3">{preset.description}</p>
+                  <p className="text-xs text-content-secondary mb-3">{preset.description}</p>
 
                   {/* Footer */}
                   <div className="flex items-center justify-between">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      isSelected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700 text-zinc-400'
+                      isSelected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-surface-raised text-white-secondary'
                     }`}>
                       {preset.motors.length} {preset.motors.length === 1 ? 'motor' : 'motors'}
                     </span>
@@ -661,7 +661,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
                   </div>
 
                   {/* Beginner tip */}
-                  <p className="mt-3 pt-3 border-t border-zinc-700/50 text-[11px] text-zinc-500">
+                  <p className="mt-3 pt-3 border-t border-subtle text-[11px] text-content-secondary">
                     {preset.beginner}
                   </p>
                 </div>
@@ -675,7 +675,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
           <div className="flex justify-center">
             <button
               onClick={() => setShowMorePresets(!showMorePresets)}
-              className="px-4 py-2 bg-zinc-800/50 hover:bg-zinc-700/50 border border-zinc-700 rounded-lg text-sm font-medium text-zinc-300 transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-surface hover:bg-surface-raised border rounded-lg text-sm font-medium text-content transition-colors flex items-center gap-2"
             >
               {showMorePresets ? (
                 <>
@@ -695,12 +695,12 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
 
       {/* Motor Cards */}
       {motors.length === 0 ? (
-        <div className="text-center py-12 bg-zinc-800/30 rounded-xl border border-zinc-700/50">
-          <HelpCircle className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-          <h3 className="text-lg font-medium text-zinc-300 mb-2">
+        <div className="text-center py-12 bg-surface rounded-xl border-subtle">
+          <HelpCircle className="w-12 h-12 text-content-tertiary mx-auto mb-3" />
+          <h3 className="text-lg font-medium text-content mb-2">
             {currentPlatform === 'airplane' ? 'No Motor Configuration' : 'No Frame Selected'}
           </h3>
-          <p className="text-sm text-zinc-500 max-w-md mx-auto mb-4">
+          <p className="text-sm text-content-secondary max-w-md mx-auto mb-4">
             {currentPlatform === 'airplane'
               ? 'Pick a motor setup above. Most airplanes have a single motor - control surfaces handle steering.'
               : 'Pick a frame type above to get started. Most drones use "Quad X" - the standard layout with 4 motors in an X shape.'}
@@ -725,7 +725,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
       ) : (
         <>
           {/* Current Configuration Summary */}
-          <div className="bg-emerald-500/10 rounded-xl border border-emerald-500/20 p-4">
+          <div className="bg-emerald-500/10 rounded-xl border-emerald-500/20 p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
@@ -757,30 +757,30 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
           </div>
 
           {/* Collapsible Advanced Section */}
-          <div className="bg-zinc-800/30 rounded-xl border border-zinc-700/50 overflow-hidden">
+          <div className="bg-surface rounded-xl border-subtle overflow-hidden">
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="w-full px-4 py-3 flex items-center justify-between hover:bg-zinc-800/50 transition-colors"
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-surface transition-colors"
             >
               <div className="flex items-center gap-2">
-                <Cog className="w-4 h-4 text-zinc-400" />
-                <span className="text-sm font-medium text-zinc-300">Advanced: Individual Motor Values</span>
-                <span className="text-xs text-zinc-500">(for custom configurations)</span>
+                <Cog className="w-4 h-4 text-content-secondary" />
+                <span className="text-sm font-medium text-content">Advanced: Individual Motor Values</span>
+                <span className="text-xs text-content-secondary">(for custom configurations)</span>
               </div>
               {showAdvanced ? (
-                <ChevronUp className="w-4 h-4 text-zinc-400" />
+                <ChevronUp className="w-4 h-4 text-content-secondary" />
               ) : (
-                <ChevronDown className="w-4 h-4 text-zinc-400" />
+                <ChevronDown className="w-4 h-4 text-content-secondary" />
               )}
             </button>
 
             {showAdvanced && (
-              <div className="p-4 border-t border-zinc-700/50 space-y-4">
+              <div className="p-4 border-t border-subtle space-y-4">
                 {/* Info about direction inference */}
-                <div className="flex items-start gap-2 p-3 bg-zinc-800/50 rounded-lg text-xs text-zinc-400">
+                <div className="flex items-start gap-2 p-3 bg-surface rounded-lg text-xs text-content-secondary">
                   <Lightbulb className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                   <p>
-                    <span className="text-zinc-300 font-medium">Rotation direction</span> is inferred from mixing values:
+                    <span className="text-content font-medium">Rotation direction</span> is inferred from mixing values:
                     motors with positive roll mix spin CW (orange), negative roll spin CCW (blue).
                     For airplanes, yaw mixing is used instead.
                   </p>
@@ -802,7 +802,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
                     return (
                     <div
                       key={motor.index}
-                      className={`bg-zinc-900/50 rounded-xl border overflow-hidden ${
+                      className={`bg-surface rounded-xl border overflow-hidden ${
                         isCW ? 'border-orange-500/30' : 'border-blue-500/30'
                       }`}
                     >
@@ -819,19 +819,19 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
                             M{motor.index}
                           </div>
                           <div>
-                            <h3 className="font-semibold text-white">Motor {motor.index}</h3>
+                            <h3 className="font-semibold text-content">Motor {motor.index}</h3>
                             <div className={`flex items-center gap-1 text-xs ${
                               isCW ? 'text-orange-400' : 'text-blue-400'
                             }`}>
                               {isCW ? <RotateCw className="w-3 h-3" /> : <RotateCcw className="w-3 h-3" />}
                               <span className="font-medium">{rotation.toUpperCase()}</span>
-                              <span className="text-zinc-500 ml-1">· Output {motor.index + 1}</span>
+                              <span className="text-content-secondary ml-1">· Output {motor.index + 1}</span>
                             </div>
                           </div>
                         </div>
                         <button
                           onClick={() => removeMotor(motor.index)}
-                          className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          className="p-2 text-content-secondary hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -846,7 +846,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
                       </div>
 
                       {/* Edit Controls */}
-                      <div className="px-4 pb-4 space-y-3 border-t border-zinc-700/50 pt-3">
+                      <div className="px-4 pb-4 space-y-3 border-t border-subtle pt-3">
                         <CompactSlider
                           label="Throttle"
                           value={motor.throttle * 1000}
@@ -894,7 +894,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
                   <div className="flex justify-center pt-2">
                     <button
                       onClick={addMotor}
-                      className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2"
+                      className="px-4 py-2 bg-surface-tooltip hover:bg-surface-raised text-content rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2"
                     >
                       <Plus className="w-4 h-4" />
                       Add Motor ({motors.length}/{MAX_MOTORS})
@@ -908,8 +908,8 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
       )}
 
       {/* Legend */}
-      <div className="bg-zinc-800/30 rounded-xl border border-zinc-700/50 p-4">
-        <h4 className="font-medium text-zinc-300 mb-3">Understanding the Diagram</h4>
+      <div className="bg-surface rounded-xl border-subtle p-4">
+        <h4 className="font-medium text-content mb-3">Understanding the Diagram</h4>
         <div className="flex flex-wrap gap-6 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full border-2 border-orange-500 bg-orange-500/30 flex items-center justify-center">
@@ -919,7 +919,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
               <RotateCw className="w-3.5 h-3.5" />
               <span className="font-medium">CW</span>
             </div>
-            <span className="text-zinc-500">Clockwise</span>
+            <span className="text-content-secondary">Clockwise</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full border-2 border-blue-500 bg-blue-500/30 flex items-center justify-center">
@@ -929,15 +929,15 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
               <RotateCcw className="w-3.5 h-3.5" />
               <span className="font-medium">CCW</span>
             </div>
-            <span className="text-zinc-500">Counter-clockwise</span>
+            <span className="text-content-secondary">Counter-clockwise</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent border-b-emerald-500" />
             <span className="text-emerald-400 font-medium">FRONT</span>
-            <span className="text-zinc-500">Front of aircraft</span>
+            <span className="text-content-secondary">Front of aircraft</span>
           </div>
         </div>
-        <p className="text-xs text-zinc-500 mt-3">
+        <p className="text-xs text-content-secondary mt-3">
           Numbers in the diagram match motor outputs on your flight controller (M0, M1, etc.). Opposite motors spin in opposite directions to cancel torque.
         </p>
       </div>

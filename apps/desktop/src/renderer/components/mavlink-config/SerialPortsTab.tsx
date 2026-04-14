@@ -114,21 +114,21 @@ function PortRow({ index }: { index: number }) {
   const isRcin = Number(protocol) === 23;
   const isMavlink = Number(protocol) === 1 || Number(protocol) === 2;
 
-  const selectStyle = 'bg-zinc-800 text-zinc-300 text-xs rounded px-1.5 py-1 border border-zinc-700 focus:border-blue-500 focus:outline-none w-full';
+  const selectStyle = 'bg-surface-tooltip text-content text-xs rounded px-1.5 py-1 border focus:border-blue-500 focus:outline-none w-full';
 
   return (
-    <tr className="border-b border-zinc-800/50 hover:bg-zinc-800/20">
+    <tr className="border-b border-subtle hover:bg-surface-overlay-subtle">
       {/* Port name */}
       <td className="px-3 py-2.5">
         <div className="flex items-center gap-2">
           {isUsb ? (
-            <Usb className="w-3.5 h-3.5 text-zinc-500" />
+            <Usb className="w-3.5 h-3.5 text-content-secondary" />
           ) : (
-            <Cable className="w-3.5 h-3.5 text-zinc-500" />
+            <Cable className="w-3.5 h-3.5 text-content-secondary" />
           )}
           <div>
-            <span className="text-sm text-zinc-200">SERIAL{index}</span>
-            <p className="text-[10px] text-zinc-500 leading-tight">{label}</p>
+            <span className="text-sm text-content">SERIAL{index}</span>
+            <p className="text-[10px] text-content-secondary leading-tight">{label}</p>
           </div>
         </div>
       </td>
@@ -162,12 +162,12 @@ function PortRow({ index }: { index: number }) {
       {/* Status indicator */}
       <td className="px-3 py-2.5 text-center">
         {isRcin && (
-          <span className="inline-flex px-1.5 py-0.5 text-[10px] bg-green-500/10 text-green-400 border border-green-500/30 rounded">
+          <span className="inline-flex px-1.5 py-0.5 text-[10px] bg-green-500/10 text-green-400 border-green-500/30 rounded">
             RC Input
           </span>
         )}
         {isMavlink && (
-          <span className="inline-flex px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded">
+          <span className="inline-flex px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/30 rounded">
             MAVLink
           </span>
         )}
@@ -207,30 +207,30 @@ const SerialPortsTab: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Port table card */}
-      <div className="bg-gray-800/30 rounded-xl border border-gray-700/30 p-5">
+      <div className="bg-surface rounded-xl border-subtle p-5">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-lg bg-sky-500/20 flex items-center justify-center">
             <Cable className="w-5 h-5 text-sky-400" />
           </div>
           <div>
-            <h3 className="font-medium text-white">Serial Port Configuration</h3>
-            <p className="text-xs text-gray-500">Configure protocols and baud rates. Changes require Write to Flash + reboot.</p>
+            <h3 className="font-medium text-content">Serial Port Configuration</h3>
+            <p className="text-xs text-content-secondary">Configure protocols and baud rates. Changes require Write to Flash + reboot.</p>
           </div>
         </div>
         {/* How this works banner */}
         {showTips && (
-          <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-sky-500/5 border border-sky-500/20 mb-4">
+          <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-sky-500/5 border-sky-500/20 mb-4">
             <HelpCircle className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
-            <p className="text-xs text-zinc-300 leading-relaxed">
+            <p className="text-xs text-content leading-relaxed">
               <span className="font-semibold text-sky-300">How this works: </span>
-              Each row is a serial port on your flight controller. Set the protocol to match what's physically wired to that port — like <span className="text-zinc-200">RCIN</span> for your receiver or <span className="text-zinc-200">GPS</span> for a GPS module.
+              Each row is a serial port on your flight controller. Set the protocol to match what's physically wired to that port — like <span className="text-content">RCIN</span> for your receiver or <span className="text-content">GPS</span> for a GPS module.
             </p>
           </div>
         )}
-        <div className="rounded-lg border border-gray-700/30 overflow-hidden">
+        <div className="rounded-lg border-subtle overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-zinc-800/50 text-zinc-400 text-xs">
+              <tr className="bg-surface text-content-secondary text-xs">
                 <th className="px-3 py-2.5 text-left font-medium w-36">Port</th>
                 <th className="px-2 py-2.5 text-left font-medium w-44">Protocol</th>
                 <th className="px-2 py-2.5 text-left font-medium w-32">Baud Rate</th>
@@ -247,19 +247,19 @@ const SerialPortsTab: React.FC = () => {
       </div>
 
       {/* Common setup examples */}
-      <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-blue-500/5 border border-blue-500/20">
+      <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-blue-500/5 border-blue-500/20">
         <HelpCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-        <div className="text-xs text-zinc-300 leading-relaxed space-y-1">
+        <div className="text-xs text-content leading-relaxed space-y-1">
           <p className="font-semibold text-blue-300">Common setups</p>
-          <p>ELRS/CRSF receiver: Set one port to <span className="text-zinc-200">RCIN</span> at <span className="text-zinc-200">115200</span> baud</p>
-          <p>GPS module: Set to <span className="text-zinc-200">GPS</span> protocol at <span className="text-zinc-200">115200</span> or <span className="text-zinc-200">230400</span> baud</p>
-          <p>Telemetry radio: Usually <span className="text-zinc-200">MAVLink2</span> at <span className="text-zinc-200">57600</span> baud on TELEM1</p>
+          <p>ELRS/CRSF receiver: Set one port to <span className="text-content">RCIN</span> at <span className="text-content">115200</span> baud</p>
+          <p>GPS module: Set to <span className="text-content">GPS</span> protocol at <span className="text-content">115200</span> or <span className="text-content">230400</span> baud</p>
+          <p>Telemetry radio: Usually <span className="text-content">MAVLink2</span> at <span className="text-content">57600</span> baud on TELEM1</p>
         </div>
       </div>
 
       {/* No RCIN warning */}
       {!hasRcin && (
-        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+        <div className="p-3 rounded-lg bg-amber-500/10 border-amber-500/20">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
             <p className="text-xs text-amber-300">

@@ -11,7 +11,7 @@ export function AiWarningDialog({ onAccept, onCancel }: { onAccept: (dismiss: bo
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
-      <div className="bg-gray-800 rounded-xl border border-gray-700/50 w-full max-w-md mx-4 shadow-2xl">
+      <div className="bg-surface-tooltip rounded-xl border border-subtle w-full max-w-md mx-4 shadow-2xl">
         <div className="px-5 pt-5 pb-4">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0 mt-0.5">
@@ -20,8 +20,8 @@ export function AiWarningDialog({ onAccept, onCancel }: { onAccept: (dismiss: bo
               </svg>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white">AI Analysis is Experimental</h3>
-              <div className="text-xs text-gray-400 mt-2 leading-relaxed space-y-2">
+              <h3 className="text-sm font-semibold text-content">AI Analysis is Experimental</h3>
+              <div className="text-xs text-content-secondary mt-2 leading-relaxed space-y-2">
                 <p>AI-generated suggestions may be inaccurate or inappropriate for your specific vehicle and configuration.</p>
                 <p>Always verify parameter recommendations against ArduPilot documentation before applying. Incorrect parameters can lead to loss of vehicle control.</p>
                 <p className="text-amber-400/80">You are solely responsible for any changes applied to your flight controller.</p>
@@ -33,15 +33,15 @@ export function AiWarningDialog({ onAccept, onCancel }: { onAccept: (dismiss: bo
               type="checkbox"
               checked={dontShow}
               onChange={(e) => setDontShow(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-gray-600 bg-gray-900/50 text-purple-500 focus:ring-purple-500/30 focus:ring-offset-0 cursor-pointer"
+              className="w-3.5 h-3.5 rounded border bg-surface-input text-purple-500 focus:ring-purple-500/30 focus:ring-offset-0 cursor-pointer"
             />
-            <span className="text-xs text-gray-500">Don't show this again</span>
+            <span className="text-xs text-content-secondary">Don't show this again</span>
           </label>
         </div>
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-700/40">
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-subtle">
           <button
             onClick={onCancel}
-            className="px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-700/40 transition-colors"
+            className="px-3 py-1.5 rounded-lg text-xs text-content-secondary hover:text-content hover:bg-surface-raised transition-colors"
           >
             Cancel
           </button>
@@ -207,15 +207,15 @@ function ParamActionCard({ params, requireWarning }: { params: ParamSuggestion[]
 
           return (
             <div key={p.name} className="flex items-center gap-2 text-xs">
-              <code className="text-purple-300 bg-gray-800/80 px-1.5 py-0.5 rounded font-mono flex-shrink-0">
+              <code className="text-purple-300 bg-surface-overlay-light px-1.5 py-0.5 rounded font-mono flex-shrink-0">
                 {p.name}
               </code>
               {currentParam && (
-                <span className="text-gray-500">
+                <span className="text-content-secondary">
                   {currentParam.value} &rarr;
                 </span>
               )}
-              <span className="text-white font-medium">{p.value}</span>
+              <span className="text-content font-medium">{p.value}</span>
               {reboot && (
                 <span className="text-amber-400 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/25 flex-shrink-0">
                   Reboot
@@ -270,7 +270,7 @@ function ParamActionCard({ params, requireWarning }: { params: ParamSuggestion[]
           </button>
         )}
         {!isConnected && (
-          <span className="text-[10px] text-gray-500 self-center">FC not connected</span>
+          <span className="text-[10px] text-content-secondary self-center">FC not connected</span>
         )}
       </div>
     </div>
@@ -477,7 +477,7 @@ If a parameter requires a reboot, mention it in your explanation text.${rebootPa
 
   if (!aiProvider) {
     return (
-      <div className="h-full flex items-center justify-center text-gray-500">
+      <div className="h-full flex items-center justify-center text-content-secondary">
         <div className="text-center">
           <p className="mb-2">AI Analysis requires an API key.</p>
           <button
@@ -517,8 +517,8 @@ If a parameter requires a reboot, mention it in your explanation text.${rebootPa
               </svg>
             </div>
             <div className="text-center">
-              <h3 className="text-white font-medium mb-1">Ask about this flight</h3>
-              <p className="text-xs text-gray-500">Powered by {providerName}. Flight data and health checks are included as context.</p>
+              <h3 className="text-content font-medium mb-1">Ask about this flight</h3>
+              <p className="text-xs text-content-secondary">Powered by {providerName}. Flight data and health checks are included as context.</p>
             </div>
             <div className="flex flex-wrap justify-center gap-2 max-w-lg">
               {[
@@ -532,7 +532,7 @@ If a parameter requires a reboot, mention it in your explanation text.${rebootPa
                   key={suggestion}
                   onClick={() => requireWarning(() => handleSend(suggestion))}
                   disabled={isAiAnalyzing}
-                  className="text-xs px-3 py-2 rounded-lg bg-gray-800/50 hover:bg-purple-500/10 hover:border-purple-500/30 border border-gray-700/40 text-gray-400 hover:text-purple-300 transition-colors text-left disabled:opacity-50"
+                  className="text-xs px-3 py-2 rounded-lg bg-surface hover:bg-purple-500/10 hover:border-purple-500/30 border border-subtle text-content-secondary hover:text-purple-300 transition-colors text-left disabled:opacity-50"
                 >
                   {suggestion}
                 </button>
@@ -555,15 +555,15 @@ If a parameter requires a reboot, mention it in your explanation text.${rebootPa
                     <div>
                       <div
                         onClick={handleResponseClick}
-                        className="bg-gray-800/40 border border-gray-700/30 rounded-xl px-4 py-3 text-[13px] text-gray-300 leading-normal
+                        className="bg-surface border border-subtle rounded-xl px-4 py-3 text-[13px] text-content leading-normal
                           [&_p]:my-1.5 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0
-                          [&_h1]:text-[15px] [&_h1]:font-semibold [&_h1]:text-white [&_h1]:mt-4 [&_h1]:mb-1 [&_h1]:border-b [&_h1]:border-gray-700/40 [&_h1]:pb-1
-                          [&_h2]:text-[13px] [&_h2]:font-semibold [&_h2]:text-white [&_h2]:mt-3 [&_h2]:mb-0.5
-                          [&_h3]:text-[13px] [&_h3]:font-medium [&_h3]:text-gray-200 [&_h3]:mt-2.5 [&_h3]:mb-0.5
+                          [&_h1]:text-[15px] [&_h1]:font-semibold [&_h1]:text-content [&_h1]:mt-4 [&_h1]:mb-1 [&_h1]:border-b [&_h1]:border-subtle [&_h1]:pb-1
+                          [&_h2]:text-[13px] [&_h2]:font-semibold [&_h2]:text-content [&_h2]:mt-3 [&_h2]:mb-0.5
+                          [&_h3]:text-[13px] [&_h3]:font-medium [&_h3]:text-content [&_h3]:mt-2.5 [&_h3]:mb-0.5
                           [&_ul]:my-1 [&_ul]:ml-4 [&_ul]:list-disc [&_ul]:space-y-0
-                          [&_li]:text-gray-300 [&_li]:leading-snug [&_li]:py-[1px]
-                          [&_strong]:text-white [&_em]:text-gray-200
-                          [&_code]:text-purple-300 [&_code]:bg-gray-800/80 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs"
+                          [&_li]:text-content [&_li]:leading-snug [&_li]:py-[1px]
+                          [&_strong]:text-content [&_em]:text-content
+                          [&_code]:text-purple-300 [&_code]:bg-surface-overlay-light [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs"
                         dangerouslySetInnerHTML={{ __html: renderMarkdown(displayContent) }}
                       />
                       {paramSuggestions.length > 0 && (
@@ -577,7 +577,7 @@ If a parameter requires a reboot, mention it in your explanation text.${rebootPa
             {isAiAnalyzing && (
               <div className="flex items-center gap-2 py-2">
                 <div className="w-3.5 h-3.5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs text-gray-500">Analyzing...</span>
+                <span className="text-xs text-content-secondary">Analyzing...</span>
               </div>
             )}
             {aiAnalysisError && (
@@ -591,7 +591,7 @@ If a parameter requires a reboot, mention it in your explanation text.${rebootPa
       </div>
 
       {/* Input bar */}
-      <div className="border-t border-gray-700/40 px-4 py-3">
+      <div className="border-t border-subtle px-4 py-3">
         <div className="max-w-3xl mx-auto flex gap-2">
           <textarea
             ref={inputRef}
@@ -601,7 +601,7 @@ If a parameter requires a reboot, mention it in your explanation text.${rebootPa
             placeholder={aiMessages.length === 0 ? 'Ask about this flight...' : 'Follow-up question...'}
             disabled={isAiAnalyzing}
             rows={1}
-            className="flex-1 bg-gray-900/50 border border-gray-700/40 rounded-xl px-4 py-2.5 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-purple-500/50 disabled:opacity-50 resize-none"
+            className="flex-1 bg-surface-input border border-subtle rounded-xl px-4 py-2.5 text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-purple-500/50 disabled:opacity-50 resize-none"
           />
           <button
             onClick={handleSubmit}

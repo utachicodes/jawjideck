@@ -74,8 +74,8 @@ export function ProcessesPanel() {
   if (processes.length === 0) {
     return (
       <PanelContainer className="flex items-center justify-center">
-        <div className="text-center text-gray-600 text-xs">
-          <div className="text-gray-500 mb-1">No process data</div>
+        <div className="text-center text-content-tertiary text-xs">
+          <div className="text-content-secondary mb-1">No process data</div>
           <div>Waiting for agent connection...</div>
         </div>
       </PanelContainer>
@@ -85,23 +85,23 @@ export function ProcessesPanel() {
   return (
     <PanelContainer className="flex flex-col gap-0 p-0">
       {/* Filter bar */}
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-700/40 shrink-0">
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-subtle shrink-0">
         <input
           type="text"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder="Filter processes..."
-          className="flex-1 bg-gray-800/50 border border-gray-700/50 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+          className="flex-1 bg-surface border border-subtle rounded px-2 py-1 text-xs text-content focus:outline-none focus:ring-1 focus:ring-blue-500/50"
         />
-        <span className="text-[10px] text-gray-500">{filtered.length} processes</span>
+        <span className="text-[10px] text-content-secondary">{filtered.length} processes</span>
       </div>
 
       {/* Table header */}
-      <div className="grid grid-cols-[60px_1fr_70px_80px_36px] gap-1 px-3 py-1 border-b border-gray-700/40 text-[10px] text-gray-500 uppercase tracking-wider shrink-0">
-        <button className="text-left hover:text-gray-300" onClick={() => handleSort('pid')}>PID{sortIndicator('pid')}</button>
-        <button className="text-left hover:text-gray-300" onClick={() => handleSort('name')}>Name{sortIndicator('name')}</button>
-        <button className="text-right hover:text-gray-300" onClick={() => handleSort('cpu')}>CPU%{sortIndicator('cpu')}</button>
-        <button className="text-right hover:text-gray-300" onClick={() => handleSort('ram')}>RAM{sortIndicator('ram')}</button>
+      <div className="grid grid-cols-[60px_1fr_70px_80px_36px] gap-1 px-3 py-1 border-b border-subtle text-[10px] text-content-secondary uppercase tracking-wider shrink-0">
+        <button className="text-left hover:text-content" onClick={() => handleSort('pid')}>PID{sortIndicator('pid')}</button>
+        <button className="text-left hover:text-content" onClick={() => handleSort('name')}>Name{sortIndicator('name')}</button>
+        <button className="text-right hover:text-content" onClick={() => handleSort('cpu')}>CPU%{sortIndicator('cpu')}</button>
+        <button className="text-right hover:text-content" onClick={() => handleSort('ram')}>RAM{sortIndicator('ram')}</button>
         <span />
       </div>
 
@@ -110,26 +110,26 @@ export function ProcessesPanel() {
         {filtered.map((proc) => (
           <div
             key={proc.pid}
-            className="grid grid-cols-[60px_1fr_70px_80px_36px] gap-1 px-3 py-1 hover:bg-gray-800/30 transition-colors items-center text-xs"
+            className="grid grid-cols-[60px_1fr_70px_80px_36px] gap-1 px-3 py-1 hover:bg-surface/30 transition-colors items-center text-xs"
           >
-            <span className="text-gray-500 font-mono">{proc.pid}</span>
+            <span className="text-content-secondary font-mono">{proc.pid}</span>
             <div className="truncate">
-              <span className="text-gray-200">{proc.name}</span>
-              {proc.user && <span className="text-gray-600 ml-1 text-[10px]">{proc.user}</span>}
+              <span className="text-content">{proc.name}</span>
+              {proc.user && <span className="text-content-tertiary ml-1 text-[10px]">{proc.user}</span>}
             </div>
-            <span className={`text-right font-mono ${proc.cpu > 80 ? 'text-red-400' : proc.cpu > 50 ? 'text-amber-400' : 'text-gray-300'}`}>
+            <span className={`text-right font-mono ${proc.cpu > 80 ? 'text-red-400' : proc.cpu > 50 ? 'text-amber-400' : 'text-content'}`}>
               {proc.cpu.toFixed(1)}
             </span>
-            <span className="text-right font-mono text-gray-300">{formatBytes(proc.ram)}</span>
+            <span className="text-right font-mono text-content">{formatBytes(proc.ram)}</span>
             <div className="flex justify-center">
               {proc.isProtected ? (
-                <svg className="w-3.5 h-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label="Protected process">
+                <svg className="w-3.5 h-3.5 text-content-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label="Protected process">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               ) : (
                 <button
                   onClick={() => setKillTarget({ pid: proc.pid, name: proc.name })}
-                  className="text-gray-600 hover:text-red-400 transition-colors"
+                  className="text-content-tertiary hover:text-red-400 transition-colors"
                   title="Kill process"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -145,15 +145,15 @@ export function ProcessesPanel() {
       {/* Kill confirmation dialog */}
       {killTarget && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 max-w-xs shadow-xl">
-            <div className="text-sm text-gray-200 mb-1">Kill process?</div>
-            <div className="text-xs text-gray-400 mb-3">
-              Send SIGTERM to <span className="text-gray-200 font-mono">{killTarget.name}</span> (PID {killTarget.pid})
+          <div className="bg-surface-tooltip border border rounded-lg p-4 max-w-xs shadow-xl">
+            <div className="text-sm text-content mb-1">Kill process?</div>
+            <div className="text-xs text-content-secondary mb-3">
+              Send SIGTERM to <span className="text-content font-mono">{killTarget.name}</span> (PID {killTarget.pid})
             </div>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setKillTarget(null)}
-                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded transition-colors"
+                className="px-3 py-1.5 bg-surface-raised hover:bg-surface-raised text-content text-xs rounded transition-colors"
                 disabled={killing}
               >
                 Cancel

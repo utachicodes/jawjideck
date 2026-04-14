@@ -43,7 +43,7 @@ function EditableValue({
         onBlur={apply}
         onKeyDown={handleKeyDown}
         // Hide native spinner: [appearance:textfield] + webkit pseudo handled via inline style
-        className="w-12 px-1 py-0 text-[10px] font-mono bg-gray-800 border border-blue-500/50 rounded text-white focus:outline-none leading-tight [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="w-12 px-1 py-0 text-[10px] font-mono bg-surface-tooltip border border-blue-500/50 rounded text-content focus:outline-none leading-tight [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         autoFocus
       />
     );
@@ -52,7 +52,7 @@ function EditableValue({
   return (
     <button
       onClick={startEdit}
-      className="font-mono text-white text-[10px] leading-none hover:text-blue-400 transition-colors border-b border-dashed border-gray-600 hover:border-blue-400/50"
+      className="font-mono text-content text-[10px] leading-none hover:text-blue-400 transition-colors border-b border-dashed border hover:border-blue-400/50"
       title="Click to edit"
     >
       {Math.round(value)}m
@@ -90,10 +90,10 @@ export function ElevationLegend({
   const mid = Math.round((displayMin + displayMax) / 2);
 
   return (
-    <div className="bg-gray-900/90 backdrop-blur-sm rounded px-2 py-2 text-[10px] text-gray-300 select-none">
+    <div className="bg-surface/90 backdrop-blur-sm rounded px-2 py-2 text-[10px] text-content select-none">
       {/* Header */}
       <div className="flex items-center gap-1 mb-1.5">
-        <span className="text-gray-500 font-medium">{relativeMode ? 'REL' : 'AMSL'}</span>
+        <span className="text-content-secondary font-medium">{relativeMode ? 'REL' : 'AMSL'}</span>
         <div className="ml-auto flex items-center gap-1">
           {onRelativeModeChange && (
             <button
@@ -103,8 +103,8 @@ export function ElevationLegend({
                 relativeMode
                   ? 'bg-emerald-500/25 text-emerald-400'
                   : hasCraftPosition
-                    ? 'bg-gray-700/40 text-gray-500 hover:text-gray-300'
-                    : 'bg-gray-700/20 text-gray-600 cursor-not-allowed'
+                    ? 'bg-surface-raised text-content-secondary hover:text-content'
+                    : 'bg-surface-raised text-content-tertiary cursor-not-allowed'
               }`}
               title={hasCraftPosition ? 'Show height relative to craft' : 'No craft position available'}
             >
@@ -116,7 +116,7 @@ export function ElevationLegend({
             className={`px-1.5 py-px rounded text-[9px] font-medium transition-colors ${
               autoRange
                 ? 'bg-blue-500/25 text-blue-400'
-                : 'bg-gray-700/40 text-gray-500 hover:text-gray-300'
+                : 'bg-surface-raised text-content-secondary hover:text-content'
             }`}
           >
             Auto
@@ -142,10 +142,10 @@ export function ElevationLegend({
               clampMax={9000}
             />
           ) : (
-            <span className="font-mono text-white leading-none">{Math.round(displayMax)}m</span>
+            <span className="font-mono text-content leading-none">{Math.round(displayMax)}m</span>
           )}
 
-          <span className="font-mono text-gray-500 leading-none">{mid}m</span>
+          <span className="font-mono text-content-secondary leading-none">{mid}m</span>
 
           {!autoRange ? (
             <EditableValue
@@ -155,7 +155,7 @@ export function ElevationLegend({
               clampMax={fixedRange.max - 1}
             />
           ) : (
-            <span className="font-mono text-white leading-none">{Math.round(displayMin)}m</span>
+            <span className="font-mono text-content leading-none">{Math.round(displayMin)}m</span>
           )}
         </div>
       </div>

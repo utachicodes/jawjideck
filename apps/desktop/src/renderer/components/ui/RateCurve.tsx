@@ -144,11 +144,11 @@ export function RateCurve({
   }, [rcRate, superRate, ratesType]);
 
   return (
-    <div className={`bg-gray-900/50 rounded-lg p-3 border border-gray-800 ${className}`}>
+    <div className={`bg-surface-input rounded-lg p-3 border border-subtle ${className}`}>
       {showMaxRate && (
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+        <div className="flex items-center justify-between text-xs text-content-secondary mb-2">
           <span>Response Curve</span>
-          <span className="text-gray-400">
+          <span className="text-content-secondary">
             Max: <span style={{ color }}>{maxRate}°/s</span>
           </span>
         </div>

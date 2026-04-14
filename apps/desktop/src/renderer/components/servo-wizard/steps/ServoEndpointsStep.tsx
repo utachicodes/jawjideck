@@ -68,8 +68,8 @@ export default function ServoEndpointsStep() {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-xl font-bold text-white">Fine-Tune Servo Travel</h2>
-        <p className="text-sm text-zinc-400 mt-2">
+        <h2 className="text-xl font-bold text-content">Fine-Tune Servo Travel</h2>
+        <p className="text-sm text-content-secondary mt-2">
           Set how far each servo can move. If your servo makes a grinding noise at full stick, reduce the limits here.
         </p>
       </div>
@@ -81,9 +81,9 @@ export default function ServoEndpointsStep() {
             type="checkbox"
             checked={isPollingServos}
             onChange={(e) => (e.target.checked ? startServoPolling() : stopServoPolling())}
-            className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500/50"
+            className="w-4 h-4 rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500/50"
           />
-          <span className="text-sm text-zinc-400">
+          <span className="text-sm text-content-secondary">
             {isPollingServos ? (
               <span className="text-green-400">● Live servo feedback enabled</span>
             ) : (
@@ -103,17 +103,17 @@ export default function ServoEndpointsStep() {
           return (
             <div
               key={assignment.surface}
-              className={`bg-zinc-900/50 rounded-xl border p-5 transition-all overflow-hidden ${
+              className={`bg-surface-input rounded-xl border p-5 transition-all overflow-hidden ${
                 isTesting
                   ? 'border-yellow-500/50 bg-yellow-500/5'
-                  : 'border-zinc-800/50'
+                  : 'border-subtle'
               }`}
             >
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-white">{surfaceInfo.name}</span>
-                  <span className="text-xs px-2 py-0.5 bg-zinc-800 rounded text-zinc-400">
+                  <span className="text-sm font-medium text-content">{surfaceInfo.name}</span>
+                  <span className="text-xs px-2 py-0.5 bg-surface-tooltip rounded text-content-secondary">
                     Servo {assignment.servoIndex}
                   </span>
                   {assignment.reversed && (
@@ -131,7 +131,7 @@ export default function ServoEndpointsStep() {
 
               {/* Live position bar */}
               <div className="mb-4">
-                <div className="text-xs text-zinc-500 mb-1">Live Position</div>
+                <div className="text-xs text-content-secondary mb-1">Live Position</div>
                 <ServoBar
                   value={currentValue}
                   min={assignment.min}
@@ -154,22 +154,22 @@ export default function ServoEndpointsStep() {
               />
 
               {/* Rate slider */}
-              <div className="mt-4 pt-4 border-t border-zinc-800/50">
+              <div className="mt-4 pt-4 border-t border-subtle">
                 <div className="flex items-center gap-4">
-                  <label className="text-xs text-zinc-400 whitespace-nowrap">Rate:</label>
+                  <label className="text-xs text-content-secondary whitespace-nowrap">Rate:</label>
                   <input
                     type="range"
                     min={0}
                     max={125}
                     value={(assignment as any).rate || 100}
                     onChange={(e) => updateAssignment(index, { rate: Number(e.target.value) } as any)}
-                    className="flex-1 h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer"
+                    className="flex-1 h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer"
                   />
-                  <span className="text-sm font-mono text-zinc-300 w-12 text-right">
+                  <span className="text-sm font-mono text-content w-12 text-right">
                     {(assignment as any).rate || 100}%
                   </span>
                 </div>
-                <p className="text-xs text-zinc-600 mt-1">
+                <p className="text-xs text-content-tertiary mt-1">
                   Reduces travel range. 100% = full travel, 50% = half travel.
                 </p>
               </div>
@@ -183,7 +183,7 @@ export default function ServoEndpointsStep() {
         <Lightbulb className="w-5 h-5 text-amber-400 shrink-0" />
         <div>
           <p className="text-sm text-amber-400 font-medium">Quick tips:</p>
-          <ul className="text-xs text-zinc-400 mt-1 space-y-1 list-disc list-inside">
+          <ul className="text-xs text-content-secondary mt-1 space-y-1 list-disc list-inside">
             <li><strong>Grinding noise?</strong> Reduce the Min or Max value</li>
             <li><strong>Not level at center stick?</strong> Adjust the Center value</li>
             <li><strong>Too sensitive?</strong> Lower the Rate percentage</li>
@@ -195,7 +195,7 @@ export default function ServoEndpointsStep() {
       <div className="flex justify-between">
         <button
           onClick={prevStep}
-          className="px-6 py-2.5 rounded-lg font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+          className="px-6 py-2.5 rounded-lg font-medium bg-surface-tooltip text-content hover:bg-surface-raised"
         >
           ← Back
         </button>

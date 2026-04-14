@@ -98,22 +98,22 @@ function getCachedTileUrl(layerKey: BaseLayerKey): string {
 /** CSS overrides to dark-theme the MapLibre navigation control */
 const DARK_MAP_CSS = `
 .maplibregl-ctrl-group {
-  background: rgba(17, 24, 39, 0.9) !important;
-  border: 1px solid rgba(75, 85, 99, 0.5) !important;
+  background: var(--map-control-bg) !important;
+  border: 1px solid var(--map-control-border) !important;
   border-radius: 8px !important;
   backdrop-filter: blur(8px);
 }
 .maplibregl-ctrl-group button {
-  border-color: rgba(75, 85, 99, 0.3) !important;
+  border-color: var(--map-control-border) !important;
 }
 .maplibregl-ctrl-group button + button {
-  border-top-color: rgba(75, 85, 99, 0.3) !important;
+  border-top-color: var(--map-control-border) !important;
 }
 .maplibregl-ctrl-group button span {
   filter: invert(0.7);
 }
 .maplibregl-ctrl-group button:hover {
-  background: rgba(55, 65, 81, 0.8) !important;
+  background: var(--map-control-bg-hover) !important;
 }
 .maplibregl-ctrl-attrib {
   background: transparent !important;
@@ -781,7 +781,7 @@ export function Mission3DPanel({
   }, []);
 
   return (
-    <div className="relative h-full w-full bg-gray-950">
+    <div className="relative h-full w-full bg-surface-base">
       <div ref={mapContainerRef} className="h-full w-full" />
       {/* DOM overlay for 3D-projected waypoint markers */}
       <div ref={markerContainerRef} className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 1 }} />
@@ -789,10 +789,10 @@ export function Mission3DPanel({
       {/* Layer selector */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-1">
         {showMapModeToggle && (
-          <div className="flex rounded-lg overflow-hidden shadow-lg border border-gray-600/50 mb-0.5">
+          <div className="flex rounded-lg overflow-hidden shadow-lg border border-subtle mb-0.5">
             <button
               onClick={() => useEditModeStore.getState().setMapMode('2d')}
-              className="px-2 py-1 text-xs font-medium transition-colors bg-gray-800/90 text-gray-500 hover:text-gray-300"
+              className="px-2 py-1 text-xs font-medium transition-colors bg-surface-tooltip text-content-secondary hover:text-content"
             >2D</button>
             <button
               className="px-2 py-1 text-xs font-medium transition-colors bg-indigo-600 text-white"
@@ -806,7 +806,7 @@ export function Mission3DPanel({
             className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1.5 ${
               activeLayer === key
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-800/90 text-gray-300 hover:bg-gray-700/90'
+                : 'bg-surface-tooltip text-content hover:bg-surface-raised'
             }`}
           >
             <LayerIcon layerKey={key} />
@@ -821,7 +821,7 @@ export function Mission3DPanel({
         {navWaypoints.length > 0 && (
           <button
             onClick={handleFitWaypoints}
-            className="px-2.5 py-1.5 rounded text-xs font-medium bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 transition-colors flex items-center gap-1.5"
+            className="px-2.5 py-1.5 rounded text-xs font-medium bg-surface-tooltip text-content hover:bg-surface-raised transition-colors flex items-center gap-1.5"
             title="Fit map to show all waypoints"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -833,7 +833,7 @@ export function Mission3DPanel({
 
         <button
           onClick={handleCenterOnGps}
-          className="px-2.5 py-1.5 rounded text-xs font-medium bg-gray-800/90 text-gray-300 hover:bg-gray-700/90 transition-colors flex items-center gap-1.5"
+          className="px-2.5 py-1.5 rounded text-xs font-medium bg-surface-tooltip text-content hover:bg-surface-raised transition-colors flex items-center gap-1.5"
           title="Center map on vehicle GPS position"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -848,9 +848,9 @@ export function Mission3DPanel({
       {/* Placeholder — hidden in telemetry mode */}
       {navWaypoints.length === 0 && !isTelemetryMode && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[500]">
-          <div className="bg-gray-900/80 backdrop-blur-sm px-6 py-4 rounded-xl text-center">
-            <div className="text-gray-400 text-sm mb-2">No waypoints yet</div>
-            <div className="text-gray-500 text-xs">Add waypoints in 2D view to see them in 3D</div>
+          <div className="bg-surface/80 backdrop-blur-sm px-6 py-4 rounded-xl text-center">
+            <div className="text-content-secondary text-sm mb-2">No waypoints yet</div>
+            <div className="text-content-secondary text-xs">Add waypoints in 2D view to see them in 3D</div>
           </div>
         </div>
       )}

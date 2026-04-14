@@ -180,9 +180,9 @@ export default function SitlView() {
   const activeRunningTab = isRunning ? 'inav' : ardupilotSitlStore.isRunning ? 'ardupilot' : null;
 
   return (
-    <div className="h-full flex flex-col bg-zinc-950">
+    <div className="h-full flex flex-col bg-surface-base">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-subtle">
         <div className="flex items-center gap-3">
           {/* SITL icon */}
           <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
@@ -191,8 +191,8 @@ export default function SitlView() {
             </svg>
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-white">SITL Simulator</h1>
-            <p className="text-xs text-zinc-500">
+            <h1 className="text-lg font-semibold text-content">SITL Simulator</h1>
+            <p className="text-xs text-content-secondary">
               Test flight controller firmware without hardware
             </p>
           </div>
@@ -200,14 +200,14 @@ export default function SitlView() {
 
         {/* Tab switcher - ArduPilot tab only in dev builds */}
         {window.electronAPI.isDev && (
-          <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-surface-input border border-subtle rounded-lg p-1">
             <button
               onClick={() => setActiveTab('inav')}
               disabled={ardupilotSitlStore.isRunning}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 activeTab === 'inav'
                   ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                  : 'text-content-secondary hover:text-content hover:bg-surface'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
               title={ardupilotSitlStore.isRunning ? 'Stop ArduPilot SITL first' : undefined}
             >
@@ -219,7 +219,7 @@ export default function SitlView() {
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 activeTab === 'ardupilot'
                   ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                  : 'text-content-secondary hover:text-content hover:bg-surface'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
               title={isRunning ? 'Stop iNav SITL first' : undefined}
             >
@@ -233,7 +233,7 @@ export default function SitlView() {
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
             anyRunning
               ? 'bg-green-500/10 text-green-400 border border-green-500/30'
-              : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+              : 'bg-surface-tooltip text-content-secondary border border'
           }`}>
             <div className={`w-2 h-2 rounded-full ${
               anyRunning ? 'bg-green-400' : 'bg-zinc-500'
@@ -254,17 +254,17 @@ export default function SitlView() {
         {activeTab === 'inav' && (
           <>
         {/* Profile selection card */}
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
+        <div className="bg-surface-input border border-subtle rounded-lg p-4">
           <div className="flex items-start gap-4">
             {/* Profile info */}
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <label className="text-sm font-medium text-zinc-300">Profile</label>
+                <label className="text-sm font-medium text-content">Profile</label>
                 <select
                   value={currentProfileName ?? ''}
                   onChange={(e) => selectProfile(e.target.value)}
                   disabled={isRunning || isStarting}
-                  className="px-3 py-1.5 bg-zinc-800 text-white text-sm border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50"
+                  className="px-3 py-1.5 bg-surface-tooltip text-content text-sm border border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50"
                 >
                   {profiles.map((profile) => (
                     <option key={profile.name} value={profile.name}>
@@ -277,7 +277,7 @@ export default function SitlView() {
                 <button
                   onClick={() => setShowNewProfile(true)}
                   disabled={isRunning || isStarting}
-                  className="px-2 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg transition-colors disabled:opacity-50"
+                  className="px-2 py-1.5 text-xs font-medium text-content bg-surface-tooltip hover:bg-surface-raised border border rounded-lg transition-colors disabled:opacity-50"
                   title="Create new profile"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -302,14 +302,14 @@ export default function SitlView() {
 
               {/* Profile description */}
               {currentProfile && (
-                <div className="text-xs text-zinc-500 mb-3">
+                <div className="text-xs text-content-secondary mb-3">
                   {currentProfile.description || 'Custom profile with its own EEPROM file.'}
                 </div>
               )}
 
               {/* What is a profile? */}
-              <div className="text-xs text-zinc-600 border-t border-zinc-800 pt-3">
-                <span className="text-zinc-500">What's a profile?</span> Each profile has its own EEPROM file that stores
+              <div className="text-xs text-content-tertiary border-t border-subtle pt-3">
+                <span className="text-content-secondary">What's a profile?</span> Each profile has its own EEPROM file that stores
                 your FC config (PIDs, rates, modes, mixer, etc.). Configs persist across SITL restarts, just like a real board.
               </div>
             </div>
@@ -378,13 +378,13 @@ export default function SitlView() {
         </div>
 
         {/* Visual Simulator Section */}
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
+        <div className="bg-surface-input border border-subtle rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
               </svg>
-              <h3 className="text-sm font-medium text-white">Visual Simulator</h3>
+              <h3 className="text-sm font-medium text-content">Visual Simulator</h3>
             </div>
 
             {/* Simulator selection dropdown - temporarily disabled */}
@@ -396,7 +396,7 @@ export default function SitlView() {
                 value="none"
                 onChange={(e) => setSelectedSimulator(e.target.value as 'flightgear' | 'xplane' | 'none')}
                 disabled={true}
-                className="px-2 py-1 text-xs bg-zinc-800 text-white border border-zinc-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-2 py-1 text-xs bg-surface-tooltip text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <option value="none">None</option>
                 <option value="xplane">X-Plane (Recommended)</option>
@@ -419,7 +419,7 @@ export default function SitlView() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${isInstalled ? 'bg-green-400' : 'bg-amber-400'}`} />
-                        <span className="text-xs text-zinc-400">
+                        <span className="text-xs text-content-secondary">
                           {isInstalled ? (
                             <>X-Plane detected{xplane?.version ? ` (v${xplane.version})` : ''}</>
                           ) : (
@@ -433,7 +433,7 @@ export default function SitlView() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={browseXPlane} disabled={isRunning} className="px-2 py-1 text-xs text-zinc-300 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button onClick={browseXPlane} disabled={isRunning} className="px-2 py-1 text-xs text-content bg-surface-tooltip hover:bg-surface-raised border border rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                           Browse...
                         </button>
                         {customXPlanePath && (
@@ -452,8 +452,8 @@ export default function SitlView() {
                     )}
 
                     {/* X-Plane setup instructions */}
-                    <div className="p-3 bg-zinc-800/50 border border-zinc-700 rounded text-xs text-zinc-400 mb-3">
-                      <div className="font-medium text-zinc-300 mb-2">X-Plane Setup:</div>
+                    <div className="p-3 bg-surface border border rounded text-xs text-content-secondary mb-3">
+                      <div className="font-medium text-content mb-2">X-Plane Setup:</div>
                       <ol className="list-decimal list-inside space-y-1">
                         <li>Settings → Data Output → enable network output</li>
                         <li>Send to: <span className="font-mono text-blue-300">127.0.0.1:49000</span></li>
@@ -465,7 +465,7 @@ export default function SitlView() {
                     {(isXPlaneRunning || isXPlaneStarting) && (
                       <div className="flex items-center gap-2 mb-3">
                         <div className={`w-2 h-2 rounded-full ${isXPlaneRunning ? 'bg-green-400' : 'bg-amber-400'}`} />
-                        <span className="text-xs text-zinc-400">{isXPlaneStarting ? 'Starting X-Plane...' : 'X-Plane Running'}</span>
+                        <span className="text-xs text-content-secondary">{isXPlaneStarting ? 'Starting X-Plane...' : 'X-Plane Running'}</span>
                       </div>
                     )}
                   </>
@@ -483,7 +483,7 @@ export default function SitlView() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${isInstalled ? 'bg-green-400' : 'bg-amber-400'}`} />
-                        <span className="text-xs text-zinc-400">
+                        <span className="text-xs text-content-secondary">
                           {isInstalled ? (
                             <>FlightGear detected{flightGear?.path ? ` at ${flightGear.path}` : ''}</>
                           ) : (
@@ -497,7 +497,7 @@ export default function SitlView() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={browseFlightGear} disabled={isRunning} className="px-2 py-1 text-xs text-zinc-300 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button onClick={browseFlightGear} disabled={isRunning} className="px-2 py-1 text-xs text-content bg-surface-tooltip hover:bg-surface-raised border border rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                           Browse...
                         </button>
                         {customFlightGearPath && (
@@ -517,22 +517,22 @@ export default function SitlView() {
 
                     {/* FlightGear config options */}
                     {isInstalled && (
-                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-zinc-800">
+                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-subtle">
                         <div>
-                          <label className="block text-xs text-zinc-500 mb-1">Aircraft</label>
-                          <select value={flightGearConfig.aircraft} onChange={(e) => setFlightGearConfig({ aircraft: e.target.value })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-zinc-800 text-white border border-zinc-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
+                          <label className="block text-xs text-content-secondary mb-1">Aircraft</label>
+                          <select value={flightGearConfig.aircraft} onChange={(e) => setFlightGearConfig({ aircraft: e.target.value })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-surface-tooltip text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
                             {AIRCRAFT_OPTIONS.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs text-zinc-500 mb-1">Airport</label>
-                          <select value={flightGearConfig.airport} onChange={(e) => setFlightGearConfig({ airport: e.target.value })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-zinc-800 text-white border border-zinc-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
+                          <label className="block text-xs text-content-secondary mb-1">Airport</label>
+                          <select value={flightGearConfig.airport} onChange={(e) => setFlightGearConfig({ airport: e.target.value })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-surface-tooltip text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
                             {AIRPORT_OPTIONS.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs text-zinc-500 mb-1">Time of Day</label>
-                          <select value={flightGearConfig.timeOfDay} onChange={(e) => setFlightGearConfig({ timeOfDay: e.target.value as typeof flightGearConfig.timeOfDay })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-zinc-800 text-white border border-zinc-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
+                          <label className="block text-xs text-content-secondary mb-1">Time of Day</label>
+                          <select value={flightGearConfig.timeOfDay} onChange={(e) => setFlightGearConfig({ timeOfDay: e.target.value as typeof flightGearConfig.timeOfDay })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-surface-tooltip text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
                             <option value="dawn">Dawn</option>
                             <option value="morning">Morning</option>
                             <option value="noon">Noon</option>
@@ -542,8 +542,8 @@ export default function SitlView() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs text-zinc-500 mb-1">Weather</label>
-                          <select value={flightGearConfig.weather} onChange={(e) => setFlightGearConfig({ weather: e.target.value as typeof flightGearConfig.weather })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-zinc-800 text-white border border-zinc-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
+                          <label className="block text-xs text-content-secondary mb-1">Weather</label>
+                          <select value={flightGearConfig.weather} onChange={(e) => setFlightGearConfig({ weather: e.target.value as typeof flightGearConfig.weather })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-surface-tooltip text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
                             <option value="clear">Clear</option>
                             <option value="cloudy">Cloudy</option>
                             <option value="rain">Rain</option>
@@ -554,14 +554,14 @@ export default function SitlView() {
 
                     {/* Running status indicators */}
                     {(isFlightGearRunning || isBridgeRunning) && (
-                      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-zinc-800">
+                      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-subtle">
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${isFlightGearRunning ? 'bg-green-400' : 'bg-zinc-500'}`} />
-                          <span className="text-xs text-zinc-400">FlightGear</span>
+                          <span className="text-xs text-content-secondary">FlightGear</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${isBridgeRunning ? 'bg-green-400' : 'bg-zinc-500'}`} />
-                          <span className="text-xs text-zinc-400">Bridge</span>
+                          <span className="text-xs text-content-secondary">Bridge</span>
                         </div>
                       </div>
                     )}
@@ -571,7 +571,7 @@ export default function SitlView() {
 
               {/* Error display */}
               {(flightGearError || xplaneError) && (
-                <div className="mt-3 pt-3 border-t border-zinc-800 text-xs text-red-400">
+                <div className="mt-3 pt-3 border-t border-subtle text-xs text-red-400">
                   {flightGearError || xplaneError}
                 </div>
               )}
@@ -579,8 +579,8 @@ export default function SitlView() {
           )}
 
           {/* Help text */}
-          <div className="mt-3 pt-3 border-t border-zinc-800 text-xs text-zinc-600">
-            <span className="text-zinc-500">What's this?</span>{' '}
+          <div className="mt-3 pt-3 border-t border-subtle text-xs text-content-tertiary">
+            <span className="text-content-secondary">What's this?</span>{' '}
             {selectedSimulator === 'xplane'
               ? 'X-Plane connects directly to iNav SITL for realistic flight physics.'
               : selectedSimulator === 'flightgear'
@@ -591,24 +591,24 @@ export default function SitlView() {
 
         {/* Virtual RC Control - show when simulator is active */}
         {selectedSimulator !== 'none' && (isXPlaneRunning || isBridgeRunning) && (
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
+          <div className="bg-surface-input border border-subtle rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
-                <h3 className="text-sm font-medium text-white">Virtual RC Control</h3>
+                <h3 className="text-sm font-medium text-content">Virtual RC Control</h3>
               </div>
               <button
                 onClick={resetVirtualRC}
-                className="px-2 py-1 text-xs text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded transition-colors"
+                className="px-2 py-1 text-xs text-content-secondary hover:text-content bg-surface-tooltip hover:bg-surface-raised rounded transition-colors"
               >
                 Reset
               </button>
             </div>
 
-            <div className="text-xs text-zinc-500 mb-3">
-              When using <code className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">receiver_type = SIM</code>,
+            <div className="text-xs text-content-secondary mb-3">
+              When using <code className="px-1 py-0.5 bg-surface-tooltip rounded text-content-secondary">receiver_type = SIM</code>,
               control RC inputs here. Set AUX4 high to arm.
             </div>
 
@@ -616,8 +616,8 @@ export default function SitlView() {
             <div className="grid grid-cols-4 gap-3 mb-3">
               {/* Throttle */}
               <div>
-                <label className="block text-xs text-zinc-500 mb-1">
-                  Throttle <span className="text-zinc-600">{normalizedToPWM(virtualRC.throttle)}</span>
+                <label className="block text-xs text-content-secondary mb-1">
+                  Throttle <span className="text-content-tertiary">{normalizedToPWM(virtualRC.throttle)}</span>
                 </label>
                 <input
                   type="range"
@@ -626,13 +626,13 @@ export default function SitlView() {
                   step="0.1"
                   value={virtualRC.throttle}
                   onChange={(e) => updateVirtualRC('throttle', parseFloat(e.target.value))}
-                  className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  className="w-full h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer accent-amber-500"
                 />
               </div>
               {/* Roll */}
               <div>
-                <label className="block text-xs text-zinc-500 mb-1">
-                  Roll <span className="text-zinc-600">{normalizedToPWM(virtualRC.roll)}</span>
+                <label className="block text-xs text-content-secondary mb-1">
+                  Roll <span className="text-content-tertiary">{normalizedToPWM(virtualRC.roll)}</span>
                 </label>
                 <input
                   type="range"
@@ -641,13 +641,13 @@ export default function SitlView() {
                   step="0.1"
                   value={virtualRC.roll}
                   onChange={(e) => updateVirtualRC('roll', parseFloat(e.target.value))}
-                  className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  className="w-full h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer accent-blue-500"
                 />
               </div>
               {/* Pitch */}
               <div>
-                <label className="block text-xs text-zinc-500 mb-1">
-                  Pitch <span className="text-zinc-600">{normalizedToPWM(virtualRC.pitch)}</span>
+                <label className="block text-xs text-content-secondary mb-1">
+                  Pitch <span className="text-content-tertiary">{normalizedToPWM(virtualRC.pitch)}</span>
                 </label>
                 <input
                   type="range"
@@ -656,13 +656,13 @@ export default function SitlView() {
                   step="0.1"
                   value={virtualRC.pitch}
                   onChange={(e) => updateVirtualRC('pitch', parseFloat(e.target.value))}
-                  className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  className="w-full h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer accent-blue-500"
                 />
               </div>
               {/* Yaw */}
               <div>
-                <label className="block text-xs text-zinc-500 mb-1">
-                  Yaw <span className="text-zinc-600">{normalizedToPWM(virtualRC.yaw)}</span>
+                <label className="block text-xs text-content-secondary mb-1">
+                  Yaw <span className="text-content-tertiary">{normalizedToPWM(virtualRC.yaw)}</span>
                 </label>
                 <input
                   type="range"
@@ -671,17 +671,17 @@ export default function SitlView() {
                   step="0.1"
                   value={virtualRC.yaw}
                   onChange={(e) => updateVirtualRC('yaw', parseFloat(e.target.value))}
-                  className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  className="w-full h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer accent-blue-500"
                 />
               </div>
             </div>
 
             {/* AUX channels */}
-            <div className="grid grid-cols-4 gap-3 pt-3 border-t border-zinc-800">
+            <div className="grid grid-cols-4 gap-3 pt-3 border-t border-subtle">
               {/* AUX1 */}
               <div>
-                <label className="block text-xs text-zinc-500 mb-1">
-                  AUX1 <span className="text-zinc-600">{normalizedToPWM(virtualRC.aux1)}</span>
+                <label className="block text-xs text-content-secondary mb-1">
+                  AUX1 <span className="text-content-tertiary">{normalizedToPWM(virtualRC.aux1)}</span>
                 </label>
                 <input
                   type="range"
@@ -690,13 +690,13 @@ export default function SitlView() {
                   step="0.1"
                   value={virtualRC.aux1}
                   onChange={(e) => updateVirtualRC('aux1', parseFloat(e.target.value))}
-                  className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-green-500"
+                  className="w-full h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer accent-green-500"
                 />
               </div>
               {/* AUX2 */}
               <div>
-                <label className="block text-xs text-zinc-500 mb-1">
-                  AUX2 <span className="text-zinc-600">{normalizedToPWM(virtualRC.aux2)}</span>
+                <label className="block text-xs text-content-secondary mb-1">
+                  AUX2 <span className="text-content-tertiary">{normalizedToPWM(virtualRC.aux2)}</span>
                 </label>
                 <input
                   type="range"
@@ -705,13 +705,13 @@ export default function SitlView() {
                   step="0.1"
                   value={virtualRC.aux2}
                   onChange={(e) => updateVirtualRC('aux2', parseFloat(e.target.value))}
-                  className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-green-500"
+                  className="w-full h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer accent-green-500"
                 />
               </div>
               {/* AUX3 */}
               <div>
-                <label className="block text-xs text-zinc-500 mb-1">
-                  AUX3 <span className="text-zinc-600">{normalizedToPWM(virtualRC.aux3)}</span>
+                <label className="block text-xs text-content-secondary mb-1">
+                  AUX3 <span className="text-content-tertiary">{normalizedToPWM(virtualRC.aux3)}</span>
                 </label>
                 <input
                   type="range"
@@ -720,7 +720,7 @@ export default function SitlView() {
                   step="0.1"
                   value={virtualRC.aux3}
                   onChange={(e) => updateVirtualRC('aux3', parseFloat(e.target.value))}
-                  className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-green-500"
+                  className="w-full h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer accent-green-500"
                 />
               </div>
               {/* AUX4 (ARM) - highlighted */}
@@ -735,13 +735,13 @@ export default function SitlView() {
                   step="0.1"
                   value={virtualRC.aux4}
                   onChange={(e) => updateVirtualRC('aux4', parseFloat(e.target.value))}
-                  className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  className="w-full h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer accent-amber-500"
                 />
               </div>
             </div>
 
             {/* Quick ARM button */}
-            <div className="mt-3 pt-3 border-t border-zinc-800">
+            <div className="mt-3 pt-3 border-t border-subtle">
               <button
                 onClick={() => {
                   // Set AUX4 to high (1900 PWM = 0.8 normalized)
@@ -756,12 +756,12 @@ export default function SitlView() {
             </div>
 
             {/* GPS MSP Sender toggle - for gps_provider=MSP */}
-            <div className="mt-3 pt-3 border-t border-zinc-800">
+            <div className="mt-3 pt-3 border-t border-subtle">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-xs font-medium text-zinc-300">GPS MSP Sender</div>
-                  <div className="text-xs text-zinc-500">
-                    Send FlightGear position via MSP (set <code className="px-1 bg-zinc-800 rounded">gps_provider = MSP</code>)
+                  <div className="text-xs font-medium text-content">GPS MSP Sender</div>
+                  <div className="text-xs text-content-secondary">
+                    Send FlightGear position via MSP (set <code className="px-1 bg-surface-tooltip rounded">gps_provider = MSP</code>)
                   </div>
                 </div>
                 <button
@@ -776,7 +776,7 @@ export default function SitlView() {
                   }}
                   disabled={!connectionState.isConnected}
                   className={`relative w-10 h-5 rounded-full transition-colors ${
-                    gpsSenderEnabled ? 'bg-green-500' : 'bg-zinc-700'
+                    gpsSenderEnabled ? 'bg-green-500' : 'bg-surface-raised'
                   } ${!connectionState.isConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <span
@@ -814,19 +814,19 @@ export default function SitlView() {
         )}
 
         {/* Output log */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-zinc-900 border border-zinc-800 rounded-lg">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800 bg-zinc-900/50">
-            <span className="text-xs font-medium text-zinc-400">Console Output</span>
+        <div className="flex-1 flex flex-col overflow-hidden bg-surface-input border border-subtle rounded-lg">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-subtle bg-surface-input">
+            <span className="text-xs font-medium text-content-secondary">Console Output</span>
             <div className="flex items-center gap-2">
               {lastCommand && (
-                <span className="text-xs text-zinc-500 font-mono truncate max-w-md" title={lastCommand}>
+                <span className="text-xs text-content-secondary font-mono truncate max-w-md" title={lastCommand}>
                   {lastCommand.split('/').pop()}
                 </span>
               )}
               <button
                 onClick={clearOutput}
                 disabled={output.length === 0}
-                className="px-2 py-1 text-xs text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
+                className="px-2 py-1 text-xs text-content-secondary hover:text-content transition-colors disabled:opacity-50"
                 title="Clear output"
               >
                 Clear
@@ -838,7 +838,7 @@ export default function SitlView() {
             className="flex-1 overflow-auto p-3 font-mono text-xs leading-relaxed"
           >
             {output.length === 0 ? (
-              <div className="text-zinc-600 italic">
+              <div className="text-content-tertiary italic">
                 No output yet. Start SITL to see process output.
               </div>
             ) : (
@@ -860,7 +860,7 @@ export default function SitlView() {
                               ? 'text-green-400'
                               : line.includes('[EEPROM]')
                                 ? 'text-yellow-400'
-                                : 'text-zinc-300'
+                                : 'text-content'
                     }
                   >
                     {line}
@@ -877,21 +877,21 @@ export default function SitlView() {
       {/* New Profile Modal */}
       {showNewProfile && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 w-[420px] shadow-xl">
-            <h3 className="text-lg font-semibold text-white mb-1">Create New Profile</h3>
-            <p className="text-xs text-zinc-500 mb-4">
+          <div className="bg-surface-input border border rounded-xl p-6 w-[420px] shadow-xl">
+            <h3 className="text-lg font-semibold text-content mb-1">Create New Profile</h3>
+            <p className="text-xs text-content-secondary mb-4">
               Each profile has its own EEPROM file for storing your FC configuration.
             </p>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm text-zinc-400 mb-1">Profile Name</label>
+                <label className="block text-sm text-content-secondary mb-1">Profile Name</label>
                 <input
                   type="text"
                   value={newProfileName}
                   onChange={(e) => setNewProfileName(e.target.value)}
                   placeholder="e.g., My Quad Setup"
-                  className="w-full px-3 py-2 bg-zinc-800 text-white border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full px-3 py-2 bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleCreateProfile();
@@ -901,13 +901,13 @@ export default function SitlView() {
               </div>
 
               <div>
-                <label className="block text-sm text-zinc-400 mb-1">Description (optional)</label>
+                <label className="block text-sm text-content-secondary mb-1">Description (optional)</label>
                 <input
                   type="text"
                   value={newProfileDesc}
                   onChange={(e) => setNewProfileDesc(e.target.value)}
                   placeholder="e.g., Testing GPS rescue settings"
-                  className="w-full px-3 py-2 bg-zinc-800 text-white border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full px-3 py-2 bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleCreateProfile();
                     if (e.key === 'Escape') setShowNewProfile(false);
@@ -923,7 +923,7 @@ export default function SitlView() {
                   setNewProfileName('');
                   setNewProfileDesc('');
                 }}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+                className="px-4 py-2 text-sm text-content-secondary hover:text-content transition-colors"
               >
                 Cancel
               </button>
@@ -942,16 +942,16 @@ export default function SitlView() {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && currentProfile && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 w-96 shadow-xl">
-            <h3 className="text-lg font-semibold text-white mb-2">Delete Profile</h3>
-            <p className="text-sm text-zinc-400 mb-4">
-              Are you sure you want to delete "<span className="text-white">{currentProfile.name}</span>"?
+          <div className="bg-surface-input border border rounded-xl p-6 w-96 shadow-xl">
+            <h3 className="text-lg font-semibold text-content mb-2">Delete Profile</h3>
+            <p className="text-sm text-content-secondary mb-4">
+              Are you sure you want to delete "<span className="text-content">{currentProfile.name}</span>"?
               This will also delete the EEPROM file with all your saved configuration.
             </p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+                className="px-4 py-2 text-sm text-content-secondary hover:text-content transition-colors"
               >
                 Cancel
               </button>

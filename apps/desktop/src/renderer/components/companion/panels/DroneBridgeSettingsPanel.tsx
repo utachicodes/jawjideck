@@ -24,7 +24,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 py-1.5">
-      <span className="text-xs text-gray-400 shrink-0">{label}</span>
+      <span className="text-xs text-content-secondary shrink-0">{label}</span>
       <div className="flex-shrink-0">{children}</div>
     </div>
   );
@@ -43,7 +43,7 @@ function TextInput({ value, onChange, type = 'text', placeholder, className = ''
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className={`bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-gray-200 font-mono placeholder-gray-600 focus:outline-none focus:border-blue-500 w-40 ${className}`}
+      className={`bg-surface-tooltip border border rounded px-2 py-1 text-sm text-content font-mono placeholder-content-tertiary focus:outline-none focus:border-blue-500 w-40 ${className}`}
     />
   );
 }
@@ -62,7 +62,7 @@ function NumberInput({ value, onChange, min, max, className = '' }: {
       onChange={(e) => onChange(Number(e.target.value))}
       min={min}
       max={max}
-      className={`bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-gray-200 font-mono placeholder-gray-600 focus:outline-none focus:border-blue-500 w-24 ${className}`}
+      className={`bg-surface-tooltip border border rounded px-2 py-1 text-sm text-content font-mono placeholder-content-tertiary focus:outline-none focus:border-blue-500 w-24 ${className}`}
     />
   );
 }
@@ -80,7 +80,7 @@ function SelectInput<T extends string | number>({ value, onChange, options }: {
         const parsed = typeof value === 'number' ? Number(raw) : raw;
         onChange(parsed as T);
       }}
-      className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none focus:border-blue-500"
+      className="bg-surface-tooltip border border rounded px-2 py-1 text-sm text-content focus:outline-none focus:border-blue-500"
     >
       {options.map((opt) => (
         <option key={String(opt.value)} value={opt.value}>{opt.label}</option>
@@ -205,8 +205,8 @@ export function DroneBridgeSettingsPanel() {
   if (!droneBridgeIp) {
     return (
       <PanelContainer className="flex items-center justify-center">
-        <div className="text-center text-gray-600 text-xs">
-          <div className="text-gray-500 mb-1">No DroneBridge connected</div>
+        <div className="text-center text-content-tertiary text-xs">
+          <div className="text-content-secondary mb-1">No DroneBridge connected</div>
           <div>Open the Status panel to detect or connect to a DroneBridge</div>
         </div>
       </PanelContainer>
@@ -216,7 +216,7 @@ export function DroneBridgeSettingsPanel() {
   if (loading) {
     return (
       <PanelContainer className="flex items-center justify-center">
-        <div className="flex items-center gap-2 text-gray-500 text-sm">
+        <div className="flex items-center gap-2 text-content-secondary text-sm">
           <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -230,13 +230,13 @@ export function DroneBridgeSettingsPanel() {
   if (rebooting) {
     return (
       <PanelContainer className="flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-gray-400">
+        <div className="flex flex-col items-center gap-3 text-content-secondary">
           <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
           <div className="text-sm">Rebooting...</div>
-          <div className="text-xs text-gray-600">Reconnecting in a few seconds</div>
+          <div className="text-xs text-content-tertiary">Reconnecting in a few seconds</div>
         </div>
       </PanelContainer>
     );
@@ -245,7 +245,7 @@ export function DroneBridgeSettingsPanel() {
   if (!form) {
     return (
       <PanelContainer className="flex items-center justify-center">
-        <div className="text-center text-gray-600 text-xs">
+        <div className="text-center text-content-tertiary text-xs">
           {error ?? 'No settings data available'}
         </div>
       </PanelContainer>
@@ -278,7 +278,7 @@ export function DroneBridgeSettingsPanel() {
                 />
                 <button
                   onClick={() => setShowPassword(!showPassword)}
-                  className="text-[10px] text-gray-500 hover:text-gray-300 px-1.5 py-1 transition-colors"
+                  className="text-[10px] text-content-secondary hover:text-content px-1.5 py-1 transition-colors"
                 >
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
@@ -375,14 +375,14 @@ export function DroneBridgeSettingsPanel() {
         </div>
 
         {/* Save button */}
-        <div className="pt-2 border-t border-gray-700/30">
+        <div className="pt-2 border-t border-subtle">
           <button
             onClick={handleSave}
             disabled={!isDirty || saving}
             className={`w-full py-2 rounded text-sm font-medium transition-colors ${
               isDirty && !saving
                 ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                : 'bg-surface-tooltip text-content-tertiary cursor-not-allowed'
             }`}
           >
             {saving ? 'Saving...' : 'Save and Reboot'}

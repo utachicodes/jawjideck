@@ -51,8 +51,8 @@ export const TransmitterCheckStep: React.FC = () => {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/20 mb-4">
           <Satellite className="w-8 h-8 text-blue-400" />
         </div>
-        <h2 className="text-xl font-semibold text-zinc-100">Check Your Transmitter</h2>
-        <p className="text-sm text-zinc-400 mt-2 max-w-md mx-auto">
+        <h2 className="text-xl font-semibold text-content">Check Your Transmitter</h2>
+        <p className="text-sm text-content-secondary mt-2 max-w-md mx-auto">
           Move your sticks and flip your switches to verify they&apos;re being received.
           Each channel should light up green when it detects movement.
         </p>
@@ -82,7 +82,7 @@ export const TransmitterCheckStep: React.FC = () => {
                 ? `${detectedCount} channels detected!`
                 : 'Waiting for channel movement...'}
             </h3>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-content-secondary mt-0.5">
               {hasMinimumChannels
                 ? 'Your transmitter is connected. Move switches to detect AUX channels.'
                 : 'Move all your sticks to their extremes to verify the connection.'}
@@ -92,7 +92,7 @@ export const TransmitterCheckStep: React.FC = () => {
       </div>
 
       {/* Transmitter visualizer */}
-      <div className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-700">
+      <div className="p-4 bg-surface rounded-xl border border">
         <TransmitterVisualizer
           rcChannels={displayChannels}
           channelsDetected={displayDetected}
@@ -100,38 +100,38 @@ export const TransmitterCheckStep: React.FC = () => {
       </div>
 
       {/* Instructions */}
-      <div className="p-4 bg-zinc-800/30 rounded-xl border border-zinc-700/50">
-        <h4 className="text-sm font-medium text-zinc-300 mb-3">Quick Check:</h4>
+      <div className="p-4 bg-surface rounded-xl border border-subtle">
+        <h4 className="text-sm font-medium text-content mb-3">Quick Check:</h4>
         <ul className="space-y-2">
-          <li className="flex items-center gap-2 text-sm text-zinc-400">
+          <li className="flex items-center gap-2 text-sm text-content-secondary">
             {channelsDetected[0] || channelsDetected[1] ? (
               <CheckSquare className="w-4 h-4 text-green-400" />
             ) : (
-              <Square className="w-4 h-4 text-zinc-600" />
+              <Square className="w-4 h-4 text-content-tertiary" />
             )}
             <span>Move left stick up/down and left/right</span>
           </li>
-          <li className="flex items-center gap-2 text-sm text-zinc-400">
+          <li className="flex items-center gap-2 text-sm text-content-secondary">
             {channelsDetected[2] || channelsDetected[3] ? (
               <CheckSquare className="w-4 h-4 text-green-400" />
             ) : (
-              <Square className="w-4 h-4 text-zinc-600" />
+              <Square className="w-4 h-4 text-content-tertiary" />
             )}
             <span>Move right stick up/down and left/right</span>
           </li>
-          <li className="flex items-center gap-2 text-sm text-zinc-400">
+          <li className="flex items-center gap-2 text-sm text-content-secondary">
             {channelsDetected[4] ? (
               <CheckSquare className="w-4 h-4 text-green-400" />
             ) : (
-              <Square className="w-4 h-4 text-zinc-600" />
+              <Square className="w-4 h-4 text-content-tertiary" />
             )}
             <span>Flip your ARM switch (usually AUX1)</span>
           </li>
-          <li className="flex items-center gap-2 text-sm text-zinc-400">
+          <li className="flex items-center gap-2 text-sm text-content-secondary">
             {channelsDetected[5] ? (
               <CheckSquare className="w-4 h-4 text-green-400" />
             ) : (
-              <Square className="w-4 h-4 text-zinc-600" />
+              <Square className="w-4 h-4 text-content-tertiary" />
             )}
             <span>Move any other switches you plan to use</span>
           </li>
@@ -139,14 +139,14 @@ export const TransmitterCheckStep: React.FC = () => {
       </div>
 
       {/* Confirmation checkbox */}
-      <label className="flex items-center gap-3 p-4 bg-zinc-800/30 rounded-xl border border-zinc-700/50 cursor-pointer hover:bg-zinc-700/30 transition-colors">
+      <label className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-subtle cursor-pointer hover:bg-surface-overlay-subtle transition-colors">
         <input
           type="checkbox"
           checked={transmitterConfirmed}
           onChange={(e) => setTransmitterConfirmed(e.target.checked)}
-          className="w-5 h-5 rounded border-zinc-600 bg-zinc-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-zinc-900"
+          className="w-5 h-5 rounded border bg-surface-raised text-blue-500 focus:ring-blue-500 focus:ring-offset-zinc-900"
         />
-        <span className="text-sm text-zinc-300">
+        <span className="text-sm text-content">
           I can see my sticks and switches responding in the visualizer above
         </span>
       </label>
@@ -155,14 +155,14 @@ export const TransmitterCheckStep: React.FC = () => {
       <div className="flex gap-3">
         <button
           onClick={prevStep}
-          className="px-4 py-2.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-lg transition-colors"
+          className="px-4 py-2.5 bg-surface-raised hover:bg-surface-raised text-content rounded-lg transition-colors"
         >
           Back
         </button>
         <button
           onClick={handleConfirmAndContinue}
           disabled={!transmitterConfirmed && !hasMinimumChannels}
-          className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
+          className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-surface-raised disabled:text-content-secondary text-white font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
         >
           Continue to Mode Configuration
         </button>

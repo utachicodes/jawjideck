@@ -66,10 +66,10 @@ export const TransmitterVisualizer: React.FC<TransmitterVisualizerProps> = ({
               {/* Channel label */}
               <div className={`${compact ? 'w-16' : 'w-20'} flex-shrink-0`}>
                 <div className="flex items-center gap-1.5">
-                  <IconComponent className={`${compact ? 'w-3 h-3' : 'w-4 h-4'} ${isDetected ? 'text-green-400' : 'text-zinc-500'}`} />
+                  <IconComponent className={`${compact ? 'w-3 h-3' : 'w-4 h-4'} ${isDetected ? 'text-green-400' : 'text-content-secondary'}`} />
                   <span
                     className={`${compact ? 'text-xs' : 'text-sm'} font-medium ${
-                      isDetected ? 'text-green-400' : 'text-zinc-300'
+                      isDetected ? 'text-green-400' : 'text-content'
                     }`}
                   >
                     {info.name}
@@ -82,12 +82,12 @@ export const TransmitterVisualizer: React.FC<TransmitterVisualizerProps> = ({
                 <div
                   className={`relative ${
                     compact ? 'h-4' : 'h-6'
-                  } bg-zinc-800 rounded-full overflow-hidden`}
+                  } bg-surface-tooltip rounded-full overflow-hidden`}
                 >
                   {/* Center line for sticks */}
                   {isStick && (
                     <div
-                      className="absolute top-0 bottom-0 w-px bg-zinc-600"
+                      className="absolute top-0 bottom-0 w-px bg-surface-raised"
                       style={{ left: '50%' }}
                     />
                   )}
@@ -132,7 +132,7 @@ export const TransmitterVisualizer: React.FC<TransmitterVisualizerProps> = ({
                 className={`${
                   compact ? 'w-12 text-xs' : 'w-14 text-sm'
                 } text-right font-mono ${
-                  isDetected ? 'text-green-400' : 'text-zinc-400'
+                  isDetected ? 'text-green-400' : 'text-content-secondary'
                 }`}
               >
                 {value}
@@ -141,7 +141,7 @@ export const TransmitterVisualizer: React.FC<TransmitterVisualizerProps> = ({
 
             {/* Description (non-compact only) */}
             {!compact && info.description && (
-              <div className="ml-20 text-xs text-zinc-600 mt-0.5">
+              <div className="ml-20 text-xs text-content-tertiary mt-0.5">
                 {info.description}
               </div>
             )}

@@ -38,26 +38,26 @@ const AddModeModal: React.FC<AddModeModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-zinc-900 rounded-xl border border-zinc-700 shadow-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+      <div className="bg-surface-input rounded-xl border border shadow-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
         {/* Header */}
-        <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
-          <h3 className="font-semibold text-zinc-100">Add Mode</h3>
+        <div className="px-4 py-3 border-b border-subtle flex items-center justify-between">
+          <h3 className="font-semibold text-content">Add Mode</h3>
           <button
             onClick={onClose}
-            className="p-1 text-zinc-400 hover:text-zinc-200 rounded"
+            className="p-1 text-content-secondary hover:text-content rounded"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Search */}
-        <div className="p-3 border-b border-zinc-800">
+        <div className="p-3 border-b border-subtle">
           <input
             type="text"
             placeholder="Search modes..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-sm text-content placeholder-content-tertiary focus:outline-none focus:ring-2 focus:ring-blue-500"
             autoFocus
           />
         </div>
@@ -65,7 +65,7 @@ const AddModeModal: React.FC<AddModeModalProps> = ({
         {/* Mode list */}
         <div className="flex-1 overflow-y-auto p-2">
           {filteredModes.length === 0 ? (
-            <div className="text-center py-8 text-zinc-500 text-sm">
+            <div className="text-center py-8 text-content-secondary text-sm">
               {existingModes.length > 0 ? 'No more modes available' : 'No modes found'}
             </div>
           ) : (
@@ -79,14 +79,14 @@ const AddModeModal: React.FC<AddModeModalProps> = ({
                       onAdd(mode.boxId);
                       onClose();
                     }}
-                    className="w-full px-3 py-3 text-left hover:bg-zinc-800 rounded-lg transition-colors flex items-center gap-3"
+                    className="w-full px-3 py-3 text-left hover:bg-surface rounded-lg transition-colors flex items-center gap-3"
                   >
                     <div className={`w-8 h-8 rounded-lg ${mode.color}/20 flex items-center justify-center`}>
                       <IconComponent className={`w-4 h-4 ${mode.color.replace('bg-', 'text-')}`} />
                     </div>
                     <div className="flex-1">
-                      <div className="text-sm font-medium text-zinc-200">{mode.name}</div>
-                      <div className="text-xs text-zinc-500">{mode.description}</div>
+                      <div className="text-sm font-medium text-content">{mode.name}</div>
+                      <div className="text-xs text-content-secondary">{mode.description}</div>
                     </div>
                     {mode.essential && (
                       <span className="px-1.5 py-0.5 text-[10px] bg-amber-500/20 text-amber-400 rounded">
@@ -143,18 +143,18 @@ const EditModeModal: React.FC<EditModeModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-zinc-900 rounded-xl border border-zinc-700 shadow-2xl w-full max-w-md mx-4">
+      <div className="bg-surface-input rounded-xl border border shadow-2xl w-full max-w-md mx-4">
         {/* Header */}
-        <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-subtle flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg ${info?.color || 'bg-zinc-500'}/20 flex items-center justify-center`}>
               <IconComponent className={`w-4 h-4 ${(info?.color || 'bg-zinc-500').replace('bg-', 'text-')}`} />
             </div>
-            <h3 className="font-semibold text-zinc-100">{displayName}</h3>
+            <h3 className="font-semibold text-content">{displayName}</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-zinc-400 hover:text-zinc-200 rounded"
+            className="p-1 text-content-secondary hover:text-content rounded"
           >
             <X className="w-5 h-5" />
           </button>
@@ -164,7 +164,7 @@ const EditModeModal: React.FC<EditModeModalProps> = ({
         <div className="p-4 space-y-4">
           {/* Channel picker */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-zinc-300">AUX Channel</label>
+            <label className="block text-sm font-medium text-content">AUX Channel</label>
             <AuxChannelPicker
               selected={auxChannel}
               onChange={setAuxChannel}
@@ -174,7 +174,7 @@ const EditModeModal: React.FC<EditModeModalProps> = ({
 
           {/* Range slider */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-zinc-300">PWM Range</label>
+            <label className="block text-sm font-medium text-content">PWM Range</label>
             <RangeSlider
               rangeStart={rangeStart}
               rangeEnd={rangeEnd}
@@ -188,10 +188,10 @@ const EditModeModal: React.FC<EditModeModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-zinc-800 flex gap-2">
+        <div className="px-4 py-3 border-t border-subtle flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-lg transition-colors"
+            className="flex-1 px-4 py-2 bg-surface-raised hover:bg-surface-raised text-content rounded-lg transition-colors"
           >
             Cancel
           </button>
@@ -242,7 +242,7 @@ export const ModesAdvancedEditor: React.FC = () => {
   return (
     <div className="space-y-0">
       {/* Unified action toolbar - connects visually with content below */}
-      <div className="bg-zinc-800/50 border border-zinc-700/50 border-b-0 rounded-t-xl px-4 py-3">
+      <div className="bg-surface border border-subtle border-b-0 rounded-t-xl px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button
@@ -254,7 +254,7 @@ export const ModesAdvancedEditor: React.FC = () => {
             </button>
             <button
               onClick={resetToOriginal}
-              className="px-3 py-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50 text-sm rounded-lg transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 text-content-secondary hover:text-content hover:bg-surface-raised text-sm rounded-lg transition-colors flex items-center gap-1.5"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Reset
@@ -264,14 +264,14 @@ export const ModesAdvancedEditor: React.FC = () => {
             <button
               onClick={loadFromFC}
               disabled={isLoading}
-              className="px-3 py-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50 text-sm rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
+              className="px-3 py-1.5 text-content-secondary hover:text-content hover:bg-surface-raised text-sm rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
               {isLoading ? 'Loading...' : 'Reload'}
             </button>
             {/* Unsaved changes indicator - saves via main "Save All Changes" button */}
             {pendingModes.length > 0 && (
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-content-secondary">
                 Use main Save button to save changes
               </span>
             )}
@@ -280,7 +280,7 @@ export const ModesAdvancedEditor: React.FC = () => {
       </div>
 
       {/* Content area - connects to toolbar above */}
-      <div className="bg-zinc-800/30 border border-zinc-700/50 border-t-0 rounded-b-xl p-4">
+      <div className="bg-surface border border-subtle border-t-0 rounded-b-xl p-4">
         {/* Error message */}
         {saveError && (
           <div className="p-3 mb-4 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-300">
@@ -292,15 +292,15 @@ export const ModesAdvancedEditor: React.FC = () => {
         {isLoading ? (
           <div className="text-center py-8">
             <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto" />
-            <p className="text-sm text-zinc-500 mt-2">Loading modes...</p>
+            <p className="text-sm text-content-secondary mt-2">Loading modes...</p>
           </div>
         ) : pendingModes.length === 0 ? (
           <div className="text-center py-8">
             <div className="w-16 h-16 rounded-2xl bg-purple-500/20 flex items-center justify-center mx-auto mb-4">
               <Radio className="w-8 h-8 text-purple-400" />
             </div>
-            <h3 className="text-lg font-medium text-zinc-300 mb-2">No modes configured</h3>
-            <p className="text-sm text-zinc-500 max-w-md mx-auto mb-4">
+            <h3 className="text-lg font-medium text-content mb-2">No modes configured</h3>
+            <p className="text-sm text-content-secondary max-w-md mx-auto mb-4">
               Add modes to control how your aircraft responds to switch positions.
             </p>
             <button

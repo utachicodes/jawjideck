@@ -129,23 +129,23 @@ export function TemplateDialog({ onClose }: TemplateDialogProps) {
   return (
     <>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="bg-gray-900 rounded-2xl border border-gray-700/50 w-full max-w-2xl mx-4 shadow-2xl overflow-hidden">
+        <div className="bg-surface rounded-2xl border border-subtle w-full max-w-2xl mx-4 shadow-2xl overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-subtle">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
                 <Layers className="w-4 h-4 text-blue-400" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-white">Graph Templates</h2>
-                <p className="text-[10px] text-gray-500 mt-0.5">
+                <h2 className="text-sm font-semibold text-content">Graph Templates</h2>
+                <p className="text-[10px] text-content-secondary mt-0.5">
                   Pre-built scripts to get you started quickly
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-800 text-gray-500 hover:text-gray-300 transition-colors"
+              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-surface-raised text-content-secondary hover:text-content transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -164,7 +164,7 @@ export function TemplateDialog({ onClose }: TemplateDialogProps) {
                     >
                       {cat}
                     </span>
-                    <div className="flex-1 h-px bg-gray-800" />
+                    <div className="flex-1 h-px bg-subtle" />
                   </div>
 
                   {/* Template cards */}
@@ -181,9 +181,9 @@ export function TemplateDialog({ onClose }: TemplateDialogProps) {
                           key={template.id}
                           onClick={() => handleSelect(template.id)}
                           className={`
-                            group text-left rounded-xl border-t-2 border border-gray-700/30
-                            bg-gray-800/50 hover:bg-gray-800 transition-all duration-200
-                            hover:border-gray-600/50 hover:shadow-lg hover:shadow-black/20
+                            group text-left rounded-xl border-t-2 border border-subtle
+                            bg-surface hover:bg-surface-raised transition-all duration-200
+                            hover:border hover:shadow-lg hover:shadow-black/20
                             ${style.accent}
                           `}
                         >
@@ -197,36 +197,36 @@ export function TemplateDialog({ onClose }: TemplateDialogProps) {
                                 <Icon className={`w-4.5 h-4.5 ${style.text}`} />
                               </div>
                               <div className="min-w-0">
-                                <div className="text-[13px] font-medium text-gray-200 group-hover:text-white transition-colors leading-tight">
+                                <div className="text-[13px] font-medium text-content group-hover:text-content transition-colors leading-tight">
                                   {template.name}
                                 </div>
-                                <div className="text-[11px] text-gray-500 leading-relaxed mt-1">
+                                <div className="text-[11px] text-content-secondary leading-relaxed mt-1">
                                   {template.description}
                                 </div>
                               </div>
                             </div>
 
                             {/* Stats row */}
-                            <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-700/20">
-                              <div className="flex items-center gap-1 text-[10px] text-gray-600">
+                            <div className="flex items-center gap-3 mt-3 pt-3 border-t border-subtle">
+                              <div className="flex items-center gap-1 text-[10px] text-content-tertiary">
                                 <GitFork className="w-3 h-3" />
                                 <span>
                                   {nodeCount} node{nodeCount !== 1 ? 's' : ''}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-1 text-[10px] text-gray-600">
+                              <div className="flex items-center gap-1 text-[10px] text-content-tertiary">
                                 <ArrowRight className="w-3 h-3" />
                                 <span>
                                   {edgeCount} connection{edgeCount !== 1 ? 's' : ''}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-1 text-[10px] text-gray-600">
+                              <div className="flex items-center gap-1 text-[10px] text-content-tertiary">
                                 <Timer className="w-3 h-3" />
                                 <span>{fmtInterval(template.graph.runIntervalMs)}</span>
                               </div>
                               <div className="flex-1" />
                               <ArrowRight
-                                className="w-3.5 h-3.5 text-gray-700 group-hover:text-gray-400 transition-colors"
+                                className="w-3.5 h-3.5 text-content-tertiary group-hover:text-content-secondary transition-colors"
                               />
                             </div>
                           </div>

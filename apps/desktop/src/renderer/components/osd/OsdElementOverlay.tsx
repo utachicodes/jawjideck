@@ -94,7 +94,7 @@ export function OsdElementOverlay({
         <span
           className={`
             absolute -top-4 left-0 text-[10px] whitespace-nowrap px-1 rounded
-            ${isSelected ? 'bg-blue-500 text-white' : 'bg-gray-800/80 text-blue-300'}
+            ${isSelected ? 'bg-blue-500 text-white' : 'bg-surface-overlay-light text-blue-300'}
           `}
         >
           {formatElementName(elementId)}
@@ -102,7 +102,7 @@ export function OsdElementOverlay({
       )}
 
       {isSelected && (
-        <span className="absolute -bottom-4 left-0 text-[10px] text-gray-400">
+        <span className="absolute -bottom-4 left-0 text-[10px] text-content-secondary">
           [{position.x}, {position.y}]
         </span>
       )}

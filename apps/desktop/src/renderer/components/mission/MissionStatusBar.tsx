@@ -18,21 +18,21 @@ export function MissionStatusBar() {
   const estimatedTimeSeconds = getEstimatedTime();
 
   return (
-    <div className="flex items-center justify-between px-4 py-1.5 bg-gray-800/60 border-t border-gray-700/50 text-xs">
+    <div className="flex items-center justify-between px-4 py-1.5 bg-surface border-t border-subtle text-xs">
       {/* Left side: stats */}
-      <div className="flex items-center gap-4 text-gray-400">
+      <div className="flex items-center gap-4 text-content-secondary">
         <span>
-          <span className="text-gray-300 font-medium">{waypointCount}</span> waypoints
+          <span className="text-content font-medium">{waypointCount}</span> waypoints
         </span>
         {waypointCount > 0 && (
           <>
-            <span className="text-gray-600">|</span>
+            <span className="text-content-tertiary">|</span>
             <span>
-              <span className="text-gray-300 font-medium">{totalDistanceKm.toFixed(2)}</span> km
+              <span className="text-content font-medium">{totalDistanceKm.toFixed(2)}</span> km
             </span>
-            <span className="text-gray-600">|</span>
+            <span className="text-content-tertiary">|</span>
             <span>
-              Est. <span className="text-gray-300 font-medium">~{Math.ceil(estimatedTimeSeconds / 60)}</span> min
+              Est. <span className="text-content font-medium">~{Math.ceil(estimatedTimeSeconds / 60)}</span> min
             </span>
           </>
         )}
@@ -60,7 +60,7 @@ export function MissionStatusBar() {
             Current: WP {currentSeq + 1} of {waypointCount}
           </span>
         ) : !isLoading && (
-          <span className="text-gray-500">
+          <span className="text-content-secondary">
             {waypointCount > 0 ? 'Ready to upload' : 'No active mission'}
           </span>
         )}

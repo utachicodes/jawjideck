@@ -97,10 +97,10 @@ export function DriverAssistant() {
         </svg>
         <div className="flex-1 text-left">
           <p className="text-sm font-medium text-amber-300">Connection failed</p>
-          <p className="text-xs text-gray-400">You may need to install USB drivers</p>
+          <p className="text-xs text-content-secondary">You may need to install USB drivers</p>
         </div>
         <svg
-          className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-content-secondary transition-transform ${expanded ? 'rotate-180' : ''}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -111,7 +111,7 @@ export function DriverAssistant() {
         <div className="px-4 pb-4 space-y-4 border-t border-amber-500/20 pt-3">
           {drivers.length > 0 ? (
             <div>
-              <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+              <h4 className="text-xs font-medium text-content-secondary uppercase tracking-wide mb-2">
                 Recommended Drivers for {getOSName()}
               </h4>
               <div className="space-y-2">
@@ -120,11 +120,11 @@ export function DriverAssistant() {
                     key={driver.name}
                     onClick={() => handleDriverClick(driver)}
                     disabled={installing === driver.name}
-                    className="w-full text-left p-3 bg-gray-800/50 hover:bg-gray-800 rounded-lg transition-colors group disabled:opacity-50"
+                    className="w-full text-left p-3 bg-surface hover:bg-surface-tooltip rounded-lg transition-colors group disabled:opacity-50"
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-white group-hover:text-blue-400">
+                        <p className="text-sm font-medium text-content group-hover:text-blue-400">
                           {driver.name}
                           {driver.bundledFile && (
                             <span className="ml-2 text-xs px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded">
@@ -132,7 +132,7 @@ export function DriverAssistant() {
                             </span>
                           )}
                         </p>
-                        <p className="text-xs text-gray-500">{driver.description}</p>
+                        <p className="text-xs text-content-secondary">{driver.description}</p>
                       </div>
                       {installing === driver.name ? (
                         <svg className="w-4 h-4 text-blue-400 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -140,11 +140,11 @@ export function DriverAssistant() {
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                         </svg>
                       ) : driver.bundledFile ? (
-                        <svg className="w-4 h-4 text-gray-500 group-hover:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-4 h-4 text-content-secondary group-hover:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
                       ) : (
-                        <svg className="w-4 h-4 text-gray-500 group-hover:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-4 h-4 text-content-secondary group-hover:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
                       )}
@@ -154,25 +154,25 @@ export function DriverAssistant() {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-content-secondary">
               Linux includes built-in drivers for most USB-serial chips. If your device isn't detected,
               check that you have permission to access serial ports (add your user to the <code className="text-amber-400">dialout</code> group).
             </p>
           )}
 
           <div>
-            <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+            <h4 className="text-xs font-medium text-content-secondary uppercase tracking-wide mb-2">
               Troubleshooting
             </h4>
             <ul className="space-y-1">
               {TROUBLESHOOTING_TIPS.map((tip, i) => (
-                <li key={i} className="text-xs text-gray-500 flex items-start gap-2">
+                <li key={i} className="text-xs text-content-secondary flex items-start gap-2">
                   <span className="text-amber-500 mt-0.5">•</span>
                   {tip}
                 </li>
               ))}
               {os === 'darwin' && (
-                <li className="text-xs text-gray-500 flex items-start gap-2">
+                <li className="text-xs text-content-secondary flex items-start gap-2">
                   <span className="text-amber-500 mt-0.5">•</span>
                   After installing, allow the extension in System Settings → Privacy & Security
                 </li>

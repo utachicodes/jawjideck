@@ -24,7 +24,7 @@ export function CalibrationHeader() {
   const currentStepIndex = STEPS.findIndex((s) => s.id === currentStep);
 
   return (
-    <div className="flex-shrink-0 border-b border-gray-700/50 p-4">
+    <div className="flex-shrink-0 border-b border-subtle p-4">
       <div className="flex items-center justify-between">
         {/* Title and Protocol Badge */}
         <div className="flex items-center gap-3">
@@ -35,7 +35,7 @@ export function CalibrationHeader() {
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-semibold text-content">
               {calTypeInfo ? calTypeInfo.name : 'Calibration'}
             </h2>
             <div className="flex items-center gap-2 mt-0.5">
@@ -70,8 +70,8 @@ export function CalibrationHeader() {
                       : isCompleted
                         ? 'bg-cyan-500/30 text-cyan-400'
                         : isDisabled
-                          ? 'bg-gray-800 text-gray-600'
-                          : 'bg-gray-700 text-gray-400'
+                          ? 'bg-surface-tooltip text-content-tertiary'
+                          : 'bg-surface-raised text-content-secondary'
                   }`}
                 >
                   {isCompleted ? (
@@ -85,7 +85,7 @@ export function CalibrationHeader() {
 
                 {/* Step label (visible on hover or active) */}
                 <span className={`ml-1.5 text-xs hidden sm:block ${
-                  isActive ? 'text-cyan-400' : isCompleted ? 'text-gray-400' : 'text-gray-600'
+                  isActive ? 'text-cyan-400' : isCompleted ? 'text-content-secondary' : 'text-content-tertiary'
                 }`}>
                   {step.label}
                 </span>
@@ -93,7 +93,7 @@ export function CalibrationHeader() {
                 {/* Connector line */}
                 {index < STEPS.length - 1 && (
                   <div className={`w-4 h-0.5 mx-2 ${
-                    isCompleted ? 'bg-cyan-500/30' : 'bg-gray-700'
+                    isCompleted ? 'bg-cyan-500/30' : 'bg-surface-raised'
                   }`} />
                 )}
               </div>

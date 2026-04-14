@@ -44,16 +44,16 @@ function GraphNodeComponent({ id, data, selected }: NodeProps<Node<GraphNodeData
           max-w-[240px] rounded-md border border-dashed px-3 py-1.5
           transition-all duration-150
           ${selected
-            ? 'border-gray-400/60 bg-gray-700/30'
-            : 'border-gray-600/40 bg-gray-800/20 hover:border-gray-500/50'
+            ? 'border-gray-400/60 bg-surface-raised'
+            : 'border-gray-600/40 bg-surface hover:border-gray-500/50'
           }
         `}
       >
-        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+        <div className="text-[10px] font-bold text-content-secondary uppercase tracking-wider mb-0.5">
           {data.label}
         </div>
         {text && (
-          <div className="text-[11px] text-gray-500 leading-snug">{text}</div>
+          <div className="text-[11px] text-content-secondary leading-snug">{text}</div>
         )}
       </div>
     );
@@ -67,7 +67,7 @@ function GraphNodeComponent({ id, data, selected }: NodeProps<Node<GraphNodeData
         transition-all duration-150
         ${selected
           ? 'border-white/40 shadow-white/10 ring-1 ring-white/20'
-          : 'border-gray-600/50 shadow-black/30 hover:border-gray-500/60'
+          : 'border shadow-black/30 hover:border-gray-500/60'
         }
       `}
       style={{ background: 'rgba(30, 30, 40, 0.92)' }}
@@ -90,22 +90,22 @@ function GraphNodeComponent({ id, data, selected }: NodeProps<Node<GraphNodeData
               type="target"
               position={Position.Left}
               id={port.id}
-              className="!w-2.5 !h-2.5 !border-2 !border-gray-900 !-left-[5px]"
+              className="!w-2.5 !h-2.5 !border-2 !border-surface-base !-left-[5px]"
               style={{ background: PORT_TYPE_COLORS[port.type] }}
             />
-            <span className="text-[10px] text-gray-400">{port.label}</span>
+            <span className="text-[10px] text-content-secondary">{port.label}</span>
           </div>
         ))}
 
         {/* Output ports */}
         {def.outputs.map((port) => (
           <div key={port.id} className="relative flex items-center justify-end h-5 pl-2 pr-3">
-            <span className="text-[10px] text-gray-400">{port.label}</span>
+            <span className="text-[10px] text-content-secondary">{port.label}</span>
             <Handle
               type="source"
               position={Position.Right}
               id={port.id}
-              className="!w-2.5 !h-2.5 !border-2 !border-gray-900 !-right-[5px]"
+              className="!w-2.5 !h-2.5 !border-2 !border-surface-base !-right-[5px]"
               style={{ background: PORT_TYPE_COLORS[port.type] }}
             />
           </div>

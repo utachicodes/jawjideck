@@ -98,15 +98,15 @@ export function OsdElementBrowser({ selectedElement, onSelect }: Props) {
   return (
     <div className="flex flex-col h-full">
       {/* Search */}
-      <div className="p-3 border-b border-gray-700">
+      <div className="p-3 border-b border">
         <input
           type="text"
           placeholder="Search elements..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-gray-800 text-white text-xs rounded px-2.5 py-1.5 border border-gray-600 focus:border-blue-500 focus:outline-none placeholder-gray-500"
+          className="w-full bg-surface-tooltip text-content text-xs rounded px-2.5 py-1.5 border border focus:border-blue-500 focus:outline-none placeholder-content-tertiary"
         />
-        <div className="mt-1.5 text-[10px] text-gray-500">
+        <div className="mt-1.5 text-[10px] text-content-secondary">
           {totalEnabled} of {ELEMENT_REGISTRY.length} enabled
         </div>
       </div>
@@ -121,14 +121,14 @@ export function OsdElementBrowser({ selectedElement, onSelect }: Props) {
           const enabledCount = enabledCounts.get(catDef.id) || 0;
 
           return (
-            <div key={catDef.id} className="border-b border-gray-800">
+            <div key={catDef.id} className="border-b border-subtle">
               {/* Category header */}
               <button
-                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-800/50 text-left"
+                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-surface text-left"
                 onClick={() => toggleCategory(catDef.id)}
               >
                 <svg
-                  className={`w-3 h-3 text-gray-500 shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                  className={`w-3 h-3 text-content-secondary shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -136,7 +136,7 @@ export function OsdElementBrowser({ selectedElement, onSelect }: Props) {
                 >
                   <path d="M9 18l6-6-6-6" />
                 </svg>
-                <span className="text-xs font-medium text-gray-300 flex-1">{catDef.name}</span>
+                <span className="text-xs font-medium text-content flex-1">{catDef.name}</span>
                 {enabledCount > 0 && (
                   <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 rounded-full">
                     {enabledCount}
@@ -206,7 +206,7 @@ function ElementRow({
     <div
       className={`
         flex items-center gap-1.5 pl-7 pr-3 py-1 cursor-pointer
-        ${isSelected ? 'bg-blue-500/15' : 'hover:bg-gray-800/30'}
+        ${isSelected ? 'bg-blue-500/15' : 'hover:bg-surface/30'}
       `}
       onClick={() => onSelect(def.id)}
       title={def.description}
@@ -218,7 +218,7 @@ function ElementRow({
           e.stopPropagation();
           onToggle(def.id);
         }}
-        className="w-3 h-3 rounded-sm bg-gray-700 border-gray-600 text-blue-500 shrink-0"
+        className="w-3 h-3 rounded-sm bg-surface-raised border text-blue-500 shrink-0"
       />
 
       {/* Inline font preview */}
@@ -236,13 +236,13 @@ function ElementRow({
       )}
 
       <span
-        className={`flex-1 text-[11px] truncate ${position.enabled ? 'text-gray-200' : 'text-gray-500'}`}
+        className={`flex-1 text-[11px] truncate ${position.enabled ? 'text-content' : 'text-content-secondary'}`}
       >
         {def.name}
       </span>
 
       {position.enabled && (
-        <span className="text-[9px] text-gray-600 font-mono shrink-0">
+        <span className="text-[9px] text-content-tertiary font-mono shrink-0">
           {position.x},{position.y}
         </span>
       )}

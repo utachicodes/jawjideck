@@ -192,15 +192,15 @@ export function BoardPicker({
         onKeyDown={handleKeyDown}
         className={`
           w-full px-3 py-2 text-left rounded-md border
-          bg-zinc-800 border-zinc-700 text-zinc-200
-          hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500
+          bg-surface-tooltip border text-content
+          hover:border focus:outline-none focus:ring-2 focus:ring-blue-500
           flex items-center justify-between
           ${isLoading ? 'opacity-50 cursor-wait' : ''}
           ${error ? 'border-red-500' : ''}
         `}
         disabled={isLoading}
       >
-        <span className={selectedBoard ? 'text-zinc-100' : 'text-zinc-500'}>
+        <span className={selectedBoard ? 'text-content' : 'text-content-secondary'}>
           {isLoading
             ? 'Loading boards...'
             : selectedBoard
@@ -229,12 +229,12 @@ export function BoardPicker({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-md shadow-lg max-h-[400px] overflow-hidden flex flex-col">
+        <div className="absolute z-50 w-full mt-1 bg-surface-tooltip border border rounded-md shadow-lg max-h-[400px] overflow-hidden flex flex-col">
           {/* Search input */}
-          <div className="p-2 border-b border-zinc-700">
+          <div className="p-2 border-b border">
             <div className="relative">
               <svg
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500"
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-content-secondary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -260,7 +260,7 @@ export function BoardPicker({
                 }}
                 onKeyDown={handleKeyDown}
                 placeholder="Search boards..."
-                className="w-full pl-8 pr-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                className="w-full pl-8 pr-3 py-1.5 bg-surface-input border border rounded text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>
@@ -268,11 +268,11 @@ export function BoardPicker({
           {/* Board list */}
           <div className="overflow-y-auto flex-1">
             {boards.length === 0 ? (
-              <div className="p-4 text-center text-zinc-500">
+              <div className="p-4 text-center text-content-secondary">
                 No boards available
               </div>
             ) : filteredBoards.length === 0 ? (
-              <div className="p-4 text-center text-zinc-500">
+              <div className="p-4 text-center text-content-secondary">
                 No boards match "{searchQuery}"
               </div>
             ) : (
@@ -280,7 +280,7 @@ export function BoardPicker({
                 {/* Popular boards section (only when not searching) */}
                 {!searchQuery && !showAllBoards && popularBoards.length > 0 && (
                   <div>
-                    <div className="px-3 py-1.5 text-xs font-semibold text-zinc-500 uppercase bg-zinc-900/50">
+                    <div className="px-3 py-1.5 text-xs font-semibold text-content-secondary uppercase bg-surface-input">
                       Popular
                     </div>
                     {popularBoards.map((board, index) => (
@@ -290,13 +290,13 @@ export function BoardPicker({
                         onClick={() => handleSelectBoard(board)}
                         className={`
                           w-full px-3 py-2 text-left text-sm
-                          hover:bg-zinc-700 focus:bg-zinc-700 focus:outline-none
-                          ${highlightedIndex === index ? 'bg-zinc-700' : ''}
-                          ${selectedBoard?.id === board.id ? 'text-blue-400' : 'text-zinc-200'}
+                          hover:bg-surface-raised focus:bg-surface-raised focus:outline-none
+                          ${highlightedIndex === index ? 'bg-surface-raised' : ''}
+                          ${selectedBoard?.id === board.id ? 'text-blue-400' : 'text-content'}
                         `}
                       >
                         <span className="font-medium">{board.name}</span>
-                        <span className="ml-2 text-xs text-zinc-500">
+                        <span className="ml-2 text-xs text-content-secondary">
                           {board.category}
                         </span>
                       </button>
@@ -309,7 +309,7 @@ export function BoardPicker({
                   <button
                     type="button"
                     onClick={() => setShowAllBoards(true)}
-                    className="w-full px-3 py-2 text-left text-sm text-blue-400 hover:bg-zinc-700 border-t border-zinc-700 flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-blue-400 hover:bg-surface-raised border-t border flex items-center gap-2"
                   >
                     <svg
                       className="w-4 h-4"
@@ -331,7 +331,7 @@ export function BoardPicker({
                 {/* Full categorized list (when expanded or searching) */}
                 {(showAllBoards || searchQuery) && boardsByCategory.map(([category, categoryBoards]) => (
                   <div key={category}>
-                    <div className="px-3 py-1.5 text-xs font-semibold text-zinc-500 uppercase bg-zinc-900/50 sticky top-0">
+                    <div className="px-3 py-1.5 text-xs font-semibold text-content-secondary uppercase bg-surface-input sticky top-0">
                       {category}
                     </div>
                     {categoryBoards.map((board) => {
@@ -343,9 +343,9 @@ export function BoardPicker({
                           onClick={() => handleSelectBoard(board)}
                           className={`
                             w-full px-3 py-2 text-left text-sm
-                            hover:bg-zinc-700 focus:bg-zinc-700 focus:outline-none
-                            ${highlightedIndex === globalIndex ? 'bg-zinc-700' : ''}
-                            ${selectedBoard?.id === board.id ? 'text-blue-400' : 'text-zinc-200'}
+                            hover:bg-surface-raised focus:bg-surface-raised focus:outline-none
+                            ${highlightedIndex === globalIndex ? 'bg-surface-raised' : ''}
+                            ${selectedBoard?.id === board.id ? 'text-blue-400' : 'text-content'}
                           `}
                         >
                           {board.name}

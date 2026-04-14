@@ -31,7 +31,7 @@ function FileIcon({ isDirectory }: { isDirectory: boolean }) {
     );
   }
   return (
-    <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-4 h-4 text-content-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
     </svg>
   );
@@ -121,8 +121,8 @@ export function FileBrowserPanel() {
   if (!isConnected) {
     return (
       <PanelContainer className="flex items-center justify-center">
-        <div className="text-center text-gray-600 text-xs">
-          <div className="text-gray-500 mb-1">File browser unavailable</div>
+        <div className="text-center text-content-tertiary text-xs">
+          <div className="text-content-secondary mb-1">File browser unavailable</div>
           <div>Connect to companion agent to browse files.</div>
         </div>
       </PanelContainer>
@@ -132,10 +132,10 @@ export function FileBrowserPanel() {
   return (
     <PanelContainer className="flex flex-col gap-0 p-0">
       {/* Breadcrumb navigation */}
-      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-gray-700/40 shrink-0 overflow-x-auto">
+      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-subtle shrink-0 overflow-x-auto">
         <button
           onClick={navigateUp}
-          className="text-gray-500 hover:text-gray-300 transition-colors shrink-0 p-0.5"
+          className="text-content-secondary hover:text-content transition-colors shrink-0 p-0.5"
           disabled={currentPath === '/'}
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -146,11 +146,11 @@ export function FileBrowserPanel() {
         <div className="flex items-center gap-0.5 text-xs overflow-x-auto">
           {breadcrumbs.map((crumb, i) => (
             <div key={crumb.path} className="flex items-center gap-0.5 shrink-0">
-              {i > 0 && <span className="text-gray-600">/</span>}
+              {i > 0 && <span className="text-content-tertiary">/</span>}
               <button
                 onClick={() => navigateTo(crumb.path)}
-                className={`px-1 py-0.5 rounded hover:bg-gray-700/50 transition-colors ${
-                  i === breadcrumbs.length - 1 ? 'text-gray-200' : 'text-gray-500'
+                className={`px-1 py-0.5 rounded hover:bg-surface-raised transition-colors ${
+                  i === breadcrumbs.length - 1 ? 'text-content' : 'text-content-secondary'
                 }`}
               >
                 {crumb.label}
@@ -163,7 +163,7 @@ export function FileBrowserPanel() {
 
         <button
           onClick={() => loadDirectory(currentPath)}
-          className="text-gray-500 hover:text-gray-300 transition-colors shrink-0 p-0.5"
+          className="text-content-secondary hover:text-content transition-colors shrink-0 p-0.5"
           title="Refresh"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -182,11 +182,11 @@ export function FileBrowserPanel() {
       {/* File list */}
       <div className="flex-1 overflow-auto">
         {loading ? (
-          <div className="flex items-center justify-center h-full text-gray-600 text-xs">
+          <div className="flex items-center justify-center h-full text-content-tertiary text-xs">
             Loading...
           </div>
         ) : entries.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-600 text-xs">
+          <div className="flex items-center justify-center h-full text-content-tertiary text-xs">
             Empty directory
           </div>
         ) : (
@@ -200,22 +200,22 @@ export function FileBrowserPanel() {
               .map((entry) => (
                 <div
                   key={entry.path}
-                  className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-800/30 transition-colors cursor-pointer group"
+                  className="flex items-center gap-2 px-3 py-1.5 hover:bg-surface/30 transition-colors cursor-pointer group"
                   onClick={() => entry.isDirectory && navigateTo(entry.path)}
                 >
                   <FileIcon isDirectory={entry.isDirectory} />
-                  <span className={`flex-1 text-xs truncate ${entry.isDirectory ? 'text-gray-200' : 'text-gray-400'}`}>
+                  <span className={`flex-1 text-xs truncate ${entry.isDirectory ? 'text-content' : 'text-content-secondary'}`}>
                     {entry.name}
                   </span>
                   {!entry.isDirectory && (
                     <>
-                      <span className="text-[10px] text-gray-600">{formatBytes(entry.size)}</span>
+                      <span className="text-[10px] text-content-tertiary">{formatBytes(entry.size)}</span>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDownload(entry);
                         }}
-                        className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-blue-400 transition-all"
+                        className="opacity-0 group-hover:opacity-100 text-content-secondary hover:text-blue-400 transition-all"
                         title="Download"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -224,7 +224,7 @@ export function FileBrowserPanel() {
                       </button>
                     </>
                   )}
-                  <span className="text-[10px] text-gray-600">{formatDate(entry.modified)}</span>
+                  <span className="text-[10px] text-content-tertiary">{formatDate(entry.modified)}</span>
                 </div>
               ))}
           </div>

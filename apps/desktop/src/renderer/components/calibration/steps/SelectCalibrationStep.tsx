@@ -212,8 +212,8 @@ export function SelectCalibrationStep() {
     <div className="space-y-6">
       {/* Introduction */}
       <div className="text-center max-w-2xl mx-auto">
-        <h3 className="text-xl font-semibold text-white mb-2">Select Calibration Type</h3>
-        <p className="text-gray-400">
+        <h3 className="text-xl font-semibold text-content mb-2">Select Calibration Type</h3>
+        <p className="text-content-secondary">
           Choose the sensor you want to calibrate. Some calibrations require specific sensors
           to be present on your flight controller.
         </p>
@@ -258,7 +258,7 @@ export function SelectCalibrationStep() {
                   relative p-6 rounded-xl border text-left transition-all duration-300 overflow-hidden group
                   ${isAvailable
                     ? `bg-gradient-to-br ${theme.gradient} ${theme.border} ${theme.hoverBorder} hover:shadow-lg hover:shadow-black/20 hover:scale-[1.02] cursor-pointer`
-                    : 'border-gray-800 bg-gray-800/30 cursor-not-allowed opacity-50'
+                    : 'border-subtle bg-surface cursor-not-allowed opacity-50'
                   }
                 `}
               >
@@ -294,19 +294,19 @@ export function SelectCalibrationStep() {
                 <div className={`relative w-14 h-14 rounded-xl flex items-center justify-center mb-4 ${
                   isAvailable
                     ? `bg-gradient-to-br ${theme.iconBg} ${theme.iconColor}`
-                    : 'bg-gray-800 text-gray-600'
+                    : 'bg-surface-tooltip text-content-tertiary'
                 }`}>
                   {CalibrationIcons[calType.id]}
                 </div>
 
                 {/* Title & Description */}
                 <h4 className={`relative font-semibold mb-1 ${
-                  isAvailable ? 'text-white' : 'text-gray-500'
+                  isAvailable ? 'text-content' : 'text-content-secondary'
                 }`}>
                   {calType.name}
                 </h4>
                 <p className={`relative text-sm leading-relaxed ${
-                  isAvailable ? 'text-gray-400' : 'text-gray-600'
+                  isAvailable ? 'text-content-secondary' : 'text-content-tertiary'
                 }`}>
                   {calType.description}
                 </p>
@@ -314,8 +314,8 @@ export function SelectCalibrationStep() {
                 {/* Duration badge */}
                 <div className={`relative mt-4 inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full ${
                   isAvailable
-                    ? `bg-gray-800/50 ${theme.iconColor.replace('text-', 'text-').replace('400', '300')}`
-                    : 'bg-gray-800/30 text-gray-600'
+                    ? `bg-surface ${theme.iconColor.replace('text-', 'text-').replace('400', '300')}`
+                    : 'bg-surface text-content-tertiary'
                 }`}>
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -336,7 +336,7 @@ export function SelectCalibrationStep() {
       )}
 
       {/* Help text */}
-      <div className="text-center text-xs text-gray-500 mt-6">
+      <div className="text-center text-xs text-content-secondary mt-6">
         <p>
           Ensure your vehicle is disarmed and in a safe location before calibrating.
           {protocol === 'msp' && ' For best results, disconnect motors.'}

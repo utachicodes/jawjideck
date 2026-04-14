@@ -37,10 +37,10 @@ function MixBar({ value, color, label }: { value: number; color: string; label: 
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
-        <span className="text-zinc-400">{label}</span>
+        <span className="text-content-secondary">{label}</span>
         <span className="font-mono" style={{ color }}>{value.toFixed(3)}</span>
       </div>
-      <div className="relative h-2 bg-zinc-800 rounded-full overflow-hidden">
+      <div className="relative h-2 bg-surface-tooltip rounded-full overflow-hidden">
         <div
           className="absolute top-0 h-full rounded-full transition-all"
           style={{
@@ -49,7 +49,7 @@ function MixBar({ value, color, label }: { value: number; color: string; label: 
             backgroundColor: color,
           }}
         />
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-600" />
+        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-surface-raised" />
       </div>
     </div>
   );
@@ -103,13 +103,13 @@ export default function LegacyMixerTab() {
 
       {/* Section Tabs and Add Button */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-2 p-1 bg-zinc-900 rounded-lg w-fit">
+        <div className="flex gap-2 p-1 bg-surface-input rounded-lg w-fit">
           <button
             onClick={() => setActiveSection('motor')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
               activeSection === 'motor'
                 ? 'bg-blue-600 text-white shadow-lg'
-                : 'text-zinc-400 hover:text-white'
+                : 'text-content-secondary hover:text-content'
             }`}
           >
             <Settings className="w-4 h-4 mr-2 inline" />
@@ -120,7 +120,7 @@ export default function LegacyMixerTab() {
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
               activeSection === 'servo'
                 ? 'bg-blue-600 text-white shadow-lg'
-                : 'text-zinc-400 hover:text-white'
+                : 'text-content-secondary hover:text-content'
             }`}
           >
             <Cog className="w-4 h-4 mr-2 inline" />
@@ -136,7 +136,7 @@ export default function LegacyMixerTab() {
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
               canAddMotor
                 ? 'bg-green-600 hover:bg-green-500 text-white'
-                : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                : 'bg-surface-raised text-content-secondary cursor-not-allowed'
             }`}
           >
             <span>+</span>
@@ -150,7 +150,7 @@ export default function LegacyMixerTab() {
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
               canAddServo
                 ? 'bg-green-600 hover:bg-green-500 text-white'
-                : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                : 'bg-surface-raised text-content-secondary cursor-not-allowed'
             }`}
           >
             <span>+</span>
@@ -163,29 +163,29 @@ export default function LegacyMixerTab() {
       {activeSection === 'motor' && (
         <div>
           {motorMixer.length === 0 ? (
-            <div className="text-center py-12 text-zinc-500">
-              <Settings className="w-10 h-10 text-zinc-500 mb-3 mx-auto" />
+            <div className="text-center py-12 text-content-secondary">
+              <Settings className="w-10 h-10 text-content-secondary mb-3 mx-auto" />
               <p>No motor mixer rules found.</p>
               <p className="text-sm mt-1">This is normal for fixed-wing aircraft.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
               {motorMixer.map((mix) => (
-                <div key={mix.index} className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-hidden">
+                <div key={mix.index} className="bg-surface-input rounded-xl border border-subtle overflow-hidden">
                   {/* Header */}
-                  <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+                  <div className="px-4 py-3 border-b border-subtle flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold">
                         M{mix.index}
                       </div>
                       <div>
-                        <h3 className="font-semibold text-white">Motor {mix.index}</h3>
-                        <p className="text-xs text-zinc-400">Output channel</p>
+                        <h3 className="font-semibold text-content">Motor {mix.index}</h3>
+                        <p className="text-xs text-content-secondary">Output channel</p>
                       </div>
                     </div>
                     <button
                       onClick={() => removeMotorMix(mix.index)}
-                      className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                      className="p-2 text-content-secondary hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
                       title="Remove motor mixer"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -202,9 +202,9 @@ export default function LegacyMixerTab() {
                     <MixBar value={mix.yaw} color="#3B82F6" label="Yaw" />
 
                     {/* Edit controls */}
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-800">
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-subtle">
                       <div>
-                        <label className="block text-xs text-zinc-500 mb-1">Throttle</label>
+                        <label className="block text-xs text-content-secondary mb-1">Throttle</label>
                         <input
                           type="number"
                           step="0.01"
@@ -212,11 +212,11 @@ export default function LegacyMixerTab() {
                           max="1"
                           value={mix.throttle}
                           onChange={(e) => handleMotorMixChange({ ...mix, throttle: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm"
+                          className="w-full px-2 py-1 bg-surface-tooltip border border rounded text-content text-sm"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-zinc-500 mb-1">Roll</label>
+                        <label className="block text-xs text-content-secondary mb-1">Roll</label>
                         <input
                           type="number"
                           step="0.01"
@@ -224,11 +224,11 @@ export default function LegacyMixerTab() {
                           max="1"
                           value={mix.roll}
                           onChange={(e) => handleMotorMixChange({ ...mix, roll: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm"
+                          className="w-full px-2 py-1 bg-surface-tooltip border border rounded text-content text-sm"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-zinc-500 mb-1">Pitch</label>
+                        <label className="block text-xs text-content-secondary mb-1">Pitch</label>
                         <input
                           type="number"
                           step="0.01"
@@ -236,11 +236,11 @@ export default function LegacyMixerTab() {
                           max="1"
                           value={mix.pitch}
                           onChange={(e) => handleMotorMixChange({ ...mix, pitch: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm"
+                          className="w-full px-2 py-1 bg-surface-tooltip border border rounded text-content text-sm"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-zinc-500 mb-1">Yaw</label>
+                        <label className="block text-xs text-content-secondary mb-1">Yaw</label>
                         <input
                           type="number"
                           step="0.01"
@@ -248,7 +248,7 @@ export default function LegacyMixerTab() {
                           max="1"
                           value={mix.yaw}
                           onChange={(e) => handleMotorMixChange({ ...mix, yaw: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm"
+                          className="w-full px-2 py-1 bg-surface-tooltip border border rounded text-content text-sm"
                         />
                       </div>
                     </div>
@@ -264,8 +264,8 @@ export default function LegacyMixerTab() {
       {activeSection === 'servo' && (
         <div>
           {servoMixer.length === 0 ? (
-            <div className="text-center py-12 text-zinc-500">
-              <Cog className="w-10 h-10 text-zinc-500 mb-3 mx-auto" />
+            <div className="text-center py-12 text-content-secondary">
+              <Cog className="w-10 h-10 text-content-secondary mb-3 mx-auto" />
               <p>No servo mixer rules found.</p>
               <p className="text-sm mt-1">Add rules to control servos from flight controller outputs.</p>
             </div>
@@ -275,12 +275,12 @@ export default function LegacyMixerTab() {
                 const source = SERVO_SOURCES[mix.inputSource] || { label: `Source ${mix.inputSource}`, color: '#6B7280' };
 
                 return (
-                  <div key={mix.index} className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-hidden">
+                  <div key={mix.index} className="bg-surface-input rounded-xl border border-subtle overflow-hidden">
                     {/* Header */}
-                    <div className="px-5 py-3 border-b border-zinc-800 flex items-center justify-between">
+                    <div className="px-5 py-3 border-b border-subtle flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
-                          <span className="text-zinc-500 font-mono text-sm">Rule #{mix.index}</span>
+                          <span className="text-content-secondary font-mono text-sm">Rule #{mix.index}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div
@@ -289,7 +289,7 @@ export default function LegacyMixerTab() {
                           >
                             {source.label}
                           </div>
-                          <span className="text-zinc-500">→</span>
+                          <span className="text-content-secondary">→</span>
                           <div className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-sm font-medium">
                             Servo {mix.targetChannel}
                           </div>
@@ -297,7 +297,7 @@ export default function LegacyMixerTab() {
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-zinc-500">Rate:</span>
+                          <span className="text-xs text-content-secondary">Rate:</span>
                           <span
                             className={`font-mono text-sm ${mix.rate < 0 ? 'text-orange-400' : 'text-green-400'}`}
                           >
@@ -306,7 +306,7 @@ export default function LegacyMixerTab() {
                         </div>
                         <button
                           onClick={() => removeServoMix(mix.index)}
-                          className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                          className="p-2 text-content-secondary hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
                           title="Remove servo mixer rule"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,11 +320,11 @@ export default function LegacyMixerTab() {
                     <div className="p-5">
                       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                         <div>
-                          <label className="block text-xs text-zinc-500 mb-1.5">Target Servo</label>
+                          <label className="block text-xs text-content-secondary mb-1.5">Target Servo</label>
                           <select
                             value={mix.targetChannel}
                             onChange={(e) => handleServoMixChange({ ...mix, targetChannel: parseInt(e.target.value) })}
-                            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none"
+                            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
                           >
                             {[0, 1, 2, 3, 4, 5, 6, 7].map((servo) => (
                               <option key={servo} value={servo}>Servo {servo}</option>
@@ -332,11 +332,11 @@ export default function LegacyMixerTab() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs text-zinc-500 mb-1.5">Input Source</label>
+                          <label className="block text-xs text-content-secondary mb-1.5">Input Source</label>
                           <select
                             value={mix.inputSource}
                             onChange={(e) => handleServoMixChange({ ...mix, inputSource: parseInt(e.target.value) })}
-                            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none"
+                            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
                           >
                             {Object.entries(SERVO_SOURCES).map(([id, src]) => (
                               <option key={id} value={id}>{src.label}</option>
@@ -344,56 +344,56 @@ export default function LegacyMixerTab() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs text-zinc-500 mb-1.5">Rate (%)</label>
+                          <label className="block text-xs text-content-secondary mb-1.5">Rate (%)</label>
                           <input
                             type="number"
                             min="-125"
                             max="125"
                             value={mix.rate}
                             onChange={(e) => handleServoMixChange({ ...mix, rate: parseInt(e.target.value) || 0 })}
-                            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none"
+                            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs text-zinc-500 mb-1.5">Speed</label>
+                          <label className="block text-xs text-content-secondary mb-1.5">Speed</label>
                           <input
                             type="number"
                             min="0"
                             max="100"
                             value={mix.speed}
                             onChange={(e) => handleServoMixChange({ ...mix, speed: parseInt(e.target.value) || 0 })}
-                            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none"
+                            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs text-zinc-500 mb-1.5">Min</label>
+                          <label className="block text-xs text-content-secondary mb-1.5">Min</label>
                           <input
                             type="number"
                             min="-125"
                             max="125"
                             value={mix.min}
                             onChange={(e) => handleServoMixChange({ ...mix, min: parseInt(e.target.value) || 0 })}
-                            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none"
+                            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs text-zinc-500 mb-1.5">Max</label>
+                          <label className="block text-xs text-content-secondary mb-1.5">Max</label>
                           <input
                             type="number"
                             min="-125"
                             max="125"
                             value={mix.max}
                             onChange={(e) => handleServoMixChange({ ...mix, max: parseInt(e.target.value) || 0 })}
-                            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none"
+                            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
                           />
                         </div>
                       </div>
 
                       {/* Rate visualization */}
-                      <div className="mt-4 pt-4 border-t border-zinc-800">
+                      <div className="mt-4 pt-4 border-t border-subtle">
                         <div className="flex items-center gap-4">
-                          <span className="text-xs text-zinc-500">Mix strength:</span>
-                          <div className="flex-1 relative h-2 bg-zinc-800 rounded-full overflow-hidden">
+                          <span className="text-xs text-content-secondary">Mix strength:</span>
+                          <div className="flex-1 relative h-2 bg-surface-tooltip rounded-full overflow-hidden">
                             <div
                               className="absolute top-0 h-full rounded-full transition-all"
                               style={{
@@ -402,7 +402,7 @@ export default function LegacyMixerTab() {
                                 backgroundColor: source.color,
                               }}
                             />
-                            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-600" />
+                            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-surface-raised" />
                           </div>
                         </div>
                       </div>

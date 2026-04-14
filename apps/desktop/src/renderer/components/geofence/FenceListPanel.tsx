@@ -60,9 +60,9 @@ export function FenceListPanel({ readOnly = false }: FenceListPanelProps) {
   const breachText = getBreachStatusText();
 
   return (
-    <div className="h-full flex flex-col bg-gray-900/50 text-gray-200">
+    <div className="h-full flex flex-col bg-surface text-content">
       {/* Header */}
-      <div className="p-3 border-b border-gray-700/50">
+      <div className="p-3 border-b border-subtle">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium">Geofence</h3>
           {isDirty && (
@@ -99,21 +99,21 @@ export function FenceListPanel({ readOnly = false }: FenceListPanelProps) {
       {/* Fence List */}
       <div className="flex-1 overflow-y-auto">
         {/* Return Point */}
-        <div className="p-2 border-b border-gray-700/50">
+        <div className="p-2 border-b border-subtle">
           <div className="text-xs font-medium text-amber-400 mb-1">Return Point</div>
           {returnPoint ? (
             <div
-              className="flex items-center justify-between p-2 bg-gray-800/50 rounded cursor-pointer hover:bg-gray-700/50"
+              className="flex items-center justify-between p-2 bg-surface rounded cursor-pointer hover:bg-surface-raised"
               onClick={() => setSelectedFenceId(null)}
             >
               <div className="text-xs">
                 <div>{returnPoint.lat.toFixed(6)}, {returnPoint.lon.toFixed(6)}</div>
-                <div className="text-gray-400">Alt: {returnPoint.altitude}m</div>
+                <div className="text-content-secondary">Alt: {returnPoint.altitude}m</div>
               </div>
               {!readOnly && (
                 <button
                   onClick={(e) => { e.stopPropagation(); clearReturnPoint(); }}
-                  className="p-1 text-gray-400 hover:text-red-400"
+                  className="p-1 text-content-secondary hover:text-red-400"
                   title="Remove"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -123,17 +123,17 @@ export function FenceListPanel({ readOnly = false }: FenceListPanelProps) {
               )}
             </div>
           ) : (
-            <div className="text-xs text-gray-500">No return point set</div>
+            <div className="text-xs text-content-secondary">No return point set</div>
           )}
         </div>
 
         {/* Inclusion Zones */}
-        <div className="p-2 border-b border-gray-700/50">
+        <div className="p-2 border-b border-subtle">
           <div className="text-xs font-medium text-green-400 mb-1">
             Inclusion Zones ({inclusionPolygons.length + inclusionCircles.length})
           </div>
           {inclusionPolygons.length === 0 && inclusionCircles.length === 0 ? (
-            <div className="text-xs text-gray-500">No inclusion zones</div>
+            <div className="text-xs text-content-secondary">No inclusion zones</div>
           ) : (
             <div className="space-y-1">
               {inclusionPolygons.map((polygon) => (
@@ -172,7 +172,7 @@ export function FenceListPanel({ readOnly = false }: FenceListPanelProps) {
             Exclusion Zones ({exclusionPolygons.length + exclusionCircles.length})
           </div>
           {exclusionPolygons.length === 0 && exclusionCircles.length === 0 ? (
-            <div className="text-xs text-gray-500">No exclusion zones</div>
+            <div className="text-xs text-content-secondary">No exclusion zones</div>
           ) : (
             <div className="space-y-1">
               {exclusionPolygons.map((polygon) => (
@@ -207,7 +207,7 @@ export function FenceListPanel({ readOnly = false }: FenceListPanelProps) {
       </div>
 
       {/* Status Bar */}
-      <div className="p-2 border-t border-gray-700/50 text-xs text-gray-400 flex items-center justify-between">
+      <div className="p-2 border-t border-subtle text-xs text-content-secondary flex items-center justify-between">
         <span>
           {polygons.length} polygon{polygons.length !== 1 ? 's' : ''}, {circles.length} circle{circles.length !== 1 ? 's' : ''}
         </span>
@@ -238,7 +238,7 @@ function FenceListItem({ id, type, label, isSelected, color, readOnly, onSelect,
     ? color === 'green'
       ? 'bg-green-500/20 ring-1 ring-green-500'
       : 'bg-red-500/20 ring-1 ring-red-500'
-    : 'bg-gray-800/50 hover:bg-gray-700/50';
+    : 'bg-surface hover:bg-surface-raised';
 
   const iconColor = color === 'green' ? 'text-green-400' : 'text-red-400';
 
@@ -264,7 +264,7 @@ function FenceListItem({ id, type, label, isSelected, color, readOnly, onSelect,
       {!readOnly && (
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="p-1 text-gray-400 hover:text-red-400"
+          className="p-1 text-content-secondary hover:text-red-400"
           title="Remove"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
