@@ -1,15 +1,15 @@
 /**
  * Mission Builder - Convert SurveyResult into MissionItem[] for insertion.
- * Generates DO_CHANGE_SPEED, DO_SET_CAM_TRIGG_DIST, NAV_WAYPOINT, and cam-off commands.
+ * Generates Takeoff, DO_CHANGE_SPEED, DO_SET_CAM_TRIGG_DIST, NAV_WAYPOINT, cam-off, and RTL.
  */
 import type { MissionItem } from '../../../shared/mission-types';
 import { MAV_CMD, MAV_FRAME } from '../../../shared/mission-types';
 import type { SurveyConfig, SurveyResult } from './survey-types';
 
 /**
- * Convert survey result into mission items ready for insertion.
- * Items are numbered starting from seq=0; the caller should renumber
- * based on where they're inserted in the existing mission.
+ * Convert survey result into a complete mission ready for upload.
+ * Includes Takeoff at the start and RTL at the end so the mission
+ * is flyable without manually adding those waypoints.
  */
 export function surveyToMissionItems(
   result: SurveyResult,
@@ -19,6 +19,22 @@ export function surveyToMissionItems(
 
   const items: MissionItem[] = [];
   let seq = 0;
+
+  // 0. NAV_TAKEOFF - climb to survey altitude before starting
+  items.push({
+    seq: seq++,
+    frame: MAV_FRAME.GLOBAL_RELATIVE_ALT,
+    command: MAV_CMD.NAV_TAKEOFF,
+    current: false,
+    autocontinue: true,
+    param1: 15,               // Minimum pitch (degrees)
+    param2: 0,
+    param3: 0,
+    param4: 0,                // Yaw (0 = keep current)
+    latitude: 0,
+    longitude: 0,
+    altitude: config.altitude,
+  });
 
   // 1. DO_CHANGE_SPEED - set survey speed
   items.push({
@@ -85,6 +101,22 @@ export function surveyToMissionItems(
     current: false,
     autocontinue: true,
     param1: 0,                // Distance 0 = disable
+    param2: 0,
+    param3: 0,
+    param4: 0,
+    latitude: 0,
+    longitude: 0,
+    altitude: 0,
+  });
+
+  // 5. NAV_RETURN_TO_LAUNCH - fly home after survey
+  items.push({
+    seq: seq++,
+    frame: MAV_FRAME.GLOBAL_RELATIVE_ALT,
+    command: MAV_CMD.NAV_RETURN_TO_LAUNCH,
+    current: false,
+    autocontinue: true,
+    param1: 0,
     param2: 0,
     param3: 0,
     param4: 0,
