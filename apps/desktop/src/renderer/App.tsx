@@ -75,7 +75,7 @@ function VehicleMismatchDialog({
 }) {
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div className="bg-surface-tooltip rounded-xl border border-amber-500/50 w-full max-w-md mx-4 overflow-hidden shadow-2xl">
+      <div className="bg-surface-raised rounded-xl border border-amber-500/50 w-full max-w-md mx-4 overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="px-6 py-4 border-b border-subtle bg-amber-500/10">
           <div className="flex items-center gap-3">
@@ -789,7 +789,7 @@ function App() {
       {/* CLI exit confirmation dialog */}
       {showCliExitDialog && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-surface-tooltip rounded-xl border border-amber-500/50 w-full max-w-md mx-4 overflow-hidden shadow-2xl">
+          <div className="bg-surface-raised rounded-xl border border-amber-500/50 w-full max-w-md mx-4 overflow-hidden shadow-2xl">
             {/* Header */}
             <div className="px-6 py-4 border-b border-subtle bg-amber-500/10">
               <div className="flex items-center gap-3">

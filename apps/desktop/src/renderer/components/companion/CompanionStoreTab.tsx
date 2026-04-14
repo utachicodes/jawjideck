@@ -145,7 +145,7 @@ function TemplateListView({
               <span className={`text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded border ${style.badge}`}>
                 {cat}
               </span>
-              <div className="flex-1 h-px bg-surface-tooltip" />
+              <div className="flex-1 h-px bg-surface-raised" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -412,7 +412,7 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
                   <span className="text-content-secondary">{flashProgress.message}</span>
                   <span className="text-content-secondary">{flashProgress.progress}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-surface-inset rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 rounded-full transition-all duration-300"
                     style={{ width: `${flashProgress.progress}%` }}

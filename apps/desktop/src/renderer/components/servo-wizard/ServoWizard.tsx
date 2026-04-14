@@ -274,7 +274,7 @@ export default function ServoWizard() {
     <div className="bg-surface-input border-b border-subtle px-6 py-4">
       <div className="flex items-center justify-between max-w-3xl mx-auto">
         {/* Mode toggle - always in same position */}
-        <div className="flex items-center gap-1 bg-surface-tooltip rounded-lg p-1">
+        <div className="flex items-center gap-1 bg-surface-raised rounded-lg p-1">
           <button
             onClick={() => setViewMode('wizard')}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
@@ -326,7 +326,7 @@ export default function ServoWizard() {
                           ? 'bg-blue-500 text-white ring-2 ring-blue-400/50 ring-offset-2 ring-offset-zinc-900'
                           : isCompleted
                           ? 'bg-green-500 text-white'
-                          : 'bg-surface-tooltip text-content-secondary border border'
+                          : 'bg-surface-raised text-content-secondary border border'
                       }`}
                     >
                       {isCompleted ? <Check className="w-4 h-4" /> : <info.icon className="w-4 h-4" />}

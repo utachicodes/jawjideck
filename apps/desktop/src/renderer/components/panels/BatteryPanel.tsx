@@ -2,16 +2,16 @@ import { useTelemetryStore } from '../../stores/telemetry-store';
 import { PanelContainer, StatRow, formatNumber } from './panel-utils';
 
 function BatteryIcon({ percentage, voltage }: { percentage: number; voltage: number }) {
-  const level = Math.max(0, Math.min(100, percentage));
+  const isUnknown = percentage < 0;
+  const level = isUnknown ? 0 : Math.max(0, Math.min(100, percentage));
 
-  // Color based on level
-  const fillColor = level > 30 ? '#10b981' : level > 15 ? '#f59e0b' : '#ef4444';
-  const glowColor = level > 30 ? 'rgba(16, 185, 129, 0.3)' : level > 15 ? 'rgba(245, 158, 11, 0.3)' : 'rgba(239, 68, 68, 0.3)';
-  const textColor = level > 30 ? 'text-emerald-400' : level > 15 ? 'text-yellow-400' : 'text-red-400';
+  // Color based on level - use neutral for unknown
+  const fillColor = isUnknown ? 'var(--text-secondary)' : level > 30 ? '#10b981' : level > 15 ? '#f59e0b' : '#ef4444';
+  const textColor = isUnknown ? 'text-content-secondary' : level > 30 ? 'text-emerald-400' : level > 15 ? 'text-yellow-400' : 'text-red-400';
 
-  // Calculate segments (show 4 segments)
+  // Calculate segments (show 4 segments) - none filled for unknown
   const segments = 4;
-  const filledSegments = Math.ceil((level / 100) * segments);
+  const filledSegments = isUnknown ? 0 : Math.ceil((level / 100) * segments);
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -71,12 +71,12 @@ function BatteryIcon({ percentage, voltage }: { percentage: number; voltage: num
           x="40"
           y="80"
           textAnchor="middle"
-          fill={level >= 0 ? fillColor : 'var(--text-tertiary)'}
+          fill={isUnknown ? 'var(--text-tertiary)' : fillColor}
           fontSize="20"
           fontWeight="bold"
           fontFamily="monospace"
         >
-          {level >= 0 ? `${level}%` : '—'}
+          {isUnknown ? '—' : `${level}%`}
         </text>
       </svg>
 
@@ -94,7 +94,7 @@ function BatteryIcon({ percentage, voltage }: { percentage: number; voltage: num
 export function BatteryPanel() {
   const battery = useTelemetryStore((s) => s.battery);
 
-  const textColor = battery.remaining > 30 ? 'text-emerald-400' : battery.remaining > 15 ? 'text-yellow-400' : 'text-red-400';
+  const textColor = battery.remaining < 0 ? 'text-content-secondary' : battery.remaining > 30 ? 'text-emerald-400' : battery.remaining > 15 ? 'text-yellow-400' : 'text-red-400';
 
   return (
     <PanelContainer className="flex flex-col items-center justify-center">

@@ -209,7 +209,7 @@ export const ConfigReviewStep: React.FC = () => {
       <div className="flex items-center justify-between pt-4 border-t border">
         <button
           onClick={prevStep}
-          className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface-raised rounded-lg transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back

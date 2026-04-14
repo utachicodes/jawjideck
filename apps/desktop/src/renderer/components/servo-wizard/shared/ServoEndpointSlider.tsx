@@ -90,7 +90,7 @@ export default function ServoEndpointSlider({
             type="number"
             value={min}
             onChange={(e) => onChange({ min: snap(Number(e.target.value)), center, max })}
-            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+            className="w-full px-3 py-2 bg-surface-raised border border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
             min={rangeLimits.min}
             max={center - 50}
             step={10}
@@ -102,7 +102,7 @@ export default function ServoEndpointSlider({
             type="number"
             value={center}
             onChange={(e) => onChange({ min, center: snap(Number(e.target.value)), max })}
-            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-sm text-content focus:outline-none focus:border-green-500"
+            className="w-full px-3 py-2 bg-surface-raised border border rounded-lg text-sm text-content focus:outline-none focus:border-green-500"
             min={min + 50}
             max={max - 50}
             step={10}
@@ -114,7 +114,7 @@ export default function ServoEndpointSlider({
             type="number"
             value={max}
             onChange={(e) => onChange({ min, center, max: snap(Number(e.target.value)) })}
-            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+            className="w-full px-3 py-2 bg-surface-raised border border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
             min={center + 50}
             max={rangeLimits.max}
             step={10}
@@ -130,7 +130,7 @@ export default function ServoEndpointSlider({
         onMouseLeave={handleMouseUp}
       >
         {/* Track background */}
-        <div className="absolute top-1/2 -translate-y-1/2 w-full h-3 bg-surface-tooltip rounded-full">
+        <div className="absolute top-1/2 -translate-y-1/2 w-full h-3 bg-surface-inset rounded-full">
           {/* Active range */}
           <div
             className="absolute h-full bg-blue-500/30 rounded-full"
@@ -192,7 +192,7 @@ export default function ServoEndpointSlider({
         <div className="flex gap-2 mt-6">
           <button
             onClick={() => onTestPosition('min')}
-            className="flex-1 px-3 py-2 text-sm bg-surface-tooltip text-content rounded-lg hover:bg-surface-raised border border"
+            className="flex-1 px-3 py-2 text-sm bg-surface-raised text-content rounded-lg hover:bg-surface-raised border border"
           >
             Test Min
           </button>
@@ -204,7 +204,7 @@ export default function ServoEndpointSlider({
           </button>
           <button
             onClick={() => onTestPosition('max')}
-            className="flex-1 px-3 py-2 text-sm bg-surface-tooltip text-content rounded-lg hover:bg-surface-raised border border"
+            className="flex-1 px-3 py-2 text-sm bg-surface-raised text-content rounded-lg hover:bg-surface-raised border border"
           >
             Test Max
           </button>

@@ -81,6 +81,9 @@ import {
   serializeRcChannelsOverride,
   RC_CHANNELS_OVERRIDE_ID,
   RC_CHANNELS_OVERRIDE_CRC_EXTRA,
+  serializeSetMode,
+  SET_MODE_ID,
+  SET_MODE_CRC_EXTRA,
   serializeRequestDataStream,
   REQUEST_DATA_STREAM_ID,
   REQUEST_DATA_STREAM_CRC_EXTRA,
@@ -1124,7 +1127,12 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
       const remaining = payload[30] === 255 ? -1 : payload[30]!; // -1 if unknown
 
       const battery: BatteryData = { voltage, current, remaining };
-      queueMavlinkTelemetry(mainWindow, { battery });
+      const sensorHealth = {
+        present: readUint32(payload, 0),
+        enabled: readUint32(payload, 4),
+        health: readUint32(payload, 8),
+      };
+      queueMavlinkTelemetry(mainWindow, { battery, sensorHealth });
 
       // Cache full SYS_STATUS for bug report diagnostics
       cachedSysStatus = {
@@ -1419,6 +1427,15 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
         const severity = ackResult === 0 ? 6 : 4; // MAV_SEVERITY_INFO=6, WARNING=4
         const severityLabel = SEVERITY_LABELS[severity] ?? 'INFO';
         const text = ackResult === 0 ? 'ARM/DISARM accepted' : `ARM/DISARM ${resultName}`;
+        mainWindow.webContents.send(IPC_CHANNELS.MAVLINK_STATUSTEXT, { severity, severityLabel, text });
+        sendLog(mainWindow, ackResult === 0 ? 'info' : 'warn', text);
+      }
+
+      // Log takeoff command results
+      if (ackCommand === 22) {
+        const severity = ackResult === 0 ? 6 : 4;
+        const severityLabel = SEVERITY_LABELS[severity] ?? 'INFO';
+        const text = ackResult === 0 ? 'Takeoff accepted' : `Takeoff ${resultName}`;
         mainWindow.webContents.send(IPC_CHANNELS.MAVLINK_STATUSTEXT, { severity, severityLabel, text });
         sendLog(mainWindow, ackResult === 0 ? 'info' : 'warn', text);
       }
@@ -4232,6 +4249,70 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       sendLog(mainWindow, 'error', `Failed to ${arm ? 'arm' : 'disarm'}`, message);
+      return false;
+    }
+  });
+
+  // SET_MODE (msg 11) - switch ArduPilot flight mode
+  ipcMain.handle(IPC_CHANNELS.MAVLINK_SET_MODE, async (_, customMode: number): Promise<boolean> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return false;
+    }
+
+    try {
+      // baseMode must include MAV_MODE_FLAG_CUSTOM_MODE_ENABLED (1).
+      // If armed, also set MAV_MODE_FLAG_SAFETY_ARMED (128) to avoid inadvertent disarm.
+      const armedBit = lastReportedArmed ? 128 : 0;
+
+      const payload = serializeSetMode({
+        targetSystem: connectionState.systemId ?? 1,
+        baseMode: 1 | armedBit,
+        customMode,
+      });
+
+      const packet = await sendMavlinkPacket(SET_MODE_ID, payload, SET_MODE_CRC_EXTRA);
+      await currentTransport.write(packet);
+      connectionState.packetsSent++;
+
+      sendLog(mainWindow, 'info', `Sent SET_MODE customMode=${customMode}`);
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      sendLog(mainWindow, 'error', 'Failed to set mode', message);
+      return false;
+    }
+  });
+
+  // MAV_CMD_NAV_TAKEOFF (command 22) - takeoff to altitude
+  ipcMain.handle(IPC_CHANNELS.MAVLINK_COMMAND_TAKEOFF, async (_, altitude: number): Promise<boolean> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return false;
+    }
+
+    try {
+      const payload = serializeCommandLong({
+        targetSystem: connectionState.systemId ?? 1,
+        targetComponent: 1,
+        command: 22,
+        confirmation: 0,
+        param1: 0,
+        param2: 0,
+        param3: 0,
+        param4: 0,
+        param5: 0,
+        param6: 0,
+        param7: altitude,
+      });
+
+      const packet = await sendMavlinkPacket(COMMAND_LONG_ID, payload, COMMAND_LONG_CRC_EXTRA);
+      await currentTransport.write(packet);
+      connectionState.packetsSent++;
+
+      sendLog(mainWindow, 'info', `Sent TAKEOFF command, altitude=${altitude}m`);
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      sendLog(mainWindow, 'error', 'Failed to send takeoff command', message);
       return false;
     }
   });

@@ -99,7 +99,7 @@ export const ReviewStep: React.FC = () => {
       {/* Summary table */}
       <div className="overflow-hidden rounded-xl border border">
         <table className="w-full text-sm">
-          <thead className="bg-surface-tooltip">
+          <thead className="bg-surface-raised">
             <tr>
               <th className="px-4 py-2 text-left font-medium text-content">Mode</th>
               <th className="px-4 py-2 text-left font-medium text-content">Channel</th>

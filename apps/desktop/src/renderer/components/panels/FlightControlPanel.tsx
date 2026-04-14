@@ -15,6 +15,7 @@ import { useMessagesStore } from '../../stores/messages-store';
 import { isPreArmMessage, extractPreArmReason, matchPreArmError } from '../../../shared/prearm-checks';
 import { PreArmParamFix } from '../prearm/PreArmParamFix';
 import { PanelContainer, SectionTitle } from './panel-utils';
+import { getVehicleClass, ARDUPILOT_COMMON_MODES } from '../../../shared/telemetry-types';
 
 // =============================================================================
 // Visual Components
@@ -91,7 +92,7 @@ function ThrottleGauge({ value, onChange }: { value: number; onChange: (v: numbe
           </defs>
 
           {/* Background track */}
-          <rect x="10" y="5" width="30" height="110" rx="4" fill="#1f2937" stroke="#374151" strokeWidth="1"/>
+          <rect x="10" y="5" width="30" height="110" rx="4" fill="var(--bg-base)" stroke="var(--border-default)" strokeWidth="1"/>
 
           {/* Fill level */}
           <rect
@@ -380,7 +381,7 @@ function RcStatusIndicator({ isActive }: { isActive: boolean }) {
     <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${
       isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-surface-raised text-content-secondary'
     }`}>
-      <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400' : 'bg-gray-500'}`} />
+      <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400' : 'bg-content-tertiary'}`} />
       <span>RC {isActive ? 'Active' : 'Idle'}</span>
     </div>
   );
@@ -442,6 +443,10 @@ const COMMON_MODES = [
 function MavlinkFlightControl() {
   const flight = useTelemetryStore((s) => s.flight);
   const messages = useMessagesStore((s) => s.messages);
+  const connectionState = useConnectionStore((s) => s.connectionState);
+  const vehicleClass = getVehicleClass(connectionState.mavType);
+  const availableModes = ARDUPILOT_COMMON_MODES[vehicleClass];
+
   const [isLoading, setIsLoading] = useState(false);
   const [forceArm, setForceArm] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'info' | 'error' | 'success' } | null>(null);
@@ -449,6 +454,9 @@ function MavlinkFlightControl() {
   const [isHorizontal, setIsHorizontal] = useState(false);
   const [expandedPreArm, setExpandedPreArm] = useState<Set<string>>(new Set());
   const prevArmedRef = useRef(flight.armed);
+  const [modeLoading, setModeLoading] = useState<number | null>(null);
+  const [showTakeoffDialog, setShowTakeoffDialog] = useState(false);
+  const [takeoffAlt, setTakeoffAlt] = useState(10);
 
   // Detect panel orientation for responsive layout
   useEffect(() => {
@@ -543,12 +551,79 @@ function MavlinkFlightControl() {
     }
   };
 
+  // Mode switching
+  const handleSetMode = async (modeNum: number) => {
+    if (modeLoading !== null) return;
+    setModeLoading(modeNum);
+    setStatusMsg(null);
+    try {
+      const ok = await window.electronAPI.mavlinkSetMode(modeNum);
+      if (!ok) {
+        setStatusMsg({ text: 'Not connected', type: 'error' });
+        setModeLoading(null);
+        setTimeout(() => setStatusMsg(null), 3000);
+      }
+      // Mode confirmation comes via heartbeat - timeout clears loading
+      setTimeout(() => setModeLoading(null), 3000);
+    } catch {
+      setStatusMsg({ text: 'Mode change failed', type: 'error' });
+      setModeLoading(null);
+      setTimeout(() => setStatusMsg(null), 3000);
+    }
+  };
+
+  // Clear mode loading when heartbeat confirms the switch
+  useEffect(() => {
+    if (modeLoading !== null && flight.modeNum === modeLoading) {
+      setModeLoading(null);
+      setStatusMsg({ text: `Mode: ${flight.mode}`, type: 'success' });
+      setTimeout(() => setStatusMsg(null), 2000);
+    }
+  }, [flight.modeNum, modeLoading, flight.mode]);
+
+  // Takeoff: arm if needed, switch to Guided, then send MAV_CMD_NAV_TAKEOFF
+  const handleTakeoff = async () => {
+    setShowTakeoffDialog(false);
+    const guidedMode = vehicleClass === 'plane' ? 15 : 4;
+
+    // Step 1: Arm if not armed
+    if (!flight.armed) {
+      setStatusMsg({ text: 'Arming...', type: 'info' });
+      const armOk = await window.electronAPI.mavlinkArmDisarm(true, forceArm);
+      if (!armOk) {
+        setStatusMsg({ text: 'Arm failed - not connected', type: 'error' });
+        setTimeout(() => setStatusMsg(null), 3000);
+        return;
+      }
+      // Wait for armed confirmation
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+
+    // Step 2: Switch to Guided
+    setStatusMsg({ text: 'Switching to Guided...', type: 'info' });
+    await window.electronAPI.mavlinkSetMode(guidedMode);
+    await new Promise((r) => setTimeout(r, 1000));
+
+    // Step 3: Send takeoff command
+    setStatusMsg({ text: `Taking off to ${takeoffAlt}m...`, type: 'info' });
+    const ok = await window.electronAPI.mavlinkTakeoff(takeoffAlt);
+    if (!ok) {
+      setStatusMsg({ text: 'Takeoff failed', type: 'error' });
+    }
+    setTimeout(() => setStatusMsg(null), 3000);
+  };
+
+  // RTL mode number per vehicle class
+  const rtlModeNum = vehicleClass === 'plane' ? 11 : vehicleClass === 'rover' ? 11 : 6;
+  // Land mode number per vehicle class
+  const landModeNum = vehicleClass === 'sub' ? 9 : 9; // Land=9 for copter, Surface=9 for sub
+
   // Status message color
   const statusColor = statusMsg?.type === 'success' ? 'text-emerald-400' : statusMsg?.type === 'error' ? 'text-red-400' : 'text-content-secondary';
 
   return (
     <PanelContainer>
-      <div ref={containerRef} className="h-full">
+      <div ref={containerRef} className="h-full min-h-0">
         {isHorizontal ? (
           /* Horizontal layout — ARM button is THE hero control */
           <div className="h-full flex flex-col justify-center gap-3">
@@ -588,7 +663,7 @@ function MavlinkFlightControl() {
                   ) : (
                     <>
                       <div className={`w-2.5 h-2.5 rounded-full ${
-                        flight.armed ? 'bg-red-400 animate-pulse' : forceArm ? 'bg-amber-400' : 'bg-gray-500'
+                        flight.armed ? 'bg-red-400 animate-pulse' : forceArm ? 'bg-amber-400' : 'bg-content-tertiary'
                       }`} />
                       <span>{flight.armed ? 'Disarm' : forceArm ? 'Force Arm' : 'Arm'}</span>
                     </>
@@ -613,7 +688,7 @@ function MavlinkFlightControl() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                   <span className={`text-xs font-medium ${forceArm ? 'text-amber-300' : 'text-content'}`}>Force</span>
-                  <div className={`w-7 h-3.5 rounded-full transition-colors relative ${forceArm ? 'bg-amber-500' : 'bg-gray-600'}`}>
+                  <div className={`w-7 h-3.5 rounded-full transition-colors relative ${forceArm ? 'bg-amber-500' : 'bg-surface-raised'}`}>
                     <div className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white shadow transition-transform ${forceArm ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
                   </div>
                 </button>
@@ -661,7 +736,7 @@ function MavlinkFlightControl() {
           </div>
         ) : (
           /* Vertical layout for side panels */
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full overflow-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="text-content font-medium">{flight.mode || 'Unknown'}</div>
               <div className="text-xs text-content-secondary">MAVLink</div>
@@ -680,8 +755,83 @@ function MavlinkFlightControl() {
               <div className={`text-center text-xs font-medium mb-3 ${statusColor}`}>{statusMsg.text}</div>
             )}
 
+            {/* Flight Modes */}
+            <div className="mb-3">
+              <SectionTitle>Flight Mode</SectionTitle>
+              <div className="flex flex-wrap gap-1.5">
+                {availableModes.map((mode) => (
+                  <ModeChip
+                    key={mode.modeNum}
+                    name={mode.name}
+                    isActive={flight.modeNum === mode.modeNum}
+                    isConfigured={true}
+                    onClick={() => handleSetMode(mode.modeNum)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="mb-3">
+              <SectionTitle>Quick Actions</SectionTitle>
+              <div className="flex gap-2">
+                {vehicleClass !== 'rover' && vehicleClass !== 'sub' && (
+                  <button
+                    onClick={() => setShowTakeoffDialog(true)}
+                    className="flex-1 px-2 py-1.5 text-xs font-medium rounded-lg bg-surface border border-subtle hover:bg-surface-raised hover:border-default text-content transition-all"
+                  >
+                    Takeoff
+                  </button>
+                )}
+                <button
+                  onClick={() => handleSetMode(rtlModeNum)}
+                  disabled={!flight.armed}
+                  className="flex-1 px-2 py-1.5 text-xs font-medium rounded-lg bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-amber-300 transition-all"
+                >
+                  RTL
+                </button>
+                <button
+                  onClick={() => handleSetMode(landModeNum)}
+                  disabled={!flight.armed}
+                  className="flex-1 px-2 py-1.5 text-xs font-medium rounded-lg bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-red-300 transition-all"
+                >
+                  {vehicleClass === 'sub' ? 'Surface' : 'Land'}
+                </button>
+              </div>
+            </div>
+
+            {/* Takeoff altitude dialog */}
+            {showTakeoffDialog && (
+              <div className="mb-3 p-2.5 bg-surface-raised rounded-lg border border-default">
+                <div className="text-xs text-content-secondary mb-2">Takeoff Altitude</div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={takeoffAlt}
+                    onChange={(e) => setTakeoffAlt(Math.max(1, Math.min(100, Number(e.target.value))))}
+                    className="flex-1 px-2 py-1.5 text-sm font-mono bg-surface-input border border-subtle rounded text-content"
+                  />
+                  <span className="text-xs text-content-secondary">m</span>
+                  <button
+                    onClick={handleTakeoff}
+                    className="px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+                  >
+                    Go
+                  </button>
+                  <button
+                    onClick={() => setShowTakeoffDialog(false)}
+                    className="px-2 py-1.5 text-xs text-content-secondary hover:text-content transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
             {!flight.armed && preArmReasons.length > 0 && (
-              <div className="mb-4 bg-red-500/10 border border-red-500/30 rounded-lg overflow-hidden">
+              <div className="mb-4 bg-red-500/10 border border-red-500/30 rounded-lg">
                 <div className="text-red-400 text-[10px] font-medium uppercase tracking-wider px-2.5 pt-2.5 pb-1.5">Pre-arm Checks Failed</div>
                 <div className="flex flex-col">
                   {preArmReasons.map(({ reason, fix }, i) => {
@@ -740,7 +890,7 @@ function MavlinkFlightControl() {
                   <div className="text-[10px] text-content-secondary">Bypass pre-arm checks</div>
                 </div>
               </div>
-              <div className={`w-8 h-4 rounded-full transition-colors relative ${forceArm ? 'bg-amber-500' : 'bg-gray-600'}`}>
+              <div className={`w-8 h-4 rounded-full transition-colors relative ${forceArm ? 'bg-amber-500' : 'bg-surface-raised'}`}>
                 <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${forceArm ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </div>
             </button>
@@ -993,7 +1143,7 @@ export function FlightControlPanel() {
             </button>
 
             {showSetup && (
-              <div className="mt-2 p-2 bg-surface rounded-lg">
+              <div className="mt-2 p-2 bg-surface-raised rounded-lg">
                 <p className="text-content-secondary text-xs mb-2">
                   ARM mode not configured. Click below to auto-configure for SITL testing.
                 </p>

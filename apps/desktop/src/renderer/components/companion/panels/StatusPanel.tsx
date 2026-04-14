@@ -96,7 +96,7 @@ export function StatusPanel() {
               {lastHeartbeat && (
                 <StatRow label="Last Seen" value={formatTimeSince(lastHeartbeat)} />
               )}
-              <div className="mt-3 p-2 bg-surface rounded text-xs text-content-secondary">
+              <div className="mt-3 p-2 bg-surface-raised rounded text-xs text-content-secondary">
                 Install the ArduDeck Agent on the companion for full monitoring.
               </div>
             </>

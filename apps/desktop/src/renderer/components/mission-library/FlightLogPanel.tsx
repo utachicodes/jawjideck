@@ -195,7 +195,7 @@ export function FlightLogPanel({ missionId }: FlightLogPanelProps) {
             return (
               <div
                 key={log.id}
-                className="bg-surface rounded-lg border border-subtle p-3"
+                className="bg-surface-raised rounded-lg border border-subtle p-3"
               >
                 {isEditing ? (
                   /* Edit mode */

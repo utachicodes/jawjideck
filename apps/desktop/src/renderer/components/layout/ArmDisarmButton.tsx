@@ -159,7 +159,7 @@ export function ArmDisarmButton() {
 
       {/* Context menu */}
       {showMenu && (
-        <div className="absolute right-0 top-full mt-1.5 w-60 bg-surface-tooltip border border-border rounded-lg shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-1.5 w-60 bg-surface-raised border border-border rounded-lg shadow-xl z-50 overflow-hidden">
           {/* Force ARM toggle (MAVLink only) */}
           {isMavlink && (
             <label className="flex items-center gap-3 px-3 py-2.5 hover:bg-surface-raised cursor-pointer transition-colors">

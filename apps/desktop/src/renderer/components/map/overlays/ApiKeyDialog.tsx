@@ -35,7 +35,7 @@ export function ApiKeyDialog() {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-surface-tooltip border border-subtle rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
+      <div className="bg-surface-raised border border-subtle rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
         <h3 className="text-lg font-semibold text-content mb-2">OpenAIP API Key Required</h3>
         <p className="text-sm text-content-secondary mb-4">
           Airspace and airport data is provided by OpenAIP. A free API key is required.

@@ -273,7 +273,7 @@ function MixBar({ value, color, label }: { value: number; color: string; label: 
         <span className="text-content-secondary">{label}</span>
         <span className="font-mono" style={{ color }}>{value.toFixed(3)}</span>
       </div>
-      <div className="relative h-2 bg-surface-tooltip rounded-full overflow-hidden">
+      <div className="relative h-2 bg-surface-inset rounded-full overflow-hidden">
         <div
           className="absolute top-0 h-full rounded-full transition-all"
           style={{
@@ -541,7 +541,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
           <button
             onClick={loadMotorMixer}
             disabled={loading}
-            className="px-3 py-2 text-content-secondary hover:text-content hover:bg-surface-tooltip rounded-lg transition-colors flex items-center gap-2"
+            className="px-3 py-2 text-content-secondary hover:text-content hover:bg-surface-raised rounded-lg transition-colors flex items-center gap-2"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Reload
@@ -552,7 +552,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
             className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
               modified
                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
+                : 'bg-surface-raised text-content-secondary cursor-not-allowed'
             }`}
           >
             <Download className="w-4 h-4" />
@@ -594,7 +594,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
           </h3>
           <button
             onClick={resetAll}
-            className="px-3 py-1.5 text-xs bg-surface-raised hover:bg-red-500/20 rounded-lg text-white-secondary hover:text-red-400 transition-colors flex items-center gap-1.5"
+            className="px-3 py-1.5 text-xs bg-surface-raised hover:bg-red-500/20 rounded-lg text-content-tertiary hover:text-red-400 transition-colors flex items-center gap-1.5"
           >
             <RotateCcw className="w-3 h-3" />
             Clear All
@@ -651,7 +651,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
                   {/* Footer */}
                   <div className="flex items-center justify-between">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      isSelected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-surface-raised text-white-secondary'
+                      isSelected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-surface-raised text-content-tertiary'
                     }`}>
                       {preset.motors.length} {preset.motors.length === 1 ? 'motor' : 'motors'}
                     </span>
@@ -777,7 +777,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
             {showAdvanced && (
               <div className="p-4 border-t border-subtle space-y-4">
                 {/* Info about direction inference */}
-                <div className="flex items-start gap-2 p-3 bg-surface rounded-lg text-xs text-content-secondary">
+                <div className="flex items-start gap-2 p-3 bg-surface-raised rounded-lg text-xs text-content-secondary">
                   <Lightbulb className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                   <p>
                     <span className="text-content font-medium">Rotation direction</span> is inferred from mixing values:
@@ -894,7 +894,7 @@ export default function MotorMixerTab({ modified, setModified }: Props) {
                   <div className="flex justify-center pt-2">
                     <button
                       onClick={addMotor}
-                      className="px-4 py-2 bg-surface-tooltip hover:bg-surface-raised text-content rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2"
+                      className="px-4 py-2 bg-surface-raised hover:bg-surface-raised text-content rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2"
                     >
                       <Plus className="w-4 h-4" />
                       Add Motor ({motors.length}/{MAX_MOTORS})

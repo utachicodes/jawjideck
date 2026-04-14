@@ -91,7 +91,7 @@ const BatteryTab: React.FC = () => {
 
       <div className="grid grid-cols-2 gap-4">
         {/* Monitor Type Card */}
-        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+        <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-blue-400" />
@@ -105,7 +105,7 @@ const BatteryTab: React.FC = () => {
           <select
             value={batteryValues.battMonitor}
             onChange={(e) => setParameter('BATT_MONITOR', Number(e.target.value))}
-            className="w-full px-3 py-2.5 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+            className="w-full px-3 py-2.5 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
           >
             {Object.entries(BATTERY_MONITORS).map(([num, monitor]) => (
               <option key={num} value={num}>
@@ -114,7 +114,7 @@ const BatteryTab: React.FC = () => {
             ))}
           </select>
 
-          <div className="bg-surface rounded-lg p-3">
+          <div className="bg-surface-raised rounded-lg p-3">
             <p className="text-xs text-content-secondary">
               {BATTERY_MONITORS[batteryValues.battMonitor]?.description || 'Select a monitor type'}
             </p>
@@ -131,7 +131,7 @@ const BatteryTab: React.FC = () => {
         </div>
 
         {/* Capacity Card */}
-        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+        <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
               <Zap className="w-5 h-5 text-green-400" />
@@ -162,7 +162,7 @@ const BatteryTab: React.FC = () => {
                 className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
                   batteryValues.battCapacity === cap
                     ? 'bg-blue-500 text-white'
-                    : 'bg-surface-tooltip text-content-secondary hover:bg-surface-raised'
+                    : 'bg-surface-raised text-content-secondary hover:bg-surface-raised'
                 }`}
               >
                 {cap} mAh
@@ -173,7 +173,7 @@ const BatteryTab: React.FC = () => {
       </div>
 
       {/* Battery Chemistry & Cell Configuration */}
-      <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+      <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
@@ -185,7 +185,7 @@ const BatteryTab: React.FC = () => {
             </div>
           </div>
           {estimatedCells > 0 && (
-            <span className="px-2 py-1 text-xs bg-surface-tooltip rounded text-content-secondary">
+            <span className="px-2 py-1 text-xs bg-surface-raised rounded text-content-secondary">
               Currently: ~{estimatedCells}S {chemInfo.name}
             </span>
           )}
@@ -212,7 +212,7 @@ const BatteryTab: React.FC = () => {
         </div>
 
         {/* Chemistry description */}
-        <div className="bg-surface rounded-lg p-2.5">
+        <div className="bg-surface-raised rounded-lg p-2.5">
           <p className="text-xs text-content-secondary">{chemInfo.description}</p>
         </div>
 
@@ -266,7 +266,7 @@ const BatteryTab: React.FC = () => {
 
         {/* Voltage Reference */}
         {estimatedCells > 0 && (
-          <div className="bg-surface rounded-lg p-3">
+          <div className="bg-surface-raised rounded-lg p-3">
             <div className="grid grid-cols-4 gap-3 text-center">
               {[
                 { label: 'Full', voltage: getCellVoltages(estimatedCells, chemistry).full, color: 'text-green-400' },
@@ -294,7 +294,7 @@ const BatteryTab: React.FC = () => {
       </div>
 
       {/* Voltage Thresholds */}
-      <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+      <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
             <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -341,7 +341,7 @@ const BatteryTab: React.FC = () => {
         </div>
 
         {/* Visual voltage bar */}
-        <div className="relative h-3 bg-surface-tooltip rounded-full overflow-hidden">
+        <div className="relative h-3 bg-surface-inset rounded-full overflow-hidden">
           <div className="absolute inset-0 flex">
             <div className="h-full bg-red-500/50" style={{ width: '15%' }} />
             <div className="h-full bg-amber-500/50" style={{ width: '15%' }} />
@@ -363,7 +363,7 @@ const BatteryTab: React.FC = () => {
       </div>
 
       {/* Calibration (Advanced) */}
-      <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+      <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
@@ -412,7 +412,7 @@ const BatteryTab: React.FC = () => {
           />
         </div>
 
-        <div className="bg-surface rounded-lg p-3">
+        <div className="bg-surface-raised rounded-lg p-3">
           <p className="text-xs text-content-secondary">
             <span className="text-blue-400">Tip:</span> To calibrate voltage, measure your battery with a
             multimeter and adjust the multiplier until readings match. For current, compare with a watt

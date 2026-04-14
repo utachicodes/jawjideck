@@ -54,7 +54,7 @@ const RoverTuningTab: React.FC<RoverTuningTabProps> = ({ section = 'speed-steeri
         </InfoCard>
 
         {/* Waypoint Settings */}
-        <div className="bg-surface rounded-xl border-subtle p-5">
+        <div className="bg-surface rounded-xl border border-subtle p-5">
           <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
             <Navigation className="w-5 h-5 text-blue-400" /> Waypoint Settings
           </h3>
@@ -83,7 +83,7 @@ const RoverTuningTab: React.FC<RoverTuningTabProps> = ({ section = 'speed-steeri
         </div>
 
         {/* Loiter Settings */}
-        <div className="bg-surface rounded-xl border-subtle p-5">
+        <div className="bg-surface rounded-xl border border-subtle p-5">
           <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
             <Compass className="w-5 h-5 text-emerald-400" /> Loiter / Position Hold
           </h3>
@@ -112,7 +112,7 @@ const RoverTuningTab: React.FC<RoverTuningTabProps> = ({ section = 'speed-steeri
         </div>
 
         {/* L1 Controller */}
-        <div className="bg-surface rounded-xl border-subtle p-5">
+        <div className="bg-surface rounded-xl border border-subtle p-5">
           <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-amber-400" /> L1 Path Following (Advanced)
           </h3>
@@ -157,7 +157,7 @@ const RoverTuningTab: React.FC<RoverTuningTabProps> = ({ section = 'speed-steeri
       </InfoCard>
 
       {/* Speed Settings */}
-      <div className="bg-surface rounded-xl border-subtle p-5">
+      <div className="bg-surface rounded-xl border border-subtle p-5">
         <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
           <Gauge className="w-5 h-5 text-blue-400" /> Speed Control
         </h3>
@@ -196,7 +196,7 @@ const RoverTuningTab: React.FC<RoverTuningTabProps> = ({ section = 'speed-steeri
       </div>
 
       {/* Steering Settings */}
-      <div className="bg-surface rounded-xl border-subtle p-5">
+      <div className="bg-surface rounded-xl border border-subtle p-5">
         <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
           <RotateCw className="w-5 h-5 text-emerald-400" /> Steering
         </h3>
@@ -225,7 +225,7 @@ const RoverTuningTab: React.FC<RoverTuningTabProps> = ({ section = 'speed-steeri
       </div>
 
       {/* Pivot Turn Settings */}
-      <div className="bg-surface rounded-xl border-subtle p-5">
+      <div className="bg-surface rounded-xl border border-subtle p-5">
         <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
           <RotateCw className="w-5 h-5 text-orange-400" /> Pivot Turns (Skid Steer)
         </h3>
@@ -257,7 +257,7 @@ const RoverTuningTab: React.FC<RoverTuningTabProps> = ({ section = 'speed-steeri
       </div>
 
       {/* Current settings summary */}
-      <div className="bg-surface rounded-xl border-subtle p-4">
+      <div className="bg-surface rounded-xl border border-subtle p-4">
         <h3 className="text-sm font-medium text-content mb-3">Current Settings Summary</h3>
         <div className="grid grid-cols-4 gap-4 text-center">
           <div>

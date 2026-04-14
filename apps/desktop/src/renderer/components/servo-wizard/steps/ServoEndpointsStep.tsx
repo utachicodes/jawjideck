@@ -81,7 +81,7 @@ export default function ServoEndpointsStep() {
             type="checkbox"
             checked={isPollingServos}
             onChange={(e) => (e.target.checked ? startServoPolling() : stopServoPolling())}
-            className="w-4 h-4 rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500/50"
+            className="w-4 h-4 rounded border bg-surface-raised text-blue-500 focus:ring-blue-500/50"
           />
           <span className="text-sm text-content-secondary">
             {isPollingServos ? (
@@ -113,7 +113,7 @@ export default function ServoEndpointsStep() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-content">{surfaceInfo.name}</span>
-                  <span className="text-xs px-2 py-0.5 bg-surface-tooltip rounded text-content-secondary">
+                  <span className="text-xs px-2 py-0.5 bg-surface-raised rounded text-content-secondary">
                     Servo {assignment.servoIndex}
                   </span>
                   {assignment.reversed && (
@@ -195,7 +195,7 @@ export default function ServoEndpointsStep() {
       <div className="flex justify-between">
         <button
           onClick={prevStep}
-          className="px-6 py-2.5 rounded-lg font-medium bg-surface-tooltip text-content hover:bg-surface-raised"
+          className="px-6 py-2.5 rounded-lg font-medium bg-surface-raised text-content hover:bg-surface-raised"
         >
           ← Back
         </button>

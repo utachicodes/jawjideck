@@ -208,7 +208,7 @@ export function BootPadWizard({
           {step === 'disconnect' && (
             <div className="space-y-4">
               <div className="text-center py-4">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-surface-tooltip flex items-center justify-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-surface-raised flex items-center justify-center">
                   <svg className="w-8 h-8 text-content-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                   </svg>
@@ -217,7 +217,7 @@ export function BootPadWizard({
                 <p className="text-content-secondary">Unplug the USB cable from your flight controller</p>
               </div>
 
-              <div className="p-4 bg-surface-tooltip rounded-lg space-y-3">
+              <div className="p-4 bg-surface-raised rounded-lg space-y-3">
                 <h4 className="text-content font-medium">Then short the boot pads:</h4>
                 <div className="flex gap-3 items-start">
                   <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-sm font-medium flex-shrink-0">1</div>
@@ -233,7 +233,7 @@ export function BootPadWizard({
                 </div>
               </div>
 
-              <label className="flex items-center gap-3 p-3 bg-surface rounded-lg cursor-pointer hover:bg-surface transition-colors">
+              <label className="flex items-center gap-3 p-3 bg-surface-raised rounded-lg cursor-pointer hover:bg-surface transition-colors">
                 <input
                   type="checkbox"
                   checked={jumperConfirmed}
@@ -248,7 +248,7 @@ export function BootPadWizard({
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep('intro')}
-                  className="px-4 py-2.5 text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
+                  className="px-4 py-2.5 text-content-secondary hover:text-content hover:bg-surface-raised rounded-lg transition-colors"
                 >
                   Back
                 </button>
@@ -256,7 +256,7 @@ export function BootPadWizard({
                   onClick={() => setStep('waiting')}
                   disabled={!jumperConfirmed}
                   className={`flex-1 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2
-                    ${jumperConfirmed ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'}
+                    ${jumperConfirmed ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-surface-raised text-content-secondary cursor-not-allowed'}
                   `}
                 >
                   Detect Board
@@ -279,7 +279,7 @@ export function BootPadWizard({
                 <p className="text-content-secondary">Make sure the boot pads are shorted and USB is connected</p>
               </div>
 
-              <div className="p-4 bg-surface rounded-lg text-center">
+              <div className="p-4 bg-surface-raised rounded-lg text-center">
                 <p className="text-content-secondary text-sm">
                   Scanning serial ports for STM32 bootloader...
                 </p>
@@ -287,7 +287,7 @@ export function BootPadWizard({
 
               <button
                 onClick={() => setStep('disconnect')}
-                className="w-full py-2.5 text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
+                className="w-full py-2.5 text-content-secondary hover:text-content hover:bg-surface-raised rounded-lg transition-colors"
               >
                 Go Back
               </button>
@@ -327,7 +327,7 @@ export function BootPadWizard({
                 </div>
               </div>
 
-              <div className="p-4 bg-surface-tooltip rounded-lg">
+              <div className="p-4 bg-surface-raised rounded-lg">
                 <h4 className="text-content font-medium mb-2">Ready to flash:</h4>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-content-secondary">Board:</span>
@@ -372,7 +372,7 @@ export function BootPadWizard({
                 className={`w-full py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2
                   ${jumperRemoved && riskAccepted
                     ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                    : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'}
+                    : 'bg-surface-raised text-content-secondary cursor-not-allowed'}
                 `}
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -399,7 +399,7 @@ export function BootPadWizard({
                   <span className="text-content-secondary">Progress</span>
                   <span className="text-content">{flashProgress?.progress || 0}%</span>
                 </div>
-                <div className="h-3 bg-surface-tooltip rounded-full overflow-hidden">
+                <div className="h-3 bg-surface-inset rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 transition-all duration-300"
                     style={{ width: `${flashProgress?.progress || 0}%` }}
@@ -468,7 +468,7 @@ export function BootPadWizard({
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep('disconnect')}
-                  className="flex-1 py-2.5 bg-surface-tooltip hover:bg-surface-raised text-content rounded-lg font-medium transition-colors"
+                  className="flex-1 py-2.5 bg-surface-raised hover:bg-surface-raised text-content rounded-lg font-medium transition-colors"
                 >
                   Try Again
                 </button>

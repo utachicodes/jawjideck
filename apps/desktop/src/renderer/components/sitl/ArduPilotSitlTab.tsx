@@ -9,6 +9,8 @@ import { useArduPilotSitlStore, ARDUPILOT_MODELS } from '../../stores/ardupilot-
 import { useConnectionStore } from '../../stores/connection-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import type { VirtualRCState, ArduPilotVehicleType, ArduPilotReleaseTrack } from '../../../shared/ipc-channels';
+import SitlEnvironmentPanel from './SitlEnvironmentPanel';
+import SitlFailurePanel from './SitlFailurePanel';
 
 const VEHICLE_TYPE_OPTIONS: Array<{ value: ArduPilotVehicleType; label: string; icon: string }> = [
   { value: 'copter', label: 'Copter', icon: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
@@ -209,7 +211,7 @@ export default function ArduPilotSitlTab() {
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
                 disabled={isRunning || isStarting}
-                className="w-full px-3 py-1.5 text-sm bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50"
+                className="w-full px-3 py-1.5 text-sm bg-surface-raised text-content border border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50"
               >
                 {modelOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -248,7 +250,7 @@ export default function ArduPilotSitlTab() {
                   disabled={isRunning || isStarting}
                   min={1}
                   max={10}
-                  className="w-full px-2 py-1.5 text-sm bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
+                  className="w-full px-2 py-1.5 text-sm bg-surface-raised text-content border border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
                 />
               </div>
               <div className="flex items-center gap-2 pt-5">
@@ -257,7 +259,7 @@ export default function ArduPilotSitlTab() {
                   checked={wipeOnStart}
                   onChange={(e) => setWipeOnStart(e.target.checked)}
                   disabled={isRunning || isStarting}
-                  className="w-4 h-4 rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500/50"
+                  className="w-4 h-4 rounded border bg-surface-raised text-blue-500 focus:ring-blue-500/50"
                 />
                 <label className="text-xs text-content-secondary">Wipe EEPROM</label>
               </div>
@@ -277,7 +279,7 @@ export default function ArduPilotSitlTab() {
                 value={homeLocation.lat}
                 onChange={(e) => setHomeLocation({ ...homeLocation, lat: parseFloat(e.target.value) || 0 })}
                 disabled={isRunning || isStarting}
-                className="w-full px-2 py-1.5 text-sm bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
+                className="w-full px-2 py-1.5 text-sm bg-surface-raised text-content border border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
               />
             </div>
             <div>
@@ -288,7 +290,7 @@ export default function ArduPilotSitlTab() {
                 value={homeLocation.lng}
                 onChange={(e) => setHomeLocation({ ...homeLocation, lng: parseFloat(e.target.value) || 0 })}
                 disabled={isRunning || isStarting}
-                className="w-full px-2 py-1.5 text-sm bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
+                className="w-full px-2 py-1.5 text-sm bg-surface-raised text-content border border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
               />
             </div>
             <div>
@@ -298,7 +300,7 @@ export default function ArduPilotSitlTab() {
                 value={homeLocation.alt}
                 onChange={(e) => setHomeLocation({ ...homeLocation, alt: parseFloat(e.target.value) || 0 })}
                 disabled={isRunning || isStarting}
-                className="w-full px-2 py-1.5 text-sm bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
+                className="w-full px-2 py-1.5 text-sm bg-surface-raised text-content border border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
               />
             </div>
             <div>
@@ -310,7 +312,7 @@ export default function ArduPilotSitlTab() {
                 disabled={isRunning || isStarting}
                 min={0}
                 max={359}
-                className="w-full px-2 py-1.5 text-sm bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
+                className="w-full px-2 py-1.5 text-sm bg-surface-raised text-content border border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
               />
             </div>
           </div>
@@ -375,7 +377,7 @@ export default function ArduPilotSitlTab() {
 
             {isDownloading && downloadProgress && (
               <div className="flex items-center gap-2">
-                <div className="w-32 h-2 bg-surface-raised rounded-full overflow-hidden">
+                <div className="w-32 h-2 bg-surface-inset rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 transition-all"
                     style={{ width: `${downloadProgress.progress}%` }}
@@ -476,7 +478,7 @@ export default function ArduPilotSitlTab() {
               </button>
               <button
                 onClick={resetRcState}
-                className="px-2 py-1 text-xs text-content-secondary hover:text-content bg-surface-tooltip hover:bg-surface-raised rounded transition-colors"
+                className="px-2 py-1 text-xs text-content-secondary hover:text-content bg-surface-raised hover:bg-surface-raised rounded transition-colors"
               >
                 Reset
               </button>
@@ -565,6 +567,14 @@ export default function ArduPilotSitlTab() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Environment Simulation & Failure Injection - shown when SITL running + connected */}
+      {isRunning && connectionState.isConnected && (
+        <>
+          <SitlEnvironmentPanel />
+          <SitlFailurePanel />
+        </>
       )}
 
       {/* Error display */}

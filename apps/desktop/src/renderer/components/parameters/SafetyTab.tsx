@@ -698,7 +698,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
                   <select
                     value={gpsRescue.altitudeMode}
                     onChange={(e) => setGpsRescue(prev => ({ ...prev, altitudeMode: parseInt(e.target.value) }))}
-                    className="flex-1 px-3 py-2 bg-surface-tooltip border rounded-lg text-content text-sm"
+                    className="flex-1 px-3 py-2 bg-surface-raised border rounded-lg text-content text-sm"
                   >
                     {ALTITUDE_MODES.map((m) => (
                       <option key={m.value} value={m.value}>{m.label}</option>
@@ -831,7 +831,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
                   <select
                     value={gpsRescue.sanityChecks}
                     onChange={(e) => setGpsRescue(prev => ({ ...prev, sanityChecks: parseInt(e.target.value) }))}
-                    className="flex-1 px-3 py-2 bg-surface-tooltip border rounded-lg text-content text-sm"
+                    className="flex-1 px-3 py-2 bg-surface-raised border rounded-lg text-content text-sm"
                   >
                     {SANITY_CHECKS.map((c) => (
                       <option key={c.value} value={c.value}>{c.label}</option>
@@ -843,7 +843,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
                   className={`w-full px-4 py-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all border ${
                     gpsRescue.allowArmingWithoutFix
                       ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
-                      : 'bg-surface-tooltip border text-content-secondary'
+                      : 'bg-surface-raised border text-content-secondary'
                   }`}
                 >
                   {gpsRescue.allowArmingWithoutFix ? (
@@ -864,7 +864,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
             {/* Advanced PIDs Toggle */}
             <button
               onClick={() => setShowGpsPids(!showGpsPids)}
-              className="w-full px-4 py-3 flex items-center justify-between bg-surface hover:bg-surface-tooltip rounded-lg transition-colors"
+              className="w-full px-4 py-3 flex items-center justify-between bg-surface hover:bg-surface-raised rounded-lg transition-colors"
             >
               <div className="flex items-center gap-2">
                 <Settings className="w-4 h-4 text-purple-400" />
@@ -875,7 +875,7 @@ const SafetyTab = forwardRef<SafetyTabHandle, Props>(function SafetyTab({ isInav
             </button>
 
             {showGpsPids && (
-              <div className="grid grid-cols-3 gap-6 p-4 bg-surface rounded-lg">
+              <div className="grid grid-cols-3 gap-6 p-4 bg-surface-raised rounded-lg">
                 <div className="space-y-3">
                   <h5 className="text-xs font-medium text-orange-400">Throttle</h5>
                   <DraggableSlider label="P" value={gpsPids.throttleP} onChange={(v) => setGpsPids(prev => ({ ...prev, throttleP: v }))} min={0} max={200} color="#F97316" />

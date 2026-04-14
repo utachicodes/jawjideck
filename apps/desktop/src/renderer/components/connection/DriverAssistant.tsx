@@ -120,7 +120,7 @@ export function DriverAssistant() {
                     key={driver.name}
                     onClick={() => handleDriverClick(driver)}
                     disabled={installing === driver.name}
-                    className="w-full text-left p-3 bg-surface hover:bg-surface-tooltip rounded-lg transition-colors group disabled:opacity-50"
+                    className="w-full text-left p-3 bg-surface hover:bg-surface-raised rounded-lg transition-colors group disabled:opacity-50"
                   >
                     <div className="flex items-center justify-between">
                       <div>

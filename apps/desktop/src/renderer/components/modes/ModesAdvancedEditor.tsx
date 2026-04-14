@@ -57,7 +57,7 @@ const AddModeModal: React.FC<AddModeModalProps> = ({
             placeholder="Search modes..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-sm text-content placeholder-content-tertiary focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-surface-raised border border rounded-lg text-sm text-content placeholder-content-tertiary focus:outline-none focus:ring-2 focus:ring-blue-500"
             autoFocus
           />
         </div>
@@ -79,7 +79,7 @@ const AddModeModal: React.FC<AddModeModalProps> = ({
                       onAdd(mode.boxId);
                       onClose();
                     }}
-                    className="w-full px-3 py-3 text-left hover:bg-surface rounded-lg transition-colors flex items-center gap-3"
+                    className="w-full px-3 py-3 text-left hover:bg-surface-raised rounded-lg transition-colors flex items-center gap-3"
                   >
                     <div className={`w-8 h-8 rounded-lg ${mode.color}/20 flex items-center justify-center`}>
                       <IconComponent className={`w-4 h-4 ${mode.color.replace('bg-', 'text-')}`} />

@@ -380,7 +380,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
           className={`ml-4 flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
             advancedMode
               ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
-              : 'bg-surface-tooltip text-content-secondary border'
+              : 'bg-surface-raised text-content-secondary border border-subtle'
           }`}
         >
           {advancedMode ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
@@ -389,7 +389,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
       </div>
 
       {/* Mode Switch Channel — with auto-detect */}
-      <div className="bg-surface rounded-xl border-subtle p-4">
+      <div className="bg-surface rounded-xl border border-subtle p-4">
         {!detectMode ? (
           /* Default state: dropdown + detect button */
           <div className="flex items-center justify-between">
@@ -401,7 +401,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
               <select
                 value={modeChannel}
                 onChange={(e) => handleChannelChange(Number(e.target.value))}
-                className="px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                className="px-3 py-2 bg-surface-raised border border-subtle rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
               >
                 {[5, 6, 7, 8, 9, 10, 11, 12].map((ch) => (
                   <option key={ch} value={ch}>
@@ -415,7 +415,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors ${
                   signalStatus === 'active'
                     ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/30'
-                    : 'bg-surface-tooltip text-content-tertiary border cursor-not-allowed'
+                    : 'bg-surface-raised text-content-tertiary border border-subtle cursor-not-allowed'
                 }`}
                 title={signalStatus !== 'active' ? 'Connect to vehicle to use auto-detect' : 'Auto-detect mode switch channel'}
               >
@@ -448,7 +448,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                 )}
                 <button
                   onClick={cancelDetect}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-surface-tooltip text-content-secondary border hover:bg-surface-raised transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-surface-raised text-content-secondary border border-subtle hover:bg-surface transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />
                   Cancel
@@ -476,7 +476,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                       </span>
                       <span className={`text-[10px] font-mono ${isDetected ? 'text-green-400' : 'text-content-tertiary'}`}>{value}</span>
                     </div>
-                    <div className={`h-1.5 rounded-full overflow-hidden relative ${isDetected ? 'bg-green-500/20' : 'bg-surface-tooltip'}`}>
+                    <div className={`h-1.5 rounded-full overflow-hidden relative ${isDetected ? 'bg-green-500/20' : 'bg-surface-raised'}`}>
                       <div className="absolute left-1/2 top-0 bottom-0 w-px bg-surface-raised" />
                       <div
                         className={`absolute top-0 bottom-0 w-1.5 rounded-full transition-all ${
@@ -502,7 +502,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
       />
 
       {/* Visual Switch Position Diagram */}
-      <div className="bg-surface rounded-xl border-subtle p-4">
+      <div className="bg-surface rounded-xl border border-subtle p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-content">Switch Position Diagram</h3>
           {signalStatus === 'active' ? (
@@ -519,10 +519,10 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
           <div className="flex flex-col items-center">
             {advancedMode ? (
               /* 6-position switch */
-              <div className="w-12 h-48 bg-surface-tooltip rounded-lg relative border">
+              <div className="w-12 h-48 bg-surface-raised rounded-lg relative border border-subtle">
                 {MODE_PWM_RANGES.map((range, i) => {
                   const topPercent = 8 + i * (84 / 5); // Distribute 6 markers evenly
-                  const slotColor = i <= 1 ? 'bg-blue-500/50' : i <= 3 ? 'bg-purple-500/50' : 'bg-orange-500/50';
+                  const slotColor = i <= 1 ? 'bg-blue-500' : i <= 3 ? 'bg-purple-500' : 'bg-orange-500';
                   return (
                     <div key={range.slot} className={`absolute left-1/2 -translate-x-1/2 w-8 h-1 ${slotColor} rounded`} style={{ top: `${100 - topPercent}%` }} />
                   );
@@ -536,10 +536,10 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
               </div>
             ) : (
               /* 3-position switch */
-              <div className="w-12 h-32 bg-surface-tooltip rounded-lg relative border">
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-orange-500/50 rounded" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-1 bg-purple-500/50 rounded" />
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-blue-500/50 rounded" />
+              <div className="w-12 h-32 bg-surface-raised rounded-lg relative border border-subtle">
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-orange-500 rounded" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-1 bg-purple-500 rounded" />
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-blue-500 rounded" />
                 {activeSlot && (
                   <div
                     className={`absolute left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-cyan-500 shadow-lg shadow-cyan-500/50 transition-all duration-300 ${
@@ -569,7 +569,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                     className={`flex items-center gap-3 p-2.5 rounded-lg transition-colors ${
                       isSlotActive
                         ? 'bg-cyan-500/10 border-cyan-500/30'
-                        : 'bg-surface border-transparent'
+                        : 'bg-surface-raised border-transparent'
                     }`}
                   >
                     <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
@@ -609,7 +609,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                     className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
                       isPositionActive
                         ? 'bg-cyan-500/10 border-cyan-500/30'
-                        : 'bg-surface border-transparent'
+                        : 'bg-surface-raised border-transparent'
                     }`}
                   >
                     <div className={`w-3 h-3 rounded-full ${pos.color}`} />
@@ -696,7 +696,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                       // Set both slots in this position group
                       pos.slots.forEach(slot => handleModeChange(slot, newMode));
                     }}
-                    className="w-full px-3 py-2.5 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-surface-input border border-subtle rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
                   >
                     {Object.entries(getModesForCategory(vehicleCategory)).map(([num, mode]) => (
                       <option key={num} value={num}>
@@ -771,7 +771,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                   </div>
 
                   {/* PWM Range Indicator */}
-                  <div className="relative h-2 bg-surface-tooltip rounded-full overflow-hidden">
+                  <div className="relative h-2 bg-surface-inset rounded-full overflow-hidden">
                     <div
                       className={`absolute h-full rounded-full ${
                         isActive ? 'bg-cyan-500' : 'bg-gradient-to-r from-blue-500 to-blue-400'
@@ -791,7 +791,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
                   <select
                     value={currentMode}
                     onChange={(e) => handleModeChange(range.slot, Number(e.target.value))}
-                    className="w-full px-3 py-2.5 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-surface-input border border-subtle rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
                   >
                     {Object.entries(getModesForCategory(vehicleCategory)).map(([num, mode]) => (
                       <option key={num} value={num}>
@@ -822,7 +822,7 @@ const FlightModesTab: React.FC<FlightModesTabProps> = ({ vehicleCategory = 'copt
       {/* Mode Reference */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-content">Mode Reference</h3>
-        <div className="bg-surface rounded-xl border-subtle/30 p-4">
+        <div className="bg-surface rounded-xl border border-subtle p-4">
           <div className="grid grid-cols-3 gap-3">
             {Object.entries(getModesForCategory(vehicleCategory))
               .filter(([, mode]) => mode.safe)

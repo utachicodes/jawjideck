@@ -40,7 +40,7 @@ export function CameraPresetSelector({ value, onChange }: CameraPresetSelectorPr
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => { setIsOpen(!isOpen); setSearch(''); }}
-        className="w-full px-3 py-2 text-left text-xs bg-surface-tooltip border border rounded-lg text-content hover:border transition-colors flex items-center justify-between"
+        className="w-full px-3 py-2 text-left text-xs bg-surface-raised border border rounded-lg text-content hover:border transition-colors flex items-center justify-between"
       >
         <span className="truncate">{value.name}</span>
         <svg className={`w-3.5 h-3.5 text-content-secondary transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -57,9 +57,9 @@ export function CameraPresetSelector({ value, onChange }: CameraPresetSelectorPr
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-surface-tooltip border border rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-surface-raised border border rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
           {/* Search */}
-          <div className="sticky top-0 bg-surface-tooltip p-2 border-b border-subtle">
+          <div className="sticky top-0 bg-surface-raised p-2 border-b border-subtle">
             <input
               type="text"
               value={search}

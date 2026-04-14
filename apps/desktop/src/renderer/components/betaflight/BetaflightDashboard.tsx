@@ -368,7 +368,7 @@ export function BetaflightDashboard() {
                       <span className="text-content-secondary">{getChannelName(i, 'msp')}</span>
                       <span className="text-content-secondary font-mono">{value}</span>
                     </div>
-                    <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-surface-inset rounded-full overflow-hidden">
                       <div
                         className="h-full bg-blue-500 transition-all"
                         style={{ width: `${((value - 1000) / 1000) * 100}%` }}
@@ -388,7 +388,7 @@ export function BetaflightDashboard() {
                           <span className="text-[11px] text-content-secondary">{getChannelName(i + PRIMARY_CHANNEL_COUNT, 'msp')}</span>
                           <span className="text-[10px] text-content-secondary font-mono">{value}</span>
                         </div>
-                        <div className="h-1 bg-surface-raised rounded-full overflow-hidden">
+                        <div className="h-1 bg-surface-inset rounded-full overflow-hidden">
                           <div
                             className="h-full bg-blue-500/70 transition-all"
                             style={{ width: `${((value - 1000) / 1000) * 100}%` }}
@@ -411,7 +411,7 @@ export function BetaflightDashboard() {
                       <span className="text-content-secondary">M{i + 1}</span>
                       <span className="text-content-secondary font-mono">{value}</span>
                     </div>
-                    <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-surface-inset rounded-full overflow-hidden">
                       <div
                         className="h-full bg-emerald-500 transition-all"
                         style={{ width: `${((value - 1000) / 1000) * 100}%` }}

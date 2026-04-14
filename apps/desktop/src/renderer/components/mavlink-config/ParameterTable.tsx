@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { History, AlertTriangle, RotateCw, Loader2, Star, CheckCircle, XCircle, Info } from 'lucide-react';
 import { useParameterStore, type SortColumn } from '../../stores/parameter-store';
 import { PARAMETER_GROUPS } from '../../../shared/parameter-groups';
@@ -489,6 +490,14 @@ const ParameterTable: React.FC = () => {
   const paramCount = parameters.size;
   const modified = modifiedCount();
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: displayParams.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => 44,
+    overscan: 20,
+  });
+
   return (
     <div className="h-full flex flex-col">
       {/* Search & filter bar */}
@@ -500,7 +509,7 @@ const ParameterTable: React.FC = () => {
               value={searchQuery}
               onChange={handleSearch}
               placeholder="Search parameters... (regex supported)"
-              className="w-full px-4 py-2 pl-10 bg-surface border-subtle rounded-lg text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-blue-500/50"
+              className="w-full px-4 py-2 pl-10 bg-surface-input border border-subtle rounded-lg text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-blue-500/50"
             />
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -533,7 +542,7 @@ const ParameterTable: React.FC = () => {
               </button>
             </div>
             {saveDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-52 bg-surface-tooltip border-subtle rounded-lg shadow-xl z-50 py-1">
+              <div className="absolute top-full left-0 mt-1 w-52 bg-surface-raised border-subtle rounded-lg shadow-xl z-50 py-1">
                 <button
                   onClick={() => handleSaveToFile(false)}
                   className="w-full px-3 py-2 text-left text-sm text-content hover:bg-surface-raised transition-colors"
@@ -615,7 +624,7 @@ const ParameterTable: React.FC = () => {
               <span>Downloading parameters...</span>
               <span>{progress.received} / {progress.total} ({progress.percentage}%)</span>
             </div>
-            <div className="h-1.5 bg-surface-tooltip rounded-full overflow-hidden">
+            <div className="h-1.5 bg-surface-inset rounded-full overflow-hidden">
               <div
                 className="h-full bg-blue-500 transition-all duration-150"
                 style={{ width: `${progress.percentage}%` }}
@@ -740,7 +749,7 @@ const ParameterTable: React.FC = () => {
       )}
 
       {/* Parameter table */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto" ref={scrollContainerRef}>
         {paramCount === 0 && !isLoading ? (
           <div className="h-full flex items-center justify-center text-content-secondary">
             <div className="text-center">
@@ -752,7 +761,7 @@ const ParameterTable: React.FC = () => {
             </div>
           </div>
         ) : (
-          <table className="w-full">
+          <table className="w-full table-fixed">
             <thead className="sticky top-0 bg-surface backdrop-blur border-b border-subtle z-10">
               <tr className="text-left text-xs text-content-secondary uppercase tracking-wider">
                 <th className="px-4 py-3 font-medium w-[220px]">
@@ -777,10 +786,21 @@ const ParameterTable: React.FC = () => {
                 </th>
               </tr>
             </thead>
-            <tbody>
-              {displayParams.map((param, idx) => (
+            <tbody style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const param = displayParams[virtualRow.index]!;
+                const idx = virtualRow.index;
+                return (
                 <tr
                   key={param.id}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: virtualRow.size,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
                   className={`hover:bg-surface transition-colors ${idx % 2 === 0 ? 'bg-surface-overlay-subtle' : ''}`}
                 >
                   <td className="px-4 py-2.5">
@@ -814,7 +834,7 @@ const ParameterTable: React.FC = () => {
                           onKeyDown={(e) => handleKeyDown(e, param.id)}
                           onBlur={() => !editError && saveEdit(param.id)}
                           autoFocus
-                          className={`w-full px-2 py-1 bg-surface-tooltip border rounded text-sm font-mono text-content focus:outline-none ${
+                          className={`w-full px-2 py-1 bg-surface-raised border rounded text-sm font-mono text-content focus:outline-none ${
                             editError ? 'border-red-500/50' : editWarning ? 'border-amber-500/50' : 'border-blue-500/50'
                           }`}
                         />
@@ -900,7 +920,8 @@ const ParameterTable: React.FC = () => {
                     ) : null}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -1206,7 +1227,7 @@ const ParameterTable: React.FC = () => {
                       <span>Applying parameters...</span>
                       <span>{applyProgress.applied} / {applyProgress.total}</span>
                     </div>
-                    <div className="h-1.5 bg-surface-tooltip rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-surface-inset rounded-full overflow-hidden">
                       <div
                         className="h-full bg-blue-500 transition-all duration-150"
                         style={{ width: `${(applyProgress.applied / applyProgress.total) * 100}%` }}
@@ -1227,7 +1248,7 @@ const ParameterTable: React.FC = () => {
                     <button
                       onClick={handleApplySelectedParams}
                       disabled={isApplyingFileParams || fileParamDiffs.filter(d => d.selected).length === 0}
-                      className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-surface-raised text-blue-400 disabled:text-white-secondary rounded-lg text-sm font-medium transition-colors"
+                      className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-surface-raised text-blue-400 disabled:text-content-tertiary rounded-lg text-sm font-medium transition-colors"
                     >
                       {isApplyingFileParams
                         ? 'Applying...'

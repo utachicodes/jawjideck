@@ -70,7 +70,7 @@ export function CalibrationHeader() {
                       : isCompleted
                         ? 'bg-cyan-500/30 text-cyan-400'
                         : isDisabled
-                          ? 'bg-surface-tooltip text-content-tertiary'
+                          ? 'bg-surface-raised text-content-tertiary'
                           : 'bg-surface-raised text-content-secondary'
                   }`}
                 >

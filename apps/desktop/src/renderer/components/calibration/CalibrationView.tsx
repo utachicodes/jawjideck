@@ -22,7 +22,7 @@ export function CalibrationView() {
   }, [open]);
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-gray-900/50 via-gray-900/30 to-gray-800/50">
+    <div className="h-full flex flex-col">
       {/* Header */}
       <CalibrationHeader />
 

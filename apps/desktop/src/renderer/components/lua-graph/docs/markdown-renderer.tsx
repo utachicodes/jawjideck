@@ -28,7 +28,7 @@ function parseInline(text: string, keyBase: number): ReactNode[] {
     if (match[1] !== undefined) {
       // Inline code
       elements.push(
-        <code key={key++} className="px-1.5 py-0.5 rounded bg-surface-tooltip text-amber-400 text-[12px] font-mono">
+        <code key={key++} className="px-1.5 py-0.5 rounded bg-surface-raised text-amber-400 text-[12px] font-mono">
           {match[1]}
         </code>,
       );

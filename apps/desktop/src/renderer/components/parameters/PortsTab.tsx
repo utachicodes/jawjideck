@@ -196,7 +196,7 @@ function PortRow({ port, boardLabel, isVcp, isSoftSerial, onUpdateFunction, onUp
     onUpdateFunction(port.identifier, newMask);
   };
 
-  const selectStyle = 'bg-surface-tooltip text-content text-xs rounded px-1.5 py-1 border focus:border-blue-500 focus:outline-none w-full';
+  const selectStyle = 'bg-surface-raised text-content text-xs rounded px-1.5 py-1 border focus:border-blue-500 focus:outline-none w-full';
 
   return (
     <tr className="border-b border-subtle hover:bg-surface-overlay-subtle">
@@ -226,7 +226,7 @@ function PortRow({ port, boardLabel, isVcp, isSoftSerial, onUpdateFunction, onUp
           checked={hasMsp}
           onChange={handleMspToggle}
           disabled={isVcp}
-          className="rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+          className="rounded border bg-surface-raised text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
         />
       </td>
 
@@ -254,7 +254,7 @@ function PortRow({ port, boardLabel, isVcp, isSoftSerial, onUpdateFunction, onUp
           type="checkbox"
           checked={hasRx}
           onChange={handleRxToggle}
-          className="rounded border bg-surface-tooltip text-green-500 focus:ring-green-500 focus:ring-offset-0"
+          className="rounded border bg-surface-raised text-green-500 focus:ring-green-500 focus:ring-offset-0"
         />
       </td>
 

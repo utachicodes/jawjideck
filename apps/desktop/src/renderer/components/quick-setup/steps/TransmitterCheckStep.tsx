@@ -43,7 +43,7 @@ const ChannelBar: React.FC<{
         </span>
         <span className="text-content-secondary font-mono">{value}</span>
       </div>
-      <div className="h-2 bg-surface-tooltip rounded-full overflow-hidden relative">
+      <div className="h-2 bg-surface-inset rounded-full overflow-hidden relative">
         <div className="absolute left-1/2 top-0 bottom-0 w-px bg-surface-raised" />
         <div
           className={`absolute top-0 bottom-0 w-2 rounded-full transition-all ${
@@ -73,7 +73,7 @@ const CompactChannelBar: React.FC<{
         </span>
         <span className="text-[10px] text-content-tertiary font-mono">{value}</span>
       </div>
-      <div className="h-1.5 bg-surface-tooltip rounded-full overflow-hidden relative">
+      <div className="h-1.5 bg-surface-inset rounded-full overflow-hidden relative">
         <div className="absolute left-1/2 top-0 bottom-0 w-px bg-surface-raised" />
         <div
           className={`absolute top-0 bottom-0 w-1.5 rounded-full transition-all ${
@@ -539,7 +539,7 @@ export const TransmitterCheckStep: React.FC = () => {
 
       {/* Selected preset reminder */}
       {selectedPreset && (
-        <div className="p-3 bg-surface rounded-lg border border">
+        <div className="p-3 bg-surface-raised rounded-lg border border">
           <div className="flex items-center gap-3">
             <selectedPreset.icon className="w-6 h-6 text-content" />
             <div>
@@ -556,7 +556,7 @@ export const TransmitterCheckStep: React.FC = () => {
       <div className="flex items-center justify-between pt-4 border-t border">
         <button
           onClick={prevStep}
-          className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface-raised rounded-lg transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back

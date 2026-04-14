@@ -192,7 +192,7 @@ export function BoardPicker({
         onKeyDown={handleKeyDown}
         className={`
           w-full px-3 py-2 text-left rounded-md border
-          bg-surface-tooltip border text-content
+          bg-surface-raised border text-content
           hover:border focus:outline-none focus:ring-2 focus:ring-blue-500
           flex items-center justify-between
           ${isLoading ? 'opacity-50 cursor-wait' : ''}
@@ -229,7 +229,7 @@ export function BoardPicker({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-surface-tooltip border border rounded-md shadow-lg max-h-[400px] overflow-hidden flex flex-col">
+        <div className="absolute z-50 w-full mt-1 bg-surface-raised border border rounded-md shadow-lg max-h-[400px] overflow-hidden flex flex-col">
           {/* Search input */}
           <div className="p-2 border-b border">
             <div className="relative">

@@ -510,7 +510,7 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
       {/* Collision warning modal */}
       {showCollisionWarning && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-surface-tooltip rounded-lg shadow-xl border border-default p-6 max-w-md mx-4">
+          <div className="bg-surface-raised rounded-lg shadow-xl border border-default p-6 max-w-md mx-4">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
                 <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

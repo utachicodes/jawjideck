@@ -78,7 +78,7 @@ export const QuickSetupWizard: React.FC = () => {
           </div>
           <button
             onClick={handleClose}
-            className="p-2 text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
+            className="p-2 text-content-secondary hover:text-content hover:bg-surface-raised rounded-lg transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path

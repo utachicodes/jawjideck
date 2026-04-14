@@ -163,19 +163,19 @@ export function MissionDetailPanel({ onLoadToEditor }: MissionDetailPanelProps) 
 
           {/* Metadata grid */}
           <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="bg-surface rounded-lg px-3 py-2">
+            <div className="bg-surface-raised rounded-lg px-3 py-2">
               <span className="text-content-secondary block">Waypoints</span>
               <span className="text-content font-medium">{selectedMission.waypointCount}</span>
             </div>
-            <div className="bg-surface rounded-lg px-3 py-2">
+            <div className="bg-surface-raised rounded-lg px-3 py-2">
               <span className="text-content-secondary block">Distance</span>
               <span className="text-content font-medium">{formatDistance(selectedMission.totalDistanceMeters)}</span>
             </div>
-            <div className="bg-surface rounded-lg px-3 py-2">
+            <div className="bg-surface-raised rounded-lg px-3 py-2">
               <span className="text-content-secondary block">Vehicle</span>
               <span className="text-content font-medium">{vehicle?.name ?? 'None'}</span>
             </div>
-            <div className="bg-surface rounded-lg px-3 py-2">
+            <div className="bg-surface-raised rounded-lg px-3 py-2">
               <span className="text-content-secondary block">Flights</span>
               <span className="text-content font-medium">{selectedMission.flightCount}</span>
             </div>

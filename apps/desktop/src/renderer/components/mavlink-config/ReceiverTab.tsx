@@ -59,7 +59,7 @@ const ChannelBar: React.FC<{
         </span>
         <span className="text-content-secondary font-mono">{value}</span>
       </div>
-      <div className="h-2 bg-surface-tooltip rounded-full overflow-hidden relative">
+      <div className="h-2 bg-surface-inset rounded-full overflow-hidden relative">
         <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-600" />
         <div
           className={`absolute top-0 bottom-0 w-2 rounded-full transition-all ${
@@ -89,7 +89,7 @@ const CompactChannelBar: React.FC<{
         </span>
         <span className="text-[10px] text-content-tertiary font-mono">{value}</span>
       </div>
-      <div className="h-1.5 bg-surface-tooltip rounded-full overflow-hidden relative">
+      <div className="h-1.5 bg-surface-inset rounded-full overflow-hidden relative">
         <div className="absolute left-1/2 top-0 bottom-0 w-px bg-surface-raised" />
         <div
           className={`absolute top-0 bottom-0 w-1.5 rounded-full transition-all ${
@@ -227,7 +227,7 @@ const ReceiverTab: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       {/* RC Protocol Card */}
-      <div className="bg-surface rounded-xl border-subtle p-5">
+      <div className="bg-surface rounded-xl border border-subtle p-5">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-lg bg-teal-500/20 flex items-center justify-center">
             <Radio className="w-5 h-5 text-teal-400" />
@@ -258,7 +258,7 @@ const ReceiverTab: React.FC = () => {
                   className={`px-4 py-2 rounded-lg text-sm transition-all ${
                     Number(rcProtocols) === opt.value
                       ? 'bg-teal-600 text-white'
-                      : 'bg-surface-tooltip text-content-secondary hover:bg-surface-raised'
+                      : 'bg-surface-raised text-content-secondary hover:bg-surface-raised'
                   }`}
                 >
                   {opt.label}
@@ -273,7 +273,7 @@ const ReceiverTab: React.FC = () => {
             <select
               value={Number(rcProtocols)}
               onChange={(e) => setParameter('RC_PROTOCOLS', Number(e.target.value))}
-              className="w-full bg-surface-tooltip text-content rounded-lg px-3 py-2 text-sm border focus:border-teal-500 focus:outline-none"
+              className="w-full bg-surface-raised text-content rounded-lg px-3 py-2 text-sm border focus:border-teal-500 focus:outline-none"
             >
               {RC_PROTOCOL_OPTIONS.map((p) => (
                 <option key={p.value} value={p.value}>
@@ -286,7 +286,7 @@ const ReceiverTab: React.FC = () => {
       </div>
 
       {/* Live RC Channels Card */}
-      <div className="bg-surface rounded-xl border-subtle p-5">
+      <div className="bg-surface rounded-xl border border-subtle p-5">
         <div className="flex items-center gap-3 mb-5">
           <div className={`w-10 h-10 rounded-lg bg-${signalBadge.color}-500/20 flex items-center justify-center`}>
             {signalStatus === 'active'
@@ -358,7 +358,7 @@ const ReceiverTab: React.FC = () => {
       </div>
 
       {/* RC Calibration Card */}
-      <div className="bg-surface rounded-xl border-subtle p-5">
+      <div className="bg-surface rounded-xl border border-subtle p-5">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
             <Activity className="w-5 h-5 text-blue-400" />

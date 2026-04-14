@@ -387,7 +387,7 @@ export const PresetSelectionStep: React.FC = () => {
             <>
               <button
                 onClick={handleCancelMismatch}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface-raised rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Cancel
@@ -412,7 +412,7 @@ export const PresetSelectionStep: React.FC = () => {
             <>
               <button
                 onClick={handleCancelMismatch}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface-raised rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Choose Different Preset
@@ -462,7 +462,7 @@ export const PresetSelectionStep: React.FC = () => {
             </div>
           )}
           {currentPlatformName && (
-            <div className="flex items-center gap-2 px-2 py-1 bg-surface-tooltip rounded-full text-content-secondary">
+            <div className="flex items-center gap-2 px-2 py-1 bg-surface-inset rounded-full text-content-secondary">
               <Plane className="w-3 h-3" />
               <span>Current: {currentPlatformName}</span>
             </div>
@@ -598,7 +598,7 @@ export const PresetSelectionStep: React.FC = () => {
           </div>
         )}
         {currentPlatformName && (
-          <div className="flex items-center gap-2 px-2 py-1 bg-surface-tooltip rounded-full text-content-secondary">
+          <div className="flex items-center gap-2 px-2 py-1 bg-surface-inset rounded-full text-content-secondary">
             <Plane className="w-3 h-3" />
             <span>Current: {currentPlatformName}</span>
           </div>

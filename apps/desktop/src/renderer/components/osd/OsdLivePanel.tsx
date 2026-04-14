@@ -148,7 +148,7 @@ function RcBar({
   return (
     <div className="flex items-center gap-2">
       <span className="text-[10px] text-content-secondary w-8 shrink-0">{label}</span>
-      <div className="flex-1 relative h-3.5 bg-surface-tooltip rounded overflow-hidden">
+      <div className="flex-1 relative h-3.5 bg-surface-raised rounded overflow-hidden">
         {!isThrottle && (
           <div className="absolute top-0 bottom-0 w-px bg-gray-600" style={{ left: '50%' }} />
         )}

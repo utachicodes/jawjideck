@@ -393,7 +393,7 @@ export function createDefaultWaypoint(
     param1: 0,      // Hold time
     param2: 0,      // Acceptance radius
     param3: 0,      // Pass radius (0 = fly through)
-    param4: NaN,    // Yaw (NaN = unchanged)
+    param4: 0,      // Yaw angle (0 = no change)
     latitude,
     longitude,
     altitude,
@@ -424,7 +424,7 @@ export function createTakeoffWaypoint(
     param1: pitch,   // Minimum pitch (degrees)
     param2: 0,       // Empty
     param3: 0,       // Empty
-    param4: NaN,     // Yaw (NaN = keep current)
+    param4: 0,       // Yaw angle (0 = keep current heading)
     latitude: 0,     // ArduPilot takes off from current position
     longitude: 0,    // ArduPilot takes off from current position
     altitude,

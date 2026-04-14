@@ -48,7 +48,7 @@ export const AuxChannelPicker: React.FC<AuxChannelPickerProps> = ({
       <button
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`w-full px-4 py-3 bg-surface-tooltip rounded-lg border ${
+        className={`w-full px-4 py-3 bg-surface-raised rounded-lg border ${
           isOpen ? 'border-blue-500' : 'border'
         } text-left transition-colors hover:bg-surface-raised disabled:opacity-50 disabled:cursor-not-allowed`}
       >
@@ -85,7 +85,7 @@ export const AuxChannelPicker: React.FC<AuxChannelPickerProps> = ({
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full bg-surface-tooltip border border rounded-lg shadow-xl overflow-hidden">
+        <div className="absolute z-50 mt-1 w-full bg-surface-raised border border rounded-lg shadow-xl overflow-hidden">
           {AUX_CHANNELS.map((channel) => {
             const rcValue = getRcValue(channel.index);
             const isSelected = channel.index === selected;
@@ -117,7 +117,7 @@ export const AuxChannelPicker: React.FC<AuxChannelPickerProps> = ({
                   <div className="flex items-center gap-3">
                     {/* Live RC value with visual bar */}
                     <div className="w-20">
-                      <div className="h-2 bg-surface-raised rounded-full overflow-hidden">
+                      <div className="h-2 bg-surface-inset rounded-full overflow-hidden">
                         <div
                           className="h-full bg-yellow-500/60 transition-all duration-75"
                           style={{

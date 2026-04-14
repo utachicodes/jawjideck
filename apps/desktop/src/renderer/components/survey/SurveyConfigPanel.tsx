@@ -176,7 +176,7 @@ export function SurveyConfigPanel() {
                     className={`flex-1 px-1.5 py-1 text-[10px] rounded-md transition-colors ${
                       config.altitudeReference === opt.id
                         ? 'bg-purple-600/80 text-white'
-                        : 'bg-surface-tooltip text-content-secondary hover:text-content hover:bg-surface-raised'
+                        : 'bg-surface-raised text-content-secondary hover:text-content hover:bg-surface-raised'
                     }`}
                     title={opt.description}
                   >
@@ -207,7 +207,7 @@ export function SurveyConfigPanel() {
                 className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-colors ${
                   config.pattern === opt.id
                     ? 'bg-purple-600/80 text-white'
-                    : 'bg-surface-tooltip text-content-secondary hover:text-content hover:bg-surface-raised'
+                    : 'bg-surface-raised text-content-secondary hover:text-content hover:bg-surface-raised'
                 }`}
                 title={opt.description}
               >
@@ -300,7 +300,7 @@ function SliderInput({
         min={min}
         max={max}
         step={step}
-        className="flex-1 h-1 bg-surface-raised rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-400 [&::-webkit-slider-thumb]:cursor-grab"
+        className="flex-1 h-1 bg-surface-inset rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-400 [&::-webkit-slider-thumb]:cursor-grab"
       />
       <span className="text-xs text-content w-14 text-right tabular-nums font-medium">{value}{unit}</span>
     </div>
@@ -326,7 +326,7 @@ function NumberInput({
         min={min}
         max={max}
         step={step}
-        className="w-full px-2 py-1 text-xs bg-surface-tooltip border border rounded text-content focus:border-purple-500 focus:outline-none"
+        className="w-full px-2 py-1 text-xs bg-surface-raised border border rounded text-content focus:border-purple-500 focus:outline-none"
       />
     </div>
   );

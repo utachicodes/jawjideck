@@ -50,7 +50,7 @@ export const RcChannelBar: React.FC<RcChannelBarProps> = ({
       )}
 
       {/* Bar container */}
-      <div className={`relative ${compact ? 'h-4' : 'h-6'} bg-surface-tooltip rounded-full overflow-hidden`}>
+      <div className={`relative ${compact ? 'h-4' : 'h-6'} bg-surface-inset rounded-full overflow-hidden`}>
         {/* Active range highlight */}
         <div
           className={`absolute top-0 bottom-0 ${color} ${

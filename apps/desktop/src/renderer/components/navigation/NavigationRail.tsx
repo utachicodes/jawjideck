@@ -29,20 +29,20 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    id: 'parameters',
-    label: 'Parameters',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-      </svg>
-    ),
-  },
-  {
     id: 'library',
     label: 'Mission Library',
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    ),
+  },
+  {
+    id: 'parameters',
+    label: 'Parameters',
+    icon: (
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
       </svg>
     ),
   },
@@ -167,11 +167,11 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
   // Show Calibration when connected
   const showCalibration = connectionState.isConnected;
 
-  // Build the nav items list - insert calibration after parameters (index 2)
+  // Build the nav items list - insert calibration after parameters (index 3)
   const allNavItems = [...navItems];
   if (showCalibration) {
-    // Insert after parameters (which is at index 2)
-    allNavItems.splice(3, 0, calibrationNavItem);
+    // Insert after parameters (which is at index 3)
+    allNavItems.splice(4, 0, calibrationNavItem);
   }
   if (showCli) {
     allNavItems.push(cliNavItem);
@@ -220,7 +220,7 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
           {item.icon}
 
           {/* Tooltip */}
-          <div className={`absolute left-full ml-2 px-2 py-1 bg-surface-tooltip text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg ${item.disabled ? 'text-content-tertiary' : 'text-content'}`}>
+          <div className={`absolute left-full ml-2 px-2 py-1 bg-surface-raised text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg ${item.disabled ? 'text-content-tertiary' : 'text-content'}`}>
             {item.label}
           </div>
         </button>
@@ -240,7 +240,7 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
           {item.icon}
 
           {/* Tooltip */}
-          <div className="absolute left-full ml-2 px-2 py-1 bg-surface-tooltip text-content-tertiary text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
+          <div className="absolute left-full ml-2 px-2 py-1 bg-surface-raised text-content-tertiary text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
             {item.label}
           </div>
         </button>
@@ -271,7 +271,7 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        <div className="absolute left-full ml-2 px-2 py-1 bg-surface-tooltip text-content text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
+        <div className="absolute left-full ml-2 px-2 py-1 bg-surface-raised text-content text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
           Report a Bug
         </div>
       </button>
@@ -324,7 +324,7 @@ function ThemeToggle() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       )}
-      <div className="absolute left-full ml-2 px-2 py-1 bg-surface-tooltip text-content text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
+      <div className="absolute left-full ml-2 px-2 py-1 bg-surface-raised text-content text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
         {THEME_LABELS[theme]}
       </div>
     </button>

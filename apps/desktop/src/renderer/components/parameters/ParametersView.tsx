@@ -507,7 +507,7 @@ export function ParametersView() {
             <button
               onClick={handleOfflineSave}
               disabled={!offlineHasUnsavedChanges}
-              className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 disabled:bg-surface-raised text-green-400 disabled:text-white-secondary rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 disabled:bg-surface-raised text-green-400 disabled:text-content-tertiary rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               title="Save to current file"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -556,7 +556,7 @@ export function ParametersView() {
             <button
               onClick={handleRefresh}
               disabled={isLoading}
-              className="px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-surface-raised text-blue-400 disabled:text-white-secondary rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-surface-raised text-blue-400 disabled:text-content-tertiary rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               title="Download parameters from flight controller"
             >
               <svg className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -570,7 +570,7 @@ export function ParametersView() {
               <button
                 onClick={handleWriteToFlashClick}
                 disabled={isWritingFlash}
-                className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 disabled:bg-surface-raised text-green-400 disabled:text-white-secondary rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 disabled:bg-surface-raised text-green-400 disabled:text-content-tertiary rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 title="Save parameters to flight controller's permanent storage (EEPROM)"
               >
                 <svg className={`w-4 h-4 ${isWritingFlash ? 'animate-pulse' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -608,7 +608,7 @@ export function ParametersView() {
                 </button>
               </div>
               {saveDropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 w-56 bg-surface-tooltip border-subtle rounded-lg shadow-xl z-50 py-1">
+                <div className="absolute top-full left-0 mt-1 w-56 bg-surface-raised border-subtle rounded-lg shadow-xl z-50 py-1">
                   <button
                     onClick={() => handleSaveToFile('all')}
                     className="w-full px-3 py-2 text-left text-sm text-content hover:bg-surface-raised transition-colors"
@@ -704,7 +704,7 @@ export function ParametersView() {
               <span>Downloading parameters...</span>
               <span>{progress.received} / {progress.total} ({progress.percentage}%)</span>
             </div>
-            <div className="h-1.5 bg-surface-tooltip rounded-full overflow-hidden">
+            <div className="h-1.5 bg-surface-inset rounded-full overflow-hidden">
               <div
                 className="h-full bg-blue-500 transition-all duration-150"
                 style={{ width: `${progress.percentage}%` }}
@@ -888,7 +888,7 @@ export function ParametersView() {
                             onKeyDown={(e) => handleKeyDown(e, param.id)}
                             onBlur={() => !editError && saveEdit(param.id)}
                             autoFocus
-                            className={`w-full px-2 py-1 bg-surface-tooltip border rounded text-sm font-mono text-content focus:outline-none ${
+                            className={`w-full px-2 py-1 bg-surface-raised border rounded text-sm font-mono text-content focus:outline-none ${
                               editError ? 'border-red-500/50' : editWarning ? 'border-amber-500/50' : 'border-blue-500/50'
                             }`}
                           />
@@ -1172,7 +1172,7 @@ export function ParametersView() {
                   <span>Applying parameters...</span>
                   <span>{applyProgress.applied} / {applyProgress.total}</span>
                 </div>
-                <div className="h-1.5 bg-surface-tooltip rounded-full overflow-hidden">
+                <div className="h-1.5 bg-surface-inset rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 transition-all duration-150"
                     style={{ width: `${(applyProgress.applied / applyProgress.total) * 100}%` }}
@@ -1193,7 +1193,7 @@ export function ParametersView() {
                 <button
                   onClick={handleApplySelectedParams}
                   disabled={isApplyingFileParams || fileParamDiffs.filter(d => d.selected).length === 0}
-                  className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-surface-raised text-blue-400 disabled:text-white-secondary rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-surface-raised text-blue-400 disabled:text-content-tertiary rounded-lg text-sm font-medium transition-colors"
                 >
                   {isApplyingFileParams
                     ? 'Applying...'

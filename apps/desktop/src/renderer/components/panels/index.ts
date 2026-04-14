@@ -16,6 +16,10 @@ export { PreflightCheckCard } from '../prearm/PreflightCheckCard';
 export { WaypointTablePanel } from '../mission/WaypointTablePanel';
 export { AltitudeProfilePanel } from '../mission/AltitudeProfilePanel';
 
+// SITL simulation panels
+export { SitlEnvironmentDockPanel } from './SitlEnvironmentDockPanel';
+export { SitlFailureDockPanel } from './SitlFailureDockPanel';
+
 // Panel registry for dockview
 export const PANEL_COMPONENTS = {
   // Telemetry panels
@@ -35,6 +39,9 @@ export const PANEL_COMPONENTS = {
   // Note: missionMap removed - mission data now integrated into unified MapPanel
   waypoints: { component: 'WaypointTablePanel', title: 'Waypoints' },
   altitudeProfile: { component: 'AltitudeProfilePanel', title: 'Altitude Profile' },
+  // SITL simulation panels (only shown when SITL is running)
+  sitlEnvironment: { component: 'SitlEnvironmentDockPanel', title: 'SITL Environment' },
+  sitlFailures: { component: 'SitlFailureDockPanel', title: 'SITL Failures' },
 } as const;
 
 export type PanelId = keyof typeof PANEL_COMPONENTS;

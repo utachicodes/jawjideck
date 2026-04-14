@@ -270,7 +270,7 @@ export const MotorTestTab: React.FC = () => {
       {/* Main 3-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[auto,1fr,auto] gap-5">
         {/* LEFT: Frame diagram */}
-        <div className="bg-surface rounded-xl border-subtle p-5">
+        <div className="bg-surface rounded-xl border border-subtle p-5">
           <FrameDiagram
             layout={layout}
             activeMotor={activeMotor}
@@ -280,7 +280,7 @@ export const MotorTestTab: React.FC = () => {
         </div>
 
         {/* CENTER: Controls */}
-        <div className="bg-surface rounded-xl border-subtle p-5 space-y-5">
+        <div className="bg-surface rounded-xl border border-subtle p-5 space-y-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-yellow-500/10 border-yellow-500/20 flex items-center justify-center">
               <Zap className="w-5 h-5 text-yellow-400" />

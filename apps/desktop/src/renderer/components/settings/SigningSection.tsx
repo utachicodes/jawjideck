@@ -174,7 +174,7 @@ export function SigningSection() {
             {hasKey && keyBase64 && (
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[10px] text-content-secondary">Key:</span>
-                <code className="text-[10px] font-mono text-content-secondary bg-surface px-1.5 py-0.5 rounded max-w-[220px] truncate" title={keyBase64}>
+                <code className="text-[10px] font-mono text-content-secondary bg-surface-raised px-1.5 py-0.5 rounded max-w-[220px] truncate" title={keyBase64}>
                   {keyBase64}
                 </code>
                 <button
@@ -261,7 +261,7 @@ export function SigningSection() {
                 } catch { /* fallback */ }
                 const isActive = keyBase64?.startsWith(b64.slice(0, 4));
                 return (
-                  <div key={k.fingerprint} className="flex items-center gap-2 px-2 py-1 rounded bg-surface">
+                  <div key={k.fingerprint} className="flex items-center gap-2 px-2 py-1 rounded bg-surface-raised">
                     <code className={`text-[10px] font-mono flex-1 ${isActive ? 'text-emerald-400' : 'text-content-secondary'}`}>{b64}</code>
                     {k.systemIds.length > 0 && (
                       <span className="text-[9px] text-content-tertiary">sysid {k.systemIds.join(',')}</span>
@@ -327,7 +327,7 @@ export function SigningSection() {
           </div>
 
           {/* FC signing verification */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-raised">
             <div className={`w-2 h-2 rounded-full ${connectionState.fcSigning ? 'bg-emerald-400' : 'bg-surface-raised'}`} />
             <span className="text-[10px] text-content-secondary">
               {connectionState.fcSigning

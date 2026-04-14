@@ -88,6 +88,12 @@ const api = {
   mavlinkArmDisarm: (arm: boolean, force?: boolean): Promise<boolean> =>
     ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_ARM_DISARM, arm, force),
 
+  mavlinkSetMode: (customMode: number): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_SET_MODE, customMode),
+
+  mavlinkTakeoff: (altitude: number): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_COMMAND_TAKEOFF, altitude),
+
   // Motor Test
   motorTestStart: (request: MotorTestStartRequest): Promise<MotorTestResponse> =>
     ipcRenderer.invoke(IPC_CHANNELS.MOTOR_TEST_START, request),

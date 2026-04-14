@@ -161,7 +161,7 @@ const ChannelBar: React.FC<{
         </span>
         <span className="text-content-secondary font-mono">{value}</span>
       </div>
-      <div className="h-2 bg-surface-tooltip rounded-full overflow-hidden relative">
+      <div className="h-2 bg-surface-inset rounded-full overflow-hidden relative">
         <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-600" />
         <div
           className={`absolute top-0 bottom-0 w-2 rounded-full transition-all ${
@@ -192,7 +192,7 @@ const CompactChannelBar: React.FC<{
         </span>
         <span className="text-[10px] text-content-tertiary font-mono">{value}</span>
       </div>
-      <div className="h-1.5 bg-surface-tooltip rounded-full overflow-hidden relative">
+      <div className="h-1.5 bg-surface-inset rounded-full overflow-hidden relative">
         <div className="absolute left-1/2 top-0 bottom-0 w-px bg-surface-raised" />
         <div
           className={`absolute top-0 bottom-0 w-1.5 rounded-full transition-all ${
@@ -268,7 +268,7 @@ function ChannelMapDragRow({ rxMap, setRxMap }: { rxMap: number[]; setRxMap: (ma
                 ? 'bg-purple-600/30 text-purple-300 border-purple-500/50 opacity-50'
                 : isOver
                 ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 scale-105'
-                : 'bg-surface-tooltip text-content border-transparent hover:border'
+                : 'bg-surface-raised text-content border-transparent hover:border'
             }`}
           >
             {getChannelName(ch, 'msp')}
@@ -436,7 +436,7 @@ export default function ReceiverTab({ isInav, modified, setModified, onNavigateT
               <div>
                 <label className="text-xs text-content-secondary mb-2 block">Receiver Type</label>
                 {receiverType === null && !receiverSettingsLoaded ? (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface border-subtle">
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-raised border-subtle">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                     <span className="text-xs text-content-secondary">Reading from board...</span>
                   </div>
@@ -449,7 +449,7 @@ export default function ReceiverTab({ isInav, modified, setModified, onNavigateT
                         className={`px-4 py-2 rounded-lg text-sm transition-all ${
                           receiverType === t.value
                             ? 'bg-blue-600 text-white'
-                            : 'bg-surface-tooltip text-content-secondary hover:bg-surface-raised'
+                            : 'bg-surface-raised text-content-secondary hover:bg-surface-raised'
                         }`}
                       >
                         {t.label}
@@ -464,7 +464,7 @@ export default function ReceiverTab({ isInav, modified, setModified, onNavigateT
                 <div>
                   <label className="text-xs text-content-secondary mb-2 block">Serial RX Protocol</label>
                   {inavSerialrxProvider === null && !receiverSettingsLoaded ? (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface border-subtle">
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-raised border-subtle">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                       <span className="text-xs text-content-secondary">Reading from board...</span>
                     </div>
@@ -477,7 +477,7 @@ export default function ReceiverTab({ isInav, modified, setModified, onNavigateT
                           className={`px-4 py-2 rounded-lg text-sm transition-all ${
                             inavSerialrxProvider === p.value
                               ? 'bg-blue-600 text-white'
-                              : 'bg-surface-tooltip text-content-secondary hover:bg-surface-raised'
+                              : 'bg-surface-raised text-content-secondary hover:bg-surface-raised'
                           }`}
                         >
                           {p.label}
@@ -497,7 +497,7 @@ export default function ReceiverTab({ isInav, modified, setModified, onNavigateT
             <>
               {/* Betaflight: serialrx_provider */}
               {bfProvider === null && !receiverSettingsLoaded ? (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface border-subtle">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-raised border-subtle">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                   <span className="text-xs text-content-secondary">Reading from board...</span>
                 </div>
@@ -513,7 +513,7 @@ export default function ReceiverTab({ isInav, modified, setModified, onNavigateT
                           className={`px-4 py-2 rounded-lg text-sm transition-all ${
                             bfProvider === p.value
                               ? 'bg-blue-600 text-white'
-                              : 'bg-surface-tooltip text-content-secondary hover:bg-surface-raised'
+                              : 'bg-surface-raised text-content-secondary hover:bg-surface-raised'
                           }`}
                         >
                           {p.label}
@@ -527,7 +527,7 @@ export default function ReceiverTab({ isInav, modified, setModified, onNavigateT
                     <select
                       value={bfProvider ?? ''}
                       onChange={(e) => setBfProvider(Number(e.target.value))}
-                      className="w-full bg-surface-tooltip text-content rounded-lg px-3 py-2 text-sm border focus:border-blue-500 focus:outline-none"
+                      className="w-full bg-surface-raised text-content rounded-lg px-3 py-2 text-sm border focus:border-blue-500 focus:outline-none"
                     >
                       {bfProvider === null && <option value="">Select protocol...</option>}
                       {BF_PROVIDERS.map((p) => (
@@ -633,7 +633,7 @@ export default function ReceiverTab({ isInav, modified, setModified, onNavigateT
           </InfoBanner>
           <div>
             {/* Current mapping status */}
-            <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-surface border-subtle">
+            <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-surface-raised border-subtle">
               {isLoading ? (
                 <span className="text-xs text-content-secondary">Loading mapping from FC...</span>
               ) : (
@@ -669,7 +669,7 @@ export default function ReceiverTab({ isInav, modified, setModified, onNavigateT
                     className={`px-3 py-2 rounded-lg text-xs transition-all text-left ${
                       isSelected
                         ? 'bg-purple-600 text-white ring-1 ring-purple-400'
-                        : 'bg-surface-tooltip text-content-secondary hover:bg-surface-raised'
+                        : 'bg-surface-raised text-content-secondary hover:bg-surface-raised'
                     }`}
                   >
                     <div className="font-medium">{preset.label}</div>

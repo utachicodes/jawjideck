@@ -640,7 +640,7 @@ function RateCurve({
   }, [rcRate, superRate, ratesType]);
 
   return (
-    <div className="bg-surface rounded-lg p-3 border-subtle">
+    <div className="bg-surface-raised rounded-lg p-3 border-subtle">
       <div className="flex items-center justify-between text-xs text-content-secondary mb-2">
         <span>Response Curve</span>
         <span className="text-content-secondary">Max: <span style={{ color }}>{maxRate}°/s</span></span>
@@ -786,7 +786,7 @@ function RatesTab({
               onChange={(e) => {
                 updateRcTuning('ratesType', parseInt(e.target.value, 10));
               }}
-              className="px-4 py-2 bg-surface-tooltip border rounded-lg text-content text-sm focus:outline-none focus:border-orange-500 cursor-pointer"
+              className="px-4 py-2 bg-surface-raised border rounded-lg text-content text-sm focus:outline-none focus:border-orange-500 cursor-pointer"
             >
               {RATE_TYPES.map((type) => (
                 <option key={type.value} value={type.value}>
@@ -1221,7 +1221,7 @@ function ModeChannelIndicator({
       </div>
 
       {/* Channel bar with live indicator */}
-      <div className="relative h-6 bg-surface rounded-full overflow-hidden">
+      <div className="relative h-6 bg-surface-inset rounded-full overflow-hidden">
         {/* Range highlight */}
         <div
           className={`absolute h-full transition-all ${isActive ? 'bg-emerald-500/40' : 'bg-blue-500/30'}`}
@@ -1286,7 +1286,7 @@ function SensorCard({
     }`}>
       <div className="flex items-center gap-3">
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-          hardwareDetected ? 'bg-emerald-500/20' : featureEnabled ? 'bg-yellow-500/20' : 'bg-surface-tooltip'
+          hardwareDetected ? 'bg-emerald-500/20' : featureEnabled ? 'bg-yellow-500/20' : 'bg-surface-raised'
         }`}>
           <Icon className={`w-5 h-5 ${hardwareDetected ? 'text-emerald-400' : featureEnabled ? 'text-yellow-400' : 'text-content-secondary'}`} />
         </div>
@@ -1327,7 +1327,7 @@ function SensorCard({
             ? 'bg-emerald-500/20 text-emerald-400'
             : featureEnabled
               ? 'bg-yellow-500/20 text-yellow-400'
-              : 'bg-surface-tooltip text-content-secondary'
+              : 'bg-surface-raised text-content-secondary'
         }`}>
           {hardwareDetected ? 'OK' : featureEnabled ? 'ON' : 'OFF'}
         </div>
@@ -1642,7 +1642,7 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
 
         {/* View toggle */}
         <div className="flex items-center gap-2">
-          <div className="flex rounded-lg bg-surface-tooltip p-0.5">
+          <div className="flex rounded-lg bg-surface-raised p-0.5">
             <button
               onClick={() => setViewMode('wizard')}
               className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
@@ -1802,7 +1802,7 @@ function ModesTabContent({ onNavigateToTab }: { onNavigateToTab?: (tabId: string
                             Position: {rcValue < 1300 ? 'Low' : rcValue < 1700 ? 'Mid' : 'High'}
                           </span>
                         </div>
-                        <div className="relative h-4 bg-surface-raised rounded-full overflow-hidden">
+                        <div className="relative h-4 bg-surface-inset rounded-full overflow-hidden">
                           {/* Active zone highlight */}
                           <div
                             className={`absolute top-0 bottom-0 rounded-full ${isActive ? 'bg-green-500/40' : 'bg-blue-500/20'}`}
@@ -2462,7 +2462,7 @@ export function MspConfigView() {
                         </svg>
                       </button>
                       {showPlatformDropdown && (
-                        <div className="absolute top-full left-0 mt-1 bg-surface-tooltip border rounded-lg shadow-xl z-50 min-w-[140px]">
+                        <div className="absolute top-full left-0 mt-1 bg-surface-raised border rounded-lg shadow-xl z-50 min-w-[140px]">
                           {PLATFORM_OPTIONS.map((opt) => (
                             <button
                               key={opt.value}
@@ -2515,7 +2515,7 @@ export function MspConfigView() {
             <button
               onClick={loadConfig}
               disabled={loading}
-              className="px-4 py-2 text-sm rounded-lg bg-surface-tooltip hover:bg-surface-raised text-content border"
+              className="px-4 py-2 text-sm rounded-lg bg-surface-raised hover:bg-surface-raised text-content border"
             >
               Refresh
             </button>
@@ -2525,7 +2525,7 @@ export function MspConfigView() {
               className={`px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-all ${
                 rebootNeeded
                   ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30 animate-pulse'
-                  : 'bg-surface-tooltip hover:bg-surface-raised text-content border'
+                  : 'bg-surface-raised hover:bg-surface-raised text-content border'
               }`}
               title={rebootNeeded ? 'Settings changed - reboot to apply' : 'Reboot flight controller'}
             >
@@ -2538,7 +2538,7 @@ export function MspConfigView() {
               className={`px-5 py-2 text-sm font-medium rounded-lg shadow-lg transition-all ${
                 modified
                   ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-emerald-500/25'
-                  : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
+                  : 'bg-surface-raised text-content-secondary cursor-not-allowed'
               }`}
             >
               {saving ? <><Save className="w-4 h-4 inline mr-1" />Saving...</> : <><Save className="w-4 h-4 inline mr-1" />Save All Changes</>}
@@ -2562,7 +2562,7 @@ export function MspConfigView() {
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
                 className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
                   isActive
-                    ? 'bg-surface-tooltip text-content shadow-lg'
+                    ? 'bg-surface-raised text-content shadow-lg'
                     : 'text-content-secondary hover:text-content hover:bg-surface'
                 }`}
               >
@@ -2577,7 +2577,7 @@ export function MspConfigView() {
             onClick={() => setActiveTab('receiver')}
             className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
               activeTab === 'receiver'
-                ? 'bg-surface-tooltip text-content shadow-lg'
+                ? 'bg-surface-raised text-content shadow-lg'
                 : 'text-content-secondary hover:text-content hover:bg-surface'
             }`}
           >
@@ -2590,7 +2590,7 @@ export function MspConfigView() {
             onClick={() => setActiveTab('ports')}
             className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
               activeTab === 'ports'
-                ? 'bg-surface-tooltip text-content shadow-lg'
+                ? 'bg-surface-raised text-content shadow-lg'
                 : 'text-content-secondary hover:text-content hover:bg-surface'
             }`}
           >
@@ -2608,7 +2608,7 @@ export function MspConfigView() {
                 }}
                 className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
                   ['servo-tuning', 'servo-mixer', 'motor-mixer'].includes(activeTab)
-                    ? 'bg-surface-tooltip text-content shadow-lg'
+                    ? 'bg-surface-raised text-content shadow-lg'
                     : 'text-content-secondary hover:text-content hover:bg-surface'
                 }`}
               >
@@ -2625,7 +2625,7 @@ export function MspConfigView() {
                 <ChevronDown className={`w-3 h-3 transition-transform ${showMixingDropdown ? 'rotate-180' : ''}`} />
               </button>
               {showMixingDropdown && (
-                <div className="absolute top-full left-0 mt-1 bg-surface-tooltip border rounded-lg shadow-xl z-50 min-w-[180px] py-1">
+                <div className="absolute top-full left-0 mt-1 bg-surface-raised border rounded-lg shadow-xl z-50 min-w-[180px] py-1">
                   {[
                     { id: 'servo-tuning', label: 'Servo Tuning', icon: SlidersHorizontal, color: 'text-orange-400', desc: 'Endpoints' },
                     { id: 'servo-mixer', label: 'Servo Mixer', icon: Shuffle, color: 'text-cyan-400', desc: 'Surfaces' },
@@ -2665,7 +2665,7 @@ export function MspConfigView() {
               onClick={() => setActiveTab('navigation')}
               className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
                 activeTab === 'navigation'
-                  ? 'bg-surface-tooltip text-content shadow-lg'
+                  ? 'bg-surface-raised text-content shadow-lg'
                   : 'text-content-secondary hover:text-content hover:bg-surface'
               }`}
             >
@@ -2680,7 +2680,7 @@ export function MspConfigView() {
               onClick={() => setActiveTab('auto-launch')}
               className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
                 activeTab === 'auto-launch'
-                  ? 'bg-surface-tooltip text-content shadow-lg'
+                  ? 'bg-surface-raised text-content shadow-lg'
                   : 'text-content-secondary hover:text-content hover:bg-surface'
               }`}
             >
@@ -2695,7 +2695,7 @@ export function MspConfigView() {
               onClick={() => setActiveTab('filters')}
               className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
                 activeTab === 'filters'
-                  ? 'bg-surface-tooltip text-content shadow-lg'
+                  ? 'bg-surface-raised text-content shadow-lg'
                   : 'text-content-secondary hover:text-content hover:bg-surface'
               }`}
             >
@@ -2709,7 +2709,7 @@ export function MspConfigView() {
             onClick={() => setActiveTab('vtx')}
             className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
               activeTab === 'vtx'
-                ? 'bg-surface-tooltip text-content shadow-lg'
+                ? 'bg-surface-raised text-content shadow-lg'
                 : 'text-content-secondary hover:text-content hover:bg-surface'
             }`}
           >
@@ -2735,7 +2735,7 @@ export function MspConfigView() {
             onClick={() => setActiveTab('safety')}
             className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
               activeTab === 'safety'
-                ? 'bg-surface-tooltip text-content shadow-lg'
+                ? 'bg-surface-raised text-content shadow-lg'
                 : 'text-content-secondary hover:text-content hover:bg-surface'
             }`}
           >
@@ -2748,7 +2748,7 @@ export function MspConfigView() {
             onClick={() => setActiveTab('sensors')}
             className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
               activeTab === 'sensors'
-                ? 'bg-surface-tooltip text-content shadow-lg'
+                ? 'bg-surface-raised text-content shadow-lg'
                 : 'text-content-secondary hover:text-content hover:bg-surface'
             }`}
           >

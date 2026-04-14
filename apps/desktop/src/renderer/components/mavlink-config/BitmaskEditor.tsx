@@ -98,13 +98,13 @@ const BitmaskEditor: React.FC<BitmaskEditorProps> = ({ paramId, value, bitmask, 
         {bitEntries.map(({ bit, label }) => (
           <label
             key={bit}
-            className="flex items-center gap-3 py-1.5 cursor-pointer hover:bg-surface rounded px-1 -mx-1 transition-colors"
+            className="flex items-center gap-3 py-1.5 cursor-pointer hover:bg-surface-raised rounded px-1 -mx-1 transition-colors"
           >
             <input
               type="checkbox"
               checked={isBitSet(bit)}
               onChange={() => toggleBit(bit)}
-              className="w-4 h-4 rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500/30 focus:ring-offset-0 cursor-pointer"
+              className="w-4 h-4 rounded border bg-surface-raised text-blue-500 focus:ring-blue-500/30 focus:ring-offset-0 cursor-pointer"
             />
             <span className="text-xs text-content-secondary font-mono w-5 shrink-0">{bit}</span>
             <span className="text-sm text-content">{label}</span>
@@ -123,7 +123,7 @@ const BitmaskEditor: React.FC<BitmaskEditorProps> = ({ paramId, value, bitmask, 
         <button
           onClick={() => onSave(currentValue)}
           disabled={!hasChanges}
-          className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-surface-tooltip text-blue-400 disabled:text-white-tertiary rounded-lg text-sm font-medium transition-colors"
+          className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-surface-raised text-blue-400 disabled:text-white-tertiary rounded-lg text-sm font-medium transition-colors"
         >
           Apply
         </button>

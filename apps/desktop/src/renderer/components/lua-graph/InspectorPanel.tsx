@@ -166,7 +166,7 @@ export function InspectorPanel() {
                       type="checkbox"
                       checked={Boolean(value)}
                       onChange={(e) => updateNodeProperty(selectedNode.id, propDef.id, e.target.checked)}
-                      className="w-3.5 h-3.5 rounded border bg-surface-tooltip text-blue-500 focus:ring-0"
+                      className="w-3.5 h-3.5 rounded border bg-surface-raised text-blue-500 focus:ring-0"
                     />
                     <label className="text-[11px] text-content-secondary">{propDef.label}</label>
                   </div>

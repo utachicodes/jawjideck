@@ -234,7 +234,8 @@ export const useArduPilotSitlStore = create<ArduPilotSitlStore>()(
           const result = await window.electronAPI.ardupilotSitlStart(config);
 
           if (result.success) {
-            set({ isRunning: true, isStarting: false, lastCommand: result.command ?? null });
+            // Auto-uncheck "Wipe EEPROM" after successful start so restarts/reboots don't wipe again
+            set({ isRunning: true, isStarting: false, lastCommand: result.command ?? null, wipeOnStart: false });
             if (result.command) {
               appendOutput(`Command: ${result.command}`);
             }

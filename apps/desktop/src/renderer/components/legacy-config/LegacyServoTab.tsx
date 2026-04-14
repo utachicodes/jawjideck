@@ -81,7 +81,7 @@ export default function LegacyServoTab() {
               {/* Controls */}
               <div className="p-5 space-y-4">
                 {/* Visual Range */}
-                <div className="relative h-8 bg-surface-tooltip rounded-lg overflow-hidden">
+                <div className="relative h-8 bg-surface-inset rounded-lg overflow-hidden">
                   {/* Range bar */}
                   <div
                     className="absolute h-full transition-all opacity-40"
@@ -146,7 +146,7 @@ export default function LegacyServoTab() {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => handleChange({ ...servo, rate: -servo.rate })}
-                          className="px-2 py-0.5 rounded bg-surface-tooltip hover:bg-surface-raised text-content-secondary text-xs"
+                          className="px-2 py-0.5 rounded bg-surface-raised hover:bg-surface-raised text-content-secondary text-xs"
                         >
                           Reverse
                         </button>
@@ -160,7 +160,7 @@ export default function LegacyServoTab() {
                         />
                       </div>
                     </div>
-                    <div className="relative h-2 bg-surface-tooltip rounded-full overflow-hidden">
+                    <div className="relative h-2 bg-surface-inset rounded-full overflow-hidden">
                       <div
                         className="absolute top-0 h-full rounded-full transition-all"
                         style={{
@@ -177,19 +177,19 @@ export default function LegacyServoTab() {
                 <div className="flex gap-2 pt-2 border-t border-subtle">
                   <button
                     onClick={() => handleChange({ ...servo, min: 1000, max: 2000, mid: 1500, rate: 100 })}
-                    className="flex-1 py-1.5 text-xs text-content-secondary hover:text-content hover:bg-surface rounded transition-colors"
+                    className="flex-1 py-1.5 text-xs text-content-secondary hover:text-content hover:bg-surface-raised rounded transition-colors"
                   >
                     Reset Default
                   </button>
                   <button
                     onClick={() => handleChange({ ...servo, min: 1100, max: 1900, mid: 1500, rate: 100 })}
-                    className="flex-1 py-1.5 text-xs text-content-secondary hover:text-content hover:bg-surface rounded transition-colors"
+                    className="flex-1 py-1.5 text-xs text-content-secondary hover:text-content hover:bg-surface-raised rounded transition-colors"
                   >
                     Safe Range
                   </button>
                   <button
                     onClick={() => handleChange({ ...servo, min: 750, max: 2250, mid: 1500, rate: 100 })}
-                    className="flex-1 py-1.5 text-xs text-content-secondary hover:text-content hover:bg-surface rounded transition-colors"
+                    className="flex-1 py-1.5 text-xs text-content-secondary hover:text-content hover:bg-surface-raised rounded transition-colors"
                   >
                     Full Range
                   </button>

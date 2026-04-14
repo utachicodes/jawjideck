@@ -82,7 +82,7 @@ export const TransmitterVisualizer: React.FC<TransmitterVisualizerProps> = ({
                 <div
                   className={`relative ${
                     compact ? 'h-4' : 'h-6'
-                  } bg-surface-tooltip rounded-full overflow-hidden`}
+                  } bg-surface-inset rounded-full overflow-hidden`}
                 >
                   {/* Center line for sticks */}
                   {isStick && (

@@ -895,7 +895,7 @@ function FieldPickerPanel() {
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => handleFieldToggle(type, field)}
-                          className="rounded border bg-surface-tooltip text-blue-500 w-3 h-3"
+                          className="rounded border bg-surface-raised text-blue-500 w-3 h-3"
                         />
                         {isChecked && lineColor && (
                           <span className="w-3 h-[3px] rounded-full flex-shrink-0" style={{ backgroundColor: lineColor }} />

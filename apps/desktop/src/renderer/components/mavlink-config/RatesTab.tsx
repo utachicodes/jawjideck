@@ -172,7 +172,7 @@ const RatesTab: React.FC = () => {
       {scheme && rateValues && (
       <div className="grid grid-cols-3 gap-5">
         {/* Roll */}
-        <div className="bg-surface rounded-xl border-subtle p-5">
+        <div className="bg-surface rounded-xl border border-subtle p-5">
           <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
             <MoveHorizontal className="w-5 h-5 text-blue-400" /> Roll
           </h3>
@@ -214,7 +214,7 @@ const RatesTab: React.FC = () => {
         </div>
 
         {/* Pitch */}
-        <div className="bg-surface rounded-xl border-subtle p-5">
+        <div className="bg-surface rounded-xl border border-subtle p-5">
           <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
             <MoveVertical className="w-5 h-5 text-emerald-400" /> Pitch
             {scheme.rpLinked && (
@@ -263,7 +263,7 @@ const RatesTab: React.FC = () => {
         </div>
 
         {/* Yaw */}
-        <div className="bg-surface rounded-xl border-subtle p-5">
+        <div className="bg-surface rounded-xl border border-subtle p-5">
           <h3 className="text-lg font-medium text-content mb-4 flex items-center gap-2">
             <RefreshCw className="w-5 h-5 text-orange-400" /> Yaw
           </h3>
@@ -308,7 +308,7 @@ const RatesTab: React.FC = () => {
 
       {/* Current settings summary */}
       {scheme && rateValues && (
-      <div className="bg-surface rounded-xl border-subtle p-4">
+      <div className="bg-surface rounded-xl border border-subtle p-4">
         <h3 className="text-sm font-medium text-content mb-3">Current Settings Summary</h3>
         <div className={`grid ${scheme.hasExpo ? 'grid-cols-4' : scheme.rpLinked ? 'grid-cols-2' : 'grid-cols-3'} gap-4 text-center`}>
           <div>
