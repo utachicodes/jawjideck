@@ -12,6 +12,7 @@
   --bg-base: #0a0a0f;
   --bg-surface: rgb(31 41 55 / 0.5);
   --bg-surface-raised: rgb(55 65 81 / 0.5);
+  --bg-inset: #374151;
   --bg-input: rgb(17 24 39 / 0.5);
   --bg-nav: rgb(17 24 39 / 0.5);
   --bg-tooltip: #1f2937;
@@ -67,9 +68,10 @@
 
 .light {
   /* Backgrounds */
-  --bg-base: #eef0f4;
+  --bg-base: #f5f6f8;
   --bg-surface: #ffffff;
-  --bg-surface-raised: #e8eaef;
+  --bg-surface-raised: #f0f1f4;
+  --bg-inset: #e0e2e7;
   --bg-input: #ffffff;
   --bg-nav: rgba(255, 255, 255, 0.95);
   --bg-tooltip: #ffffff;
@@ -77,7 +79,7 @@
   /* Overlays */
   --bg-overlay: rgba(255, 255, 255, 0.92);
   --bg-overlay-light: rgba(255, 255, 255, 0.82);
-  --bg-overlay-subtle: rgba(209, 213, 219, 0.2);
+  --bg-overlay-subtle: rgba(0, 10, 30, 0.08);
   --bg-solid: #ffffff;
 
   /* Borders */
@@ -575,6 +577,33 @@ select,
    Light-mode border accent corrections
    Accent borders with low opacity are too subtle on white.
    ============================================================ */
+/* Light-mode accent background tints - solid pastel colors, no transparency */
+.light .bg-blue-500\/5 { background-color: #eff6ff; }     /* blue-50 */
+.light .bg-blue-500\/10 { background-color: #dbeafe; }    /* blue-100 */
+.light .bg-blue-500\/15 { background-color: #cee0fc; }
+.light .bg-blue-500\/20 { background-color: #bfdbfe; }    /* blue-200 */
+.light .bg-blue-600\/5 { background-color: #eff6ff; }
+.light .bg-yellow-500\/10 { background-color: #fef9c3; }  /* yellow-100 */
+.light .bg-yellow-500\/20 { background-color: #fef08a; }  /* yellow-200 */
+.light .bg-amber-500\/10 { background-color: #fef3c7; }   /* amber-100 */
+.light .bg-amber-500\/20 { background-color: #fde68a; }   /* amber-200 */
+.light .bg-green-500\/10 { background-color: #dcfce7; }   /* green-100 */
+.light .bg-green-500\/20 { background-color: #bbf7d0; }   /* green-200 */
+.light .bg-red-500\/10 { background-color: #fee2e2; }     /* red-100 */
+.light .bg-red-500\/20 { background-color: #fecaca; }     /* red-200 */
+.light .bg-purple-500\/10 { background-color: #f3e8ff; }  /* purple-100 */
+.light .bg-purple-500\/20 { background-color: #e9d5ff; }  /* purple-200 */
+.light .bg-emerald-500\/5 { background-color: #ecfdf5; }  /* emerald-50 */
+.light .bg-emerald-500\/10 { background-color: #d1fae5; } /* emerald-100 */
+.light .bg-emerald-500\/20 { background-color: #a7f3d0; } /* emerald-200 */
+.light .bg-emerald-600\/5 { background-color: #ecfdf5; }
+.light .bg-orange-500\/5 { background-color: #fff7ed; }   /* orange-50 */
+.light .bg-orange-500\/10 { background-color: #ffedd5; }  /* orange-100 */
+.light .bg-orange-500\/20 { background-color: #fed7aa; }  /* orange-200 */
+.light .bg-orange-600\/5 { background-color: #fff7ed; }
+.light .bg-cyan-500\/10 { background-color: #cffafe; }    /* cyan-100 */
+.light .bg-teal-500\/10 { background-color: #ccfbf1; }    /* teal-100 */
+
 .light .border-blue-500\/30 { border-color: rgb(59 130 246 / 0.25); }
 .light .border-green-500\/30 { border-color: rgb(34 197 94 / 0.25); }
 .light .border-emerald-500\/30 { border-color: rgb(16 185 129 / 0.25); }
@@ -604,6 +633,39 @@ select,
    Light-mode gradient corrections
    Dark-specific gradients (from-*-900/*) need light variants.
    ============================================================ */
+/* Accent gradient from-stops: solid pastels with good contrast on light bg */
+.light .from-blue-500\/10 { --tw-gradient-from: #bfdbfe; }      /* blue-200 */
+.light .to-blue-600\/5 { --tw-gradient-to: #dbeafe; }           /* blue-100 */
+.light .from-emerald-500\/10 { --tw-gradient-from: #a7f3d0; }   /* emerald-200 */
+.light .to-emerald-600\/5 { --tw-gradient-to: #d1fae5; }        /* emerald-100 */
+.light .from-orange-500\/10 { --tw-gradient-from: #fed7aa; }    /* orange-200 */
+.light .to-orange-600\/5 { --tw-gradient-to: #ffedd5; }         /* orange-100 */
+.light .from-purple-500\/10 { --tw-gradient-from: #e9d5ff; }    /* purple-200 */
+.light .to-purple-600\/5 { --tw-gradient-to: #f3e8ff; }         /* purple-100 */
+
+/* Light mode: subtle colored tints for accent cards */
+.light .from-emerald-500\/5 { --tw-gradient-from: #ecfdf5; }    /* emerald-50 */
+.light .to-teal-500\/5 { --tw-gradient-to: #f0fdfa; }           /* teal-50 */
+.light .from-blue-500\/5 { --tw-gradient-from: #eff6ff; }       /* blue-50 */
+.light .to-indigo-500\/5 { --tw-gradient-to: #eef2ff; }         /* indigo-50 */
+.light .from-amber-500\/5 { --tw-gradient-from: #fffbeb; }      /* amber-50 */
+.light .to-orange-500\/5 { --tw-gradient-to: #fff7ed; }         /* orange-50 */
+.light .from-violet-500\/5 { --tw-gradient-from: #f5f3ff; }     /* violet-50 */
+.light .to-purple-500\/5 { --tw-gradient-to: #faf5ff; }         /* purple-50 */
+.light .from-cyan-500\/5 { --tw-gradient-from: #ecfeff; }       /* cyan-50 */
+.light .to-sky-500\/5 { --tw-gradient-to: #f0f9ff; }            /* sky-50 */
+
+/* Strengthen accent borders in light mode (20% invisible on white, bump to 35%) */
+.light .border-emerald-500\/20 { border-color: rgba(16, 185, 129, 0.35); }
+.light .border-blue-500\/20 { border-color: rgba(59, 130, 246, 0.35); }
+.light .border-amber-500\/20 { border-color: rgba(245, 158, 11, 0.35); }
+.light .border-violet-500\/20 { border-color: rgba(139, 92, 246, 0.35); }
+.light .border-cyan-500\/20 { border-color: rgba(6, 182, 212, 0.35); }
+.light .border-red-500\/20 { border-color: rgba(239, 68, 68, 0.35); }
+.light .border-purple-500\/20 { border-color: rgba(168, 85, 247, 0.35); }
+.light .border-orange-500\/20 { border-color: rgba(249, 115, 22, 0.35); }
+.light .border-green-500\/20 { border-color: rgba(34, 197, 94, 0.35); }
+
 .light [class*="from-amber-900"],
 .light [class*="from-orange-900"] {
   --tw-gradient-from: rgb(254 243 199 / 0.8); /* amber-100/80 */

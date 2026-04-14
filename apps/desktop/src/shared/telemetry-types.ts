@@ -68,6 +68,22 @@ export interface RcChannelsData {
   rssi: number;         // 0-255
 }
 
+/** MAVLink SYS_STATUS sensor health bitmasks */
+export interface SensorHealth {
+  present: number;   // bitmask of sensors present on the vehicle
+  enabled: number;   // bitmask of sensors enabled
+  health: number;    // bitmask of sensors reporting healthy
+}
+
+/** MAV_SYS_STATUS_SENSOR bit positions */
+export const SENSOR_BITS = {
+  GYRO: 0x01,
+  ACCEL: 0x02,
+  MAG: 0x04,
+  BARO: 0x08,
+  GPS: 0x20,
+} as const;
+
 export interface TelemetryState {
   // Last update timestamps
   lastHeartbeat: number;
@@ -92,6 +108,7 @@ export interface TelemetryState {
   vibration: VibrationData | null;
   escTelemetry: EscTelemetryData | null;
   servoOutput: ServoOutputData | null;
+  sensorHealth: SensorHealth | null;
 }
 
 // Flight modes for ArduPilot Copter
@@ -193,4 +210,59 @@ export const GPS_FIX_TYPES: Record<number, string> = {
   4: 'DGPS',
   5: 'RTK Float',
   6: 'RTK Fixed',
+};
+
+// ArduPilot vehicle class derived from MAV_TYPE
+export type ArduPilotVehicleClass = 'copter' | 'plane' | 'rover' | 'sub';
+
+export function getVehicleClass(mavType: number | undefined): ArduPilotVehicleClass {
+  if (mavType === undefined) return 'copter';
+  // Fixed wing and VTOL
+  if (mavType === 1 || (mavType >= 19 && mavType <= 25)) return 'plane';
+  // Ground rover and boat
+  if (mavType === 10 || mavType === 11) return 'rover';
+  // Submarine
+  if (mavType === 12) return 'sub';
+  // Quad, hex, octa, tri, heli, etc.
+  return 'copter';
+}
+
+// Commonly used modes per vehicle class for the Flight Control panel
+export const ARDUPILOT_COMMON_MODES: Record<ArduPilotVehicleClass, { name: string; modeNum: number }[]> = {
+  copter: [
+    { name: 'Stabilize', modeNum: 0 },
+    { name: 'AltHold', modeNum: 2 },
+    { name: 'Loiter', modeNum: 5 },
+    { name: 'PosHold', modeNum: 16 },
+    { name: 'Auto', modeNum: 3 },
+    { name: 'Guided', modeNum: 4 },
+    { name: 'RTL', modeNum: 6 },
+    { name: 'Land', modeNum: 9 },
+  ],
+  plane: [
+    { name: 'Manual', modeNum: 0 },
+    { name: 'Stabilize', modeNum: 2 },
+    { name: 'FlyByWireA', modeNum: 5 },
+    { name: 'Loiter', modeNum: 12 },
+    { name: 'Auto', modeNum: 10 },
+    { name: 'Guided', modeNum: 15 },
+    { name: 'RTL', modeNum: 11 },
+    { name: 'Circle', modeNum: 1 },
+  ],
+  rover: [
+    { name: 'Manual', modeNum: 0 },
+    { name: 'Hold', modeNum: 4 },
+    { name: 'Loiter', modeNum: 5 },
+    { name: 'Auto', modeNum: 10 },
+    { name: 'Guided', modeNum: 15 },
+    { name: 'RTL', modeNum: 11 },
+  ],
+  sub: [
+    { name: 'Stabilize', modeNum: 0 },
+    { name: 'AltHold', modeNum: 2 },
+    { name: 'PosHold', modeNum: 16 },
+    { name: 'Auto', modeNum: 3 },
+    { name: 'Guided', modeNum: 4 },
+    { name: 'Surface', modeNum: 9 },
+  ],
 };

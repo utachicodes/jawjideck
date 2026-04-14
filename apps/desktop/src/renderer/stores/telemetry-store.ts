@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { TelemetryState, AttitudeData, PositionData, GpsData, BatteryData, VfrHudData, FlightState, RcChannelsData } from '../../shared/telemetry-types';
+import type { TelemetryState, AttitudeData, PositionData, GpsData, BatteryData, VfrHudData, FlightState, RcChannelsData, SensorHealth } from '../../shared/telemetry-types';
 import type { VibrationData, EscTelemetryData, ServoOutputData } from '../../shared/motor-test-types';
 
 /** Batch telemetry update - all fields optional */
@@ -14,6 +14,7 @@ export interface TelemetryBatch {
   vibration?: VibrationData;
   escTelemetry?: EscTelemetryData;
   servoOutput?: ServoOutputData;
+  sensorHealth?: SensorHealth;
 }
 
 interface TelemetryStore extends TelemetryState {
@@ -50,6 +51,7 @@ const initialState: TelemetryState = {
   vibration: null,
   escTelemetry: null,
   servoOutput: null,
+  sensorHealth: null,
 };
 
 export const useTelemetryStore = create<TelemetryStore>((set) => ({
@@ -107,6 +109,9 @@ export const useTelemetryStore = create<TelemetryStore>((set) => ({
     if (batch.servoOutput) {
       updates.servoOutput = batch.servoOutput;
       updates.lastServoOutput = now;
+    }
+    if (batch.sensorHealth) {
+      updates.sensorHealth = batch.sensorHealth;
     }
 
     set(updates);

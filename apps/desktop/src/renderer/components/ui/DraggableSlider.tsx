@@ -146,8 +146,8 @@ export function DraggableSlider({
                 disabled={disabled}
                 className={`w-6 h-6 rounded text-sm flex items-center justify-center ${
                   disabled
-                    ? 'bg-surface-tooltip text-content-tertiary cursor-not-allowed'
-                    : 'bg-surface-tooltip hover:bg-surface-raised text-content-secondary'
+                    ? 'bg-surface-raised text-content-tertiary cursor-not-allowed'
+                    : 'bg-surface-raised hover:bg-surface text-content-secondary'
                 }`}
               >
                 -
@@ -170,8 +170,8 @@ export function DraggableSlider({
                 disabled={disabled}
                 className={`w-6 h-6 rounded text-sm flex items-center justify-center ${
                   disabled
-                    ? 'bg-surface-tooltip text-content-tertiary cursor-not-allowed'
-                    : 'bg-surface-tooltip hover:bg-surface-raised text-content-secondary'
+                    ? 'bg-surface-raised text-content-tertiary cursor-not-allowed'
+                    : 'bg-surface-raised hover:bg-surface text-content-secondary'
                 }`}
               >
                 +
@@ -184,7 +184,7 @@ export function DraggableSlider({
       {/* Slider track */}
       <div
         ref={trackRef}
-        className={`relative bg-surface-tooltip rounded-full touch-none select-none ${
+        className={`relative bg-surface-inset rounded-full touch-none select-none ${
           disabled ? 'cursor-not-allowed' : 'cursor-pointer'
         }`}
         style={{ height }}
@@ -285,7 +285,7 @@ export function CompactSlider({
           <div className="flex items-center gap-1">
             <button
               onClick={() => onChange(Math.max(min, value - step))}
-              className="w-5 h-5 rounded bg-surface-tooltip hover:bg-surface-raised text-content-secondary text-xs flex items-center justify-center"
+              className="w-5 h-5 rounded bg-surface-raised hover:bg-surface text-content-secondary text-xs flex items-center justify-center"
             >
               -
             </button>
@@ -299,7 +299,7 @@ export function CompactSlider({
             />
             <button
               onClick={() => onChange(Math.min(max, value + step))}
-              className="w-5 h-5 rounded bg-surface-tooltip hover:bg-surface-raised text-content-secondary text-xs flex items-center justify-center"
+              className="w-5 h-5 rounded bg-surface-raised hover:bg-surface text-content-secondary text-xs flex items-center justify-center"
             >
               +
             </button>
@@ -310,7 +310,7 @@ export function CompactSlider({
       {/* Slider track with thumb */}
       <div
         ref={trackRef}
-        className="relative h-2 bg-surface-tooltip rounded-full cursor-pointer touch-none select-none"
+        className="relative h-2 bg-surface-inset rounded-full cursor-pointer touch-none select-none"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

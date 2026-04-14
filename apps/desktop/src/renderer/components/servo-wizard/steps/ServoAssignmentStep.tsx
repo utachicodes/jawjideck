@@ -61,7 +61,7 @@ export default function ServoAssignmentStep() {
 
         {/* Assignment table */}
         <div className="space-y-3">
-          <div className="bg-surface rounded-lg p-3 mb-4">
+          <div className="bg-surface-raised rounded-lg p-3 mb-4">
             <p className="text-xs text-content-secondary">
               <strong className="text-content">Tip:</strong> Check your FC wiring. Servo outputs are usually labeled S1-S8 or SERVO1-8.
               S1 = Servo 0 in iNav.
@@ -126,7 +126,7 @@ export default function ServoAssignmentStep() {
       <div className="flex justify-between">
         <button
           onClick={prevStep}
-          className="px-6 py-2.5 rounded-lg font-medium bg-surface-tooltip text-content hover:bg-surface-raised"
+          className="px-6 py-2.5 rounded-lg font-medium bg-surface-raised text-content hover:bg-surface-raised"
         >
           ← Back
         </button>

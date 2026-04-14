@@ -282,8 +282,8 @@ export const MavlinkConfigView: React.FC = () => {
       <div className="shrink-0 px-6 py-4 border-b border-subtle bg-gradient-to-r from-surface to-surface">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-              <Cpu className="w-7 h-7 text-content" />
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+              <Cpu className="w-7 h-7 text-white" />
             </div>
             <div>
               <h2 className="text-xl font-bold text-content">
@@ -324,7 +324,7 @@ export const MavlinkConfigView: React.FC = () => {
             <button
               onClick={() => fetchParameters()}
               disabled={isLoading}
-              className="px-4 py-2 text-sm rounded-lg bg-surface-tooltip hover:bg-surface-raised text-content border"
+              className="px-4 py-2 text-sm rounded-lg bg-surface-raised hover:bg-surface text-content border border-subtle"
             >
               Refresh
             </button>
@@ -332,7 +332,7 @@ export const MavlinkConfigView: React.FC = () => {
             <button
               onClick={handleReboot}
               disabled={rebooting}
-              className="px-4 py-2 text-sm rounded-lg flex items-center gap-2 bg-surface-tooltip hover:bg-surface-raised text-content border"
+              className="px-4 py-2 text-sm rounded-lg flex items-center gap-2 bg-surface-raised hover:bg-surface text-content border border-subtle"
               title="Reboot flight controller"
             >
               <RotateCw className={`w-4 h-4 ${rebooting ? 'animate-spin' : ''}`} />
@@ -341,7 +341,7 @@ export const MavlinkConfigView: React.FC = () => {
 
             <button
               onClick={() => setShowHistory(true)}
-              className="px-4 py-2 text-sm rounded-lg flex items-center gap-2 bg-surface-tooltip hover:bg-surface-raised text-content border"
+              className="px-4 py-2 text-sm rounded-lg flex items-center gap-2 bg-surface-raised hover:bg-surface text-content border border-subtle"
               title="View parameter change history"
             >
               <History className="w-4 h-4" />
@@ -351,10 +351,10 @@ export const MavlinkConfigView: React.FC = () => {
             <button
               onClick={handleWriteToFlashClick}
               disabled={isWritingFlash || modified === 0}
-              className={`px-5 py-2 text-sm font-medium rounded-lg shadow-lg transition-all flex items-center gap-2 ${
+              className={`px-5 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${
                 modified > 0
-                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-emerald-500/25'
-                  : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
+                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white'
+                  : 'bg-surface-raised text-content-tertiary cursor-not-allowed'
               }`}
               title="Save parameters to flight controller's permanent storage"
             >
@@ -374,8 +374,8 @@ export const MavlinkConfigView: React.FC = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
                   isActive
-                    ? 'bg-surface-tooltip text-content shadow-lg'
-                    : 'text-content-secondary hover:text-content hover:bg-surface'
+                    ? 'bg-surface-raised text-content'
+                    : 'text-content-secondary hover:text-content hover:bg-surface-raised'
                 }`}
               >
                 <tab.Icon className={`w-4 h-4 ${isActive ? tab.color : `${tab.color} opacity-50`}`} />

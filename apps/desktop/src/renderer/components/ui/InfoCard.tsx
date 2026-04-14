@@ -132,7 +132,7 @@ export function Tip({ children, className = '' }: TipProps) {
   }
 
   return (
-    <div className={`bg-surface rounded-lg p-3 ${className}`}>
+    <div className={`bg-surface-raised rounded-lg p-3 ${className}`}>
       <p className="text-xs text-content-secondary">
         <span className="text-blue-400">Tip:</span> {children}
       </p>

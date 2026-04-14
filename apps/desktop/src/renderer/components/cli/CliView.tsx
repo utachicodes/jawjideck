@@ -99,7 +99,7 @@ export default function CliView() {
           <button
             onClick={handleSaveOutput}
             disabled={!output || isSaving}
-            className="px-3 py-1.5 text-xs font-medium text-content bg-surface-tooltip hover:bg-surface-raised border border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="px-3 py-1.5 text-xs font-medium text-content bg-surface-raised hover:bg-surface-raised border border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             title="Save terminal output to file"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -125,7 +125,7 @@ export default function CliView() {
           <button
             onClick={clearOutput}
             disabled={!output}
-            className="px-3 py-1.5 text-xs font-medium text-content bg-surface-tooltip hover:bg-surface-raised border border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="px-3 py-1.5 text-xs font-medium text-content bg-surface-raised hover:bg-surface-raised border border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             title="Clear terminal output"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -324,7 +324,7 @@ export default function CliView() {
             </div>
             <h3 className="text-lg font-semibold text-content text-center mb-2">Export Parameters</h3>
             <p className="text-sm text-content-secondary text-center mb-6">
-              This will clear the CLI terminal, run the <code className="px-1.5 py-0.5 bg-surface-tooltip rounded text-amber-400">dump</code> command, and save all parameters as JSON.
+              This will clear the CLI terminal, run the <code className="px-1.5 py-0.5 bg-surface-raised rounded text-amber-400">dump</code> command, and save all parameters as JSON.
             </p>
             <div className="flex gap-3">
               <button

@@ -222,7 +222,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
           ))}
 
           {/* Track */}
-          <div className="absolute inset-x-0 top-1/2 h-1.5 bg-surface-raised rounded-full -translate-y-1/2" />
+          <div className="absolute inset-x-0 top-1/2 h-1.5 bg-surface-inset rounded-full -translate-y-1/2" />
 
           {/* Active range (draggable) */}
           <div
@@ -326,11 +326,11 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
         <div className="flex justify-between items-center px-1">
           <div className="flex items-center gap-2">
             <span className="text-xs text-content-secondary">Start:</span>
-            <span className="px-2 py-0.5 bg-surface-tooltip rounded font-mono text-sm text-content">{rangeStart}</span>
+            <span className="px-2 py-0.5 bg-surface-raised rounded font-mono text-sm text-content">{rangeStart}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-content-secondary">End:</span>
-            <span className="px-2 py-0.5 bg-surface-tooltip rounded font-mono text-sm text-content">{rangeEnd}</span>
+            <span className="px-2 py-0.5 bg-surface-raised rounded font-mono text-sm text-content">{rangeEnd}</span>
           </div>
         </div>
 

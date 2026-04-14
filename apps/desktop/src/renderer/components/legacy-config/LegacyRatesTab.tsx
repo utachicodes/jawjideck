@@ -253,7 +253,7 @@ export default function LegacyRatesTab() {
           <h3 className="text-sm font-medium text-content mb-3">Your Profiles</h3>
           <div className="flex flex-wrap gap-2">
             {Object.entries(customProfiles).map(([id, profile]) => (
-              <div key={id} className="flex items-center gap-1 bg-surface-tooltip rounded-lg overflow-hidden">
+              <div key={id} className="flex items-center gap-1 bg-surface-raised rounded-lg overflow-hidden">
                 <button
                   onClick={() => loadProfile(profile.data)}
                   className="px-3 py-1.5 text-sm text-content hover:bg-surface-raised"
@@ -274,7 +274,7 @@ export default function LegacyRatesTab() {
 
       {/* Save Profile Dialog */}
       {showSaveDialog && (
-        <div className="p-4 bg-surface-tooltip rounded-lg border border">
+        <div className="p-4 bg-surface-raised rounded-lg border border">
           <h4 className="text-sm font-medium text-content mb-3">Save Current Rates as Profile</h4>
           <div className="flex gap-2">
             <input
@@ -385,7 +385,7 @@ export default function LegacyRatesTab() {
       <div className="bg-surface-input rounded-xl p-5 border border-subtle">
         <div className="flex items-center gap-2 mb-4">
           <h3 className="text-lg font-semibold text-content">Throttle PID Attenuation</h3>
-          <span className="text-xs text-content-secondary bg-surface-tooltip px-2 py-0.5 rounded">TPA</span>
+          <span className="text-xs text-content-secondary bg-surface-raised px-2 py-0.5 rounded">TPA</span>
         </div>
         <p className="text-sm text-content-secondary mb-4">
           Reduces PID strength at high throttle to prevent oscillations during fast flight.

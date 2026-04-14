@@ -8,7 +8,7 @@ export const FlightModePanel = React.memo(function FlightModePanel() {
   const vfrHud = useTelemetryStore((s) => s.vfrHud);
   const battery = useTelemetryStore((s) => s.battery);
 
-  const batteryColor = battery.remaining > 30 ? 'text-emerald-400' : battery.remaining > 15 ? 'text-yellow-400' : 'text-red-400';
+  const batteryColor = battery.remaining < 0 ? 'text-content-secondary' : battery.remaining > 30 ? 'text-emerald-400' : battery.remaining > 15 ? 'text-yellow-400' : 'text-red-400';
 
   return (
     <PanelContainer>

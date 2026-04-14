@@ -303,7 +303,7 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className="bg-surface rounded-lg p-3 flex items-center gap-3">
+    <div className="bg-surface-raised rounded-lg p-3 flex items-center gap-3">
       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
         {icon}
       </div>
@@ -1436,7 +1436,7 @@ export function SettingsView() {
                     type="checkbox"
                     checked={uiVisibility[key]}
                     onChange={(e) => setUiVisibility({ [key]: e.target.checked })}
-                    className="mt-0.5 w-3.5 h-3.5 rounded border-border bg-surface-tooltip text-blue-500 focus:ring-blue-500/30 focus:ring-offset-0 cursor-pointer"
+                    className="mt-0.5 w-3.5 h-3.5 rounded border-border bg-surface-raised text-blue-500 focus:ring-blue-500/30 focus:ring-offset-0 cursor-pointer"
                   />
                   <div className="min-w-0">
                     <div className="text-xs font-medium text-content group-hover:text-content transition-colors">{label}</div>
@@ -2100,7 +2100,7 @@ function AboutSection() {
                     : `${(bytesDownloaded / (1024 * 1024)).toFixed(1)} MB`}
                 </span>
               </div>
-              <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
+              <div className="h-1.5 bg-surface-inset rounded-full overflow-hidden">
                 <div
                   className="h-full bg-blue-500 rounded-full transition-all duration-300"
                   style={{ width: `${Math.round(downloadProgress)}%` }}
@@ -2544,7 +2544,7 @@ function VehicleEditModal({
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-surface-tooltip rounded-xl border border-border w-full max-w-lg mx-4 overflow-hidden shadow-2xl"
+        className="bg-surface-raised rounded-xl border border-border w-full max-w-lg mx-4 overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

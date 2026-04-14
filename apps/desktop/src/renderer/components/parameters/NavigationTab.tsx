@@ -338,7 +338,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
                 type="number"
                 value={toM(navConfig.rthAltitude ?? 3000)}
                 onChange={(e) => updateNavConfig({ rthAltitude: fromM(Number(e.target.value)) })}
-                className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
                 min={5}
                 max={300}
               />
@@ -351,7 +351,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
                 type="number"
                 value={toMs(navConfig.maxNavigationSpeed ?? 300)}
                 onChange={(e) => updateNavConfig({ maxNavigationSpeed: fromMs(Number(e.target.value)) })}
-                className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
                 min={0.5}
                 max={20}
                 step={0.5}
@@ -364,7 +364,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
                 type="number"
                 value={toMs(navConfig.maxClimbRate ?? 500)}
                 onChange={(e) => updateNavConfig({ maxClimbRate: fromMs(Number(e.target.value)) })}
-                className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
                 min={0.5}
                 max={10}
                 step={0.5}
@@ -393,7 +393,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
               type="number"
               value={toMs(navConfig.landDescendRate ?? 200)}
               onChange={(e) => updateNavConfig({ landDescendRate: fromMs(Number(e.target.value)) })}
-              className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+              className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
               min={0.2}
               max={5}
               step={0.1}
@@ -407,7 +407,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
               type="number"
               value={toM(navConfig.landSlowdownMinAlt ?? 500)}
               onChange={(e) => updateNavConfig({ landSlowdownMinAlt: fromM(Number(e.target.value)) })}
-              className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+              className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
               min={1}
               max={50}
             />
@@ -420,7 +420,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
               type="number"
               value={toMs(navConfig.emergencyDescentRate ?? 500)}
               onChange={(e) => updateNavConfig({ emergencyDescentRate: fromMs(Number(e.target.value)) })}
-              className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+              className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
               min={1}
               max={10}
               step={0.5}
@@ -449,7 +449,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
               type="number"
               value={toM(navConfig.waypointRadius ?? 100)}
               onChange={(e) => updateNavConfig({ waypointRadius: fromM(Number(e.target.value)) })}
-              className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+              className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
               min={0.5}
               max={20}
               step={0.5}
@@ -463,7 +463,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
               type="number"
               value={toM(navConfig.waypointSafeAlt ?? 2000)}
               onChange={(e) => updateNavConfig({ waypointSafeAlt: fromM(Number(e.target.value)) })}
-              className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+              className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
               min={5}
               max={200}
             />
@@ -483,7 +483,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
                     type="number"
                     value={wpSettings.nav_wp_max_safe_distance}
                     onChange={(e) => updateWpSettings({ nav_wp_max_safe_distance: Number(e.target.value) })}
-                    className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
                     min={0}
                     max={1500}
                     step={10}
@@ -496,7 +496,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
                   <select
                     value={wpSettings.nav_wp_mission_restart}
                     onChange={(e) => updateWpSettings({ nav_wp_mission_restart: e.target.value })}
-                    className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
                   >
                     <option value="START">Start from beginning</option>
                     <option value="RESUME">Resume from last WP</option>
@@ -513,7 +513,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
                   type="checkbox"
                   checked={wpSettings.nav_wp_load_on_boot === 'ON'}
                   onChange={(e) => updateWpSettings({ nav_wp_load_on_boot: e.target.checked ? 'ON' : 'OFF' })}
-                  className="w-4 h-4 rounded border bg-surface-tooltip text-purple-500"
+                  className="w-4 h-4 rounded border bg-surface-raised text-purple-500"
                 />
                 <span className="text-sm text-content-secondary">Load mission on boot</span>
               </label>
@@ -523,7 +523,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
                   type="checkbox"
                   checked={wpSettings.nav_mc_wp_slowdown === 'ON'}
                   onChange={(e) => updateWpSettings({ nav_mc_wp_slowdown: e.target.checked ? 'ON' : 'OFF' })}
-                  className="w-4 h-4 rounded border bg-surface-tooltip text-purple-500"
+                  className="w-4 h-4 rounded border bg-surface-raised text-purple-500"
                 />
                 <span className="text-sm text-content-secondary">Slowdown at waypoints (MC)</span>
               </label>
@@ -532,7 +532,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
                 <select
                   value={wpSettings.nav_fw_wp_turn_smoothing}
                   onChange={(e) => updateWpSettings({ nav_fw_wp_turn_smoothing: e.target.value })}
-                  className="px-2 py-1 bg-surface-tooltip border rounded text-sm text-content focus:outline-none focus:border-blue-500"
+                  className="px-2 py-1 bg-surface-raised border rounded text-sm text-content focus:outline-none focus:border-blue-500"
                 >
                   <option value="OFF">Off</option>
                   <option value="ON">On</option>
@@ -564,7 +564,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
               <select
                 value={gpsConfig.provider}
                 onChange={(e) => updateGpsConfig({ provider: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
               >
                 {Object.entries(GPS_PROVIDER_NAMES).map(([val, name]) => (
                   <option key={val} value={val}>
@@ -579,7 +579,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
               <select
                 value={gpsConfig.sbasMode}
                 onChange={(e) => updateGpsConfig({ sbasMode: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
               >
                 {Object.entries(GPS_SBAS_NAMES).map(([val, name]) => (
                   <option key={val} value={val}>
@@ -596,7 +596,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
                 type="checkbox"
                 checked={gpsConfig.autoConfig}
                 onChange={(e) => updateGpsConfig({ autoConfig: e.target.checked })}
-                className="w-4 h-4 rounded border bg-surface-tooltip text-blue-500"
+                className="w-4 h-4 rounded border bg-surface-raised text-blue-500"
               />
               <span className="text-sm text-content-secondary">Auto-configure GPS</span>
             </label>
@@ -606,7 +606,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
                 type="checkbox"
                 checked={gpsConfig.autoBaud}
                 onChange={(e) => updateGpsConfig({ autoBaud: e.target.checked })}
-                className="w-4 h-4 rounded border bg-surface-tooltip text-blue-500"
+                className="w-4 h-4 rounded border bg-surface-raised text-blue-500"
               />
               <span className="text-sm text-content-secondary">Auto-detect baud rate</span>
             </label>
@@ -616,7 +616,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
                 type="checkbox"
                 checked={gpsConfig.ubloxUseGalileo}
                 onChange={(e) => updateGpsConfig({ ubloxUseGalileo: e.target.checked })}
-                className="w-4 h-4 rounded border bg-surface-tooltip text-blue-500"
+                className="w-4 h-4 rounded border bg-surface-raised text-blue-500"
               />
               <span className="text-sm text-content-secondary">Enable Galileo (u-blox)</span>
             </label>
@@ -626,7 +626,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
                 type="checkbox"
                 checked={gpsConfig.homePointOnce}
                 onChange={(e) => updateGpsConfig({ homePointOnce: e.target.checked })}
-                className="w-4 h-4 rounded border bg-surface-tooltip text-blue-500"
+                className="w-4 h-4 rounded border bg-surface-raised text-blue-500"
               />
               <span className="text-sm text-content-secondary">Set home once (don't update)</span>
             </label>
@@ -652,7 +652,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
       <div className="flex justify-end gap-3">
         <button
           onClick={loadConfig}
-          className="px-4 py-2 text-sm bg-surface-tooltip text-content rounded-lg hover:bg-surface-raised"
+          className="px-4 py-2 text-sm bg-surface-raised text-content rounded-lg hover:bg-surface-raised"
         >
           Refresh
         </button>
@@ -662,7 +662,7 @@ export default function NavigationTab({ modified, setModified }: Props) {
           className={`px-4 py-2 text-sm rounded-lg ${
             modified
               ? 'bg-blue-500 text-white hover:bg-blue-400'
-              : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
+              : 'bg-surface-raised text-content-secondary cursor-not-allowed'
           }`}
         >
           Save Navigation Config

@@ -391,7 +391,7 @@ function CommandDropdown({
       </button>
 
       {isOpen && createPortal(
-        <div ref={popupRef} className="z-[9999] bg-surface-tooltip border border-default rounded-lg shadow-xl flex flex-col overflow-hidden" style={popupStyle}>
+        <div ref={popupRef} className="z-[9999] bg-surface-raised border border-default rounded-lg shadow-xl flex flex-col overflow-hidden" style={popupStyle}>
           {/* Search input */}
           <div className="p-1.5 border-b border-subtle shrink-0">
             <div className="relative">
@@ -431,7 +431,7 @@ function CommandDropdown({
             ) : (
               filteredGroups.map((group) => (
                 <div key={group.group}>
-                  <div className="px-2 py-1 text-[10px] font-semibold text-content-secondary uppercase tracking-wider sticky top-0 bg-surface-tooltip">
+                  <div className="px-2 py-1 text-[10px] font-semibold text-content-secondary uppercase tracking-wider sticky top-0 bg-surface-raised">
                     {group.group}
                   </div>
                   {group.commands.map((cmd) => (

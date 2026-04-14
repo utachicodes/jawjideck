@@ -110,7 +110,7 @@ export default function LegacyConfigView() {
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
               hasChanges && !isLoading
                 ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
+                : 'bg-surface-raised text-content-secondary cursor-not-allowed'
             }`}
           >
             Save to EEPROM
@@ -270,7 +270,7 @@ export default function LegacyConfigView() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
                     isActive
-                      ? 'bg-surface-tooltip text-content border-b-2 border-blue-500'
+                      ? 'bg-surface-raised text-content border-b-2 border-blue-500'
                       : 'text-content-secondary hover:text-content hover:bg-surface'
                   }`}
                 >

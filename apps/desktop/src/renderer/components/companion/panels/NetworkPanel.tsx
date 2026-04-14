@@ -39,7 +39,7 @@ function SignalStrength({ signal }: { signal: number }) {
 
 function InterfaceCard({ iface }: { iface: NetworkInterface }) {
   return (
-    <div className="p-2.5 bg-surface rounded-lg space-y-1.5">
+    <div className="p-2.5 bg-surface-raised rounded-lg space-y-1.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <InterfaceIcon type={iface.type} />

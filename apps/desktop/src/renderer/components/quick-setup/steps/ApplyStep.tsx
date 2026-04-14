@@ -207,7 +207,7 @@ export const ApplyStep: React.FC = () => {
             <>
               <button
                 onClick={dismissPlatformMismatch}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface-raised rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Cancel
@@ -232,7 +232,7 @@ export const ApplyStep: React.FC = () => {
             <>
               <button
                 onClick={dismissPlatformMismatch}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface-raised rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Cancel
@@ -295,7 +295,7 @@ export const ApplyStep: React.FC = () => {
             <span className="text-content-secondary">{applyProgress.currentTask || 'Starting...'}</span>
             <span className="text-content-secondary">{progressPercent}%</span>
           </div>
-          <div className="h-2 bg-surface-tooltip rounded-full overflow-hidden">
+          <div className="h-2 bg-surface-inset rounded-full overflow-hidden">
             <div
               className="h-full bg-blue-500 rounded-full transition-all duration-300"
               style={{ width: `${progressPercent}%` }}
@@ -409,7 +409,7 @@ export const ApplyStep: React.FC = () => {
           <>
             <button
               onClick={prevStep}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface-raised rounded-lg transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Back
@@ -430,7 +430,7 @@ export const ApplyStep: React.FC = () => {
             <button
               onClick={prevStep}
               disabled={isApplying}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-content-secondary hover:text-content hover:bg-surface-raised rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ArrowLeft className="w-4 h-4" />
               Cancel

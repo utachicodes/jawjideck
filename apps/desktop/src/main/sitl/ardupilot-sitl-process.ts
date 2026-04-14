@@ -9,7 +9,7 @@
 
 import { spawn, ChildProcess } from 'node:child_process';
 import { app, BrowserWindow } from 'electron';
-import { chmod } from 'node:fs/promises';
+import { chmod, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type {
   ArduPilotSitlConfig,
@@ -31,6 +31,37 @@ const DEFAULT_MODELS: Record<ArduPilotVehicleType, string> = {
   rover: 'rover',
   sub: 'vectored',
 };
+
+// Model → FRAME_CLASS mapping for ArduPilot Copter
+// See: https://ardupilot.org/copter/docs/parameters.html#frame-class
+const COPTER_FRAME_CLASS: Record<string, number> = {
+  'quad': 1,       // Quad
+  '+': 1,          // Quad
+  'hexa': 2,       // Hexa
+  'octa': 3,       // Octa
+  'octaquad': 4,   // OctaQuad
+  'y6': 5,         // Y6
+  'heli': 6,       // Heli
+  'tri': 7,        // Tri
+  'singlecopter': 8,
+  'coax': 9,       // CoaxCopter
+};
+
+/**
+ * Generate a defaults param file for SITL based on vehicle type and model.
+ * This ensures essential parameters (like FRAME_CLASS) are set on first boot
+ * or after EEPROM wipe, avoiding the "Check frame class" arming error.
+ */
+function generateDefaultParams(vehicleType: ArduPilotVehicleType, model: string): string {
+  const lines: string[] = [];
+
+  if (vehicleType === 'copter') {
+    const frameClass = COPTER_FRAME_CLASS[model] ?? 1; // Default to Quad
+    lines.push(`FRAME_CLASS ${frameClass}`);
+  }
+
+  return lines.join('\n');
+}
 
 class ArduPilotSitlProcessManager {
   private process: ChildProcess | null = null;
@@ -146,6 +177,15 @@ class ArduPilotSitlProcessManager {
         } catch (err) {
           console.error('Failed to chmod SITL binary:', err);
         }
+      }
+
+      // Generate defaults file with essential params (FRAME_CLASS etc.)
+      const model = config.model || DEFAULT_MODELS[config.vehicleType];
+      const defaultParams = generateDefaultParams(config.vehicleType, model);
+      if (defaultParams && !config.defaultsFile) {
+        const defaultsPath = path.join(path.dirname(binaryPath), 'ardudeck-defaults.parm');
+        await writeFile(defaultsPath, defaultParams, 'utf-8');
+        config = { ...config, defaultsFile: defaultsPath };
       }
 
       this._currentConfig = config;

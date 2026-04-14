@@ -131,7 +131,7 @@ function ActivationProgress({ progress }: { progress: ModuleProgress }) {
 
       {/* Progress bar */}
       {progress.percent !== undefined && progress.stage !== 'error' && (
-        <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden">
+        <div className="w-full h-1.5 bg-surface-inset rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-300 ${
               progress.stage === 'complete' ? 'bg-emerald-500' : 'bg-blue-500'
@@ -355,7 +355,7 @@ export function ModuleManagerView() {
               {!keyInput && (
                 <button
                   onClick={handlePaste}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-xs text-content-secondary hover:text-content bg-surface rounded transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-xs text-content-secondary hover:text-content bg-surface-raised rounded transition-colors"
                 >
                   Paste
                 </button>

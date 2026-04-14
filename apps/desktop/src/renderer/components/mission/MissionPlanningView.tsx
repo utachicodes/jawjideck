@@ -265,7 +265,7 @@ function MissionNotAvailable({ fcVariant, boardId }: { fcVariant: string; boardI
           <p className="mb-2">Boards that support mission planning:</p>
           <div className="flex flex-wrap justify-center gap-2">
             {['Pixhawk', 'Cube', 'Matek F405-WSE', 'Kakute F7', 'Any iNav board'].map((board) => (
-              <span key={board} className="px-2 py-1 bg-surface-tooltip rounded text-content-secondary text-xs">
+              <span key={board} className="px-2 py-1 bg-surface-raised rounded text-content-secondary text-xs">
                 {board}
               </span>
             ))}

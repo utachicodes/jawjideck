@@ -257,7 +257,7 @@ export function SelectCalibrationStep() {
                 className={`
                   relative p-6 rounded-xl border text-left transition-all duration-300 overflow-hidden group
                   ${isAvailable
-                    ? `bg-gradient-to-br ${theme.gradient} ${theme.border} ${theme.hoverBorder} hover:shadow-lg hover:shadow-black/20 hover:scale-[1.02] cursor-pointer`
+                    ? `bg-gradient-to-br ${theme.gradient} ${theme.border} ${theme.hoverBorder} shadow-sm hover:shadow-lg hover:shadow-black/10 hover:scale-[1.02] cursor-pointer`
                     : 'border-subtle bg-surface cursor-not-allowed opacity-50'
                   }
                 `}
@@ -294,7 +294,7 @@ export function SelectCalibrationStep() {
                 <div className={`relative w-14 h-14 rounded-xl flex items-center justify-center mb-4 ${
                   isAvailable
                     ? `bg-gradient-to-br ${theme.iconBg} ${theme.iconColor}`
-                    : 'bg-surface-tooltip text-content-tertiary'
+                    : 'bg-surface-raised text-content-tertiary'
                 }`}>
                   {CalibrationIcons[calType.id]}
                 </div>
@@ -314,8 +314,8 @@ export function SelectCalibrationStep() {
                 {/* Duration badge */}
                 <div className={`relative mt-4 inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full ${
                   isAvailable
-                    ? `bg-surface ${theme.iconColor.replace('text-', 'text-').replace('400', '300')}`
-                    : 'bg-surface text-content-tertiary'
+                    ? `bg-surface-raised ${theme.iconColor.replace('text-', 'text-').replace('400', '300')}`
+                    : 'bg-surface-raised text-content-tertiary'
                 }`}>
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />

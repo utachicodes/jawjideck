@@ -368,7 +368,7 @@ export default function AutoLaunchTab({ modified, setModified }: Props) {
               <select
                 value={config.nav_fw_launch_wiggle_to_wake_idle}
                 onChange={(e) => updateConfig({ nav_fw_launch_wiggle_to_wake_idle: e.target.value })}
-                className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
               >
                 {WIGGLE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -448,7 +448,7 @@ export default function AutoLaunchTab({ modified, setModified }: Props) {
                 type="number"
                 value={cmToM(config.nav_fw_launch_max_altitude)}
                 onChange={(e) => updateConfig({ nav_fw_launch_max_altitude: mToCm(Number(e.target.value)) })}
-                className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
                 min={0}
                 max={600}
                 step={5}
@@ -513,7 +513,7 @@ export default function AutoLaunchTab({ modified, setModified }: Props) {
         <button
           onClick={loadConfig}
           disabled={loading}
-          className="px-4 py-2 text-sm bg-surface-tooltip text-content rounded-lg hover:bg-surface-raised flex items-center gap-2"
+          className="px-4 py-2 text-sm bg-surface-raised text-content rounded-lg hover:bg-surface-raised flex items-center gap-2"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -524,7 +524,7 @@ export default function AutoLaunchTab({ modified, setModified }: Props) {
           className={`px-4 py-2 text-sm rounded-lg flex items-center gap-2 ${
             modified
               ? 'bg-orange-500 text-white hover:bg-orange-400'
-              : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
+              : 'bg-surface-raised text-content-secondary cursor-not-allowed'
           }`}
         >
           <Save className={`w-4 h-4 ${saving ? 'animate-pulse' : ''}`} />

@@ -78,7 +78,7 @@ export function CalibrationResultCard({ data, type }: CalibrationResultCardProps
                 Compass Fitness
               </h5>
               <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 bg-surface-raised rounded-full overflow-hidden">
+                <div className="flex-1 h-2 bg-surface-inset rounded-full overflow-hidden">
                   <div
                     className={`h-full transition-all ${
                       data.compassFitness < 10

@@ -37,8 +37,12 @@ import {
   // Mission panels (for monitoring during flight) - MissionMapPanel removed (merged into MapPanel)
   WaypointTablePanel,
   AltitudeProfilePanel,
+  // SITL simulation panels
+  SitlEnvironmentDockPanel,
+  SitlFailureDockPanel,
   PANEL_COMPONENTS,
 } from '../panels';
+import { useArduPilotSitlStore } from '../../stores/ardupilot-sitl-store';
 
 // Panel component wrapper for dockview
 function PanelWrapper({ component }: { component: React.ComponentType }) {
@@ -65,12 +69,16 @@ const components: Record<string, React.FC<IDockviewPanelProps>> = {
   // Note: MissionMapPanel removed - mission data now integrated into MapPanel
   WaypointTablePanel: () => <WaypointTablePanel readOnly />,
   AltitudeProfilePanel: () => <AltitudeProfilePanel readOnly />,
+  // SITL simulation panels
+  SitlEnvironmentDockPanel: () => <PanelWrapper component={SitlEnvironmentDockPanel} />,
+  SitlFailureDockPanel: () => <PanelWrapper component={SitlFailureDockPanel} />,
 };
 
 // Preset layout definitions (pilotView is the default)
 const PRESET_LAYOUTS = {
   pilotView: 'Pilot View',
   missionTelemetry: 'Mission Telemetry',
+  sitl: 'SITL',
   allPanels: 'All Panels',
 } as const;
 
@@ -200,30 +208,37 @@ const ALL_PANELS_LAYOUT: SerializedDockview = {
     root: {
       type: 'branch',
       data: [
+        // Left column - flight data
         {
           type: 'branch',
           data: [
-            { type: 'leaf', data: { views: ['attitude'], activeView: 'attitude', id: '1' }, size: 200 },
+            { type: 'leaf', data: { views: ['attitude'], activeView: 'attitude', id: '1' }, size: 300 },
             { type: 'leaf', data: { views: ['altitude'], activeView: 'altitude', id: '2' }, size: 200 },
             { type: 'leaf', data: { views: ['speed'], activeView: 'speed', id: '3' }, size: 200 },
+            { type: 'leaf', data: { views: ['flightControl'], activeView: 'flightControl', id: '10' }, size: 200 },
           ],
-          size: 200,
+          size: 220,
         },
-        {
-          type: 'leaf',
-          data: { views: ['map'], activeView: 'map', id: '4' },
-          size: 600,
-        },
+        // Center - Map + Messages
         {
           type: 'branch',
           data: [
-            { type: 'leaf', data: { views: ['battery'], activeView: 'battery', id: '5' }, size: 150 },
+            { type: 'leaf', data: { views: ['map'], activeView: 'map', id: '4' }, size: 650 },
+            { type: 'leaf', data: { views: ['messages', 'preflightCheck'], activeView: 'messages', id: '11' }, size: 250 },
+          ],
+          size: 560,
+        },
+        // Right column - system status
+        {
+          type: 'branch',
+          data: [
+            { type: 'leaf', data: { views: ['battery'], activeView: 'battery', id: '5' }, size: 250 },
             { type: 'leaf', data: { views: ['gps'], activeView: 'gps', id: '6' }, size: 150 },
             { type: 'leaf', data: { views: ['position'], activeView: 'position', id: '7' }, size: 150 },
             { type: 'leaf', data: { views: ['velocity'], activeView: 'velocity', id: '8' }, size: 150 },
             { type: 'leaf', data: { views: ['flightMode'], activeView: 'flightMode', id: '9' }, size: 150 },
           ],
-          size: 200,
+          size: 220,
         },
       ],
       size: 900,
@@ -242,6 +257,63 @@ const ALL_PANELS_LAYOUT: SerializedDockview = {
     position: { id: 'position', contentComponent: 'PositionPanel', title: 'Position' },
     velocity: { id: 'velocity', contentComponent: 'VelocityPanel', title: 'Velocity' },
     flightMode: { id: 'flightMode', contentComponent: 'FlightModePanel', title: 'Flight Mode' },
+    flightControl: { id: 'flightControl', contentComponent: 'FlightControlPanel', title: 'Flight Control' },
+    messages: { id: 'messages', contentComponent: 'MessagesPanel', title: 'Messages' },
+    preflightCheck: { id: 'preflightCheck', contentComponent: 'PreflightCheckCard', title: 'Pre-flight Checks' },
+  },
+  activeGroup: '4',
+};
+
+// SITL preset - Map + Messages center, Attitude/Altitude/Speed left, GPS + SITL panels right
+const SITL_LAYOUT: SerializedDockview = {
+  grid: {
+    root: {
+      type: 'branch',
+      data: [
+        // Left column - core telemetry
+        {
+          type: 'branch',
+          data: [
+            { type: 'leaf', data: { views: ['attitude'], activeView: 'attitude', id: '1' }, size: 300 },
+            { type: 'leaf', data: { views: ['altitude'], activeView: 'altitude', id: '2' }, size: 300 },
+            { type: 'leaf', data: { views: ['speed'], activeView: 'speed', id: '3' }, size: 300 },
+          ],
+          size: 200,
+        },
+        // Center - Map + Messages
+        {
+          type: 'branch',
+          data: [
+            { type: 'leaf', data: { views: ['map'], activeView: 'map', id: '4' }, size: 650 },
+            { type: 'leaf', data: { views: ['messages'], activeView: 'messages', id: '5' }, size: 250 },
+          ],
+          size: 600,
+        },
+        // Right column - GPS + SITL controls (tabbed)
+        {
+          type: 'branch',
+          data: [
+            { type: 'leaf', data: { views: ['gps'], activeView: 'gps', id: '6' }, size: 200 },
+            { type: 'leaf', data: { views: ['sitlFailures', 'sitlEnvironment'], activeView: 'sitlFailures', id: '7' }, size: 700 },
+          ],
+          size: 280,
+        },
+      ],
+      size: 900,
+    },
+    width: 1080,
+    height: 900,
+    orientation: Orientation.HORIZONTAL,
+  },
+  panels: {
+    attitude: { id: 'attitude', contentComponent: 'AttitudePanel', title: 'Attitude' },
+    altitude: { id: 'altitude', contentComponent: 'AltitudePanel', title: 'Altitude' },
+    speed: { id: 'speed', contentComponent: 'SpeedPanel', title: 'Speed' },
+    map: { id: 'map', contentComponent: 'MapPanel', title: 'Map' },
+    messages: { id: 'messages', contentComponent: 'MessagesPanel', title: 'Messages' },
+    gps: { id: 'gps', contentComponent: 'GpsPanel', title: 'GPS' },
+    sitlFailures: { id: 'sitlFailures', contentComponent: 'SitlFailureDockPanel', title: 'SITL Failures' },
+    sitlEnvironment: { id: 'sitlEnvironment', contentComponent: 'SitlEnvironmentDockPanel', title: 'SITL Environment' },
   },
   activeGroup: '4',
 };
@@ -309,6 +381,9 @@ function loadPresetLayout(api: DockviewApi, preset: PresetLayoutKey): void {
     case 'missionTelemetry':
       api.fromJSON(MISSION_TELEMETRY_LAYOUT);
       break;
+    case 'sitl':
+      api.fromJSON(SITL_LAYOUT);
+      break;
     case 'allPanels':
       api.fromJSON(ALL_PANELS_LAYOUT);
       break;
@@ -329,6 +404,7 @@ function LayoutToolbar({
   activeLayout,
   supportsMissionPlanning,
   isMavlink,
+  isSitlRunning,
 }: {
   onSave: (name: string) => void;
   onLoad: (name: string) => void;
@@ -338,15 +414,19 @@ function LayoutToolbar({
   activeLayout: string;
   supportsMissionPlanning: boolean;
   isMavlink: boolean;
+  isSitlRunning: boolean;
 }) {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const mapMode = useEditModeStore((s) => s.mapMode);
   const setMapMode = useEditModeStore((s) => s.setMapMode);
   const [layoutName, setLayoutName] = useState('');
 
-  // Filter presets to hide Mission Telemetry for boards without mission planning
+  // Filter presets based on capabilities
   const availablePresets = Object.entries(PRESET_LAYOUTS).filter(([key]) => {
     if (key === 'missionTelemetry' && !supportsMissionPlanning) {
+      return false;
+    }
+    if (key === 'sitl' && !isSitlRunning) {
       return false;
     }
     return true;
@@ -457,7 +537,7 @@ function LayoutToolbar({
       </div>
 
       {/* Add panel dropdown */}
-      <AddPanelDropdown onAddPanel={onAddPanel} supportsMissionPlanning={supportsMissionPlanning} isMavlink={isMavlink} />
+      <AddPanelDropdown onAddPanel={onAddPanel} supportsMissionPlanning={supportsMissionPlanning} isMavlink={isMavlink} isSitlRunning={isSitlRunning} />
     </div>
   );
 }
@@ -469,16 +549,22 @@ const MISSION_PANEL_IDS = ['waypoints', 'altitudeProfile'];
 // MAVLink-only panel IDs (STATUSTEXT doesn't exist in MSP)
 const MAVLINK_PANEL_IDS = ['messages', 'preflightCheck'];
 
+// SITL-only panel IDs (only shown when ArduPilot SITL is running)
+const SITL_PANEL_IDS = ['sitlEnvironment', 'sitlFailures'];
+
 // Add panel dropdown
-function AddPanelDropdown({ onAddPanel, supportsMissionPlanning, isMavlink }: { onAddPanel: (id: string, component: string, title: string) => void; supportsMissionPlanning: boolean; isMavlink: boolean }) {
+function AddPanelDropdown({ onAddPanel, supportsMissionPlanning, isMavlink, isSitlRunning }: { onAddPanel: (id: string, component: string, title: string) => void; supportsMissionPlanning: boolean; isMavlink: boolean; isSitlRunning: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Filter out panels based on protocol support
+  // Filter out panels based on protocol support and SITL state
   const availablePanels = Object.entries(PANEL_COMPONENTS).filter(([id]) => {
     if (MISSION_PANEL_IDS.includes(id) && !supportsMissionPlanning) {
       return false;
     }
     if (MAVLINK_PANEL_IDS.includes(id) && !isMavlink) {
+      return false;
+    }
+    if (SITL_PANEL_IDS.includes(id) && !isSitlRunning) {
       return false;
     }
     return true;
@@ -519,6 +605,21 @@ function AddPanelDropdown({ onAddPanel, supportsMissionPlanning, isMavlink }: { 
   );
 }
 
+// Sensor health warning badge - shows unhealthy sensor names
+function SensorHealthWarning({ sensors }: { sensors: string[] }) {
+  return (
+    <div
+      className="flex items-center gap-1.5 px-2 py-0.5 bg-red-500/10 border border-red-500/30 rounded"
+      title={`Unhealthy: ${sensors.join(', ')} - check Messages panel for details`}
+    >
+      <svg className="w-3.5 h-3.5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
+      </svg>
+      <span className="font-mono text-xs text-red-400">{sensors.join(' ')}</span>
+    </div>
+  );
+}
+
 // Telemetry speed selector labels
 const SPEED_OPTIONS: { value: TelemetrySpeed; label: string }[] = [
   { value: 'eco', label: 'Eco' },
@@ -531,11 +632,30 @@ function QuickStatsBar() {
   const flight = useTelemetryStore((s) => s.flight);
   const vfrHud = useTelemetryStore((s) => s.vfrHud);
   const battery = useTelemetryStore((s) => s.battery);
+  const gps = useTelemetryStore((s) => s.gps);
+  const sensorHealth = useTelemetryStore((s) => s.sensorHealth);
   const connectionState = useConnectionStore((s) => s.connectionState);
   const telemetrySpeed = useSettingsStore((s) => s.telemetrySpeed);
   const setTelemetrySpeed = useSettingsStore((s) => s.setTelemetrySpeed);
-  const batteryColor = battery.remaining > 30 ? 'text-emerald-400' : battery.remaining > 15 ? 'text-yellow-400' : 'text-red-400';
+  const batteryColor = battery.remaining < 0 ? 'text-content-secondary' : battery.remaining > 30 ? 'text-emerald-400' : battery.remaining > 15 ? 'text-yellow-400' : 'text-red-400';
   const isMavlink = connectionState.protocol === 'mavlink';
+
+  // GPS satellite color
+  const satColor = gps.fixType >= 3 ? 'text-emerald-400' : gps.fixType >= 2 ? 'text-yellow-400' : 'text-red-400';
+
+  // Unhealthy sensors from SYS_STATUS
+  const unhealthySensors: string[] = [];
+  if (sensorHealth) {
+    const { present, health } = sensorHealth;
+    const check = (bit: number, name: string) => {
+      if ((present & bit) && !(health & bit)) unhealthySensors.push(name);
+    };
+    check(0x20, 'GPS');
+    check(0x04, 'MAG');
+    check(0x08, 'BARO');
+    check(0x02, 'ACC');
+    check(0x01, 'GYR');
+  }
 
   const handleSpeedChange = (speed: TelemetrySpeed) => {
     setTelemetrySpeed(speed);
@@ -577,6 +697,13 @@ function QuickStatsBar() {
           <span className="text-content-secondary">BAT</span>
           <span className={`font-mono text-sm ${batteryColor}`}>{battery.voltage.toFixed(1)}V</span>
         </div>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-content-secondary">SAT</span>
+          <span className={`font-mono text-sm ${satColor}`}>{gps.satellites}</span>
+        </div>
+        {unhealthySensors.length > 0 && (
+          <SensorHealthWarning sensors={unhealthySensors} />
+        )}
         {isMavlink && (
           <div className="flex items-center gap-1.5 ml-2">
             <span className="text-content-secondary">RATE</span>
@@ -615,6 +742,9 @@ export function TelemetryDashboard() {
   const isMspBetaflight = connectionState.protocol === 'msp' && connectionState.fcVariant === 'BTFL';
   const isMspCleanflight = connectionState.protocol === 'msp' && connectionState.fcVariant === 'CLFL';
   const supportsMissionPlanning = !isMspBetaflight && !isMspCleanflight;
+
+  // Check if ArduPilot SITL is running (for SITL-only panels)
+  const isSitlRunning = useArduPilotSitlStore((s) => s.isRunning);
 
   // Load layouts on mount
   useEffect(() => {
@@ -741,6 +871,7 @@ export function TelemetryDashboard() {
         activeLayout={activeLayoutName}
         supportsMissionPlanning={supportsMissionPlanning}
         isMavlink={connectionState.protocol === 'mavlink'}
+        isSitlRunning={isSitlRunning}
       />
 
       {/* Dockview container */}

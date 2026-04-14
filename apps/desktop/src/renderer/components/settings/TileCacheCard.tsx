@@ -162,7 +162,7 @@ export function TileCacheCard() {
             <span>{stats.totalTiles.toLocaleString()} tiles</span>
             <span>{formatBytes(stats.totalSizeBytes)} / {settings.maxCacheSizeGB} GB</span>
           </div>
-          <div className="w-full h-2 bg-surface-raised rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-surface-inset rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${
                 usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-yellow-500' : 'bg-emerald-500'
@@ -370,7 +370,7 @@ export function TileCacheCard() {
                 </span>
                 <span className="text-content-secondary font-mono">{formatBytes(dlProgress.bytesDownloaded)}</span>
               </div>
-              <div className="w-full h-2 bg-surface-raised rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-surface-inset rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full bg-blue-500 transition-all"
                   style={{
@@ -492,7 +492,7 @@ function SavedRegions() {
       {expanded && (
         <div className="mt-2 space-y-1.5">
           {regions.map((r) => (
-            <div key={r.id} className="flex items-center justify-between text-xs bg-surface rounded px-2.5 py-1.5">
+            <div key={r.id} className="flex items-center justify-between text-xs bg-surface-raised rounded px-2.5 py-1.5">
               <div className="min-w-0">
                 <div className="text-content font-mono text-[10px] truncate">{formatBounds(r.bounds)}</div>
                 <div className="text-content-secondary text-[10px]">

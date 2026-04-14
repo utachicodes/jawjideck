@@ -203,7 +203,7 @@ export default function ServoReviewStep() {
         <button
           onClick={prevStep}
           disabled={isSaving}
-          className="px-6 py-2.5 rounded-lg font-medium bg-surface-tooltip text-content hover:bg-surface-raised disabled:opacity-50"
+          className="px-6 py-2.5 rounded-lg font-medium bg-surface-raised text-content hover:bg-surface-raised disabled:opacity-50"
         >
           ← Back
         </button>

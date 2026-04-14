@@ -163,7 +163,7 @@ const SafetyTab: React.FC = () => {
       {/* Failsafe Settings Grid */}
       <div className="grid grid-cols-2 gap-4">
         {/* RC Failsafe Card */}
-        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+        <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
               <Radio className="w-5 h-5 text-red-400" />
@@ -180,7 +180,7 @@ const SafetyTab: React.FC = () => {
               <select
                 value={safetyValues.fsThrEnable}
                 onChange={(e) => setParameter('FS_THR_ENABLE', Number(e.target.value))}
-                className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
               >
                 <option value={0}>Disabled (Not Recommended)</option>
                 <option value={1}>RTL - Return to Launch</option>
@@ -205,7 +205,7 @@ const SafetyTab: React.FC = () => {
         </div>
 
         {/* GCS Failsafe Card */}
-        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+        <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
               <Monitor className="w-5 h-5 text-purple-400" />
@@ -221,7 +221,7 @@ const SafetyTab: React.FC = () => {
             <select
               value={safetyValues.fsGcsEnable}
               onChange={(e) => setParameter('FS_GCS_ENABLE', Number(e.target.value))}
-              className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+              className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
             >
               <option value={0}>Disabled</option>
               <option value={1}>RTL - Return to Launch</option>
@@ -232,7 +232,7 @@ const SafetyTab: React.FC = () => {
             </select>
           </div>
 
-          <div className="bg-surface rounded-lg p-3">
+          <div className="bg-surface-raised rounded-lg p-3">
             <p className="text-xs text-content-secondary">
               <span className="text-amber-400">Tip:</span> GCS failsafe requires heartbeat
               from ground station. If flying without GCS, leave disabled.
@@ -241,7 +241,7 @@ const SafetyTab: React.FC = () => {
         </div>
 
         {/* Battery Failsafe Card */}
-        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+        <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
               <Battery className="w-5 h-5 text-amber-400" />
@@ -258,7 +258,7 @@ const SafetyTab: React.FC = () => {
               <select
                 value={safetyValues.battFsLowAct}
                 onChange={(e) => setParameter('BATT_FS_LOW_ACT', Number(e.target.value))}
-                className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
               >
                 <option value={0}>Disabled</option>
                 <option value={1}>Land Immediately</option>
@@ -291,7 +291,7 @@ const SafetyTab: React.FC = () => {
         </div>
 
         {/* Critical Battery Failsafe Card */}
-        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+        <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
               <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -308,7 +308,7 @@ const SafetyTab: React.FC = () => {
               <select
                 value={safetyValues.battFsCrtAct}
                 onChange={(e) => setParameter('BATT_FS_CRT_ACT', Number(e.target.value))}
-                className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
               >
                 <option value={0}>Disabled</option>
                 <option value={1}>Land Immediately</option>
@@ -339,7 +339,7 @@ const SafetyTab: React.FC = () => {
             />
           </div>
 
-          <div className="bg-surface rounded-lg p-3">
+          <div className="bg-surface-raised rounded-lg p-3">
             <p className="text-xs text-content-secondary">
               <span className="text-red-400">Warning:</span> Critical battery should trigger a more
               aggressive action than low battery (e.g. Land vs RTL). Set voltage lower than the low battery threshold.
@@ -348,7 +348,7 @@ const SafetyTab: React.FC = () => {
         </div>
 
         {/* Geofence Card */}
-        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+        <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
@@ -380,7 +380,7 @@ const SafetyTab: React.FC = () => {
                 <select
                   value={safetyValues.fenceType}
                   onChange={(e) => setParameter('FENCE_TYPE', Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
                 >
                   {Object.entries(FENCE_TYPES).map(([num, type]) => (
                     <option key={num} value={num}>
@@ -415,7 +415,7 @@ const SafetyTab: React.FC = () => {
                 <select
                   value={safetyValues.fenceAction}
                   onChange={(e) => setParameter('FENCE_ACTION', Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
                 >
                   <option value={0}>Report Only</option>
                   <option value={1}>RTL or Land</option>
@@ -426,7 +426,7 @@ const SafetyTab: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="bg-surface rounded-lg p-3">
+            <div className="bg-surface-raised rounded-lg p-3">
               <p className="text-xs text-content-secondary">
                 Enable geofence to set altitude and distance limits.
                 Your aircraft will RTL or land if it breaches the fence.
@@ -437,7 +437,7 @@ const SafetyTab: React.FC = () => {
       </div>
 
       {/* Arming Checks */}
-      <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+      <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
@@ -455,7 +455,7 @@ const SafetyTab: React.FC = () => {
               else if (e.target.value === 'none') setParameter('ARMING_CHECK', 0);
               else if (e.target.value === 'custom') setParameter('ARMING_CHECK', allBitsValue);
             }}
-            className="px-3 py-2 bg-surface-tooltip border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
+            className="px-3 py-2 bg-surface-raised border rounded-lg text-sm text-content focus:outline-none focus:border-blue-500"
           >
             <option value="all">All Checks (Recommended)</option>
             <option value="none">No Checks (Dangerous!)</option>
@@ -482,7 +482,7 @@ const SafetyTab: React.FC = () => {
                 onClick={() => isCustomMode && toggleArmingCheck(check.bit)}
                 title={isCustomMode ? check.description : 'Switch to Custom mode to toggle individual checks'}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-left transition-colors ${
-                  isEnabled ? 'bg-green-500/10 text-green-400' : 'bg-surface text-white-secondary'
+                  isEnabled ? 'bg-green-500/10 text-green-400' : 'bg-surface-raised text-content-secondary'
                 } ${isCustomMode ? 'cursor-pointer hover:bg-surface-overlay-subtle' : 'cursor-default'}`}
               >
                 {isEnabled ? (

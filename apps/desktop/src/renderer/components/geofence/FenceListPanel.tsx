@@ -103,7 +103,7 @@ export function FenceListPanel({ readOnly = false }: FenceListPanelProps) {
           <div className="text-xs font-medium text-amber-400 mb-1">Return Point</div>
           {returnPoint ? (
             <div
-              className="flex items-center justify-between p-2 bg-surface rounded cursor-pointer hover:bg-surface-raised"
+              className="flex items-center justify-between p-2 bg-surface-raised rounded cursor-pointer hover:bg-surface-raised"
               onClick={() => setSelectedFenceId(null)}
             >
               <div className="text-xs">

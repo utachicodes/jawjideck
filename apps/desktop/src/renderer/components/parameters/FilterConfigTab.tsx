@@ -261,7 +261,7 @@ export default function FilterConfigTab({ setModified }: Props) {
               <select
                 value={config.gyroLowpassType}
                 onChange={(e) => updateConfig('gyroLowpassType', parseInt(e.target.value, 10))}
-                className="flex-1 px-3 py-2 bg-surface-tooltip border rounded-lg text-content text-sm focus:outline-none focus:border-blue-500"
+                className="flex-1 px-3 py-2 bg-surface-raised border rounded-lg text-content text-sm focus:outline-none focus:border-blue-500"
               >
                 {FILTER_TYPES.map((type) => (
                   <option key={type.value} value={type.value}>
@@ -315,7 +315,7 @@ export default function FilterConfigTab({ setModified }: Props) {
               <select
                 value={config.dTermLowpassType}
                 onChange={(e) => updateConfig('dTermLowpassType', parseInt(e.target.value, 10))}
-                className="flex-1 px-3 py-2 bg-surface-tooltip border rounded-lg text-content text-sm focus:outline-none focus:border-orange-500"
+                className="flex-1 px-3 py-2 bg-surface-raised border rounded-lg text-content text-sm focus:outline-none focus:border-orange-500"
               >
                 {FILTER_TYPES.map((type) => (
                   <option key={type.value} value={type.value}>

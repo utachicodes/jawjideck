@@ -147,7 +147,7 @@ function TemplateListView({
               <span className={`text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded border ${style.badge}`}>
                 {cat}
               </span>
-              <div className="flex-1 h-px bg-surface-tooltip" />
+              <div className="flex-1 h-px bg-surface-raised" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">

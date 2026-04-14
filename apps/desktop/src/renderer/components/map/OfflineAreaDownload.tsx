@@ -138,7 +138,7 @@ export function OfflineAreaDownload({ bounds, activeLayer }: OfflineAreaDownload
       {open && (
         <>
           <div className="fixed inset-0 z-[998]" onClick={() => !isDownloading && setOpen(false)} />
-          <div className="absolute right-0 bottom-full mb-1 w-64 bg-surface-tooltip border border-subtle rounded-lg shadow-xl z-[999] p-3 space-y-2.5">
+          <div className="absolute right-0 bottom-full mb-1 w-64 bg-surface-raised border border-subtle rounded-lg shadow-xl z-[999] p-3 space-y-2.5">
             <div className="text-xs font-medium text-content">Save Area Offline</div>
 
             {!bounds ? (
@@ -150,7 +150,7 @@ export function OfflineAreaDownload({ bounds, activeLayer }: OfflineAreaDownload
                   <span>{progress.downloadedTiles.toLocaleString()} / {progress.totalTiles.toLocaleString()}</span>
                   <span>{formatBytes(progress.bytesDownloaded)}</span>
                 </div>
-                <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-surface-inset rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full bg-emerald-500 transition-all"
                     style={{ width: `${pct}%` }}

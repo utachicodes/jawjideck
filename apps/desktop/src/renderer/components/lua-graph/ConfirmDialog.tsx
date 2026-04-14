@@ -22,7 +22,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
-      <div className="bg-surface-tooltip rounded-xl border border-subtle w-full max-w-sm mx-4 shadow-2xl">
+      <div className="bg-surface-raised rounded-xl border border-subtle w-full max-w-sm mx-4 shadow-2xl">
         <div className="px-5 pt-5 pb-4">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0 mt-0.5">

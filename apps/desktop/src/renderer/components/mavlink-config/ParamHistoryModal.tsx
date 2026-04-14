@@ -127,7 +127,7 @@ const ParamHistoryModal: React.FC<Props> = ({ boardUid, boardName, onClose, show
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-content-secondary hover:text-content transition-colors rounded-lg hover:bg-surface-tooltip"
+            className="p-2 text-content-secondary hover:text-content transition-colors rounded-lg hover:bg-surface-raised"
           >
             <X className="w-5 h-5" />
           </button>
@@ -216,7 +216,7 @@ const ParamHistoryModal: React.FC<Props> = ({ boardUid, boardName, onClose, show
                       ) : (
                         <button
                           onClick={() => setConfirmDeleteId(cp.id)}
-                          className="p-1.5 text-content-tertiary hover:text-red-400 transition-colors rounded-md hover:bg-surface-tooltip"
+                          className="p-1.5 text-content-tertiary hover:text-red-400 transition-colors rounded-md hover:bg-surface-raised"
                           title="Delete checkpoint"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

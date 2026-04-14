@@ -8,6 +8,7 @@ export default {
           base: 'var(--bg-base)',
           DEFAULT: 'var(--bg-surface)',
           raised: 'var(--bg-surface-raised)',
+          inset: 'var(--bg-inset)',
           input: 'var(--bg-input)',
           nav: 'var(--bg-nav)',
           tooltip: 'var(--bg-tooltip)',

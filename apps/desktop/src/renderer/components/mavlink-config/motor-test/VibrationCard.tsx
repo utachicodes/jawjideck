@@ -36,7 +36,7 @@ interface SparklineProps {
 
 const Sparkline: React.FC<SparklineProps> = ({ history, width, height, color }) => {
   if (history.length < 2) {
-    return <div style={{ width, height }} className="bg-surface rounded" />;
+    return <div style={{ width, height }} className="bg-surface-raised rounded" />;
   }
 
   const max = Math.max(MAX_DISPLAY, ...history);
@@ -47,14 +47,14 @@ const Sparkline: React.FC<SparklineProps> = ({ history, width, height, color }) 
     .join(' ');
 
   return (
-    <svg width={width} height={height} className="bg-surface rounded">
+    <svg width={width} height={height} className="bg-surface-raised rounded">
       {/* Threshold line at GOOD_THRESHOLD */}
       <line
         x1={0}
         y1={height - (GOOD_THRESHOLD / max) * height}
         x2={width}
         y2={height - (GOOD_THRESHOLD / max) * height}
-        stroke="rgb(75, 85, 99)"
+        stroke="var(--border-default)"
         strokeWidth={1}
         strokeDasharray="2 3"
       />
@@ -84,7 +84,7 @@ export const VibrationCard: React.FC = () => {
   const stale = lastVibration === 0 || Date.now() - lastVibration > 3000;
 
   return (
-    <div className="bg-surface rounded-xl border-subtle p-5">
+    <div className="bg-surface rounded-xl border border-subtle p-5">
       <div className="flex items-center gap-3 mb-5">
         <div className="w-10 h-10 rounded-lg bg-orange-500/10 border-orange-500/20 flex items-center justify-center">
           <Activity className="w-5 h-5 text-orange-400" />
@@ -114,7 +114,7 @@ export const VibrationCard: React.FC = () => {
                   {value.toFixed(1)}
                 </div>
               </div>
-              <div className="h-2 bg-surface rounded-full overflow-hidden">
+              <div className="h-2 bg-surface-inset rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-150"
                   style={{ width: `${pct}%`, backgroundColor: color }}
@@ -133,7 +133,7 @@ export const VibrationCard: React.FC = () => {
           const value = vibration?.[key] ?? 0;
           const bad = value > 0;
           return (
-            <div key={key} className="bg-surface rounded-lg py-2">
+            <div key={key} className="bg-surface-raised rounded-lg py-2">
               <div className="text-[10px] uppercase tracking-wider text-content-secondary">Clip {i + 1}</div>
               <div className={`text-sm font-mono font-semibold ${bad ? 'text-red-400' : 'text-content-secondary'}`}>
                 {value}

@@ -96,7 +96,7 @@ export function CalibratingStep() {
                       ? 'bg-green-500/20 text-green-400 border border-green-500/50'
                       : index === currentPosition && !isFinalizing
                         ? 'bg-cyan-500/20 text-cyan-400 border-2 border-cyan-500 animate-pulse'
-                        : 'bg-surface-tooltip text-content-secondary border border'
+                        : 'bg-surface-raised text-content-secondary border border'
                   }`}
                   title={ACCEL_6POINT_POSITIONS[index]}
                 >
@@ -129,7 +129,7 @@ export function CalibratingStep() {
             {compassProgress.map((prog, index) => (
               <div key={index} className="flex items-center gap-3">
                 <span className="text-xs text-content-secondary w-20">Compass {index + 1}</span>
-                <div className="flex-1 h-2 bg-surface-raised rounded-full overflow-hidden">
+                <div className="flex-1 h-2 bg-surface-inset rounded-full overflow-hidden">
                   <div
                     className="h-full bg-cyan-500 transition-all duration-300"
                     style={{ width: `${prog}%` }}
@@ -149,7 +149,7 @@ export function CalibratingStep() {
             <span className="text-content-secondary">Progress</span>
             <span className="text-cyan-400">{Math.round(progress)}%</span>
           </div>
-          <div className="h-2 bg-surface-raised rounded-full overflow-hidden">
+          <div className="h-2 bg-surface-inset rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300"
               style={{ width: `${progress}%` }}

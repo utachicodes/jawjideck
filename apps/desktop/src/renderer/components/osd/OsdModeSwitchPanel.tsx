@@ -118,7 +118,7 @@ function ModeButton({
             ? isArm
               ? 'bg-red-500/20 text-red-400 border border-red-500/40'
               : 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
-            : 'bg-surface-tooltip text-content-secondary border border hover:bg-surface-raised hover:text-content'
+            : 'bg-surface-raised text-content-secondary border border hover:bg-surface-raised hover:text-content'
           }
           ${loading ? 'opacity-50' : ''}
         `}

@@ -74,7 +74,7 @@ function RangeSlider({
 
   return (
     <div className="space-y-2">
-      <div className="relative h-8 bg-surface-tooltip rounded-lg overflow-hidden">
+      <div className="relative h-8 bg-surface-raised rounded-lg overflow-hidden">
         {/* Range highlight */}
         {!isDisabled && (
           <div
@@ -222,7 +222,7 @@ export default function LegacyModesTab() {
               <select
                 value={mode.modeId}
                 onChange={(e) => handleChange({ ...mode, modeId: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-surface-raised border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
               >
                 {allModes.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -238,7 +238,7 @@ export default function LegacyModesTab() {
               <select
                 value={mode.auxChannel}
                 onChange={(e) => handleChange({ ...mode, auxChannel: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-surface-raised border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
               >
                 {AUX_CHANNELS.map((ch) => (
                   <option key={ch.value} value={ch.value}>
@@ -261,7 +261,7 @@ export default function LegacyModesTab() {
                   step="25"
                   value={mode.rangeStart}
                   onChange={(e) => handleChange({ ...mode, rangeStart: parseInt(e.target.value) || 900 })}
-                  className="w-16 px-2 py-1 bg-surface-tooltip border border rounded text-content text-center"
+                  className="w-16 px-2 py-1 bg-surface-raised border border rounded text-content text-center"
                 />
                 <span className="text-content-secondary">-</span>
                 <input
@@ -271,7 +271,7 @@ export default function LegacyModesTab() {
                   step="25"
                   value={mode.rangeEnd}
                   onChange={(e) => handleChange({ ...mode, rangeEnd: parseInt(e.target.value) || 900 })}
-                  className="w-16 px-2 py-1 bg-surface-tooltip border border rounded text-content text-center"
+                  className="w-16 px-2 py-1 bg-surface-raised border border rounded text-content text-center"
                 />
               </div>
             </div>

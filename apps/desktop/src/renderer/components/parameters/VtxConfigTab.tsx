@@ -244,7 +244,7 @@ export default function VtxConfigTab({ modified, setModified }: Props) {
             Your flight controller couldn't communicate with a video transmitter.
           </p>
 
-          <div className="mt-4 p-4 bg-surface rounded-lg text-left">
+          <div className="mt-4 p-4 bg-surface-raised rounded-lg text-left">
             <p className="text-xs font-medium text-content-secondary mb-2">Common reasons:</p>
             <ul className="text-xs text-content-secondary space-y-1">
               <li>• VTX not connected or powered</li>
@@ -392,7 +392,7 @@ export default function VtxConfigTab({ modified, setModified }: Props) {
         </div>
 
         {/* Frequency Chart - Visual representation */}
-        <div className="mt-4 p-3 bg-surface rounded-lg">
+        <div className="mt-4 p-3 bg-surface-raised rounded-lg">
           <div className="text-xs text-content-secondary mb-2">Frequency Band Overview</div>
           <div className="relative h-8">
             {/* Background scale */}
@@ -434,7 +434,7 @@ export default function VtxConfigTab({ modified, setModified }: Props) {
             <select
               value={config.power}
               onChange={(e) => updateConfig({ power: parseInt(e.target.value, 10) })}
-              className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-content focus:outline-none focus:border-orange-500"
+              className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-content focus:outline-none focus:border-orange-500"
             >
               {powerLevels.map((level, idx) => (
                 <option key={idx} value={idx}>
@@ -453,7 +453,7 @@ export default function VtxConfigTab({ modified, setModified }: Props) {
             <select
               value={config.lowPowerDisarm}
               onChange={(e) => updateConfig({ lowPowerDisarm: parseInt(e.target.value, 10) })}
-              className="w-full px-3 py-2 bg-surface-tooltip border rounded-lg text-content focus:outline-none focus:border-orange-500"
+              className="w-full px-3 py-2 bg-surface-raised border rounded-lg text-content focus:outline-none focus:border-orange-500"
             >
               {LOW_POWER_DISARM_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -468,7 +468,7 @@ export default function VtxConfigTab({ modified, setModified }: Props) {
         </div>
 
         {/* Pit Mode Toggle */}
-        <div className="p-3 bg-surface rounded-lg">
+        <div className="p-3 bg-surface-raised rounded-lg">
           <label className="flex items-center justify-between cursor-pointer">
             <div className="flex items-center gap-3">
               <Volume2 className={`w-5 h-5 ${config.pitMode ? 'text-yellow-400' : 'text-content-secondary'}`} />
@@ -532,7 +532,7 @@ export default function VtxConfigTab({ modified, setModified }: Props) {
         <button
           onClick={loadConfig}
           disabled={loading}
-          className="px-4 py-2 text-sm bg-surface-tooltip text-content rounded-lg hover:bg-surface-raised flex items-center gap-2"
+          className="px-4 py-2 text-sm bg-surface-raised text-content rounded-lg hover:bg-surface-raised flex items-center gap-2"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -543,7 +543,7 @@ export default function VtxConfigTab({ modified, setModified }: Props) {
           className={`px-4 py-2 text-sm rounded-lg flex items-center gap-2 ${
             modified
               ? 'bg-purple-500 text-white hover:bg-purple-400'
-              : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
+              : 'bg-surface-raised text-content-secondary cursor-not-allowed'
           }`}
         >
           <Save className={`w-4 h-4 ${saving ? 'animate-pulse' : ''}`} />

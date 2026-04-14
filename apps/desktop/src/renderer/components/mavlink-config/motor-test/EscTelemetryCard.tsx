@@ -46,7 +46,7 @@ export const EscTelemetryCard: React.FC<EscTelemetryCardProps> = ({ layout }) =>
   const hasServoOutput = lastServoOutput > 0 && Date.now() - lastServoOutput < 3000;
 
   return (
-    <div className="bg-surface rounded-xl border-subtle p-5">
+    <div className="bg-surface rounded-xl border border-subtle p-5">
       <div className="flex items-center gap-3 mb-5">
         <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border-cyan-500/20 flex items-center justify-center">
           <Thermometer className="w-5 h-5 text-cyan-400" />
@@ -78,7 +78,7 @@ export const EscTelemetryCard: React.FC<EscTelemetryCardProps> = ({ layout }) =>
             return (
               <div
                 key={m.Number}
-                className="bg-surface rounded-lg p-3 border/20"
+                className="bg-surface-raised rounded-lg p-3 border border-subtle"
               >
                 <div className="flex items-baseline justify-between mb-2">
                   <div className="text-xs font-mono font-semibold text-content">

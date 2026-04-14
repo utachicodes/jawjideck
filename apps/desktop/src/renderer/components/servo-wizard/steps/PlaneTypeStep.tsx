@@ -83,7 +83,7 @@ export default function PlaneTypeStep() {
             className={`px-6 py-2.5 rounded-lg font-medium transition-all whitespace-nowrap ${
               selectedPresetId
                 ? 'bg-blue-500 text-white hover:bg-blue-400'
-                : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
+                : 'bg-surface-raised text-content-secondary cursor-not-allowed'
             }`}
           >
             Continue →
@@ -166,7 +166,7 @@ export default function PlaneTypeStep() {
           className={`px-6 py-2.5 rounded-lg font-medium transition-all whitespace-nowrap ${
             selectedPresetId
               ? 'bg-blue-500 text-white hover:bg-blue-400'
-              : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
+              : 'bg-surface-raised text-content-secondary cursor-not-allowed'
           }`}
         >
           Continue →

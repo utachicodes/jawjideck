@@ -40,7 +40,7 @@ function MixBar({ value, color, label }: { value: number; color: string; label: 
         <span className="text-content-secondary">{label}</span>
         <span className="font-mono" style={{ color }}>{value.toFixed(3)}</span>
       </div>
-      <div className="relative h-2 bg-surface-tooltip rounded-full overflow-hidden">
+      <div className="relative h-2 bg-surface-inset rounded-full overflow-hidden">
         <div
           className="absolute top-0 h-full rounded-full transition-all"
           style={{
@@ -212,7 +212,7 @@ export default function LegacyMixerTab() {
                           max="1"
                           value={mix.throttle}
                           onChange={(e) => handleMotorMixChange({ ...mix, throttle: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 bg-surface-tooltip border border rounded text-content text-sm"
+                          className="w-full px-2 py-1 bg-surface-raised border border rounded text-content text-sm"
                         />
                       </div>
                       <div>
@@ -224,7 +224,7 @@ export default function LegacyMixerTab() {
                           max="1"
                           value={mix.roll}
                           onChange={(e) => handleMotorMixChange({ ...mix, roll: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 bg-surface-tooltip border border rounded text-content text-sm"
+                          className="w-full px-2 py-1 bg-surface-raised border border rounded text-content text-sm"
                         />
                       </div>
                       <div>
@@ -236,7 +236,7 @@ export default function LegacyMixerTab() {
                           max="1"
                           value={mix.pitch}
                           onChange={(e) => handleMotorMixChange({ ...mix, pitch: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 bg-surface-tooltip border border rounded text-content text-sm"
+                          className="w-full px-2 py-1 bg-surface-raised border border rounded text-content text-sm"
                         />
                       </div>
                       <div>
@@ -248,7 +248,7 @@ export default function LegacyMixerTab() {
                           max="1"
                           value={mix.yaw}
                           onChange={(e) => handleMotorMixChange({ ...mix, yaw: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 bg-surface-tooltip border border rounded text-content text-sm"
+                          className="w-full px-2 py-1 bg-surface-raised border border rounded text-content text-sm"
                         />
                       </div>
                     </div>
@@ -324,7 +324,7 @@ export default function LegacyMixerTab() {
                           <select
                             value={mix.targetChannel}
                             onChange={(e) => handleServoMixChange({ ...mix, targetChannel: parseInt(e.target.value) })}
-                            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
+                            className="w-full px-3 py-2 bg-surface-raised border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
                           >
                             {[0, 1, 2, 3, 4, 5, 6, 7].map((servo) => (
                               <option key={servo} value={servo}>Servo {servo}</option>
@@ -336,7 +336,7 @@ export default function LegacyMixerTab() {
                           <select
                             value={mix.inputSource}
                             onChange={(e) => handleServoMixChange({ ...mix, inputSource: parseInt(e.target.value) })}
-                            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
+                            className="w-full px-3 py-2 bg-surface-raised border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
                           >
                             {Object.entries(SERVO_SOURCES).map(([id, src]) => (
                               <option key={id} value={id}>{src.label}</option>
@@ -351,7 +351,7 @@ export default function LegacyMixerTab() {
                             max="125"
                             value={mix.rate}
                             onChange={(e) => handleServoMixChange({ ...mix, rate: parseInt(e.target.value) || 0 })}
-                            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
+                            className="w-full px-3 py-2 bg-surface-raised border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
                           />
                         </div>
                         <div>
@@ -362,7 +362,7 @@ export default function LegacyMixerTab() {
                             max="100"
                             value={mix.speed}
                             onChange={(e) => handleServoMixChange({ ...mix, speed: parseInt(e.target.value) || 0 })}
-                            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
+                            className="w-full px-3 py-2 bg-surface-raised border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
                           />
                         </div>
                         <div>
@@ -373,7 +373,7 @@ export default function LegacyMixerTab() {
                             max="125"
                             value={mix.min}
                             onChange={(e) => handleServoMixChange({ ...mix, min: parseInt(e.target.value) || 0 })}
-                            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
+                            className="w-full px-3 py-2 bg-surface-raised border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
                           />
                         </div>
                         <div>
@@ -384,7 +384,7 @@ export default function LegacyMixerTab() {
                             max="125"
                             value={mix.max}
                             onChange={(e) => handleServoMixChange({ ...mix, max: parseInt(e.target.value) || 0 })}
-                            className="w-full px-3 py-2 bg-surface-tooltip border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
+                            className="w-full px-3 py-2 bg-surface-raised border border rounded-lg text-content text-sm focus:border-blue-500 focus:outline-none"
                           />
                         </div>
                       </div>
@@ -393,7 +393,7 @@ export default function LegacyMixerTab() {
                       <div className="mt-4 pt-4 border-t border-subtle">
                         <div className="flex items-center gap-4">
                           <span className="text-xs text-content-secondary">Mix strength:</span>
-                          <div className="flex-1 relative h-2 bg-surface-tooltip rounded-full overflow-hidden">
+                          <div className="flex-1 relative h-2 bg-surface-inset rounded-full overflow-hidden">
                             <div
                               className="absolute top-0 h-full rounded-full transition-all"
                               style={{

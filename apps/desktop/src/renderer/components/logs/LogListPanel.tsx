@@ -148,7 +148,7 @@ export function LogListPanel() {
         <button
           onClick={handleOpenFile}
           disabled={isParsingLog}
-          className="px-4 py-2 bg-surface-raised hover:bg-surface-raised disabled:bg-surface-tooltip disabled:text-content-tertiary text-content text-sm font-medium rounded-lg transition-colors"
+          className="px-4 py-2 bg-surface-raised hover:bg-surface-raised disabled:bg-surface-raised disabled:text-content-tertiary text-content text-sm font-medium rounded-lg transition-colors"
         >
           Open .bin File
         </button>
@@ -161,7 +161,7 @@ export function LogListPanel() {
             <span className="text-sm text-content">Parsing log...</span>
             <span className="text-sm text-content-secondary">{parseProgress.toFixed(0)}%</span>
           </div>
-          <div className="w-full bg-surface-raised rounded-full h-2">
+          <div className="w-full bg-surface-inset rounded-full h-2">
             <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${parseProgress}%` }} />
           </div>
         </div>
@@ -251,7 +251,7 @@ export function LogListPanel() {
                   <td className="px-4 py-3 text-right">
                     {downloadingLogId === log.id ? (
                       <div className="flex items-center justify-end gap-2">
-                        <div className="w-24 bg-surface-raised rounded-full h-1.5">
+                        <div className="w-24 bg-surface-inset rounded-full h-1.5">
                           <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: `${downloadProgress}%` }} />
                         </div>
                         <button onClick={handleCancel} className="text-xs text-red-400 hover:text-red-300">

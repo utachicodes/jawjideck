@@ -130,7 +130,7 @@ export function SitlStatusPanel() {
 
         {/* Firmware Info */}
         {isConnected && (
-          <div className="p-2 bg-surface rounded-lg">
+          <div className="p-2 bg-surface-raised rounded-lg">
             <div className="text-xs text-content-secondary mb-1">Firmware</div>
             <div className="text-content font-medium">
               {connectionState.fcVariant} {connectionState.fcVersion}
@@ -140,7 +140,7 @@ export function SitlStatusPanel() {
         )}
 
         {/* Arming Status */}
-        <div className="p-2 bg-surface rounded-lg">
+        <div className="p-2 bg-surface-raised rounded-lg">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-content-secondary">Arming</span>
             <span
@@ -173,7 +173,7 @@ export function SitlStatusPanel() {
         </div>
 
         {/* Flight Mode */}
-        <div className="p-2 bg-surface rounded-lg">
+        <div className="p-2 bg-surface-raised rounded-lg">
           <div className="text-xs text-content-secondary mb-1">Flight Mode</div>
           <div className="text-content font-medium">{flight.mode || 'Unknown'}</div>
         </div>
@@ -191,7 +191,7 @@ export function SitlStatusPanel() {
         </div>
 
         {/* GPS Status */}
-        <div className="p-2 bg-surface rounded-lg">
+        <div className="p-2 bg-surface-raised rounded-lg">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs text-content-secondary">GPS</span>
             <span
@@ -223,7 +223,7 @@ export function SitlStatusPanel() {
         </div>
 
         {/* Attitude */}
-        <div className="p-2 bg-surface rounded-lg">
+        <div className="p-2 bg-surface-raised rounded-lg">
           <div className="text-xs text-content-secondary mb-1">Attitude</div>
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div>
@@ -242,7 +242,7 @@ export function SitlStatusPanel() {
         </div>
 
         {/* Altitude */}
-        <div className="p-2 bg-surface rounded-lg">
+        <div className="p-2 bg-surface-raised rounded-lg">
           <div className="text-xs text-content-secondary mb-1">Altitude</div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
@@ -324,7 +324,7 @@ export function SitlStatusPanel() {
         </div>
 
         {/* Battery (even if fake) */}
-        <div className="p-2 bg-surface rounded-lg">
+        <div className="p-2 bg-surface-raised rounded-lg">
           <div className="text-xs text-content-secondary mb-1">Battery</div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>

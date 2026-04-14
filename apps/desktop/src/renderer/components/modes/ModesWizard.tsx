@@ -81,7 +81,7 @@ export const ModesWizard: React.FC<ModesWizardProps> = ({ isOpen, onClose }) => 
           </div>
           <button
             onClick={handleClose}
-            className="p-2 text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
+            className="p-2 text-content-secondary hover:text-content hover:bg-surface-raised rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

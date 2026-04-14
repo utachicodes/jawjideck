@@ -792,7 +792,7 @@ export function Mission3DPanel({
           <div className="flex rounded-lg overflow-hidden shadow-lg border border-subtle mb-0.5">
             <button
               onClick={() => useEditModeStore.getState().setMapMode('2d')}
-              className="px-2 py-1 text-xs font-medium transition-colors bg-surface-tooltip text-content-secondary hover:text-content"
+              className="px-2 py-1 text-xs font-medium transition-colors bg-surface-raised text-content-secondary hover:text-content"
             >2D</button>
             <button
               className="px-2 py-1 text-xs font-medium transition-colors bg-indigo-600 text-white"
@@ -806,7 +806,7 @@ export function Mission3DPanel({
             className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1.5 ${
               activeLayer === key
                 ? 'bg-blue-600 text-white'
-                : 'bg-surface-tooltip text-content hover:bg-surface-raised'
+                : 'bg-surface-raised text-content hover:bg-surface-raised'
             }`}
           >
             <LayerIcon layerKey={key} />
@@ -821,7 +821,7 @@ export function Mission3DPanel({
         {navWaypoints.length > 0 && (
           <button
             onClick={handleFitWaypoints}
-            className="px-2.5 py-1.5 rounded text-xs font-medium bg-surface-tooltip text-content hover:bg-surface-raised transition-colors flex items-center gap-1.5"
+            className="px-2.5 py-1.5 rounded text-xs font-medium bg-surface-raised text-content hover:bg-surface-raised transition-colors flex items-center gap-1.5"
             title="Fit map to show all waypoints"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -833,7 +833,7 @@ export function Mission3DPanel({
 
         <button
           onClick={handleCenterOnGps}
-          className="px-2.5 py-1.5 rounded text-xs font-medium bg-surface-tooltip text-content hover:bg-surface-raised transition-colors flex items-center gap-1.5"
+          className="px-2.5 py-1.5 rounded text-xs font-medium bg-surface-raised text-content hover:bg-surface-raised transition-colors flex items-center gap-1.5"
           title="Center map on vehicle GPS position"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

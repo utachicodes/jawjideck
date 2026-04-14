@@ -104,7 +104,7 @@ export function OsdElementBrowser({ selectedElement, onSelect }: Props) {
           placeholder="Search elements..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-surface-tooltip text-content text-xs rounded px-2.5 py-1.5 border border focus:border-blue-500 focus:outline-none placeholder-content-tertiary"
+          className="w-full bg-surface-raised text-content text-xs rounded px-2.5 py-1.5 border border focus:border-blue-500 focus:outline-none placeholder-content-tertiary"
         />
         <div className="mt-1.5 text-[10px] text-content-secondary">
           {totalEnabled} of {ELEMENT_REGISTRY.length} enabled

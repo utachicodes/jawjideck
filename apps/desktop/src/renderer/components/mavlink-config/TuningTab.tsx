@@ -73,7 +73,7 @@ const TuningTab: React.FC = () => {
       )}
 
       {/* Current Settings Overview */}
-      <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+      <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
         <h3 className="text-sm font-medium text-content">Current Settings</h3>
 
         <div className="grid grid-cols-3 gap-4">
@@ -90,7 +90,7 @@ const TuningTab: React.FC = () => {
                 <span className="text-content-secondary">Max Angle</span>
                 <span className="text-content font-mono">{angleMaxDeg}°</span>
               </div>
-              <div className="h-1.5 bg-surface-tooltip rounded-full overflow-hidden">
+              <div className="h-1.5 bg-surface-inset rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full"
                   style={{ width: `${(tuningValues.angleMax / 8000) * 100}%` }}
@@ -142,7 +142,7 @@ const TuningTab: React.FC = () => {
       </div>
 
       {/* Fine Tuning */}
-      <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+      <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-content">Fine Tuning</h3>
           <span className="text-xs text-content-secondary">Adjust individual values</span>

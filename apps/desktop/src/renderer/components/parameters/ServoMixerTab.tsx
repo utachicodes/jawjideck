@@ -420,7 +420,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
               className={`text-xs flex items-center gap-1 px-2 py-1 rounded transition-colors ${
                 showAllServos
                   ? 'text-blue-400 bg-blue-500/10 hover:bg-blue-500/20'
-                  : 'text-content-secondary hover:text-content hover:bg-surface-tooltip'
+                  : 'text-content-secondary hover:text-content hover:bg-surface-raised'
               }`}
             >
               {showAllServos ? (
@@ -450,7 +450,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
                   selectedServo === idx
                     ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
                     : hasRules
-                      ? 'bg-surface-tooltip border text-content hover:border'
+                      ? 'bg-surface-raised border text-content hover:border'
                       : 'bg-surface border-subtle text-content-secondary hover:border'
                 }`}
               >
@@ -536,7 +536,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
               </div>
 
               {/* PWM Visualization */}
-              <div className="relative h-5 bg-surface-tooltip rounded overflow-hidden">
+              <div className="relative h-5 bg-surface-raised rounded overflow-hidden">
                 <div
                   className="absolute h-full bg-blue-500/30"
                   style={{
@@ -687,7 +687,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
       <div className="flex justify-between items-center pt-2">
         <button
           onClick={loadConfig}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs text-content-secondary hover:text-content hover:bg-surface-tooltip rounded transition-colors"
+          className="flex items-center gap-2 px-3 py-1.5 text-xs text-content-secondary hover:text-content hover:bg-surface-raised rounded transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           Refresh
@@ -698,7 +698,7 @@ export default function ServoMixerTab({ modified, setModified }: Props) {
           className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
             modified
               ? 'bg-blue-600 text-white hover:bg-blue-500'
-              : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
+              : 'bg-surface-raised text-content-secondary cursor-not-allowed'
           }`}
         >
           <Save className="w-4 h-4" />

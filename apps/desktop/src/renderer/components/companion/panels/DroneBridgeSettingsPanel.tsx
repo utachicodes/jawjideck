@@ -43,7 +43,7 @@ function TextInput({ value, onChange, type = 'text', placeholder, className = ''
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className={`bg-surface-tooltip border border rounded px-2 py-1 text-sm text-content font-mono placeholder-content-tertiary focus:outline-none focus:border-blue-500 w-40 ${className}`}
+      className={`bg-surface-raised border border rounded px-2 py-1 text-sm text-content font-mono placeholder-content-tertiary focus:outline-none focus:border-blue-500 w-40 ${className}`}
     />
   );
 }
@@ -62,7 +62,7 @@ function NumberInput({ value, onChange, min, max, className = '' }: {
       onChange={(e) => onChange(Number(e.target.value))}
       min={min}
       max={max}
-      className={`bg-surface-tooltip border border rounded px-2 py-1 text-sm text-content font-mono placeholder-content-tertiary focus:outline-none focus:border-blue-500 w-24 ${className}`}
+      className={`bg-surface-raised border border rounded px-2 py-1 text-sm text-content font-mono placeholder-content-tertiary focus:outline-none focus:border-blue-500 w-24 ${className}`}
     />
   );
 }
@@ -80,7 +80,7 @@ function SelectInput<T extends string | number>({ value, onChange, options }: {
         const parsed = typeof value === 'number' ? Number(raw) : raw;
         onChange(parsed as T);
       }}
-      className="bg-surface-tooltip border border rounded px-2 py-1 text-sm text-content focus:outline-none focus:border-blue-500"
+      className="bg-surface-raised border border rounded px-2 py-1 text-sm text-content focus:outline-none focus:border-blue-500"
     >
       {options.map((opt) => (
         <option key={String(opt.value)} value={opt.value}>{opt.label}</option>
@@ -382,7 +382,7 @@ export function DroneBridgeSettingsPanel() {
             className={`w-full py-2 rounded text-sm font-medium transition-colors ${
               isDirty && !saving
                 ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                : 'bg-surface-tooltip text-content-tertiary cursor-not-allowed'
+                : 'bg-surface-raised text-content-tertiary cursor-not-allowed'
             }`}
           >
             {saving ? 'Saving...' : 'Save and Reboot'}

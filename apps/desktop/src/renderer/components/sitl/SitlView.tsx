@@ -233,7 +233,7 @@ export default function SitlView() {
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
             anyRunning
               ? 'bg-green-500/10 text-green-400 border border-green-500/30'
-              : 'bg-surface-tooltip text-content-secondary border border'
+              : 'bg-surface-raised text-content-secondary border border'
           }`}>
             <div className={`w-2 h-2 rounded-full ${
               anyRunning ? 'bg-green-400' : 'bg-zinc-500'
@@ -264,7 +264,7 @@ export default function SitlView() {
                   value={currentProfileName ?? ''}
                   onChange={(e) => selectProfile(e.target.value)}
                   disabled={isRunning || isStarting}
-                  className="px-3 py-1.5 bg-surface-tooltip text-content text-sm border border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50"
+                  className="px-3 py-1.5 bg-surface-raised text-content text-sm border border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50"
                 >
                   {profiles.map((profile) => (
                     <option key={profile.name} value={profile.name}>
@@ -277,7 +277,7 @@ export default function SitlView() {
                 <button
                   onClick={() => setShowNewProfile(true)}
                   disabled={isRunning || isStarting}
-                  className="px-2 py-1.5 text-xs font-medium text-content bg-surface-tooltip hover:bg-surface-raised border border rounded-lg transition-colors disabled:opacity-50"
+                  className="px-2 py-1.5 text-xs font-medium text-content bg-surface-raised hover:bg-surface-raised border border rounded-lg transition-colors disabled:opacity-50"
                   title="Create new profile"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -396,7 +396,7 @@ export default function SitlView() {
                 value="none"
                 onChange={(e) => setSelectedSimulator(e.target.value as 'flightgear' | 'xplane' | 'none')}
                 disabled={true}
-                className="px-2 py-1 text-xs bg-surface-tooltip text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-2 py-1 text-xs bg-surface-raised text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <option value="none">None</option>
                 <option value="xplane">X-Plane (Recommended)</option>
@@ -433,7 +433,7 @@ export default function SitlView() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={browseXPlane} disabled={isRunning} className="px-2 py-1 text-xs text-content bg-surface-tooltip hover:bg-surface-raised border border rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button onClick={browseXPlane} disabled={isRunning} className="px-2 py-1 text-xs text-content bg-surface-raised hover:bg-surface-raised border border rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                           Browse...
                         </button>
                         {customXPlanePath && (
@@ -497,7 +497,7 @@ export default function SitlView() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={browseFlightGear} disabled={isRunning} className="px-2 py-1 text-xs text-content bg-surface-tooltip hover:bg-surface-raised border border rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button onClick={browseFlightGear} disabled={isRunning} className="px-2 py-1 text-xs text-content bg-surface-raised hover:bg-surface-raised border border rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                           Browse...
                         </button>
                         {customFlightGearPath && (
@@ -520,19 +520,19 @@ export default function SitlView() {
                       <div className="grid grid-cols-2 gap-3 pt-3 border-t border-subtle">
                         <div>
                           <label className="block text-xs text-content-secondary mb-1">Aircraft</label>
-                          <select value={flightGearConfig.aircraft} onChange={(e) => setFlightGearConfig({ aircraft: e.target.value })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-surface-tooltip text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
+                          <select value={flightGearConfig.aircraft} onChange={(e) => setFlightGearConfig({ aircraft: e.target.value })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-surface-raised text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
                             {AIRCRAFT_OPTIONS.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
                           </select>
                         </div>
                         <div>
                           <label className="block text-xs text-content-secondary mb-1">Airport</label>
-                          <select value={flightGearConfig.airport} onChange={(e) => setFlightGearConfig({ airport: e.target.value })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-surface-tooltip text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
+                          <select value={flightGearConfig.airport} onChange={(e) => setFlightGearConfig({ airport: e.target.value })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-surface-raised text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
                             {AIRPORT_OPTIONS.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
                           </select>
                         </div>
                         <div>
                           <label className="block text-xs text-content-secondary mb-1">Time of Day</label>
-                          <select value={flightGearConfig.timeOfDay} onChange={(e) => setFlightGearConfig({ timeOfDay: e.target.value as typeof flightGearConfig.timeOfDay })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-surface-tooltip text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
+                          <select value={flightGearConfig.timeOfDay} onChange={(e) => setFlightGearConfig({ timeOfDay: e.target.value as typeof flightGearConfig.timeOfDay })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-surface-raised text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
                             <option value="dawn">Dawn</option>
                             <option value="morning">Morning</option>
                             <option value="noon">Noon</option>
@@ -543,7 +543,7 @@ export default function SitlView() {
                         </div>
                         <div>
                           <label className="block text-xs text-content-secondary mb-1">Weather</label>
-                          <select value={flightGearConfig.weather} onChange={(e) => setFlightGearConfig({ weather: e.target.value as typeof flightGearConfig.weather })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-surface-tooltip text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
+                          <select value={flightGearConfig.weather} onChange={(e) => setFlightGearConfig({ weather: e.target.value as typeof flightGearConfig.weather })} disabled={isRunning} className="w-full px-2 py-1.5 text-xs bg-surface-raised text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50">
                             <option value="clear">Clear</option>
                             <option value="cloudy">Cloudy</option>
                             <option value="rain">Rain</option>
@@ -601,14 +601,14 @@ export default function SitlView() {
               </div>
               <button
                 onClick={resetVirtualRC}
-                className="px-2 py-1 text-xs text-content-secondary hover:text-content bg-surface-tooltip hover:bg-surface-raised rounded transition-colors"
+                className="px-2 py-1 text-xs text-content-secondary hover:text-content bg-surface-raised hover:bg-surface-raised rounded transition-colors"
               >
                 Reset
               </button>
             </div>
 
             <div className="text-xs text-content-secondary mb-3">
-              When using <code className="px-1 py-0.5 bg-surface-tooltip rounded text-content-secondary">receiver_type = SIM</code>,
+              When using <code className="px-1 py-0.5 bg-surface-raised rounded text-content-secondary">receiver_type = SIM</code>,
               control RC inputs here. Set AUX4 high to arm.
             </div>
 
@@ -761,7 +761,7 @@ export default function SitlView() {
                 <div>
                   <div className="text-xs font-medium text-content">GPS MSP Sender</div>
                   <div className="text-xs text-content-secondary">
-                    Send FlightGear position via MSP (set <code className="px-1 bg-surface-tooltip rounded">gps_provider = MSP</code>)
+                    Send FlightGear position via MSP (set <code className="px-1 bg-surface-raised rounded">gps_provider = MSP</code>)
                   </div>
                 </div>
                 <button
@@ -891,7 +891,7 @@ export default function SitlView() {
                   value={newProfileName}
                   onChange={(e) => setNewProfileName(e.target.value)}
                   placeholder="e.g., My Quad Setup"
-                  className="w-full px-3 py-2 bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full px-3 py-2 bg-surface-raised text-content border border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleCreateProfile();
@@ -907,7 +907,7 @@ export default function SitlView() {
                   value={newProfileDesc}
                   onChange={(e) => setNewProfileDesc(e.target.value)}
                   placeholder="e.g., Testing GPS rescue settings"
-                  className="w-full px-3 py-2 bg-surface-tooltip text-content border border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full px-3 py-2 bg-surface-raised text-content border border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleCreateProfile();
                     if (e.key === 'Escape') setShowNewProfile(false);

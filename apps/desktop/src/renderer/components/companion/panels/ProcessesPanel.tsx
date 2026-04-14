@@ -145,7 +145,7 @@ export function ProcessesPanel() {
       {/* Kill confirmation dialog */}
       {killTarget && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-surface-tooltip border border rounded-lg p-4 max-w-xs shadow-xl">
+          <div className="bg-surface-raised border border rounded-lg p-4 max-w-xs shadow-xl">
             <div className="text-sm text-content mb-1">Kill process?</div>
             <div className="text-xs text-content-secondary mb-3">
               Send SIGTERM to <span className="text-content font-mono">{killTarget.name}</span> (PID {killTarget.pid})

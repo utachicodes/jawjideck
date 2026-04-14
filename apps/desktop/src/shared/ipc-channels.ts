@@ -19,6 +19,8 @@ export const IPC_CHANNELS = {
   // MAVLink Commands
   MAVLINK_REBOOT: 'mavlink:reboot',
   MAVLINK_ARM_DISARM: 'mavlink:arm-disarm',
+  MAVLINK_SET_MODE: 'mavlink:set-mode',
+  MAVLINK_COMMAND_TAKEOFF: 'mavlink:command-takeoff',
 
   // MAVLink Signing
   MAVLINK_SIGNING_SET_KEY: 'mavlink:signing-set-key',

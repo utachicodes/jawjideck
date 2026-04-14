@@ -70,7 +70,7 @@ function TempDisplay({ temp }: { temp: number }) {
 
   if (temp < 0) {
     return (
-      <div className="flex items-center justify-center p-3 bg-surface rounded-lg">
+      <div className="flex items-center justify-center p-3 bg-surface-raised rounded-lg">
         <span className="text-xs text-content-tertiary">Temp sensor unavailable</span>
       </div>
     );

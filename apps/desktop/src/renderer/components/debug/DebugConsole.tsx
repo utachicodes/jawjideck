@@ -210,7 +210,7 @@ export function DebugConsole() {
             {/* Clear button */}
             <button
               onClick={activeTab === 'console' ? clearLogs : clearMessages}
-              className="px-2 py-0.5 text-xs text-content-secondary hover:text-content hover:bg-surface rounded transition-colors"
+              className="px-2 py-0.5 text-xs text-content-secondary hover:text-content hover:bg-surface-raised rounded transition-colors"
             >
               Clear
             </button>

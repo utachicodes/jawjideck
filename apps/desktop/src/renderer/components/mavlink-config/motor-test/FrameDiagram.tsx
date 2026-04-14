@@ -46,7 +46,7 @@ export const FrameDiagram: React.FC<FrameDiagramProps> = ({
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
-        className="rounded-xl bg-surface border-subtle"
+        className="rounded-xl bg-surface border border-subtle"
       >
         {/* Center reference circle (vehicle body) */}
         <circle
@@ -54,7 +54,7 @@ export const FrameDiagram: React.FC<FrameDiagramProps> = ({
           cy={center}
           r={size / 2 - 60}
           fill="none"
-          stroke="rgb(55, 65, 81)"
+          stroke="var(--border-default)"
           strokeWidth={1}
           strokeDasharray="3 4"
         />
@@ -66,18 +66,18 @@ export const FrameDiagram: React.FC<FrameDiagramProps> = ({
             y1={center}
             x2={center}
             y2={34}
-            stroke="rgb(75, 85, 99)"
+            stroke="var(--border-default)"
             strokeWidth={1.5}
           />
           <polygon
             points={`${center - 6},40 ${center + 6},40 ${center},28`}
-            fill="rgb(107, 114, 128)"
+            fill="var(--text-tertiary)"
           />
           <text
             x={center}
             y={22}
             textAnchor="middle"
-            fill="rgb(156, 163, 175)"
+            fill="var(--text-secondary)"
             fontSize={11}
             fontFamily="monospace"
           >
@@ -93,7 +93,7 @@ export const FrameDiagram: React.FC<FrameDiagramProps> = ({
             y1={center}
             x2={pos.cx}
             y2={pos.cy}
-            stroke="rgb(55, 65, 81)"
+            stroke="var(--border-default)"
             strokeWidth={2}
           />
         ))}
@@ -144,7 +144,7 @@ export const FrameDiagram: React.FC<FrameDiagramProps> = ({
                 cx={pos.cx}
                 cy={pos.cy}
                 r={motorRadius}
-                fill="rgb(17, 24, 39)"
+                fill="var(--bg-base)"
                 stroke={isActive ? 'rgb(250, 204, 21)' : color}
                 strokeWidth={isActive ? 3 : 2}
               />
@@ -168,7 +168,7 @@ export const FrameDiagram: React.FC<FrameDiagramProps> = ({
                 x={pos.cx}
                 y={pos.cy + 2}
                 textAnchor="middle"
-                fill="white"
+                fill="var(--text-primary)"
                 fontSize={16}
                 fontWeight="bold"
                 fontFamily="monospace"
@@ -182,7 +182,7 @@ export const FrameDiagram: React.FC<FrameDiagramProps> = ({
                 x={pos.cx}
                 y={pos.cy + motorRadius + 14}
                 textAnchor="middle"
-                fill="rgb(156, 163, 175)"
+                fill="var(--text-secondary)"
                 fontSize={11}
                 fontFamily="monospace"
                 pointerEvents="none"

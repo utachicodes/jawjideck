@@ -114,7 +114,7 @@ function PortRow({ index }: { index: number }) {
   const isRcin = Number(protocol) === 23;
   const isMavlink = Number(protocol) === 1 || Number(protocol) === 2;
 
-  const selectStyle = 'bg-surface-tooltip text-content text-xs rounded px-1.5 py-1 border focus:border-blue-500 focus:outline-none w-full';
+  const selectStyle = 'bg-surface-raised text-content text-xs rounded px-1.5 py-1 border border-subtle focus:border-blue-500 focus:outline-none w-full';
 
   return (
     <tr className="border-b border-subtle hover:bg-surface-overlay-subtle">
@@ -207,7 +207,7 @@ const SerialPortsTab: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Port table card */}
-      <div className="bg-surface rounded-xl border-subtle p-5">
+      <div className="bg-surface rounded-xl border border-subtle p-5">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-lg bg-sky-500/20 flex items-center justify-center">
             <Cable className="w-5 h-5 text-sky-400" />

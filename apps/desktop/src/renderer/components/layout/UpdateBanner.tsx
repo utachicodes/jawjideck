@@ -90,7 +90,7 @@ export function UpdateBanner() {
           </span>
           <span className="text-xs text-content-secondary tabular-nums">{progress}%</span>
         </div>
-        <div className="mt-1.5 h-1 bg-surface-raised rounded-full overflow-hidden">
+        <div className="mt-1.5 h-1 bg-surface-inset rounded-full overflow-hidden">
           <div
             className="h-full bg-blue-500 rounded-full transition-all duration-300"
             style={{ width: `${progress}%` }}

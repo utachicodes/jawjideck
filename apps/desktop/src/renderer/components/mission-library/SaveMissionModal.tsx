@@ -64,7 +64,7 @@ export function SaveMissionModal({ onClose, onSaved, importedItems, importedHome
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div className="bg-surface-tooltip rounded-xl border border-subtle w-full max-w-md mx-4 overflow-hidden shadow-2xl">
+      <div className="bg-surface-raised rounded-xl border border-subtle w-full max-w-md mx-4 overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="px-6 py-4 border-b border-subtle">
           <div className="flex items-center gap-3">
@@ -118,7 +118,7 @@ export function SaveMissionModal({ onClose, onSaved, importedItems, importedHome
           </div>
 
           {/* Summary */}
-          <div className="flex items-center gap-4 text-xs text-content-secondary bg-surface rounded-lg px-3 py-2">
+          <div className="flex items-center gap-4 text-xs text-content-secondary bg-surface-raised rounded-lg px-3 py-2">
             <span>{items.length} waypoints</span>
             <span>{distance < 1000
               ? `${Math.round(distance)}m`

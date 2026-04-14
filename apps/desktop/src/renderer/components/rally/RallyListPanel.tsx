@@ -80,7 +80,7 @@ export function RallyListPanel({
 
       {/* Progress bar */}
       {progress && (
-        <div className="m-2 p-2 bg-surface rounded">
+        <div className="m-2 p-2 bg-surface-raised rounded">
           <div className="flex items-center justify-between text-xs mb-1">
             <span className="text-content-secondary">
               {progress.operation === 'download' ? 'Downloading' : 'Uploading'}...

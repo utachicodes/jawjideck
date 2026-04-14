@@ -40,7 +40,7 @@ export default function ServoBar({
     <div className="relative" style={{ height: height + (showLabels ? 20 : 0) }}>
       {/* Background track */}
       <div
-        className="absolute w-full bg-surface-tooltip rounded-full overflow-hidden"
+        className="absolute w-full bg-surface-inset rounded-full overflow-hidden"
         style={{ height }}
       >
         {/* Active range highlight */}

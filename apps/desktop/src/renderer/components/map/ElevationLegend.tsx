@@ -43,7 +43,7 @@ function EditableValue({
         onBlur={apply}
         onKeyDown={handleKeyDown}
         // Hide native spinner: [appearance:textfield] + webkit pseudo handled via inline style
-        className="w-12 px-1 py-0 text-[10px] font-mono bg-surface-tooltip border border-blue-500/50 rounded text-content focus:outline-none leading-tight [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="w-12 px-1 py-0 text-[10px] font-mono bg-surface-raised border border-blue-500/50 rounded text-content focus:outline-none leading-tight [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         autoFocus
       />
     );

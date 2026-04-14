@@ -104,7 +104,7 @@ function SuggestedBoards({
             key={board.id}
             onClick={() => onSelectBoard(board)}
             disabled={disabled}
-            className="px-2.5 py-1.5 bg-surface-tooltip hover:bg-surface-raised border border hover:border-cyan-500/50 rounded text-sm text-content hover:text-content transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-2.5 py-1.5 bg-surface-raised hover:bg-surface-raised border border hover:border-cyan-500/50 rounded text-sm text-content hover:text-content transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {board.name}
           </button>
@@ -138,7 +138,7 @@ function SerialPortPicker({
   }, []);
 
   return (
-    <div className="mb-4 p-3 bg-surface rounded-lg border border">
+    <div className="mb-4 p-3 bg-surface-raised rounded-lg border border">
       <div className="flex items-center justify-between mb-3">
         <span className="text-content-secondary text-sm font-medium">Serial Ports</span>
         <button
@@ -230,7 +230,7 @@ function BootloaderChecklist({
             type="checkbox"
             checked={boardSelected}
             onChange={(e) => setBoardSelected(e.target.checked)}
-            className="mt-0.5 rounded border bg-surface-tooltip text-emerald-500 focus:ring-emerald-500"
+            className="mt-0.5 rounded border bg-surface-raised text-emerald-500 focus:ring-emerald-500"
           />
           <div>
             <span className="text-content group-hover:text-content transition-colors">
@@ -247,7 +247,7 @@ function BootloaderChecklist({
             type="checkbox"
             checked={jumperRemoved}
             onChange={(e) => setJumperRemoved(e.target.checked)}
-            className="mt-0.5 rounded border bg-surface-tooltip text-emerald-500 focus:ring-emerald-500"
+            className="mt-0.5 rounded border bg-surface-raised text-emerald-500 focus:ring-emerald-500"
           />
           <div>
             <span className="text-content group-hover:text-content transition-colors">
@@ -282,7 +282,7 @@ function BootloaderChecklist({
           w-full px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2
           ${canFlash && allChecked
             ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-            : 'bg-surface-tooltip text-content-secondary cursor-not-allowed'
+            : 'bg-surface-raised text-content-secondary cursor-not-allowed'
           }
         `}
       >
@@ -644,13 +644,13 @@ export function FirmwareFlashView() {
                 type="checkbox"
                 checked={advancedMode}
                 onChange={(e) => setAdvancedMode(e.target.checked)}
-                className="rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500"
+                className="rounded border bg-surface-raised text-blue-500 focus:ring-blue-500"
               />
               Advanced
             </label>
             <button
               onClick={reset}
-              className="px-3 py-1.5 text-sm text-content-secondary hover:text-content hover:bg-surface rounded-lg transition-colors"
+              className="px-3 py-1.5 text-sm text-content-secondary hover:text-content hover:bg-surface-raised rounded-lg transition-colors"
             >
               Reset
             </button>
@@ -710,7 +710,7 @@ export function FirmwareFlashView() {
 
             {/* Connection Status - compact info line */}
             {detectedBoard && (
-              <div className="flex items-center gap-2 p-2 bg-surface rounded-lg border border mb-3 text-sm overflow-hidden">
+              <div className="flex items-center gap-2 p-2 bg-surface-raised rounded-lg border border mb-3 text-sm overflow-hidden">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
                 <span className="text-content shrink-0">Connected:</span>
                 <span className="text-content-secondary truncate min-w-0">{detectedBoard.port || 'USB'}</span>
@@ -780,7 +780,7 @@ export function FirmwareFlashView() {
                     selectedBoard
                       ? 'bg-blue-600 hover:bg-blue-500 text-white'
                       : 'bg-surface-raised hover:bg-surface-raised text-content'
-                  } disabled:bg-surface-tooltip disabled:text-content-tertiary`}
+                  } disabled:bg-surface-raised disabled:text-content-tertiary`}
                 >
                   {isDetecting ? (
                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -821,7 +821,7 @@ export function FirmwareFlashView() {
           </div>
 
           {/* Divider line */}
-          <div className="h-px bg-surface-tooltip" />
+          <div className="h-px bg-surface-raised" />
 
           {/* Firmware Source */}
           <div>
@@ -840,7 +840,7 @@ export function FirmwareFlashView() {
                       ${
                         selectedSource === source
                           ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                          : 'border bg-surface-tooltip text-content-secondary hover:border'
+                          : 'border bg-surface-raised text-content-secondary hover:border'
                       }
                     `}
                   >
@@ -934,7 +934,7 @@ export function FirmwareFlashView() {
                       ${isSelected
                         ? 'border-blue-500 bg-blue-500/10 text-blue-400'
                         : isAvailable
-                          ? 'border bg-surface-tooltip text-content-secondary hover:border'
+                          ? 'border bg-surface-raised text-content-secondary hover:border'
                           : 'border-subtle bg-surface-input text-content-tertiary cursor-not-allowed'
                       }
                       ${isFlashing ? 'opacity-50 cursor-not-allowed' : ''}
@@ -980,7 +980,7 @@ export function FirmwareFlashView() {
                           checked={includeBeta}
                           onChange={(e) => setIncludeBeta(e.target.checked)}
                           disabled={isFlashing}
-                          className="rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500"
+                          className="rounded border bg-surface-raised text-blue-500 focus:ring-blue-500"
                         />
                         Include Beta
                       </label>
@@ -990,7 +990,7 @@ export function FirmwareFlashView() {
                           checked={includeDev}
                           onChange={(e) => setIncludeDev(e.target.checked)}
                           disabled={isFlashing}
-                          className="rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500"
+                          className="rounded border bg-surface-raised text-blue-500 focus:ring-blue-500"
                         />
                         Include Dev
                       </label>
@@ -1010,7 +1010,7 @@ export function FirmwareFlashView() {
                             ${
                               selectedVersionGroup?.major === group.major
                                 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50'
-                                : 'bg-surface-tooltip text-content-secondary border border hover:border'
+                                : 'bg-surface-raised text-content-secondary border border hover:border'
                             }
                             ${group.isLatest ? 'ring-1 ring-emerald-500/30' : ''}
                           `}
@@ -1040,7 +1040,7 @@ export function FirmwareFlashView() {
                           setSelectedVersion(version || null);
                         }}
                         disabled={isFlashing}
-                        className="flex-1 px-3 py-2 bg-surface-tooltip border border rounded-lg text-content focus:outline-none focus:border-blue-500"
+                        className="flex-1 px-3 py-2 bg-surface-raised border border rounded-lg text-content focus:outline-none focus:border-blue-500"
                       >
                         {filteredVersions.map((v) => (
                           <option key={v.version} value={v.version}>
@@ -1074,7 +1074,7 @@ export function FirmwareFlashView() {
               <button
                 onClick={selectCustomFirmware}
                 disabled={isFlashing}
-                className="w-full px-4 py-4 bg-surface-tooltip border border border-dashed rounded-lg text-content-secondary hover:border hover:text-content transition-colors"
+                className="w-full px-4 py-4 bg-surface-raised border border border-dashed rounded-lg text-content-secondary hover:border hover:text-content transition-colors"
               >
                 {customFirmwarePath ? (
                   <span className="text-blue-400">
@@ -1103,7 +1103,7 @@ export function FirmwareFlashView() {
                   <span className="text-content-secondary">{flashProgress?.progress || 0}%</span>
                 )}
               </div>
-              <div className="h-2 bg-surface-tooltip rounded-full overflow-hidden">
+              <div className="h-2 bg-surface-inset rounded-full overflow-hidden">
                 <div
                   className={`h-full transition-all duration-300 ${
                     flashState === 'error'
@@ -1260,7 +1260,7 @@ export function FirmwareFlashView() {
                     checked={noRebootSequence}
                     onChange={(e) => setNoRebootSequence(e.target.checked)}
                     disabled={isFlashing}
-                    className="rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500"
+                    className="rounded border bg-surface-raised text-blue-500 focus:ring-blue-500"
                   />
                   No reboot sequence
                   <span className="text-xs text-content-secondary">(board already in bootloader)</span>
@@ -1271,7 +1271,7 @@ export function FirmwareFlashView() {
                     checked={fullChipErase}
                     onChange={(e) => setFullChipErase(e.target.checked)}
                     disabled={isFlashing}
-                    className="rounded border bg-surface-tooltip text-blue-500 focus:ring-blue-500"
+                    className="rounded border bg-surface-raised text-blue-500 focus:ring-blue-500"
                   />
                   Full chip erase
                 </label>
@@ -1298,7 +1298,7 @@ export function FirmwareFlashView() {
                       ${
                         canFlash
                           ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                          : 'bg-surface-tooltip text-content-tertiary cursor-not-allowed'
+                          : 'bg-surface-raised text-content-tertiary cursor-not-allowed'
                       }
                     `}
                   >

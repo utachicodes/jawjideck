@@ -226,7 +226,7 @@ export default function LegacyPidTab() {
           <h3 className="text-sm font-medium text-content mb-3">Your Profiles</h3>
           <div className="flex flex-wrap gap-2">
             {Object.entries(customProfiles).map(([id, profile]) => (
-              <div key={id} className="flex items-center gap-1 bg-surface-tooltip rounded-lg overflow-hidden">
+              <div key={id} className="flex items-center gap-1 bg-surface-raised rounded-lg overflow-hidden">
                 <button
                   onClick={() => loadProfile(profile.data)}
                   className="px-3 py-1.5 text-sm text-content hover:bg-surface-raised"
@@ -247,7 +247,7 @@ export default function LegacyPidTab() {
 
       {/* Save Profile Dialog */}
       {showSaveDialog && (
-        <div className="p-4 bg-surface-tooltip rounded-lg border border">
+        <div className="p-4 bg-surface-raised rounded-lg border border">
           <h4 className="text-sm font-medium text-content mb-3">Save Current PIDs as Profile</h4>
           <div className="flex gap-2">
             <input

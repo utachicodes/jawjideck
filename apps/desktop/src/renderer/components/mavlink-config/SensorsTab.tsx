@@ -159,7 +159,7 @@ const SensorsTab: React.FC = () => {
       {/* Main telemetry grid */}
       <div className="grid grid-cols-2 gap-4">
         {/* Attitude Card */}
-        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+        <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
               <Compass className="w-5 h-5 text-blue-400" />
@@ -192,7 +192,7 @@ const SensorsTab: React.FC = () => {
           </div>
 
           {/* Visual attitude indicator placeholder */}
-          <div className="h-24 bg-surface rounded-lg flex items-center justify-center">
+          <div className="h-24 bg-surface-raised rounded-lg flex items-center justify-center">
             <div
               className="w-16 h-16 border-2 border-blue-400 rounded"
               style={{
@@ -210,7 +210,7 @@ const SensorsTab: React.FC = () => {
         </div>
 
         {/* GPS Card */}
-        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+        <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
               <Satellite className="w-5 h-5 text-emerald-400" />
@@ -240,7 +240,7 @@ const SensorsTab: React.FC = () => {
           </div>
 
           {gps && (
-            <div className="bg-surface rounded-lg p-3 space-y-1">
+            <div className="bg-surface-raised rounded-lg p-3 space-y-1">
               <div className="flex justify-between text-xs">
                 <span className="text-content-secondary">Latitude</span>
                 <span className="font-mono text-content">{gps.lat?.toFixed(6) ?? 'N/A'}</span>
@@ -254,7 +254,7 @@ const SensorsTab: React.FC = () => {
         </div>
 
         {/* Battery Card */}
-        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+        <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
               <Battery className="w-5 h-5 text-amber-400" />
@@ -288,7 +288,7 @@ const SensorsTab: React.FC = () => {
 
           {/* Battery bar */}
           <div className="space-y-1">
-            <div className="h-3 bg-surface-tooltip rounded-full overflow-hidden">
+            <div className="h-3 bg-surface-inset rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${
                   (battery?.remaining ?? 0) > 50
@@ -308,7 +308,7 @@ const SensorsTab: React.FC = () => {
         </div>
 
         {/* Altitude & Speed Card */}
-        <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+        <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
               <Gauge className="w-5 h-5 text-purple-400" />
@@ -363,7 +363,7 @@ const SensorsTab: React.FC = () => {
       </div>
 
       {/* Sensor Health */}
-      <div className="bg-surface rounded-xl border-subtle p-4 space-y-4">
+      <div className="bg-surface rounded-xl border border-subtle p-4 space-y-4">
         <h3 className="text-sm font-medium text-content">Sensor Health</h3>
         <div className="grid grid-cols-6 gap-3">
           <SensorStatus name="Gyro" healthy={sensorHealth.gyro} enabled={sensorEnabled.gyro} icon={Activity} />

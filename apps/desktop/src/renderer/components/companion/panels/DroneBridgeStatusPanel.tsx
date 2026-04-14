@@ -218,7 +218,7 @@ export function DroneBridgeStatusPanel() {
             <StatRow label="UDP" value={droneBridgeStats.udp_connected} />
 
             {droneBridgeStats.udp_clients.length > 0 && (
-              <div className="mt-1.5 p-2 bg-surface rounded-lg">
+              <div className="mt-1.5 p-2 bg-surface-raised rounded-lg">
                 <div className="text-[10px] text-content-tertiary uppercase tracking-wider mb-1">UDP Clients</div>
                 {droneBridgeStats.udp_clients.map((client) => (
                   <div key={client} className="text-xs text-content-secondary font-mono py-0.5">{client}</div>
@@ -227,7 +227,7 @@ export function DroneBridgeStatusPanel() {
             )}
 
             {droneBridgeStats.connected_sta.length > 0 && (
-              <div className="mt-1.5 p-2 bg-surface rounded-lg">
+              <div className="mt-1.5 p-2 bg-surface-raised rounded-lg">
                 <div className="text-[10px] text-content-tertiary uppercase tracking-wider mb-1">Connected Stations</div>
                 {droneBridgeStats.connected_sta.map((sta) => (
                   <StationRow key={sta.sta_mac} station={sta} />

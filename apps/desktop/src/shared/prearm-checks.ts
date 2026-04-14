@@ -61,9 +61,9 @@ const PREARM_PATTERNS: PreArmPattern[] = [
     fix: { params: ['INS_GYR_CAL'], hint: 'Gyro calibration setting' },
   },
   {
-    pattern: /Accel.*(not calibrated|not healthy|inconsistent)/i,
+    pattern: /Accel.*(not calibrated|not healthy|inconsistent|calibration needed)/i,
     category: 'sensors',
-    fix: { params: [], hint: 'Accelerometer needs calibration', action: 'calibrate-accel' },
+    fix: { params: [], hint: 'Accelerometer needs calibration.', action: 'calibrate-accel' },
   },
   {
     pattern: /Baro.*not healthy/i,
@@ -79,6 +79,32 @@ const PREARM_PATTERNS: PreArmPattern[] = [
     pattern: /Rangefinder.*not healthy/i,
     category: 'sensors',
     fix: { params: ['RNGFND1_TYPE'], hint: 'Rangefinder configuration' },
+  },
+  // EKF / Estimation
+  {
+    pattern: /EKF.*attitude.*bad/i,
+    category: 'sensors',
+    fix: { params: [], hint: 'EKF cannot converge. In SITL, restart with "Wipe EEPROM" and wait 60-90s after boot.' },
+  },
+  {
+    pattern: /AHRS.*inconsistent/i,
+    category: 'sensors',
+    fix: { params: [], hint: 'IMU cores disagree - likely stale calibration data. Restart SITL with "Wipe EEPROM" enabled.' },
+  },
+  {
+    pattern: /Need Position Estimate/i,
+    category: 'sensors',
+    fix: { params: [], hint: 'EKF needs a valid position. Wait 60-90s after boot for convergence, or restart SITL with "Wipe EEPROM".' },
+  },
+  {
+    pattern: /Need Alt Estimate/i,
+    category: 'sensors',
+    fix: { params: [], hint: 'EKF needs altitude estimate. Cascades from other sensor errors - fix those first.' },
+  },
+  {
+    pattern: /Wait or rebo/i,
+    category: 'sensors',
+    fix: { params: [], hint: 'ArduPilot is telling you to wait for sensors to settle or reboot the FC.' },
   },
   // GPS
   {
@@ -152,15 +178,16 @@ const GENERIC_FALLBACK: PreArmPattern = {
  * Check if a STATUSTEXT message is a pre-arm message.
  */
 export function isPreArmMessage(text: string): boolean {
-  return /PreArm:/i.test(text);
+  return /(?:PreArm|Arm):/i.test(text);
 }
 
 /**
- * Extract the reason part from a pre-arm message.
+ * Extract the reason part from a pre-arm or arm-time error message.
  * "PreArm: Motors: Check frame class" → "Motors: Check frame class"
+ * "Arm: Motors: Check frame class" → "Motors: Check frame class"
  */
 export function extractPreArmReason(text: string): string {
-  const match = text.match(/PreArm:\s*(.+)/i);
+  const match = text.match(/(?:PreArm|Arm):\s*(.+)/i);
   return match ? match[1]!.trim() : text;
 }
 

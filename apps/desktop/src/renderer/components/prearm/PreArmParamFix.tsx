@@ -154,8 +154,11 @@ function ParamEditor({ paramId, onApplied }: { paramId: string; onApplied: (need
  * When params that require reboot are applied, shows a "Reboot FC" button.
  */
 export function PreArmParamFix({ paramIds, hint, action, navigateTo }: PreArmParamFixProps) {
+  const setParameter = useParameterStore((s) => s.setParameter);
   const [needsReboot, setNeedsReboot] = useState(false);
   const [rebooting, setRebooting] = useState(false);
+  const [disabling, setDisabling] = useState(false);
+  const [disabled, setDisabled] = useState(false);
 
   const handleParamApplied = useCallback((rebootRequired: boolean) => {
     if (rebootRequired) {
@@ -174,15 +177,27 @@ export function PreArmParamFix({ paramIds, hint, action, navigateTo }: PreArmPar
     setNeedsReboot(false);
   }, []);
 
+  const handleDisableArmingChecks = useCallback(async () => {
+    setDisabling(true);
+    const ok = await setParameter('ARMING_CHECK', 0);
+    setDisabling(false);
+    if (ok) {
+      setDisabled(true);
+    }
+  }, [setParameter]);
+
+  // Show "Disable Arming Checks" when there's no direct param fix
+  const showDisableButton = !disabled && (action || (paramIds.length === 0 && !navigateTo));
+
   return (
     <div className="px-3 py-2 bg-surface border-t border-subtle space-y-2">
       <div className="text-[11px] text-content">{hint}</div>
 
       {action && (
-        <div className="text-[10px] text-amber-400/80">
-          {action === 'calibrate-accel' && 'Accelerometer calibration required — use the Calibration tab'}
-          {action === 'calibrate-compass' && 'Compass calibration required — use the Calibration tab'}
-          {action === 'calibrate-rc' && 'RC calibration required — use the Calibration tab'}
+        <div className="text-[10px] text-content-secondary">
+          {action === 'calibrate-accel' && 'Use the Calibration tab to run Accelerometer (Level) calibration.'}
+          {action === 'calibrate-compass' && 'Use the Calibration tab to run Compass calibration.'}
+          {action === 'calibrate-rc' && 'Use the Calibration tab to run RC calibration.'}
         </div>
       )}
 
@@ -197,6 +212,25 @@ export function PreArmParamFix({ paramIds, hint, action, navigateTo }: PreArmPar
           {paramIds.map((id) => (
             <ParamEditor key={id} paramId={id} onApplied={handleParamApplied} />
           ))}
+        </div>
+      )}
+
+      {showDisableButton && !disabled && (
+        <button
+          onClick={handleDisableArmingChecks}
+          disabled={disabling}
+          className="w-full px-3 py-1.5 text-[11px] font-medium rounded bg-blue-600/20 text-blue-300 border border-blue-500/30 hover:bg-blue-600/30 transition-colors disabled:opacity-50"
+        >
+          {disabling ? 'Disabling...' : 'Disable Arming Checks'}
+        </button>
+      )}
+
+      {disabled && (
+        <div className="flex items-center gap-1.5 text-[10px] text-emerald-400">
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          Arming checks disabled (ARMING_CHECK = 0)
         </div>
       )}
 
