@@ -864,7 +864,7 @@ function FieldPickerPanel() {
             <div key={type}>
               <button
                 onClick={() => toggleExpanded(type)}
-                className={`flex items-center gap-2 text-xs w-full rounded px-2 py-1.5 transition-colors hover:bg-surface/40`}
+                className={`flex items-center gap-2 text-xs w-full rounded px-2 py-1.5 transition-colors hover:bg-surface-overlay-subtle`}
                 style={{ backgroundColor: hasSelection ? `${groupColor}18` : undefined, opacity: hasSelection ? 1 : 0.45 }}
               >
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: groupColor }} />
@@ -888,7 +888,7 @@ function FieldPickerPanel() {
                       <label
                         key={field}
                         className={`flex items-center gap-2 text-[11px] cursor-pointer rounded px-2 py-1 transition-colors ${
-                          isChecked ? 'bg-surface' : 'hover:bg-surface/30'
+                          isChecked ? 'bg-surface' : 'hover:bg-surface-overlay-subtle'
                         }`}
                       >
                         <input

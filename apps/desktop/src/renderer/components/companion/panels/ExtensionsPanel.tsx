@@ -114,7 +114,7 @@ export function ExtensionsPanel() {
                 const isRemoving = actionInProgress === `remove:${ext.identifier}`;
 
                 return (
-                  <div key={ext.identifier} className="px-3 py-2.5 hover:bg-surface/30 transition-colors">
+                  <div key={ext.identifier} className="px-3 py-2.5 hover:bg-surface-overlay-subtle transition-colors">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2 min-w-0">
                         <div className={`w-2 h-2 rounded-full shrink-0 ${ext.enabled ? 'bg-emerald-400' : 'bg-gray-500'}`} />

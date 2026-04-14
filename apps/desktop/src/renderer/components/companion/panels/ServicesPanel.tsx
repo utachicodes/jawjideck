@@ -105,7 +105,7 @@ export function ServicesPanel() {
               const isActing = actionInProgress?.startsWith(`${service.name}:`);
 
               return (
-                <div key={service.name} className={`px-3 py-2 ${colors.bg} hover:bg-surface/30 transition-colors`}>
+                <div key={service.name} className={`px-3 py-2 ${colors.bg} hover:bg-surface-overlay-subtle transition-colors`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`w-2 h-2 rounded-full shrink-0 ${colors.dot}`} />

@@ -129,7 +129,7 @@ export function ContainersPanel() {
               const isActing = actionInProgress?.startsWith(`${container.id}:`);
 
               return (
-                <div key={container.id} className="px-3 py-2 hover:bg-surface/30 transition-colors">
+                <div key={container.id} className="px-3 py-2 hover:bg-surface-overlay-subtle transition-colors">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`w-2 h-2 rounded-full shrink-0 ${colors.dot}`} />

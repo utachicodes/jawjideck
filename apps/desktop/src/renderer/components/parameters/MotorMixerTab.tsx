@@ -211,7 +211,7 @@ function MotorLayoutDiagram({
 
   return (
     <div
-      className="relative bg-surface/80 rounded-xl"
+      className="relative bg-surface-overlay-light rounded-xl"
       style={{ width: size, height: size }}
     >
       {/* Front indicator */}

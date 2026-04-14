@@ -15,6 +15,7 @@ import { useTelemetryStore } from '../../stores/telemetry-store';
 import { useLayoutStore } from '../../stores/layout-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useSettingsStore } from '../../stores/settings-store';
+import { useEditModeStore } from '../../stores/edit-mode-store';
 import { useResolvedTheme } from '../../hooks/useTheme';
 import type { TelemetrySpeed } from '../../../shared/ipc-channels';
 
@@ -339,6 +340,8 @@ function LayoutToolbar({
   isMavlink: boolean;
 }) {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const mapMode = useEditModeStore((s) => s.mapMode);
+  const setMapMode = useEditModeStore((s) => s.setMapMode);
   const [layoutName, setLayoutName] = useState('');
 
   // Filter presets to hide Mission Telemetry for boards without mission planning
@@ -425,6 +428,33 @@ function LayoutToolbar({
       )}
 
       <div className="flex-1" />
+
+      {/* 2D/3D Map Toggle */}
+      <div className="flex items-center rounded-lg overflow-hidden border border-subtle shrink-0">
+        <button
+          onClick={() => setMapMode('2d')}
+          className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+            mapMode === '2d'
+              ? 'bg-surface-raised text-content'
+              : 'text-content-secondary hover:bg-surface-raised'
+          }`}
+          title="2D Map"
+        >
+          2D
+        </button>
+        <div className="w-px h-4 bg-subtle" />
+        <button
+          onClick={() => setMapMode('3d')}
+          className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+            mapMode === '3d'
+              ? 'bg-indigo-600 text-white'
+              : 'text-content-secondary hover:bg-surface-raised'
+          }`}
+          title="3D Terrain View"
+        >
+          3D
+        </button>
+      </div>
 
       {/* Add panel dropdown */}
       <AddPanelDropdown onAddPanel={onAddPanel} supportsMissionPlanning={supportsMissionPlanning} isMavlink={isMavlink} />

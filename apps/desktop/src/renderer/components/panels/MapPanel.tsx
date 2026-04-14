@@ -1162,7 +1162,6 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
     <div ref={containerRef} className="h-full w-full flex flex-col bg-surface-base relative">
       {/* Top toolbar */}
       <div className="absolute top-2 right-2 z-[1000] flex flex-col gap-1">
-        <MapModeToggle />
         <LayerSwitcher currentLayer={currentLayer} onLayerChange={setCurrentLayer} />
         <button
           onClick={() => setFollowVehicle(!followVehicle)}

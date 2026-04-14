@@ -848,7 +848,7 @@ export function Mission3DPanel({
       {/* Placeholder — hidden in telemetry mode */}
       {navWaypoints.length === 0 && !isTelemetryMode && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[500]">
-          <div className="bg-surface/80 backdrop-blur-sm px-6 py-4 rounded-xl text-center">
+          <div className="bg-surface-overlay backdrop-blur-sm px-6 py-4 rounded-xl text-center">
             <div className="text-content-secondary text-sm mb-2">No waypoints yet</div>
             <div className="text-content-secondary text-xs">Add waypoints in 2D view to see them in 3D</div>
           </div>

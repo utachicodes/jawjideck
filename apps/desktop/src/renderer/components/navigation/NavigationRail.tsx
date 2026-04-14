@@ -20,20 +20,20 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    id: 'parameters',
-    label: 'Parameters',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-      </svg>
-    ),
-  },
-  {
     id: 'mission',
     label: 'Mission Planning',
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+      </svg>
+    ),
+  },
+  {
+    id: 'parameters',
+    label: 'Parameters',
+    icon: (
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
       </svg>
     ),
   },
@@ -167,11 +167,11 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
   // Show Calibration when connected
   const showCalibration = connectionState.isConnected;
 
-  // Build the nav items list - insert calibration after parameters (index 1)
+  // Build the nav items list - insert calibration after parameters (index 2)
   const allNavItems = [...navItems];
   if (showCalibration) {
-    // Insert after parameters (which is at index 1)
-    allNavItems.splice(2, 0, calibrationNavItem);
+    // Insert after parameters (which is at index 2)
+    allNavItems.splice(3, 0, calibrationNavItem);
   }
   if (showCli) {
     allNavItems.push(cliNavItem);

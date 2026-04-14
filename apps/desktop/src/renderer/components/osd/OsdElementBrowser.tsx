@@ -206,7 +206,7 @@ function ElementRow({
     <div
       className={`
         flex items-center gap-1.5 pl-7 pr-3 py-1 cursor-pointer
-        ${isSelected ? 'bg-blue-500/15' : 'hover:bg-surface/30'}
+        ${isSelected ? 'bg-blue-500/15' : 'hover:bg-surface-overlay-subtle'}
       `}
       onClick={() => onSelect(def.id)}
       title={def.description}

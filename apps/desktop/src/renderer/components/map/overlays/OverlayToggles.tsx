@@ -46,7 +46,7 @@ export function OverlayToggles() {
             className={`px-2 py-1 text-xs rounded shadow-sm transition-colors flex items-center gap-1.5 ${
               isActive
                 ? 'bg-blue-600 text-white'
-                : 'bg-surface-overlay text-content hover:bg-surface-overlay-light border border-subtle'
+                : 'bg-surface-solid text-content hover:bg-surface-raised border border-subtle'
             }`}
           >
             {icon}

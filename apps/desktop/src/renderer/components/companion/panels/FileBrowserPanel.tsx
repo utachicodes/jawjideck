@@ -200,7 +200,7 @@ export function FileBrowserPanel() {
               .map((entry) => (
                 <div
                   key={entry.path}
-                  className="flex items-center gap-2 px-3 py-1.5 hover:bg-surface/30 transition-colors cursor-pointer group"
+                  className="flex items-center gap-2 px-3 py-1.5 hover:bg-surface-overlay-subtle transition-colors cursor-pointer group"
                   onClick={() => entry.isDirectory && navigateTo(entry.path)}
                 >
                   <FileIcon isDirectory={entry.isDirectory} />

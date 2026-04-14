@@ -90,7 +90,7 @@ export function ElevationLegend({
   const mid = Math.round((displayMin + displayMax) / 2);
 
   return (
-    <div className="bg-surface/90 backdrop-blur-sm rounded px-2 py-2 text-[10px] text-content select-none">
+    <div className="bg-surface-overlay backdrop-blur-sm rounded px-2 py-2 text-[10px] text-content select-none">
       {/* Header */}
       <div className="flex items-center gap-1 mb-1.5">
         <span className="text-content-secondary font-medium">{relativeMode ? 'REL' : 'AMSL'}</span>

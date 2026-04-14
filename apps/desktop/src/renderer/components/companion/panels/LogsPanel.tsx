@@ -114,7 +114,7 @@ export function LogsPanel() {
               return (
                 <div
                   key={`${log.timestamp}-${i}`}
-                  className={`flex items-start gap-2 px-3 py-1 border-l-2 ${colors.border} hover:bg-surface/30 transition-colors`}
+                  className={`flex items-start gap-2 px-3 py-1 border-l-2 ${colors.border} hover:bg-surface-overlay-subtle transition-colors`}
                 >
                   <span className={`shrink-0 text-[9px] font-mono font-bold px-1 py-0.5 rounded ${colors.bg} ${colors.text} mt-0.5`}>
                     {log.level.slice(0, 4).toUpperCase()}

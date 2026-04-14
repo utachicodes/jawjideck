@@ -2,7 +2,7 @@
  * Survey Config Panel - Floating panel with camera, overlap, pattern, and angle controls.
  * Shows on the right side of the map when a survey polygon is drawn.
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useSurveyStore } from '../../stores/survey-store';
 import { useMissionStore } from '../../stores/mission-store';
 import { CameraPresetSelector } from './CameraPresetSelector';
@@ -71,19 +71,61 @@ export function SurveyConfigPanel() {
     setTimeout(() => setInsertSuccess(false), 2000);
   }, [result, polygon, config, insertMissionItems]);
 
+  // Draggable state
+  const panelRef = useRef<HTMLDivElement>(null);
+  const dragState = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    if (!panelRef.current) return;
+    const rect = panelRef.current.getBoundingClientRect();
+    const parentRect = panelRef.current.offsetParent?.getBoundingClientRect() ?? { left: 0, top: 0 };
+    dragState.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      origX: rect.left - parentRect.left,
+      origY: rect.top - parentRect.top,
+    };
+    e.preventDefault();
+  }, []);
+
+  useEffect(() => {
+    const handleMove = (e: MouseEvent) => {
+      if (!dragState.current) return;
+      const dx = e.clientX - dragState.current.startX;
+      const dy = e.clientY - dragState.current.startY;
+      setPosition({ x: dragState.current.origX + dx, y: dragState.current.origY + dy });
+    };
+    const handleUp = () => { dragState.current = null; };
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    return () => { window.removeEventListener('mousemove', handleMove); window.removeEventListener('mouseup', handleUp); };
+  }, []);
+
   if (!polygon) return null;
 
+  const posStyle = position
+    ? { left: position.x, top: position.y, right: 'auto' as const }
+    : {};
+
   return (
-    <div className="absolute top-3 right-24 z-[1000] w-72 max-h-[calc(100%-24px)] flex flex-col bg-surface/95 backdrop-blur-sm border border-subtle rounded-xl shadow-2xl overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-subtle flex-shrink-0">
+    <div
+      ref={panelRef}
+      className="absolute top-3 right-24 z-[2000] w-72 max-h-[calc(100%-24px)] flex flex-col bg-surface-solid border border-subtle rounded-xl shadow-2xl overflow-hidden"
+      style={posStyle}
+    >
+      {/* Header (drag handle) */}
+      <div
+        className="flex items-center justify-between px-4 py-3 border-b border-subtle flex-shrink-0 cursor-grab active:cursor-grabbing select-none"
+        onMouseDown={handleDragStart}
+      >
         <div className="flex items-center gap-2">
           <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
           </svg>
           <h3 className="text-sm font-medium text-content">Survey Grid</h3>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" onMouseDown={(e) => e.stopPropagation()}>
           <button
             onClick={startDrawing}
             className="p-1 text-content-secondary hover:text-purple-400 transition-colors"

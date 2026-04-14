@@ -95,7 +95,7 @@ export default function ServoReviewStep() {
               const defaultRule = selectedPreset.defaultRules[assignment.surface];
 
               return (
-                <tr key={assignment.surface} className="hover:bg-surface/30">
+                <tr key={assignment.surface} className="hover:bg-surface-overlay-subtle">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <span className="text-content font-medium">{surfaceInfo.name}</span>

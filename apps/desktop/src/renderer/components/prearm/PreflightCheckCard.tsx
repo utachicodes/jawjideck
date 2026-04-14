@@ -98,7 +98,7 @@ export function PreflightCheckCard() {
               <div key={id}>
                 <div
                   className={`flex items-center gap-2 px-3 py-1.5 text-xs ${
-                    hasFailed ? 'cursor-pointer hover:bg-surface/30' : ''
+                    hasFailed ? 'cursor-pointer hover:bg-surface-overlay-subtle' : ''
                   } transition-colors`}
                   onClick={hasFailed ? () => toggleCategory(id) : undefined}
                 >

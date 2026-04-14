@@ -123,7 +123,7 @@ export function OfflineAreaDownload({ bounds, activeLayer }: OfflineAreaDownload
         className={`w-full px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
           open || isDownloading
             ? 'bg-emerald-600 text-white'
-            : 'bg-surface-overlay text-content hover:bg-surface-overlay-light'
+            : 'bg-surface-solid text-content hover:bg-surface-raised border border-subtle'
         }`}
         title="Save this area for offline use"
       >

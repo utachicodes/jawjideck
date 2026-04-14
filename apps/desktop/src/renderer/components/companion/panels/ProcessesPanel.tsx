@@ -110,7 +110,7 @@ export function ProcessesPanel() {
         {filtered.map((proc) => (
           <div
             key={proc.pid}
-            className="grid grid-cols-[60px_1fr_70px_80px_36px] gap-1 px-3 py-1 hover:bg-surface/30 transition-colors items-center text-xs"
+            className="grid grid-cols-[60px_1fr_70px_80px_36px] gap-1 px-3 py-1 hover:bg-surface-overlay-subtle transition-colors items-center text-xs"
           >
             <span className="text-content-secondary font-mono">{proc.pid}</span>
             <div className="truncate">

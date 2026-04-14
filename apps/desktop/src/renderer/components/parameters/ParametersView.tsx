@@ -723,7 +723,7 @@ export function ParametersView() {
 
       {/* Group tabs */}
       {paramCount > 0 && (
-        <div className="shrink-0 px-4 py-2 border-b border-subtle bg-surface/20 overflow-x-auto">
+        <div className="shrink-0 px-4 py-2 border-b border-subtle bg-surface-overlay-subtle overflow-x-auto">
           <div className="flex gap-1">
             {PARAMETER_GROUPS.map((group) => {
               const count = groupCounts().get(group.id) ?? 0;
@@ -826,7 +826,7 @@ export function ParametersView() {
           </div>
         ) : (
           <table className="w-full">
-            <thead className="sticky top-0 bg-surface/95 backdrop-blur border-b border-subtle">
+            <thead className="sticky top-0 bg-surface backdrop-blur border-b border-subtle">
               <tr className="text-left text-xs text-content-secondary uppercase tracking-wider">
                 <th className="px-4 py-3 font-medium w-[220px]">
                   <button

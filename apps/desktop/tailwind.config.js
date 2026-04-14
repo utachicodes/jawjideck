@@ -14,6 +14,7 @@ export default {
           overlay: 'var(--bg-overlay)',
           'overlay-light': 'var(--bg-overlay-light)',
           'overlay-subtle': 'var(--bg-overlay-subtle)',
+          solid: 'var(--bg-solid)',
         },
         content: {
           DEFAULT: 'var(--text-primary)',

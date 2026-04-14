@@ -192,7 +192,7 @@ export function LogListPanel() {
               </thead>
               <tbody>
                 {recentLogs.map((log) => (
-                  <tr key={log.path} className="border-b border-subtle hover:bg-surface/30">
+                  <tr key={log.path} className="border-b border-subtle hover:bg-surface-overlay-subtle">
                     <td className="px-4 py-2.5">
                       <div className="text-content truncate max-w-[240px]" title={log.path}>{log.name}</div>
                       <div className="text-[11px] text-content-tertiary truncate max-w-[240px]" title={log.path}>
@@ -244,7 +244,7 @@ export function LogListPanel() {
             </thead>
             <tbody>
               {availableLogs.map((log) => (
-                <tr key={log.id} className="border-b border-subtle hover:bg-surface/30">
+                <tr key={log.id} className="border-b border-subtle hover:bg-surface-overlay-subtle">
                   <td className="px-4 py-3 text-content">{log.id}</td>
                   <td className="px-4 py-3 text-content">{formatDate(log.timeUtc)}</td>
                   <td className="px-4 py-3 text-content-secondary text-right">{formatBytes(log.size)}</td>

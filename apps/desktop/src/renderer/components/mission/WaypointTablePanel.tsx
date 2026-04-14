@@ -1179,7 +1179,7 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
                   onDrop={(e) => !readOnly && handleDrop(e, wp.seq)}
                   onDragEnd={!readOnly ? handleDragEnd : undefined}
                   className={`flex items-center gap-2 py-2 transition-colors ${
-                    isChild ? 'px-2 pl-8 bg-surface/[0.06]' : 'px-2'
+                    isChild ? 'px-2 pl-8' : 'px-2'
                   } ${
                     isParentWithGap ? 'mt-1' : ''
                   } ${
