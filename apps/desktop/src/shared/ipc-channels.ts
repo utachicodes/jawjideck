@@ -396,6 +396,15 @@ export const IPC_CHANNELS = {
   MODULE_CHECK_UPDATES: 'module:check-updates',
   MODULE_PROGRESS: 'module:progress',
 
+  // Module Host (runtime API exposed to loaded modules)
+  MODULE_HOST_LIST_LOADED: 'module-host:list-loaded',
+  MODULE_HOST_PTY_CREATE: 'module-host:pty-create',
+  MODULE_HOST_PTY_WRITE: 'module-host:pty-write',
+  MODULE_HOST_PTY_DATA: 'module-host:pty-data',
+  MODULE_HOST_PTY_EXIT: 'module-host:pty-exit',
+  MODULE_HOST_PTY_KILL: 'module-host:pty-kill',
+  MODULE_HOST_PTY_RESIZE: 'module-host:pty-resize',
+
   // Tile Cache (offline maps)
   TILE_CACHE_GET_STATS: 'tile-cache:get-stats',
   TILE_CACHE_CLEAR: 'tile-cache:clear',
