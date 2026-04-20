@@ -1513,6 +1513,54 @@ const api = {
   },
 
   // =============================================================================
+  // Module Host (runtime API for loaded modules)
+  // =============================================================================
+
+  moduleHostListLoaded: (): Promise<Array<{ slug: string; manifest: unknown; installPath: string }>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MODULE_HOST_LIST_LOADED),
+
+  moduleHostPtyCreate: (
+    slug: string,
+    opts: {
+      shell: string;
+      args?: string[];
+      cwd?: string;
+      env?: Record<string, string>;
+      cols?: number;
+      rows?: number;
+    },
+  ): Promise<string> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MODULE_HOST_PTY_CREATE, slug, opts),
+
+  moduleHostPtyWrite: (id: string, data: string): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MODULE_HOST_PTY_WRITE, id, data),
+
+  moduleHostPtyResize: (id: string, cols: number, rows: number): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MODULE_HOST_PTY_RESIZE, id, cols, rows),
+
+  moduleHostPtyKill: (id: string): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MODULE_HOST_PTY_KILL, id),
+
+  moduleHostOnPtyData: (id: string, cb: (data: string) => void) => {
+    const listener = (_: unknown, sid: string, data: string) => {
+      if (sid === id) cb(data);
+    };
+    ipcRenderer.on(IPC_CHANNELS.MODULE_HOST_PTY_DATA, listener);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.MODULE_HOST_PTY_DATA, listener);
+  },
+
+  moduleHostOnPtyExit: (id: string, cb: (code: number) => void) => {
+    const listener = (_: unknown, sid: string, code: number) => {
+      if (sid === id) cb(code);
+    };
+    ipcRenderer.on(IPC_CHANNELS.MODULE_HOST_PTY_EXIT, listener);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.MODULE_HOST_PTY_EXIT, listener);
+  },
+
+  moduleHostInvoke: (slug: string, channel: string, data: unknown): Promise<unknown> =>
+    ipcRenderer.invoke(`module:${slug}:${channel}`, data),
+
+  // =============================================================================
   // Companion Computer (Agent WebSocket)
   // =============================================================================
 
