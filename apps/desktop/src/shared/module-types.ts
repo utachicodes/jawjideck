@@ -12,6 +12,8 @@ export interface InstalledModule {
   licenseKey: string;
   licenseType: 'perpetual' | 'subscription' | 'trial';
   bundleName: string | null; // null if single-module license
+  installPath?: string; // filesystem path where bundle was extracted
+  manifestVersion?: number; // schema version from module.json
 }
 
 /** License key payload (decoded from key, verified with Ed25519) */
