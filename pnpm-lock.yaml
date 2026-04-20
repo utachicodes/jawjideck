@@ -44,6 +44,9 @@ importers:
       '@ardudeck/mavlink-ts':
         specifier: workspace:*
         version: link:../../packages/mavlink-ts
+      '@ardudeck/module-sdk':
+        specifier: workspace:*
+        version: link:../../packages/module-sdk
       '@ardudeck/msp-ts':
         specifier: workspace:*
         version: link:../../packages/msp-ts
@@ -268,6 +271,22 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.19.3)
+
+  packages/module-sdk:
+    dependencies:
+      esbuild:
+        specifier: '*'
+        version: 0.21.5
+    devDependencies:
+      '@types/react':
+        specifier: ^18.2.0
+        version: 18.3.27
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.9
         version: 2.1.9(@types/node@22.19.3)
 
   packages/msp-ts:

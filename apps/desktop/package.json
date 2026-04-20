@@ -27,6 +27,7 @@
     "@ardudeck/companion-types": "workspace:*",
     "@ardudeck/dataflash-parser": "workspace:^",
     "@ardudeck/mavlink-ts": "workspace:*",
+    "@ardudeck/module-sdk": "workspace:*",
     "@ardudeck/msp-ts": "workspace:*",
     "@ardudeck/stm32-dfu": "workspace:*",
     "@xterm/addon-fit": "^0.11.0",
