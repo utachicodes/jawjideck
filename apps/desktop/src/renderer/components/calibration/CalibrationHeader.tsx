@@ -93,7 +93,7 @@ export function CalibrationHeader() {
                 {/* Connector line */}
                 {index < STEPS.length - 1 && (
                   <div className={`w-4 h-0.5 mx-2 ${
-                    isCompleted ? 'bg-cyan-500/30' : 'bg-surface-raised'
+                    isCompleted ? 'bg-cyan-500/30' : 'bg-[var(--border-default)]'
                   }`} />
                 )}
               </div>

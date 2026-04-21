@@ -22,6 +22,8 @@ import { useRallyStore } from '../../stores/rally-store';
 import { useEditModeStore } from '../../stores/edit-mode-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import { Mission3DPanel } from './Mission3DPanel';
+import { RelativeWaypointPopover } from './RelativeWaypointPopover';
+import { TAKEOFF_AT_HOME_ICON } from './takeoff-icon';
 
 // Survey grid overlay
 import { SurveyDrawTool } from '../survey/SurveyDrawTool';
@@ -39,6 +41,7 @@ import { CachedAreaOverlay } from '../map/CachedAreaOverlay';
 // Map overlays (weather radar, aviation, airspace zones)
 import { WeatherRadarOverlay } from '../map/overlays/WeatherRadarOverlay';
 import { OpenAipOverlay } from '../map/overlays/OpenAipOverlay';
+import { DipulOverlay } from '../map/overlays/DipulOverlay';
 import { AirspaceOverlay } from '../map/overlays/AirspaceOverlay';
 import { AirspaceLegend } from '../map/overlays/AirspaceLegend';
 import { OverlayToggles } from '../map/overlays/OverlayToggles';
@@ -245,14 +248,27 @@ function createWaypointIcon(wp: MissionItem, isSelected: boolean, isCurrent: boo
   const hasSpecialColor = commandColor !== '#3b82f6'; // Not the default blue
   const baseColor = hasSpecialColor ? commandColor : (segmentColor ?? commandColor);
   const bgColor = isCurrent ? '#f59e0b' : baseColor;
-  const size = isSelected ? 32 : 28;
+  const size = isSelected ? 38 : 28;
   const shape = getCommandShape(wp.command);
   const displayText = shape || (wp.seq + 1).toString();
-  const borderColor = isCurrent ? '#fbbf24' : isSelected ? 'white' : 'rgba(255,255,255,0.8)';
-  const borderWidth = isCurrent ? 3 : 2;
+  const borderColor = isCurrent ? '#fbbf24' : 'rgba(255,255,255,0.95)';
+  const borderWidth = isCurrent ? 3 : isSelected ? 3 : 2;
+
+  // Selected state: layered halo (white inner ring + bright cyan outer ring + glow).
+  // Cyan #22d3ee is reserved for selection so it never collides with command colors
+  // (blue WP, amber current, green takeoff, red land, purple loiter, etc.).
+  const baseShadow = '0 2px 6px rgba(0,0,0,0.4)';
+  const selectedShadow = [
+    '0 0 0 3px rgba(255,255,255,0.95)',
+    '0 0 0 6px #22d3ee',
+    '0 0 14px 2px rgba(34,211,238,0.7)',
+    '0 3px 8px rgba(0,0,0,0.5)',
+  ].join(', ');
+  const boxShadow = isSelected ? selectedShadow : baseShadow;
+  const fontSize = isSelected ? (shape ? 16 : 14) : (shape ? 14 : 12);
 
   return L.divIcon({
-    className: 'waypoint-marker',
+    className: `waypoint-marker${isSelected ? ' waypoint-marker--selected' : ''}`,
     html: `
       <div style="
         width: ${size}px;
@@ -260,14 +276,14 @@ function createWaypointIcon(wp: MissionItem, isSelected: boolean, isCurrent: boo
         border-radius: 50%;
         background: ${bgColor};
         border: ${borderWidth}px solid ${borderColor};
-        box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        box-shadow: ${boxShadow};
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: ${shape ? 14 : 12}px;
+        font-size: ${fontSize}px;
         font-weight: bold;
         color: white;
-        transition: transform 0.15s ease;
+        transition: width 0.12s ease, height 0.12s ease, box-shadow 0.12s ease;
       ">${displayText}</div>
     `,
     iconSize: [size, size],
@@ -301,6 +317,23 @@ function createHomeIcon(): L.DivIcon {
 
 // Memoized home icon
 const HOME_ICON = createHomeIcon();
+
+// Ghost waypoint icon for relative-waypoint live preview
+const GHOST_WAYPOINT_ICON = L.divIcon({
+  className: 'ghost-waypoint-marker',
+  html: `
+    <div style="
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, 0.35);
+      border: 2px dashed #3b82f6;
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.25);
+    "></div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+});
 
 // Custom vehicle marker icon (arrow pointing in heading direction)
 function createVehicleIcon(heading: number, armed: boolean): L.DivIcon {
@@ -369,6 +402,13 @@ function OverlayFetcher() {
   }, []);
 
   useEffect(() => {
+    const b = map.getBounds();
+    useOverlayStore.getState().updateRegionalAvailability({
+      south: b.getSouth(), north: b.getNorth(), west: b.getWest(), east: b.getEast(),
+    });
+  }, [map]);
+
+  useEffect(() => {
     if (activeOverlays.has('airspace')) {
       const center = map.getCenter();
       fetchAirspaceData(center.lat, center.lng, map.getZoom());
@@ -377,6 +417,10 @@ function OverlayFetcher() {
 
   useMapEvents({
     moveend: () => {
+      const b = map.getBounds();
+      useOverlayStore.getState().updateRegionalAvailability({
+        south: b.getSouth(), north: b.getNorth(), west: b.getWest(), east: b.getEast(),
+      });
       if (useOverlayStore.getState().activeOverlays.has('airspace')) {
         const center = map.getCenter();
         fetchAirspaceData(center.lat, center.lng, map.getZoom());
@@ -397,6 +441,7 @@ function MapOverlayLayers({ baseLayer }: { baseLayer: string }) {
       {activeOverlays.has('airspace') && <AirspaceOverlay />}
       {activeOverlays.has('radar') && <WeatherRadarOverlay baseLayer={baseLayer} />}
       {activeOverlays.has('openaip') && <OpenAipOverlay />}
+      {activeOverlays.has('dipul') && <DipulOverlay />}
     </>
   );
 }
@@ -468,17 +513,24 @@ function FitToBounds({ waypoints, trigger }: { waypoints: MissionItem[]; trigger
   return null;
 }
 
-// Focus map on selected waypoint
+// Focus map on selected waypoint - only when the WP is off-screen.
+// If the user just placed/clicked a WP that's already visible, leave the
+// camera where it is to avoid jarring auto-pans.
 function FocusOnSelected({ waypoints, selectedSeq }: { waypoints: MissionItem[]; selectedSeq: number | null }) {
   const map = useMap();
   const prevSelectedRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Only focus if selection changed (not on initial render or when clearing selection)
     if (selectedSeq !== null && selectedSeq !== prevSelectedRef.current) {
       const wp = waypoints.find(w => w.seq === selectedSeq);
       if (wp && wp.latitude !== 0 && wp.longitude !== 0) {
-        map.setView([wp.latitude, wp.longitude], map.getZoom(), { animate: true, duration: 0.3 });
+        const latlng: [number, number] = [wp.latitude, wp.longitude];
+        // Only re-center if the WP isn't already in view (with a small inset
+        // so WPs hugging the edge still get nudged into a comfortable area).
+        const bounds = map.getBounds().pad(-0.1);
+        if (!bounds.contains(latlng)) {
+          map.setView(latlng, map.getZoom(), { animate: true, duration: 0.3 });
+        }
       }
     }
     prevSelectedRef.current = selectedSeq;
@@ -615,6 +667,7 @@ const DraggableMarker = memo(function DraggableMarker({
   isCurrent,
   onSelect,
   onDragEnd,
+  onRightClick,
   readOnly = false,
   segmentColor,
 }: {
@@ -623,6 +676,7 @@ const DraggableMarker = memo(function DraggableMarker({
   isCurrent: boolean;
   onSelect: (seq: number) => void;
   onDragEnd: (seq: number, lat: number, lng: number) => void;
+  onRightClick?: (e: L.LeafletMouseEvent, wp: MissionItem) => void;
   readOnly?: boolean;
   segmentColor?: string;
 }) {
@@ -640,6 +694,7 @@ const DraggableMarker = memo(function DraggableMarker({
   const eventHandlers = useMemo(
     () => ({
       click: () => onSelect(wp.seq),
+      contextmenu: (e: L.LeafletMouseEvent) => onRightClick?.(e, wp),
       dragstart: () => {
         isDraggingRef.current = true;
       },
@@ -659,7 +714,7 @@ const DraggableMarker = memo(function DraggableMarker({
         }
       },
     }),
-    [wp.seq, onSelect, onDragEnd]
+    [wp, onSelect, onDragEnd, onRightClick]
   );
 
   // Memoize icon to prevent unnecessary recreations
@@ -675,6 +730,7 @@ const DraggableMarker = memo(function DraggableMarker({
       icon={icon}
       draggable={!readOnly}
       eventHandlers={eventHandlers}
+      zIndexOffset={isSelected ? 1000 : 0}
     />
   );
 });
@@ -715,6 +771,18 @@ interface ContextMenuState {
   lat: number;
   lon: number;
   afterSeq: number;
+  kind: 'path' | 'marker';
+  refSeq?: number;
+  refAlt?: number;
+}
+
+interface RelativeEditorState {
+  x: number;
+  y: number;
+  refSeq: number;
+  refLat: number;
+  refLon: number;
+  refAlt: number;
 }
 
 export function MissionMapPanel({ readOnly = false }: MissionMapPanelProps) {
@@ -829,11 +897,25 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
     item => commandHasLocation(item.command) && hasValidCoordinates(item.latitude, item.longitude),
   );
 
-  // Auto-fit map when a mission is loaded (file or FC download)
+  // TAKEOFF items with placeholder (0,0) coords - render at home with rocket icon
+  const ghostTakeoffItems = useMemo(() =>
+    missionItems.filter(item =>
+      item.command === MAV_CMD.NAV_TAKEOFF && !hasValidCoordinates(item.latitude, item.longitude)
+    ),
+    [missionItems]
+  );
+
+  // Auto-fit map only when a mission is freshly loaded (file or FC download).
+  // Tracking loadCounter via a ref ensures we don't refit every time the user
+  // adds/removes a waypoint (which would jarringly zoom out on each click).
   const loadCounter = useMissionStore((s) => s.loadCounter);
+  const prevLoadCounterRef = useRef(loadCounter);
   useEffect(() => {
-    if (loadCounter > 0 && waypoints.length > 0) {
-      setFitTrigger(t => t + 1);
+    if (loadCounter !== prevLoadCounterRef.current) {
+      prevLoadCounterRef.current = loadCounter;
+      if (loadCounter > 0 && waypoints.length > 0) {
+        setFitTrigger(t => t + 1);
+      }
     }
   }, [loadCounter, waypoints.length]);
 
@@ -894,10 +976,33 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
       lat: e.latlng.lat,
       lon: e.latlng.lng,
       afterSeq,
+      kind: 'path',
     });
   }, [readOnly]);
 
-  // Handle insert waypoint from context menu
+  // Relative-waypoint editor state (popover anchored to a reference WP)
+  const [relativeEditor, setRelativeEditor] = useState<RelativeEditorState | null>(null);
+  const [relativePreview, setRelativePreview] = useState<{ lat: number; lon: number } | null>(null);
+
+  // Handle right-click on a waypoint marker
+  const handleMarkerRightClick = useCallback((e: L.LeafletMouseEvent, wp: MissionItem) => {
+    if (readOnly) return;
+    e.originalEvent.preventDefault();
+    const containerPoint = e.containerPoint;
+
+    setContextMenu({
+      x: containerPoint.x,
+      y: containerPoint.y,
+      lat: wp.latitude,
+      lon: wp.longitude,
+      afterSeq: wp.seq,
+      kind: 'marker',
+      refSeq: wp.seq,
+      refAlt: wp.altitude,
+    });
+  }, [readOnly]);
+
+  // Handle insert waypoint from context menu (path mode)
   const handleInsertWaypoint = useCallback(() => {
     if (!contextMenu) return;
 
@@ -912,10 +1017,62 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
     setContextMenu(null);
   }, [contextMenu, waypoints, insertWaypoint]);
 
+  // Open relative waypoint editor from marker context menu
+  const handleOpenRelativeEditor = useCallback(() => {
+    if (!contextMenu || contextMenu.kind !== 'marker' || contextMenu.refSeq == null) return;
+    setRelativeEditor({
+      x: contextMenu.x,
+      y: contextMenu.y,
+      refSeq: contextMenu.refSeq,
+      refLat: contextMenu.lat,
+      refLon: contextMenu.lon,
+      refAlt: contextMenu.refAlt ?? 100,
+    });
+    setContextMenu(null);
+  }, [contextMenu]);
+
+  const handleRelativeConfirm = useCallback((insertAfterSeq: number, lat: number, lon: number) => {
+    if (!relativeEditor) return;
+    insertWaypoint(insertAfterSeq, lat, lon, relativeEditor.refAlt);
+    setRelativeEditor(null);
+    setRelativePreview(null);
+  }, [insertWaypoint, relativeEditor]);
+
+  const handleRelativeCancel = useCallback(() => {
+    setRelativeEditor(null);
+    setRelativePreview(null);
+  }, []);
+
   // Close context menu on click elsewhere
   const handleCloseContextMenu = useCallback(() => {
     setContextMenu(null);
   }, []);
+
+  // Keyboard shortcut: R opens relative-waypoint editor for the selected WP
+  useEffect(() => {
+    if (readOnly) return;
+    const handler = (ev: KeyboardEvent) => {
+      if (ev.key !== 'r' && ev.key !== 'R') return;
+      // Don't fire while typing in inputs
+      const target = ev.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (selectedSeq == null) return;
+      const wp = waypoints.find(w => w.seq === selectedSeq);
+      if (!wp) return;
+      ev.preventDefault();
+      // Position popover near viewport center as fallback
+      setRelativeEditor({
+        x: window.innerWidth / 2 - 140,
+        y: window.innerHeight / 2 - 160,
+        refSeq: wp.seq,
+        refLat: wp.latitude,
+        refLon: wp.longitude,
+        refAlt: wp.altitude,
+      });
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [readOnly, selectedSeq, waypoints]);
 
   const layer = MAP_LAYERS[activeLayer];
 
@@ -928,7 +1085,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
   const itemColors = useMemo(() => computeItemColors(missionItems), [missionItems]);
 
   return (
-    <div className="h-full w-full relative">
+    <div data-tour="mission-map" className="h-full w-full relative">
       <MapContainer
         center={defaultCenter}
         zoom={effectiveZoom}
@@ -1044,6 +1201,16 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
           />
         )}
 
+        {/* TAKEOFF (placeholder coords) rendered at home */}
+        {homePosition && ghostTakeoffItems.map((wp) => (
+          <Marker
+            key={`takeoff-${wp.seq}`}
+            position={[homePosition.lat, homePosition.lon]}
+            icon={TAKEOFF_AT_HOME_ICON}
+            zIndexOffset={-500}
+          />
+        ))}
+
         {/* Waypoint markers */}
         {waypoints.map((wp) => (
           <DraggableMarker
@@ -1053,10 +1220,34 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
             isCurrent={wp.seq === currentSeq}
             onSelect={handleMarkerClick}
             onDragEnd={handleMarkerDragEnd}
+            onRightClick={handleMarkerRightClick}
             readOnly={readOnly}
             segmentColor={showSegmentColors ? itemColors.get(wp.seq) : undefined}
           />
         ))}
+
+        {/* Ghost preview for relative-waypoint editor */}
+        {relativeEditor && relativePreview && (
+          <>
+            <Polyline
+              positions={[
+                [relativeEditor.refLat, relativeEditor.refLon],
+                [relativePreview.lat, relativePreview.lon],
+              ]}
+              pathOptions={{
+                color: '#3b82f6',
+                weight: 2,
+                opacity: 0.9,
+                dashArray: '6, 6',
+              }}
+            />
+            <Marker
+              position={[relativePreview.lat, relativePreview.lon]}
+              icon={GHOST_WAYPOINT_ICON}
+              interactive={false}
+            />
+          </>
+        )}
 
         {/* Vehicle marker - show when GPS is valid */}
         {vehiclePosition && (
@@ -1523,23 +1714,58 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
           />
           {/* Menu */}
           <div
-            className="absolute z-[1200] bg-surface border border-default rounded-lg shadow-xl py-1 min-w-[180px]"
+            className="absolute z-[1200] bg-surface border border-default rounded-lg shadow-xl py-1 min-w-[200px]"
             style={{ left: contextMenu.x, top: contextMenu.y }}
           >
-            <button
-              onClick={handleInsertWaypoint}
-              className="w-full px-3 py-2 text-left text-sm text-content hover:bg-blue-600 hover:text-white transition-colors flex items-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Insert waypoint here
-            </button>
-            <div className="px-3 py-1 text-[10px] text-content-secondary border-t border-default mt-1">
-              Between WP {contextMenu.afterSeq + 1} → {contextMenu.afterSeq + 2}
-            </div>
+            {contextMenu.kind === 'path' ? (
+              <>
+                <button
+                  onClick={handleInsertWaypoint}
+                  className="w-full px-3 py-2 text-left text-sm text-content hover:bg-blue-600 hover:text-white transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Insert waypoint here
+                </button>
+                <div className="px-3 py-1 text-[10px] text-content-secondary border-t border-default mt-1">
+                  Between WP {contextMenu.afterSeq + 1} → {contextMenu.afterSeq + 2}
+                </div>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={handleOpenRelativeEditor}
+                  className="w-full px-3 py-2 text-left text-sm text-content hover:bg-blue-600 hover:text-white transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <circle cx="12" cy="12" r="3" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2" />
+                  </svg>
+                  Add relative waypoint…
+                </button>
+                <div className="px-3 py-1 text-[10px] text-content-secondary border-t border-default mt-1">
+                  From WP {(contextMenu.refSeq ?? 0) + 1} · bearing + distance
+                </div>
+              </>
+            )}
           </div>
         </>
+      )}
+
+      {/* Relative waypoint editor popover */}
+      {relativeEditor && (
+        <RelativeWaypointPopover
+          refSeq={relativeEditor.refSeq}
+          refLat={relativeEditor.refLat}
+          refLon={relativeEditor.refLon}
+          totalWaypoints={missionItems.length}
+          screenX={relativeEditor.x}
+          screenY={relativeEditor.y}
+          onPreview={setRelativePreview}
+          onConfirm={handleRelativeConfirm}
+          onCancel={handleRelativeCancel}
+        />
       )}
     </div>
   );

@@ -55,7 +55,7 @@ const CalibrationThemes: Record<CalibrationTypeId, {
     hoverBorder: 'hover:border-emerald-400/50',
     iconBg: 'from-emerald-500/20 to-teal-500/20',
     iconColor: 'text-emerald-400',
-    bgPattern: 'text-emerald-500/[0.03]',
+    bgPattern: 'text-emerald-500/10',
   },
   'accel-6point': {
     gradient: 'from-blue-500/5 via-transparent to-indigo-500/5',
@@ -63,7 +63,7 @@ const CalibrationThemes: Record<CalibrationTypeId, {
     hoverBorder: 'hover:border-blue-400/50',
     iconBg: 'from-blue-500/20 to-indigo-500/20',
     iconColor: 'text-blue-400',
-    bgPattern: 'text-blue-500/[0.03]',
+    bgPattern: 'text-blue-500/10',
   },
   compass: {
     gradient: 'from-amber-500/5 via-transparent to-orange-500/5',
@@ -71,7 +71,7 @@ const CalibrationThemes: Record<CalibrationTypeId, {
     hoverBorder: 'hover:border-amber-400/50',
     iconBg: 'from-amber-500/20 to-orange-500/20',
     iconColor: 'text-amber-400',
-    bgPattern: 'text-amber-500/[0.03]',
+    bgPattern: 'text-amber-500/10',
   },
   gyro: {
     gradient: 'from-violet-500/5 via-transparent to-purple-500/5',
@@ -79,7 +79,7 @@ const CalibrationThemes: Record<CalibrationTypeId, {
     hoverBorder: 'hover:border-violet-400/50',
     iconBg: 'from-violet-500/20 to-purple-500/20',
     iconColor: 'text-violet-400',
-    bgPattern: 'text-violet-500/[0.03]',
+    bgPattern: 'text-violet-500/10',
   },
   opflow: {
     gradient: 'from-cyan-500/5 via-transparent to-sky-500/5',
@@ -87,7 +87,7 @@ const CalibrationThemes: Record<CalibrationTypeId, {
     hoverBorder: 'hover:border-cyan-400/50',
     iconBg: 'from-cyan-500/20 to-sky-500/20',
     iconColor: 'text-cyan-400',
-    bgPattern: 'text-cyan-500/[0.03]',
+    bgPattern: 'text-cyan-500/10',
   },
 };
 

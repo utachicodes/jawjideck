@@ -51,6 +51,12 @@ export interface VfrHudData {
   climb: number;       // m/s
 }
 
+export interface WindData {
+  direction: number;   // degrees - where wind is coming FROM (0=north, 90=east)
+  speed: number;       // m/s ground plane
+  speedZ: number;      // m/s vertical
+}
+
 export interface FlightState {
   mode: string;
   modeNum: number;
@@ -103,6 +109,7 @@ export interface TelemetryState {
   gps: GpsData;
   battery: BatteryData;
   vfrHud: VfrHudData;
+  wind: WindData;
   flight: FlightState;
   rcChannels: RcChannelsData;
   vibration: VibrationData | null;

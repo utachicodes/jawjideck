@@ -195,16 +195,43 @@ const sensorNodes: NodeDefinition[] = [
   {
     type: 'sensor-home',
     label: 'Home Position',
-    description: 'Home location coordinates and altitude',
+    description: 'Home location coordinates and altitude. Exposes both float components and a Location object for chaining into location-math nodes.',
     category: 'sensors',
     inputs: [],
     outputs: [
+      { id: 'location', label: 'Location', type: 'any', direction: 'output' },
       { id: 'lat', label: 'Latitude', type: 'number', direction: 'output' },
       { id: 'lng', label: 'Longitude', type: 'number', direction: 'output' },
       { id: 'alt', label: 'Altitude (m)', type: 'number', direction: 'output' },
     ],
     properties: [],
     luaTemplate: 'ahrs:get_home()',
+  },
+  {
+    type: 'sensor-ahrs-location',
+    label: 'AHRS Location',
+    description: 'Live vehicle location from AHRS (a Location object - lat/lng/alt as one value)',
+    category: 'sensors',
+    inputs: [],
+    outputs: [
+      { id: 'location', label: 'Location', type: 'any', direction: 'output' },
+    ],
+    properties: [],
+    luaTemplate: 'ahrs:get_location()',
+  },
+  {
+    type: 'sensor-named-float',
+    label: 'Read Named Float',
+    description: 'Read a NAMED_VALUE_FLOAT published by another script or the GCS',
+    category: 'sensors',
+    inputs: [],
+    outputs: [
+      { id: 'value', label: 'Value', type: 'number', direction: 'output' },
+      { id: 'fresh', label: 'Fresh', type: 'boolean', direction: 'output' },
+    ],
+    properties: [
+      { id: 'name', label: 'Name (max 10 chars)', type: 'string', defaultValue: 'AD_HB' },
+    ],
   },
   {
     type: 'sensor-velocity-ned',
@@ -473,6 +500,47 @@ const mathNodes: NodeDefinition[] = [
     outputs: [{ id: 'result', label: 'Result', type: 'number', direction: 'output' }],
     properties: [],
   },
+  // ── Location math (work with AHRS Location objects) ──
+  {
+    type: 'math-location-bearing',
+    label: 'Bearing A→B',
+    description: 'Compass bearing in degrees from Location A to Location B (0=North, 90=East)',
+    category: 'math',
+    inputs: [
+      { id: 'from', label: 'From', type: 'any', direction: 'input' },
+      { id: 'to', label: 'To', type: 'any', direction: 'input' },
+    ],
+    outputs: [{ id: 'bearing_deg', label: 'Bearing (°)', type: 'number', direction: 'output' }],
+    properties: [],
+    luaTemplate: 'math.deg(FROM:get_bearing(TO))',
+  },
+  {
+    type: 'math-location-distance',
+    label: 'Distance A→B',
+    description: 'Horizontal distance in metres between two Locations',
+    category: 'math',
+    inputs: [
+      { id: 'a', label: 'A', type: 'any', direction: 'input' },
+      { id: 'b', label: 'B', type: 'any', direction: 'input' },
+    ],
+    outputs: [{ id: 'distance_m', label: 'Distance (m)', type: 'number', direction: 'output' }],
+    properties: [],
+    luaTemplate: 'A:get_distance(B)',
+  },
+  {
+    type: 'math-location-offset',
+    label: 'Offset Location',
+    description: 'Project a Location forward by bearing (deg) + distance (m). Returns new Location.',
+    category: 'math',
+    inputs: [
+      { id: 'from', label: 'From', type: 'any', direction: 'input' },
+      { id: 'bearing_deg', label: 'Bearing (°)', type: 'number', direction: 'input', defaultValue: 0 },
+      { id: 'distance_m', label: 'Distance (m)', type: 'number', direction: 'input', defaultValue: 0 },
+    ],
+    outputs: [{ id: 'location', label: 'Location', type: 'any', direction: 'output' }],
+    properties: [],
+    luaTemplate: 'FROM:copy():offset_bearing(BEARING, DISTANCE)',
+  },
 ];
 
 // ── Actions ─────────────────────────────────────────────────────
@@ -636,6 +704,62 @@ const actionNodes: NodeDefinition[] = [
       { id: 'cmd_idx', label: 'Waypoint Index', type: 'number', defaultValue: 1, min: 0, max: 999 },
     ],
     luaTemplate: 'mission:set_current_cmd(IDX)',
+  },
+  // ── FC-side script primitives (added for the script-installer graph) ──
+  {
+    type: 'action-set-target-location',
+    label: 'Set Target Location',
+    description: 'Issue a GUIDED-mode position target. Vehicle ignores it when not in GUIDED.',
+    category: 'actions',
+    inputs: [
+      { id: 'trigger', label: 'Trigger', type: 'boolean', direction: 'input' },
+      { id: 'location', label: 'Location', type: 'any', direction: 'input' },
+    ],
+    outputs: [],
+    properties: [],
+    luaTemplate: 'vehicle:set_target_location(LOCATION)',
+  },
+  {
+    type: 'action-publish-named-float',
+    label: 'Publish Named Float',
+    description: 'Send a NAMED_VALUE_FLOAT (max 10 char name) over MAVLink. Used for heartbeats and lightweight pub/sub.',
+    category: 'actions',
+    inputs: [
+      { id: 'trigger', label: 'Trigger', type: 'boolean', direction: 'input' },
+      { id: 'value', label: 'Value', type: 'number', direction: 'input', defaultValue: 0 },
+    ],
+    outputs: [],
+    properties: [
+      { id: 'name', label: 'Name (max 10 chars)', type: 'string', defaultValue: 'AD_HB' },
+    ],
+    luaTemplate: 'gcs:send_named_float("NAME", VALUE)',
+  },
+  {
+    type: 'action-mavlink-on-user-cmd',
+    label: 'On MAV_CMD_USER_*',
+    description: 'Receive a MAVLink user command (MAV_CMD_USER_1..5) sent from the GCS. Carries 4 floats + lat/lon/alt.',
+    category: 'actions',
+    inputs: [],
+    outputs: [
+      { id: 'trigger', label: 'On Cmd', type: 'boolean', direction: 'output' },
+      { id: 'param1', label: 'param1', type: 'number', direction: 'output' },
+      { id: 'param2', label: 'param2', type: 'number', direction: 'output' },
+      { id: 'param3', label: 'param3', type: 'number', direction: 'output' },
+      { id: 'param4', label: 'param4', type: 'number', direction: 'output' },
+      { id: 'location', label: 'Location', type: 'any', direction: 'output' },
+    ],
+    properties: [
+      {
+        id: 'cmd_id', label: 'MAV_CMD ID', type: 'select', defaultValue: 31010,
+        options: [
+          { label: 'USER_1 (31010)', value: 31010 },
+          { label: 'USER_2 (31011)', value: 31011 },
+          { label: 'USER_3 (31012)', value: 31012 },
+          { label: 'USER_4 (31013)', value: 31013 },
+          { label: 'USER_5 (31014)', value: 31014 },
+        ],
+      },
+    ],
   },
 ];
 

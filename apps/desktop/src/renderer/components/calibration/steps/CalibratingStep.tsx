@@ -32,29 +32,21 @@ export function CalibratingStep() {
     return null;
   }
 
-  // For 6-point calibration, only show the confirm button when:
-  //  1. It's a 6-point cal
-  //  2. Not finalizing (all positions captured)
-  //  3. Current position hasn't been confirmed yet
-  //  4. FC has actually requested a position (statusText switches from
-  //     "Waiting for flight controller..." to "Place vehicle ...")
-  // Without check 4, the user can click "Position Ready" before AP's
-  // AccelCal enters WAITING_FOR_ORIENTATION, and AP rejects with FAILED.
   const fcHasRequestedPosition = statusText.startsWith('Place vehicle');
   const isWaitingForConfirm = calibrationType === 'accel-6point' && !isFinalizing && !positionStatus[currentPosition] && fcHasRequestedPosition;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div className="max-w-2xl mx-auto space-y-4">
       {/* Calibration type header */}
       <div className="text-center">
-        <h3 className="text-2xl font-semibold text-content mb-2">
+        <h3 className="text-xl font-semibold text-content mb-1">
           {calTypeInfo.name}
         </h3>
-        <p className="text-content-secondary">{statusText}</p>
+        <p className="text-sm text-content-secondary">{statusText}</p>
       </div>
 
       {/* Main progress display */}
-      <div className="flex justify-center py-8">
+      <div className="flex justify-center">
         {/* Countdown timer for timed calibrations */}
         {(calibrationType === 'compass' || calibrationType === 'opflow') && (
           <CountdownTimer seconds={countdown} total={calTypeInfo.estimatedDuration} />
@@ -67,18 +59,21 @@ export function CalibratingStep() {
 
         {/* 6-point position display */}
         {calibrationType === 'accel-6point' && (
-          <div className="w-full space-y-6">
-            {/* Position diagram (hidden once finalizing — all 6 captured) */}
+          <div className="w-full space-y-3">
+            {/* Position diagram + name inline (hidden once finalizing) */}
             {!isFinalizing && (
-              <div className="flex justify-center">
-                <PositionDiagram position={currentPosition} isActive={true} />
+              <div className="flex flex-col items-center gap-2">
+                <PositionDiagram position={currentPosition} isActive={true} compact />
+                <p className="text-center text-sm text-content">
+                  Position {currentPosition + 1}: <span className="text-cyan-400 font-medium">{ACCEL_6POINT_POSITIONS[currentPosition]}</span>
+                </p>
               </div>
             )}
 
             {/* Finalizing spinner */}
             {isFinalizing && (
-              <div className="flex flex-col items-center justify-center py-6 gap-4">
-                <svg className="w-12 h-12 animate-spin text-cyan-400" fill="none" viewBox="0 0 24 24">
+              <div className="flex flex-col items-center justify-center py-4 gap-3">
+                <svg className="w-10 h-10 animate-spin text-cyan-400" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
@@ -87,21 +82,21 @@ export function CalibratingStep() {
             )}
 
             {/* Position progress indicators */}
-            <div className="flex justify-center gap-3">
+            <div className="flex justify-center gap-2">
               {positionStatus.map((done, index) => (
                 <div
                   key={index}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                     done
                       ? 'bg-green-500/20 text-green-400 border border-green-500/50'
                       : index === currentPosition && !isFinalizing
                         ? 'bg-cyan-500/20 text-cyan-400 border-2 border-cyan-500 animate-pulse'
-                        : 'bg-surface-raised text-content-secondary border border'
+                        : 'bg-surface-raised text-content-secondary border border-subtle'
                   }`}
                   title={ACCEL_6POINT_POSITIONS[index]}
                 >
                   {done ? (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
@@ -110,13 +105,6 @@ export function CalibratingStep() {
                 </div>
               ))}
             </div>
-
-            {/* Position name (suppressed during finalize) */}
-            {!isFinalizing && (
-              <p className="text-center text-lg text-content">
-                Position {currentPosition + 1}: <span className="text-cyan-400">{ACCEL_6POINT_POSITIONS[currentPosition]}</span>
-              </p>
-            )}
           </div>
         )}
       </div>
@@ -159,12 +147,11 @@ export function CalibratingStep() {
       )}
 
       {/* Action buttons */}
-      <div className="flex justify-center gap-4 pt-4">
-        {/* Confirm position button for 6-point */}
+      <div className="flex justify-center gap-4">
         {isWaitingForConfirm && (
           <button
             onClick={confirmPosition}
-            className="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 rounded-lg text-white font-medium transition-colors flex items-center gap-2"
+            className="px-6 py-2.5 bg-cyan-500 hover:bg-cyan-400 rounded-lg text-white font-medium transition-colors flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -173,12 +160,10 @@ export function CalibratingStep() {
           </button>
         )}
 
-        {/* Cancel button — hidden during the finalize wait so the user
-            can't abort an in-progress flash write to the FC */}
         {!isFinalizing && (
           <button
             onClick={cancelCalibration}
-            className="px-4 py-2.5 bg-surface-raised hover:bg-red-500/20 hover:text-red-400 rounded-lg text-content-secondary transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-surface-raised hover:bg-red-500/20 hover:text-red-400 rounded-lg text-content-secondary transition-colors flex items-center gap-2 text-sm"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -193,7 +178,7 @@ export function CalibratingStep() {
         {calibrationType === 'compass' && 'Keep rotating your vehicle in all directions...'}
         {calibrationType === 'accel-level' && 'Keep your vehicle still on the level surface...'}
         {calibrationType === 'accel-6point' && !isFinalizing && 'Hold the position steady, then click "Position Ready"'}
-        {calibrationType === 'accel-6point' && isFinalizing && 'Please wait — do not disconnect the flight controller'}
+        {calibrationType === 'accel-6point' && isFinalizing && 'Please wait - do not disconnect the flight controller'}
         {calibrationType === 'gyro' && 'Keep your vehicle completely still...'}
         {calibrationType === 'opflow' && 'Hold steady over the textured surface...'}
       </p>

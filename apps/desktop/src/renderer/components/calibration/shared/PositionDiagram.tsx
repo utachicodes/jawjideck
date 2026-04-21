@@ -7,15 +7,16 @@ import { ACCEL_6POINT_POSITIONS, type AccelPosition } from '../../../../shared/c
 interface PositionDiagramProps {
   position: AccelPosition;
   isActive?: boolean;
+  compact?: boolean;
 }
 
-export function PositionDiagram({ position, isActive = false }: PositionDiagramProps) {
-  const size = 200;
+export function PositionDiagram({ position, isActive = false, compact = false }: PositionDiagramProps) {
+  const size = compact ? 140 : 200;
 
   // Different SVG paths for each position
   const renderDiagram = () => {
     const baseClass = isActive ? 'text-cyan-400' : 'text-content-secondary';
-    const fillClass = isActive ? 'fill-cyan-500/20' : 'fill-gray-700/50';
+    const fillClass = isActive ? 'fill-cyan-500/20' : 'fill-[var(--bg-surface-raised)]';
     const strokeWidth = isActive ? 2 : 1.5;
 
     switch (position) {
@@ -127,7 +128,7 @@ export function PositionDiagram({ position, isActive = false }: PositionDiagramP
   };
 
   return (
-    <div className={`rounded-xl p-4 ${isActive ? 'bg-cyan-500/10 border border-cyan-500/30' : 'bg-surface border border-subtle'}`}>
+    <div className={`rounded-xl ${compact ? 'p-2' : 'p-4'} ${isActive ? 'bg-cyan-500/10 border border-cyan-500/30' : 'bg-surface border border-subtle'}`}>
       <svg
         width={size}
         height={size}
@@ -136,9 +137,11 @@ export function PositionDiagram({ position, isActive = false }: PositionDiagramP
       >
         {renderDiagram()}
       </svg>
-      <p className={`text-center text-sm mt-2 font-medium ${isActive ? 'text-cyan-400' : 'text-content-secondary'}`}>
-        {ACCEL_6POINT_POSITIONS[position]}
-      </p>
+      {!compact && (
+        <p className={`text-center text-sm mt-2 font-medium ${isActive ? 'text-cyan-400' : 'text-content-secondary'}`}>
+          {ACCEL_6POINT_POSITIONS[position]}
+        </p>
+      )}
     </div>
   );
 }

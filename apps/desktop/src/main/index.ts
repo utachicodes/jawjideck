@@ -47,6 +47,8 @@ process.on('unhandledRejection', (reason: unknown) => {
   }
 
   console.error('[Main] Unhandled rejection:', reason);
+  console.error('[Main] Rejection type:', typeof reason, reason?.constructor?.name);
+  console.error('[Main] Rejection stack:', new Error('rejection trace').stack);
 });
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;

@@ -11,6 +11,7 @@ import {
 } from '../../shared/mission-types';
 import { useSettingsStore } from './settings-store';
 import { useConnectionStore } from './connection-store';
+import { getVehicleClass } from '../../shared/telemetry-types';
 
 // MSP Waypoint types (matching msp-ts)
 interface MSPWaypoint {
@@ -165,7 +166,20 @@ interface MissionStore {
   isLoading: boolean;
   progress: MissionProgress | null;
   error: string | null;
-  currentSeq: number | null;      // Active waypoint from FC
+  currentSeq: number | null;      // Active waypoint from FC (already translated
+                                  // through fcSeqOffset so it indexes our
+                                  // renumbered missionItems[].seq directly).
+  /** Last raw value received in MISSION_CURRENT (before any offset). Kept for
+   *  diagnostics so the UI can show a hint when display vs. observed behavior
+   *  disagree (off-by-one tuning of fcSeqOffset). */
+  currentSeqRaw: number | null;
+  /**
+   * How much to subtract from raw FC `MISSION_CURRENT.seq` to align it with
+   * our store's renumbered `missionItems[].seq`. ArduPilot includes HOME at
+   * raw seq 0; we strip it on download and renumber the rest from 0, so the
+   * raw seq is always 1 ahead. Set when `setMissionItems` runs.
+   */
+  fcSeqOffset: number;
   isDirty: boolean;               // Has unsaved changes
   selectedSeq: number | null;     // UI selection
   lastSuccessMessage: string | null;  // For toast notifications
@@ -193,6 +207,10 @@ interface MissionStore {
   removeWaypoint: (seq: number) => void;
   reorderWaypoints: (fromSeq: number, toSeq: number) => void;
   insertMissionItems: (items: MissionItem[]) => void;
+  applyTerrainPlan: (plan: {
+    raisedAltitudes: Map<number, number>;
+    inserts: Array<{ afterSeq: number; latitude: number; longitude: number; altitude: number }>;
+  }) => void;
   clearMission: () => void;
 
   // UI state
@@ -222,6 +240,8 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
   progress: null,
   error: null,
   currentSeq: null,
+  currentSeqRaw: null,
+  fcSeqOffset: 0,
   isDirty: false,
   selectedSeq: null,
   lastSuccessMessage: null,
@@ -389,8 +409,10 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
     set({ homePosition: null, isDirty: true });
   },
 
-  // Local editing - simple: one click = one waypoint
-  // First waypoint is always Takeoff, subsequent are regular waypoints
+  // Local editing - one click = one valid mission step.
+  // For air vehicles, the first click also auto-prepends a TAKEOFF command so
+  // the resulting mission is immediately uploadable. Ground/marine vehicles
+  // skip the takeoff and get a regular waypoint as item #0.
   addWaypoint: (lat: number, lon: number, alt?: number) => {
     const { missionItems } = get();
 
@@ -398,13 +420,25 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
     const { missionDefaults } = useSettingsStore.getState();
     const defaultAlt = alt ?? missionDefaults.defaultWaypointAltitude;
 
+    if (missionItems.length === 0) {
+      const { connectionState } = useConnectionStore.getState();
+      const vehicleClass = getVehicleClass(connectionState.mavType);
+      const needsTakeoff = vehicleClass === 'copter' || vehicleClass === 'plane';
+
+      if (needsTakeoff) {
+        const takeoff = createTakeoffWaypoint(0, lat, lon, missionDefaults.defaultTakeoffAltitude);
+        const firstWp = createDefaultWaypoint(1, lat, lon, defaultAlt);
+        set({
+          missionItems: [takeoff, firstWp],
+          isDirty: true,
+          selectedSeq: 1,
+        });
+        return;
+      }
+    }
+
     const seq = missionItems.length;
-
-    // First waypoint should be Takeoff
-    const newItem = seq === 0
-      ? createTakeoffWaypoint(seq, lat, lon, missionDefaults.defaultTakeoffAltitude)
-      : createDefaultWaypoint(seq, lat, lon, defaultAlt);
-
+    const newItem = createDefaultWaypoint(seq, lat, lon, defaultAlt);
     set({
       missionItems: [...missionItems, newItem],
       isDirty: true,
@@ -490,6 +524,67 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
     });
   },
 
+  /**
+   * Apply terrain-adjustment plan atomically: raise altitudes on existing WPs
+   * and splice in new intermediate NAV_WAYPOINTs, renumbering once at the end.
+   *
+   * Inserts carry an `afterSeq` that refers to the seq BEFORE this call (the
+   * preceding nav waypoint). DO_* child commands that follow a nav waypoint
+   * logically belong to it and execute at that waypoint; we emit queued
+   * inserts just before the next nav waypoint so child commands stay tied
+   * to their parent.
+   */
+  applyTerrainPlan: (plan) => {
+    const { missionItems } = get();
+    if (missionItems.length === 0) return;
+
+    const bySeq = new Map<number, typeof plan.inserts>();
+    for (const ins of plan.inserts) {
+      const list = bySeq.get(ins.afterSeq);
+      if (list) list.push(ins);
+      else bySeq.set(ins.afterSeq, [ins]);
+    }
+
+    const makeNavWp = (ins: (typeof plan.inserts)[number]): MissionItem => ({
+      seq: 0,
+      frame: MAV_FRAME.GLOBAL_RELATIVE_ALT,
+      command: MAV_CMD.NAV_WAYPOINT,
+      current: false,
+      autocontinue: true,
+      param1: 0,
+      param2: 0,
+      param3: 0,
+      param4: 0,
+      latitude: ins.latitude,
+      longitude: ins.longitude,
+      altitude: ins.altitude,
+    });
+
+    const isNav = (cmd: number) => cmd >= 16 && cmd <= 95;
+
+    const out: MissionItem[] = [];
+    let pending: typeof plan.inserts | null = null;
+
+    for (const item of missionItems) {
+      if (isNav(item.command) && pending) {
+        for (const ins of pending) out.push(makeNavWp(ins));
+        pending = null;
+      }
+      const raised = plan.raisedAltitudes.get(item.seq);
+      out.push(raised !== undefined ? { ...item, altitude: raised } : item);
+      if (isNav(item.command)) {
+        const toInsertHere = bySeq.get(item.seq);
+        if (toInsertHere) pending = toInsertHere;
+      }
+    }
+    if (pending) {
+      for (const ins of pending) out.push(makeNavWp(ins));
+    }
+
+    const renumbered = out.map((item, i) => ({ ...item, seq: i }));
+    set({ missionItems: renumbered, isDirty: true });
+  },
+
   clearMission: () => {
     set({
       missionItems: [],
@@ -497,6 +592,7 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
       isDirty: false,
       selectedSeq: null,
       currentSeq: null,
+      fcSeqOffset: 0,
     });
   },
 
@@ -511,6 +607,7 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
     // It shares MAV_CMD 16 (WAYPOINT) but has current=true in the protocol.
     // Also detect seq=0 at 0,0 (placeholder when no GPS fix).
     let homePosition: HomePosition | null = null;
+    const homeWasStripped = items.some(item => item.seq === 0);
     const filteredItems = items.filter(item => {
       if (item.seq === 0) {
         // seq=0 is home position - extract it if it has valid coordinates
@@ -528,8 +625,13 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
       seq: index,
     }));
 
+    // If we stripped HOME at seq=0, the FC will keep reporting raw seqs that
+    // are 1 ahead of our renumbered indices in MISSION_CURRENT events. Record
+    // the offset so setCurrentSeq can subtract it; otherwise the map would
+    // highlight the wp AFTER the actual target.
     set({
       missionItems: renumberedItems,
+      fcSeqOffset: homeWasStripped ? 1 : 0,
       ...(homePosition ? { homePosition } : {}),
       isLoading: false,
       progress: null,
@@ -545,6 +647,7 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
     // Extract home waypoint: seq=0 with current=true is the home/launch position.
     // In QGC WPL format: "0  1  0  16  ..." where second field (current=1) marks home.
     let homePosition: HomePosition | null = null;
+    const homeWasStripped = items.some(item => item.seq === 0 && item.current);
     const filteredItems = items.filter(item => {
       if (item.seq === 0 && item.current) {
         // This is the home position - extract it
@@ -564,6 +667,7 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
 
     set({
       missionItems: renumberedItems,
+      fcSeqOffset: homeWasStripped ? 1 : 0,
       ...(homePosition ? { homePosition } : {}),
       isLoading: false,
       progress: null,
@@ -578,7 +682,13 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
   },
 
   setCurrentSeq: (seq: number) => {
-    set({ currentSeq: seq });
+    // Translate raw FC seq through fcSeqOffset so callers can compare directly
+    // against missionItems[].seq. ArduPilot's HOME entry at raw seq 0 is
+    // stripped on download, so raw seq N corresponds to renumbered seq N-1
+    // when home was present.
+    const offset = get().fcSeqOffset;
+    const aligned = Math.max(0, seq - offset);
+    set({ currentSeq: aligned, currentSeqRaw: seq });
   },
 
   setError: (error: string | null) => {
@@ -628,6 +738,7 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
       progress: null,
       error: null,
       currentSeq: null,
+      fcSeqOffset: 0,
       isDirty: false,
       selectedSeq: null,
       lastSuccessMessage: null,

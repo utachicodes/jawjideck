@@ -69,7 +69,7 @@ const BitmaskEditor: React.FC<BitmaskEditorProps> = ({ paramId, value, bitmask, 
   return (
     <div
       ref={popoverRef}
-      className="absolute left-0 top-full mt-1 z-50 bg-surface border rounded-lg shadow-2xl min-w-[320px] max-w-[400px]"
+      className="absolute left-0 top-full mt-1 z-50 bg-surface-solid border border-subtle rounded-lg shadow-2xl min-w-[320px] max-w-[400px]"
     >
       {/* Header */}
       <div className="px-4 py-3 border-b border-subtle">

@@ -9,6 +9,7 @@ import { useArduPilotSitlStore, ARDUPILOT_MODELS } from '../../stores/ardupilot-
 import { useConnectionStore } from '../../stores/connection-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import type { VirtualRCState, ArduPilotVehicleType, ArduPilotReleaseTrack } from '../../../shared/ipc-channels';
+import { getIpLocation } from '../../utils/ip-geolocation';
 import SitlEnvironmentPanel from './SitlEnvironmentPanel';
 import SitlFailurePanel from './SitlFailurePanel';
 
@@ -74,49 +75,30 @@ export default function ArduPilotSitlTab() {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  // Get current location using browser geolocation API
-  const getCurrentLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      setLocationError('Geolocation is not supported by your browser');
-      return;
-    }
-
+  // Resolve the user's approximate location via the shared fallback chain:
+  // IP geolocation (no permission needed) → browser geolocation → default.
+  // Matches the behaviour used elsewhere in the app (map, telemetry).
+  const getCurrentLocation = useCallback(async () => {
     setIsGettingLocation(true);
     setLocationError(null);
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setHomeLocation({
-          lat: Math.round(position.coords.latitude * 10000) / 10000,
-          lng: Math.round(position.coords.longitude * 10000) / 10000,
-          alt: Math.round(position.coords.altitude || 10),
-          heading: homeLocation.heading, // Keep existing heading
-        });
-        setIsGettingLocation(false);
-      },
-      (error) => {
-        setIsGettingLocation(false);
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            setLocationError('Location permission denied');
-            break;
-          case error.POSITION_UNAVAILABLE:
-            setLocationError('Location unavailable');
-            break;
-          case error.TIMEOUT:
-            setLocationError('Location request timed out');
-            break;
-          default:
-            setLocationError('Unable to get location');
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
+    try {
+      const loc = await getIpLocation();
+      if (loc.source === 'default') {
+        setLocationError('Unable to determine location');
+        return;
       }
-    );
-  }, [setHomeLocation, homeLocation.heading]);
+      setHomeLocation({
+        lat: Math.round(loc.lat * 10000) / 10000,
+        lng: Math.round(loc.lon * 10000) / 10000,
+        alt: homeLocation.alt || 10,
+        heading: homeLocation.heading,
+      });
+    } catch {
+      setLocationError('Unable to get location');
+    } finally {
+      setIsGettingLocation(false);
+    }
+  }, [setHomeLocation, homeLocation.alt, homeLocation.heading]);
 
   // Initialize listeners and check status on mount
   useEffect(() => {

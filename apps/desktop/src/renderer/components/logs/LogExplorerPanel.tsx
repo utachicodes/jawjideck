@@ -20,14 +20,14 @@ maplibregl.setWorkerUrl('/maplibre-worker.js');
 import { createFlightPathThreeJsLayer } from './flight-threejs-layer';
 import { useLogStore } from '../../stores/log-store';
 
-// Style uPlot for dark backgrounds
+// Style uPlot - uses CSS variables for theme support
 const uplotStyle = document.createElement('style');
 uplotStyle.textContent = `
   .u-select { background: rgba(59, 130, 246, 0.15) !important; border: 1px solid rgba(59, 130, 246, 0.5) !important; }
   .u-legend { font-size: 11px; padding: 4px 8px; }
   .u-legend .u-series { padding: 1px 4px; }
-  .u-legend .u-label { color: #9ca3af; }
-  .u-legend .u-value { color: #e5e7eb; font-variant-numeric: tabular-nums; }
+  .u-legend .u-label { color: var(--text-secondary); }
+  .u-legend .u-value { color: var(--text-primary); font-variant-numeric: tabular-nums; }
   .u-legend .u-series > * { vertical-align: middle; }
   .u-legend .u-marker { border-radius: 50%; }
 `;
@@ -107,6 +107,8 @@ function ChartPanel() {
   const currentLog = useLogStore((s) => s.currentLog);
   const selectedTypes = useLogStore((s) => s.selectedTypes);
   const selectedFields = useLogStore((s) => s.selectedFields);
+  const resolvedTheme = useResolvedTheme();
+  const isLight = resolvedTheme === 'light';
   const setSelectedTypes = useLogStore((s) => s.setSelectedTypes);
   const setSelectedFields = useLogStore((s) => s.setSelectedFields);
 
@@ -137,14 +139,59 @@ function ChartPanel() {
       const msgs = currentLog.messages[type];
       if (!msgs || msgs.length === 0) continue;
 
+      // Multi-instance message detection: ArduPilot dumps every ESC/IMU/MAG/
+      // BARO/GPS/etc. into a single message bucket and identifies the source
+      // sensor with an `Instance` (newer) or `I` (older) field. Plotting RPM
+      // without splitting by instance produces a single zigzag line that
+      // hops between motor 0..3 — useless. Split into one series per
+      // instance so a quad shows 4 RPM lines.
+      const sample = msgs[0]!;
+      const instanceKey =
+        sample.fields['Instance'] !== undefined ? 'Instance'
+        : sample.fields['I'] !== undefined ? 'I'
+        : null;
+      const distinctInstances = new Set<number>();
+      if (instanceKey) {
+        // Cap the scan: 1024 messages is plenty to detect the typical 1-8
+        // range and avoids walking million-row series for the check.
+        const limit = Math.min(msgs.length, 1024);
+        for (let i = 0; i < limit; i++) {
+          const v = msgs[i]!.fields[instanceKey];
+          if (typeof v === 'number') distinctInstances.add(v);
+        }
+      }
+      const splitByInstance = instanceKey != null && distinctInstances.size > 1;
+
       const time = msgs.map((m) => m.timeUs / 1_000_000);
       const typeSeries: { time: number[]; label: string; values: number[] }[] = [];
       for (const field of fields) {
-        const values = msgs.map((m) => {
-          const v = m.fields[field];
-          return typeof v === 'number' ? v : NaN;
-        });
-        typeSeries.push({ time, label: `${type}.${field}`, values });
+        if (splitByInstance) {
+          // Bucket messages by instance value, preserving per-instance time
+          // axes (different sample rates per sensor are common).
+          const byInst = new Map<number, { time: number[]; values: number[] }>();
+          for (const m of msgs) {
+            const inst = m.fields[instanceKey!];
+            if (typeof inst !== 'number') continue;
+            let bucket = byInst.get(inst);
+            if (!bucket) { bucket = { time: [], values: [] }; byInst.set(inst, bucket); }
+            bucket.time.push(m.timeUs / 1_000_000);
+            const v = m.fields[field];
+            bucket.values.push(typeof v === 'number' ? v : NaN);
+          }
+          for (const [inst, bucket] of [...byInst.entries()].sort((a, b) => a[0] - b[0])) {
+            typeSeries.push({
+              time: bucket.time,
+              label: `${type}[${inst}].${field}`,
+              values: bucket.values,
+            });
+          }
+        } else {
+          const values = msgs.map((m) => {
+            const v = m.fields[field];
+            return typeof v === 'number' ? v : NaN;
+          });
+          typeSeries.push({ time, label: `${type}.${field}`, values });
+        }
       }
       if (typeSeries.length > 0) perType.push(typeSeries);
     }
@@ -219,15 +266,15 @@ function ChartPanel() {
       axes: [
         {
           label: 'Time (s)',
-          stroke: '#9ca3af',
-          grid: { stroke: '#1f2937', width: 1 },
-          ticks: { stroke: '#374151', width: 1 },
+          stroke: isLight ? '#4b5563' : '#9ca3af',
+          grid: { stroke: isLight ? '#e5e7eb' : '#1f2937', width: 1 },
+          ticks: { stroke: isLight ? '#d1d5db' : '#374151', width: 1 },
           font: '11px system-ui',
         },
         {
-          stroke: '#9ca3af',
-          grid: { stroke: '#1f2937', width: 1 },
-          ticks: { stroke: '#374151', width: 1 },
+          stroke: isLight ? '#4b5563' : '#9ca3af',
+          grid: { stroke: isLight ? '#e5e7eb' : '#1f2937', width: 1 },
+          ticks: { stroke: isLight ? '#d1d5db' : '#374151', width: 1 },
           font: '11px system-ui',
         },
       ],
@@ -277,7 +324,7 @@ function ChartPanel() {
       container.removeEventListener('dblclick', handleDblClick);
       if (plotRef.current) { plotRef.current.destroy(); plotRef.current = null; }
     };
-  }, [chartData]);
+  }, [chartData, isLight]);
 
   useEffect(() => {
     const el = chartRef.current;
@@ -387,7 +434,7 @@ function ChartPanel() {
       {isZoomed && (
         <button
           onClick={resetZoom}
-          className="absolute top-1 right-2 z-10 text-[10px] px-2 py-1 bg-surface-overlay hover:bg-surface-raised text-content hover:text-content rounded border border transition-colors backdrop-blur-sm"
+          className="absolute top-1 right-2 z-10 text-[10px] px-2 py-1 bg-surface-overlay hover:bg-surface-raised text-content hover:text-content rounded border border-subtle transition-colors backdrop-blur-sm"
         >
           Reset Zoom
         </button>
@@ -711,6 +758,7 @@ function FieldPickerPanel() {
   const currentLog = useLogStore((s) => s.currentLog);
   const selectedTypes = useLogStore((s) => s.selectedTypes);
   const selectedFields = useLogStore((s) => s.selectedFields);
+  const isLightTheme = useResolvedTheme() === 'light';
   const setSelectedTypes = useLogStore((s) => s.setSelectedTypes);
   const setSelectedFields = useLogStore((s) => s.setSelectedFields);
   const [search, setSearch] = useState('');
@@ -724,7 +772,12 @@ function FieldPickerPanel() {
     return messageTypes.filter((type) => type.toLowerCase().includes(q));
   }, [messageTypes, search]);
 
-  // Get fields for any message type (not just selected ones)
+  // Get fields for any message type (not just selected ones).
+  // We hide the instance discriminator ("Instance" / "I") because it carries
+  // no signal worth plotting — it's the per-row sensor index, not data.
+  // Instead, we expose `instanceCount` so the UI can hint "× 4 motors" on
+  // the type header so the user knows their picked field will fan out into
+  // multiple series automatically.
   const typeFields = useMemo(() => {
     if (!currentLog) return {};
     const result: Record<string, string[]> = {};
@@ -733,11 +786,35 @@ function FieldPickerPanel() {
       if (msgs && msgs.length > 0) {
         const firstMsg = msgs[0]!;
         result[type] = Object.keys(firstMsg.fields).filter(
-          (f) => f !== 'TimeUS' && typeof firstMsg.fields[f] === 'number',
+          (f) => f !== 'TimeUS' && f !== 'Instance' && f !== 'I'
+            && typeof firstMsg.fields[f] === 'number',
         );
       }
     }
     return result;
+  }, [currentLog, messageTypes]);
+
+  // Per-type instance count: how many distinct sensor instances the type
+  // contains (1 = single-sensor; >1 = multi-instance like ESC × N motors).
+  const typeInstanceCount = useMemo(() => {
+    if (!currentLog) return new Map<string, number>();
+    const out = new Map<string, number>();
+    for (const type of messageTypes) {
+      const msgs = currentLog.messages[type];
+      if (!msgs || msgs.length === 0) continue;
+      const sample = msgs[0]!;
+      const key = sample.fields['Instance'] !== undefined ? 'Instance'
+        : sample.fields['I'] !== undefined ? 'I' : null;
+      if (!key) continue;
+      const distinct = new Set<number>();
+      const limit = Math.min(msgs.length, 1024);
+      for (let i = 0; i < limit; i++) {
+        const v = msgs[i]!.fields[key];
+        if (typeof v === 'number') distinct.add(v);
+      }
+      if (distinct.size > 1) out.set(type, distinct.size);
+    }
+    return out;
   }, [currentLog, messageTypes]);
 
   const applyPreset = useCallback((preset: typeof QUICK_PRESETS[number]) => {
@@ -832,7 +909,7 @@ function FieldPickerPanel() {
             <button
               key={preset.label}
               onClick={() => applyPreset(preset)}
-              className="text-[10px] px-1.5 py-0.5 rounded bg-surface hover:bg-blue-500/20 hover:text-blue-400 text-content-secondary transition-colors"
+              className="text-[10px] px-1.5 py-0.5 rounded bg-surface-raised hover:bg-blue-500/20 hover:text-blue-400 text-content-secondary transition-colors"
             >
               {preset.label}
             </button>
@@ -860,15 +937,22 @@ function FieldPickerPanel() {
           const groupColor = typeColorMap.get(type) ?? '#6b7280';
           const activeFieldCount = selectedFields.get(type)?.length ?? 0;
           const hasSelection = activeFieldCount > 0;
+          const instances = typeInstanceCount.get(type);
           return (
             <div key={type}>
               <button
                 onClick={() => toggleExpanded(type)}
                 className={`flex items-center gap-2 text-xs w-full rounded px-2 py-1.5 transition-colors hover:bg-surface-overlay-subtle`}
-                style={{ backgroundColor: hasSelection ? `${groupColor}18` : undefined, opacity: hasSelection ? 1 : 0.45 }}
+                style={{ backgroundColor: hasSelection ? `${groupColor}${isLightTheme ? '20' : '18'}` : undefined, opacity: hasSelection ? 1 : (isLightTheme ? 0.6 : 0.45) }}
+                title={instances ? `${instances} instances — selecting a field plots one line per instance` : undefined}
               >
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: groupColor }} />
                 <span className={hasSelection ? 'font-semibold' : 'font-medium'} style={{ color: groupColor }}>{type}</span>
+                {instances && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-surface-raised text-content-secondary">
+                    × {instances}
+                  </span>
+                )}
                 {activeFieldCount > 0 && (
                   <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: `${groupColor}25`, color: groupColor }}>
                     {activeFieldCount}

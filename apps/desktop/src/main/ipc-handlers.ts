@@ -57,6 +57,9 @@ import {
   PARAM_SET_CRC_EXTRA,
   COMMAND_LONG_ID,
   COMMAND_LONG_CRC_EXTRA,
+  serializeCommandInt,
+  COMMAND_INT_ID,
+  COMMAND_INT_CRC_EXTRA,
   MISSION_REQUEST_LIST_ID,
   MISSION_REQUEST_LIST_CRC_EXTRA,
   MISSION_REQUEST_ID,
@@ -107,6 +110,12 @@ import { registerMspHandlers, tryMspDetection, startMspTelemetry, stopMspTelemet
 import { initCalibrationHandlers, cleanupCalibrationHandlers, handleCalibrationStatusText, handleCalibrationCommandAck, handleIncomingCommandLong, isMavlinkCalibrationActive, cancelCalibration, type MavlinkCalibrationDeps } from './calibration/index.js';
 import { initMissionLibraryHandlers, cleanupMissionLibraryHandlers } from './mission-library/index.js';
 import { MavlinkFtpClient, parseParamPack, PARAM_PCK_PATH, parseFtpPayload } from './mavlink-ftp/index.js';
+import { ingestNamedValueFloat, getScriptHealth, resetHeartbeat, subscribeHealth } from './script-installer/heartbeat-tracker.js';
+import * as scriptRegistry from './script-installer/registry-store.js';
+import { getScriptBundle } from './script-installer/bundle.js';
+import * as installerService from './script-installer/installer-service.js';
+import type { FcAdapter } from './script-installer/installer-service.js';
+import type { PreflightFix } from '../shared/script-installer-types.js';
 import {
   serializeFileTransferProtocol,
   FILE_TRANSFER_PROTOCOL_ID,
@@ -114,7 +123,7 @@ import {
 } from '@ardudeck/mavlink-ts';
 import { LogDownloadManager, type LogListEntry } from './mavlink-log/index.js';
 import { writeFile, readFile } from 'node:fs/promises';
-import { parseDataFlashLog, runHealthChecks } from '@ardudeck/dataflash-parser';
+import { createDataFlashParser, runHealthChecks } from '@ardudeck/dataflash-parser';
 import { sitlProcess } from './sitl/sitl-process.js';
 import { ardupilotSitlProcess, ardupilotSitlDownloader, ardupilotRcSender } from './sitl/index.js';
 import {
@@ -237,10 +246,21 @@ let lastReportedArmed: boolean | null = null;
 let mavlinkParser: MAVLinkParser | null = null;
 let heartbeatTimeout: NodeJS.Timeout | null = null;
 let heartbeatWatchdog: NodeJS.Timeout | null = null;
+let heartbeatGraceTimer: NodeJS.Timeout | null = null;
 
-// Heartbeat watchdog: detect when vehicle stops sending heartbeats (e.g. powered off)
-// ArduPilot sends heartbeats at 1Hz; 5 seconds means 5 missed heartbeats before disconnect
-const HEARTBEAT_WATCHDOG_MS = 5000;
+// Heartbeat watchdog: detect when vehicle stops sending heartbeats.
+// Two-stage model (mimics Mission Planner behavior):
+//   1. After HEARTBEAT_STALE_MS of silence, mark the link "stale" and show a
+//      warning in the UI but keep the transport open. Many real-world drops
+//      (radio link, WireGuard tunnel, mavp2p router hiccups) recover within
+//      seconds; disconnecting aggressively boots the user back to the
+//      connection screen and is disruptive.
+//   2. After HEARTBEAT_GRACE_MS of continued silence, fully disconnect. The
+//      transport is also closed immediately on any underlying socket close.
+const HEARTBEAT_STALE_MS = 5000;
+const HEARTBEAT_GRACE_MS = 60000;
+// Legacy constant retained for logging messages referencing the old window.
+const HEARTBEAT_WATCHDOG_MS = HEARTBEAT_STALE_MS;
 
 // =============================================================================
 // MAVLink Signing State
@@ -613,6 +633,7 @@ async function sendStreamRateRequests(mainWindow: BrowserWindow, speed: Telemetr
     { msgId: 36, hz: rates.other },     // SERVO_OUTPUT_RAW
     { msgId: 27, hz: rates.other },     // RAW_IMU
     { msgId: 29, hz: rates.other },     // SCALED_PRESSURE
+    { msgId: 168, hz: 1 },              // WIND (EKF wind estimation, 1Hz is plenty)
     { msgId: 241, hz: rates.other },    // VIBRATION (for motor test view)
     { msgId: 11030, hz: rates.other },  // ESC_TELEMETRY_1_TO_4
     { msgId: 11031, hz: rates.other },  // ESC_TELEMETRY_5_TO_8
@@ -986,6 +1007,8 @@ const MSG_RC_CHANNELS_RAW = 35;
 const MSG_RC_CHANNELS = 65;
 const MSG_VFR_HUD = 74;
 const MSG_COMMAND_ACK = 77;
+const MSG_WIND = 168;
+const MSG_NAMED_VALUE_FLOAT = 251;
 const MSG_STATUSTEXT = 253;
 
 // Mission message IDs
@@ -1207,6 +1230,15 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
       break;
     }
 
+    case MSG_WIND: {
+      // WIND (168) wire order: direction(4), speed(4), speed_z(4) - all float32
+      const direction = readFloat(payload, 0);
+      const speed = readFloat(payload, 4);
+      const speedZ = readFloat(payload, 8);
+      queueMavlinkTelemetry(mainWindow, { wind: { direction, speed, speedZ } });
+      break;
+    }
+
     case MSG_VIBRATION: {
       // VIBRATION (241) wire order: time_usec(8), vibration_x(4), vibration_y(4),
       //   vibration_z(4), clipping_0(4), clipping_1(4), clipping_2(4)
@@ -1328,6 +1360,26 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
       break;
     }
 
+    case MSG_NAMED_VALUE_FLOAT: {
+      // NAMED_VALUE_FLOAT (251):
+      //   timeBootMs(U32)@0, value(F32)@4, name(char[10])@8
+      // ArduDeck's installed Lua scripts publish a heartbeat here ('AD_HB');
+      // the script-installer's heartbeat-tracker watches for it.
+      try {
+        const value = readFloat(payload, 4);
+        const name = new TextDecoder().decode(payload.slice(8, 18)).replace(/\0.*$/, '');
+        // AD_HB heartbeats arrive every second - too noisy to log at info.
+        // Other NVF names (rare) stay at info so unexpected floats are visible.
+        if (name !== 'AD_HB') {
+          sendLog(mainWindow, 'info', `NAMED_VALUE_FLOAT received: name="${name}" value=${value}`);
+        }
+        ingestNamedValueFloat(name, value);
+      } catch (err) {
+        sendLog(mainWindow, 'warn', `NAMED_VALUE_FLOAT parse failed: ${err instanceof Error ? err.message : err}`);
+      }
+      break;
+    }
+
     case MSG_STATUSTEXT: {
       // STATUSTEXT base fields (both 1-byte types, declaration order preserved):
       //   severity(U8)@0, text(char[50])@1
@@ -1436,6 +1488,33 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
         const severity = ackResult === 0 ? 6 : 4;
         const severityLabel = SEVERITY_LABELS[severity] ?? 'INFO';
         const text = ackResult === 0 ? 'Takeoff accepted' : `Takeoff ${resultName}`;
+        mainWindow.webContents.send(IPC_CHANNELS.MAVLINK_STATUSTEXT, { severity, severityLabel, text });
+        sendLog(mainWindow, ackResult === 0 ? 'info' : 'warn', text);
+      }
+
+      // Log DO_REPOSITION (go-to) results
+      if (ackCommand === 192) {
+        const severity = ackResult === 0 ? 6 : 4;
+        const severityLabel = SEVERITY_LABELS[severity] ?? 'INFO';
+        const text = ackResult === 0 ? 'GO_TO accepted' : `GO_TO ${resultName}`;
+        mainWindow.webContents.send(IPC_CHANNELS.MAVLINK_STATUSTEXT, { severity, severityLabel, text });
+        sendLog(mainWindow, ackResult === 0 ? 'info' : 'warn', text);
+      }
+
+      // Log DO_ORBIT (orbit) results
+      if (ackCommand === 34) {
+        const severity = ackResult === 0 ? 6 : 4;
+        const severityLabel = SEVERITY_LABELS[severity] ?? 'INFO';
+        const text = ackResult === 0 ? 'ORBIT accepted' : `ORBIT ${resultName}`;
+        mainWindow.webContents.send(IPC_CHANNELS.MAVLINK_STATUSTEXT, { severity, severityLabel, text });
+        sendLog(mainWindow, ackResult === 0 ? 'info' : 'warn', text);
+      }
+
+      // Log NAV_LAND results
+      if (ackCommand === 21) {
+        const severity = ackResult === 0 ? 6 : 4;
+        const severityLabel = SEVERITY_LABELS[severity] ?? 'INFO';
+        const text = ackResult === 0 ? 'LAND accepted' : `LAND ${resultName}`;
         mainWindow.webContents.send(IPC_CHANNELS.MAVLINK_STATUSTEXT, { severity, severityLabel, text });
         sendLog(mainWindow, ackResult === 0 ? 'info' : 'warn', text);
       }
@@ -2211,40 +2290,94 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   };
 
   /**
-   * Reset the heartbeat watchdog timer.
-   * Called on each real vehicle heartbeat to confirm the vehicle is still alive.
-   * If no heartbeat arrives within HEARTBEAT_WATCHDOG_MS, triggers disconnect.
+   * Clear both heartbeat timers and any stale-link state. Call this from any
+   * connection teardown path to avoid leaving orphan timers behind.
+   */
+  const clearHeartbeatTimers = (): void => {
+    if (heartbeatWatchdog) {
+      clearTimeout(heartbeatWatchdog);
+      heartbeatWatchdog = null;
+    }
+    if (heartbeatGraceTimer) {
+      clearTimeout(heartbeatGraceTimer);
+      heartbeatGraceTimer = null;
+    }
+    connectionState.isStale = false;
+    connectionState.staleSince = undefined;
+  };
+
+  /**
+   * Force-disconnect the current link. Used when the grace period after a
+   * stale link expires without heartbeats resuming.
+   */
+  const forceDisconnectStaleLink = (): void => {
+    if (!connectionState.isConnected) return;
+    sendLog(mainWindow, 'warn', 'Vehicle heartbeat lost', `No heartbeat received for ${HEARTBEAT_GRACE_MS / 1000}s — disconnecting`);
+    if (currentTransport?.isOpen) {
+      currentTransport.close().catch(() => {});
+    } else {
+      cleanupMspConnection();
+      if (gcsHeartbeatInterval) {
+        clearInterval(gcsHeartbeatInterval);
+        gcsHeartbeatInterval = null;
+      }
+      if (mavlinkBatchTimer) {
+        clearTimeout(mavlinkBatchTimer);
+        mavlinkBatchTimer = null;
+        mavlinkTelemetryBatch = {};
+      }
+      currentTransport = null;
+      mavlinkParser = null;
+      resetMavlinkDiagCache();
+      connectionState.isConnected = false;
+      connectionState.isWaitingForHeartbeat = false;
+      connectionState.isStale = false;
+      connectionState.staleSince = undefined;
+      sendLog(mainWindow, 'info', 'Connection closed');
+      sendConnectionState(mainWindow);
+    }
+  };
+
+  /**
+   * Reset the heartbeat watchdog timer. Called on every real vehicle heartbeat.
+   *
+   * Two-stage behavior (see HEARTBEAT_STALE_MS / HEARTBEAT_GRACE_MS):
+   *   - HEARTBEAT_STALE_MS of silence → mark link stale, keep transport open
+   *   - HEARTBEAT_GRACE_MS of silence → actually disconnect
+   *   - Any heartbeat while stale → clear stale flag, link resumes
    */
   const resetHeartbeatWatchdog = (): void => {
     if (heartbeatWatchdog) clearTimeout(heartbeatWatchdog);
+    if (heartbeatGraceTimer) {
+      clearTimeout(heartbeatGraceTimer);
+      heartbeatGraceTimer = null;
+    }
+
+    // If link had gone stale, a heartbeat just resumed - announce recovery.
+    if (connectionState.isStale) {
+      const downMs = connectionState.staleSince ? Date.now() - connectionState.staleSince : 0;
+      connectionState.isStale = false;
+      connectionState.staleSince = undefined;
+      sendLog(mainWindow, 'info', 'Vehicle heartbeat recovered', downMs > 0 ? `Link was silent for ${(downMs / 1000).toFixed(1)}s` : undefined);
+      sendConnectionState(mainWindow);
+    }
+
     heartbeatWatchdog = setTimeout(() => {
       heartbeatWatchdog = null;
       if (!connectionState.isConnected) return;
-      sendLog(mainWindow, 'warn', 'Vehicle heartbeat lost', `No heartbeat received for ${HEARTBEAT_WATCHDOG_MS / 1000}s — disconnecting`);
-      // Close transport to trigger normal disconnect flow via transportCloseHandler
-      if (currentTransport?.isOpen) {
-        currentTransport.close().catch(() => {});
-      } else {
-        // Transport already closed/gone - manually clean up connection state
-        cleanupMspConnection();
-        if (gcsHeartbeatInterval) {
-          clearInterval(gcsHeartbeatInterval);
-          gcsHeartbeatInterval = null;
-        }
-        if (mavlinkBatchTimer) {
-          clearTimeout(mavlinkBatchTimer);
-          mavlinkBatchTimer = null;
-          mavlinkTelemetryBatch = {};
-        }
-        currentTransport = null;
-        mavlinkParser = null;
-        resetMavlinkDiagCache();
-        connectionState.isConnected = false;
-        connectionState.isWaitingForHeartbeat = false;
-        sendLog(mainWindow, 'info', 'Connection closed');
-        sendConnectionState(mainWindow);
-      }
-    }, HEARTBEAT_WATCHDOG_MS);
+
+      // Stage 1: mark stale but keep the link alive.
+      connectionState.isStale = true;
+      connectionState.staleSince = Date.now();
+      sendLog(mainWindow, 'warn', 'Vehicle heartbeat stale', `No heartbeat for ${HEARTBEAT_STALE_MS / 1000}s - link kept open, waiting for recovery`);
+      sendConnectionState(mainWindow);
+
+      // Stage 2: if silence continues past the grace window, disconnect.
+      heartbeatGraceTimer = setTimeout(() => {
+        heartbeatGraceTimer = null;
+        forceDisconnectStaleLink();
+      }, HEARTBEAT_GRACE_MS - HEARTBEAT_STALE_MS);
+    }, HEARTBEAT_STALE_MS);
   };
 
   /**
@@ -2427,6 +2560,11 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
                 connectionState.mavType = vehicleType;
                 connectionState.mavlinkVersion = detectedMavlinkVersion;
                 connectionState.signingEnabled = signingEnabled;
+                // ArduPilot SITL is the only flavour that uses MAVLink, so on a
+                // confirmed MAVLink heartbeat we mark isSitl iff the ArduPilot
+                // SITL launcher process is currently running. (iNav SITL uses
+                // MSP - it's tracked separately on the MSP path.)
+                connectionState.isSitl = ardupilotSitlProcess.isRunning;
 
                 sendLog(mainWindow, 'info', `Connected to ${connectionState.autopilot} ${connectionState.vehicleType}`, `System ID: ${packet.sysid}, Component ID: ${packet.compid}, MAVLink v${detectedMavlinkVersion}`);
                 sendConnectionState(mainWindow);
@@ -2521,6 +2659,10 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
             await new Promise(r => setImmediate(r));
           }
         }
+      } catch (err) {
+        const msg = err instanceof Error ? err.stack || err.message : JSON.stringify(err);
+        console.error('[MAVLink] Data handler error:', msg);
+        sendLog(mainWindow, 'error', `MAVLink processing error: ${msg}`);
       } finally {
         processingMavlink = false;
       }
@@ -2555,10 +2697,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         clearTimeout(heartbeatTimeout);
         heartbeatTimeout = null;
       }
-      if (heartbeatWatchdog) {
-        clearTimeout(heartbeatWatchdog);
-        heartbeatWatchdog = null;
-      }
+      clearHeartbeatTimers();
       if (isReconnectPending()) {
         // Pause GCS heartbeats during reconnect (will restart on new heartbeat)
         if (gcsHeartbeatInterval) {
@@ -2589,6 +2728,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       currentTransport = null;
       mavlinkParser = null;
       resetMavlinkDiagCache();
+      resetHeartbeat();   // clear ArduDeck script-heartbeat state across FC swaps
       connectionState.isConnected = false;
       connectionState.isWaitingForHeartbeat = false;
       sendLog(mainWindow, 'info', 'Connection closed');
@@ -2722,8 +2862,16 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         }
       } else if (pendingReconnect.host) {
         // TCP reconnection (SITL)
-        // Check if this was a SITL connection and SITL is no longer running
-        if (pendingReconnect.host === '127.0.0.1' && pendingReconnect.tcpPort === 5760 && !sitlProcess.isRunning) {
+        // Check if this was a SITL connection and BOTH SITL flavours are gone.
+        // Either one being alive on TCP 5760 means the reconnect target is
+        // valid - cancelling on iNav-only check would kill ArduPilot SITL
+        // reconnects (and vice versa).
+        if (
+          pendingReconnect.host === '127.0.0.1'
+          && pendingReconnect.tcpPort === 5760
+          && !sitlProcess.isRunning
+          && !ardupilotSitlProcess.isRunning
+        ) {
           cancelReconnect('SITL is no longer running - reconnection cancelled');
           return;
         }
@@ -2742,7 +2890,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
             `TCP ${pendingReconnect.host}:${pendingReconnect.tcpPort || 5760}`
           );
           if (connected) {
-            connectionState.isSitl = sitlProcess.isRunning;
+            // MAVLink reconnect path → ArduPilot SITL is the relevant flavour.
+            connectionState.isSitl = ardupilotSitlProcess.isRunning;
             pendingReconnect = null;
             return;
           }
@@ -2764,6 +2913,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
               autopilot: mspInfo.fcVariant,
               vehicleType,
               isLegacyBoard: isLegacyMspBoard(mspInfo.fcVariant, mspInfo.fcVersion),
+              // MSP reconnect path → iNav SITL is the relevant flavour.
               isSitl: sitlProcess.isRunning,
               packetsReceived: 0,
               packetsSent: 0,
@@ -2825,10 +2975,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         heartbeatTimeout = null;
       }
 
-      if (heartbeatWatchdog) {
-        clearTimeout(heartbeatWatchdog);
-        heartbeatWatchdog = null;
-      }
+      clearHeartbeatTimers();
 
       // Check if this is an expected close (reboot in progress)
       if (isReconnectPending()) {
@@ -3031,10 +3178,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
           heartbeatTimeout = null;
         }
 
-        if (heartbeatWatchdog) {
-          clearTimeout(heartbeatWatchdog);
-          heartbeatWatchdog = null;
-        }
+        clearHeartbeatTimers();
 
         // Check if this is an expected close (reboot in progress)
         if (isReconnectPending()) {
@@ -3100,6 +3244,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
           // Normalize tcpPort to number for comparisons
           const tcpPortNum = typeof options.tcpPort === 'string' ? parseInt(options.tcpPort, 10) : options.tcpPort;
+          // This is the MSP path → iNav SITL is what we expect to be running.
           const isSitlConnection = sitlProcess.isRunning && options.host === '127.0.0.1' && tcpPortNum === 5760;
 
           connectionState = {
@@ -3337,11 +3482,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         heartbeatTimeout = null;
       }
 
-      // Clear heartbeat watchdog
-      if (heartbeatWatchdog) {
-        clearTimeout(heartbeatWatchdog);
-        heartbeatWatchdog = null;
-      }
+      clearHeartbeatTimers();
 
       // Clear GCS heartbeat interval
       if (gcsHeartbeatInterval) {
@@ -4073,11 +4214,35 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       return { success: false, error: `Unknown vehicle type: ${mavType}` };
     }
 
-    // Check cache first
+    // Check in-memory cache first
     const cached = metadataCache.get(vehicleType);
     if (cached) {
       sendLog(mainWindow, 'info', `Using cached parameter metadata for ${vehicleType}`);
       return { success: true, metadata: cached };
+    }
+
+    // Check disk cache (survives app restarts, works offline)
+    const cacheDir = join(app.getPath('userData'), 'param-metadata-cache');
+    const cacheFile = join(cacheDir, `${vehicleType}.json`);
+    const maxCacheAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+    let diskCacheMetadata: ParameterMetadataStore | null = null;
+    try {
+      const { stat } = await import('node:fs/promises');
+      const fileStat = await stat(cacheFile);
+      const age = Date.now() - fileStat.mtimeMs;
+      if (age < maxCacheAge) {
+        const data = await readFile(cacheFile, 'utf-8');
+        diskCacheMetadata = JSON.parse(data) as ParameterMetadataStore;
+        metadataCache.set(vehicleType, diskCacheMetadata);
+        sendLog(mainWindow, 'info', `Loaded ${Object.keys(diskCacheMetadata).length} parameter definitions for ${vehicleType} from disk cache`);
+        return { success: true, metadata: diskCacheMetadata };
+      }
+      // Cache exists but stale - keep reference as fallback
+      const data = await readFile(cacheFile, 'utf-8');
+      diskCacheMetadata = JSON.parse(data) as ParameterMetadataStore;
+    } catch {
+      // No disk cache or read error - continue to fetch
     }
 
     const url = PARAMETER_METADATA_URLS[vehicleType];
@@ -4092,12 +4257,27 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       const xml = await response.text();
       const metadata = parseParameterXml(xml);
 
-      // Cache it
+      // Cache in memory
       metadataCache.set(vehicleType, metadata);
+
+      // Cache to disk
+      try {
+        const { mkdir } = await import('node:fs/promises');
+        await mkdir(cacheDir, { recursive: true });
+        await writeFile(cacheFile, JSON.stringify(metadata));
+      } catch {
+        // Non-critical - disk cache write failed
+      }
 
       sendLog(mainWindow, 'info', `Loaded ${Object.keys(metadata).length} parameter definitions for ${vehicleType}`);
       return { success: true, metadata };
     } catch (error) {
+      // Network fetch failed - use stale disk cache if available
+      if (diskCacheMetadata) {
+        metadataCache.set(vehicleType, diskCacheMetadata);
+        sendLog(mainWindow, 'warn', `Offline - using cached parameter metadata for ${vehicleType} (may be outdated)`);
+        return { success: true, metadata: diskCacheMetadata };
+      }
       const message = error instanceof Error ? error.message : 'Unknown error';
       sendLog(mainWindow, 'error', `Failed to fetch parameter metadata`, message);
       return { success: false, error: message };
@@ -4253,15 +4433,15 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     }
   });
 
-  // SET_MODE (msg 11) - switch ArduPilot flight mode
+  // SET_MODE (msg 11) - switch ArduPilot flight mode.
+  // baseMode must include MAV_MODE_FLAG_CUSTOM_MODE_ENABLED (1).
+  // If armed, also set MAV_MODE_FLAG_SAFETY_ARMED (128) to avoid inadvertent disarm.
   ipcMain.handle(IPC_CHANNELS.MAVLINK_SET_MODE, async (_, customMode: number): Promise<boolean> => {
     if (!currentTransport?.isOpen || !connectionState.isConnected) {
       return false;
     }
 
     try {
-      // baseMode must include MAV_MODE_FLAG_CUSTOM_MODE_ENABLED (1).
-      // If armed, also set MAV_MODE_FLAG_SAFETY_ARMED (128) to avoid inadvertent disarm.
       const armedBit = lastReportedArmed ? 128 : 0;
 
       const payload = serializeSetMode({
@@ -4315,6 +4495,669 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       sendLog(mainWindow, 'error', 'Failed to send takeoff command', message);
       return false;
     }
+  });
+
+  // MAV_CMD_DO_REPOSITION (command 192) via COMMAND_INT - fly to a location in GUIDED mode.
+  // Uses COMMAND_INT (msg 75) instead of COMMAND_LONG so lat/lon are int32 (degrees * 1e7)
+  // which preserves full precision. COMMAND_LONG float32 truncates coordinates.
+  ipcMain.handle(IPC_CHANNELS.MAVLINK_GOTO, async (_, lat: number, lon: number, alt: number): Promise<boolean> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return false;
+    }
+
+    try {
+      const payload = serializeCommandInt({
+        targetSystem: connectionState.systemId ?? 1,
+        targetComponent: 1,
+        frame: 6,           // MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
+        command: 192,       // MAV_CMD_DO_REPOSITION
+        current: 0,
+        autocontinue: 0,
+        param1: -1,         // groundspeed: -1 = use default
+        param2: 1,          // MAV_DO_REPOSITION_FLAGS_CHANGE_MODE (auto-switch to GUIDED)
+        param3: 0,          // reserved
+        param4: 0,          // yaw: 0 = north (NaN not reliable in float32)
+        x: Math.round(lat * 1e7),  // latitude as int32 (degrees * 1e7)
+        y: Math.round(lon * 1e7),  // longitude as int32 (degrees * 1e7)
+        z: alt,             // altitude (meters, relative to home)
+      });
+
+      const packet = await sendMavlinkPacket(COMMAND_INT_ID, payload, COMMAND_INT_CRC_EXTRA);
+      await currentTransport.write(packet);
+      connectionState.packetsSent++;
+
+      sendLog(mainWindow, 'info', `Sent DO_REPOSITION to ${lat.toFixed(7)}, ${lon.toFixed(7)}, alt=${alt.toFixed(1)}m`);
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      sendLog(mainWindow, 'error', 'Failed to send GO_TO command', message);
+      return false;
+    }
+  });
+
+  // MAV_CMD_DO_ORBIT (command 34) via COMMAND_INT - orbit a point at a given altitude.
+  // ArduPilot copters/planes will switch to CIRCLE mode and orbit the specified center.
+  // radius positive = clockwise orbit, negative = counter-clockwise (when viewed from above).
+  // Concrete numeric defaults are used instead of NaN because some ArduPilot
+  // build configs reject NaN params for DO_ORBIT.
+  ipcMain.handle(IPC_CHANNELS.MAVLINK_ORBIT, async (_, lat: number, lon: number, alt: number, radius: number): Promise<boolean> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      sendLog(mainWindow, 'warn', 'ORBIT command skipped: not connected');
+      return false;
+    }
+
+    try {
+      const payload = serializeCommandInt({
+        targetSystem: connectionState.systemId ?? 1,
+        targetComponent: 1,
+        frame: 6,           // MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
+        command: 34,        // MAV_CMD_DO_ORBIT
+        current: 0,
+        autocontinue: 0,
+        param1: radius,     // radius (m); negative = CCW
+        param2: 5,          // velocity (m/s); positive = use this speed
+        param3: 0,          // yaw behavior: 0 = HOLD_FRONT_TO_CIRCLE_CENTER (face center)
+        param4: 0,          // orbits to complete; 0 = unlimited
+        x: Math.round(lat * 1e7),
+        y: Math.round(lon * 1e7),
+        z: alt,
+      });
+
+      const packet = await sendMavlinkPacket(COMMAND_INT_ID, payload, COMMAND_INT_CRC_EXTRA);
+      await currentTransport.write(packet);
+      connectionState.packetsSent++;
+
+      sendLog(mainWindow, 'info', `Sent DO_ORBIT center=${lat.toFixed(7)}, ${lon.toFixed(7)} alt=${alt.toFixed(1)}m radius=${radius}m`);
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      sendLog(mainWindow, 'error', 'Failed to send ORBIT command', message);
+      return false;
+    }
+  });
+
+  // MAV_CMD_NAV_LAND (command 21) via COMMAND_INT - land at a specific lat/lon.
+  // Sent as a guided-mode command; ArduPilot switches to LAND and descends at the target.
+  ipcMain.handle(IPC_CHANNELS.MAVLINK_LAND, async (_, lat: number, lon: number): Promise<boolean> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return false;
+    }
+
+    try {
+      const payload = serializeCommandInt({
+        targetSystem: connectionState.systemId ?? 1,
+        targetComponent: 1,
+        frame: 3,           // MAV_FRAME_GLOBAL_RELATIVE_ALT
+        command: 21,        // MAV_CMD_NAV_LAND
+        current: 0,
+        autocontinue: 0,
+        param1: 0,          // abort altitude (0 = use default)
+        param2: 0,          // precision land mode (0 = normal)
+        param3: 0,          // empty
+        param4: NaN,        // desired yaw on touchdown (NaN = current heading)
+        x: Math.round(lat * 1e7),
+        y: Math.round(lon * 1e7),
+        z: 0,               // landing altitude (ignored on touchdown)
+      });
+
+      const packet = await sendMavlinkPacket(COMMAND_INT_ID, payload, COMMAND_INT_CRC_EXTRA);
+      await currentTransport.write(packet);
+      connectionState.packetsSent++;
+
+      sendLog(mainWindow, 'info', `Sent NAV_LAND at ${lat.toFixed(7)}, ${lon.toFixed(7)}`);
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      sendLog(mainWindow, 'error', 'Failed to send LAND command', message);
+      return false;
+    }
+  });
+
+  // MAV_CMD_USER_1..5 via COMMAND_INT - dispatches to FC-side Lua script handlers.
+  // Used by ArduDeck's installed scripts (e.g. orbit) to receive structured
+  // commands with full lat/lon precision + 4 float params.
+  ipcMain.handle(IPC_CHANNELS.MAVLINK_USER_COMMAND, async (
+    _, cmdId: number, lat: number, lon: number, alt: number,
+    param1: number, param2: number, param3: number, param4: number,
+  ): Promise<boolean> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      sendLog(mainWindow, 'warn', 'USER_COMMAND skipped: not connected');
+      return false;
+    }
+    if (cmdId < 31010 || cmdId > 31014) {
+      sendLog(mainWindow, 'error', `USER_COMMAND rejected: cmdId ${cmdId} outside USER_1..5 range`);
+      return false;
+    }
+    try {
+      const payload = serializeCommandInt({
+        targetSystem: connectionState.systemId ?? 1,
+        targetComponent: 1,
+        frame: 6,           // MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
+        command: cmdId,
+        current: 0,
+        autocontinue: 0,
+        param1, param2, param3, param4,
+        x: Math.round(lat * 1e7),
+        y: Math.round(lon * 1e7),
+        z: alt,
+      });
+      const packet = await sendMavlinkPacket(COMMAND_INT_ID, payload, COMMAND_INT_CRC_EXTRA);
+      await currentTransport.write(packet);
+      connectionState.packetsSent++;
+      sendLog(mainWindow, 'info', `Sent USER_${cmdId - 31009} lat=${lat.toFixed(7)} lon=${lon.toFixed(7)} alt=${alt} p1=${param1} p2=${param2}`);
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      sendLog(mainWindow, 'error', `Failed to send USER_${cmdId - 31009}`, message);
+      return false;
+    }
+  });
+
+  // ─── Script Installer IPC ──────────────────────────────────────────────────
+  // Builds an FcAdapter against the local main-process closures (transport,
+  // connectionState, sendMavlinkPacket etc) and wires the renderer-facing
+  // installer API. State updates are pushed on SCRIPT_INSTALLER_STATE.
+
+  const buildFcAdapter = (): FcAdapter => ({
+    // Stable per-FC ID. Until AUTOPILOT_VERSION uid tracking is wired in, derive
+    // a session-stable ID from the connection's transport+systemId. Replace
+    // with the real uid2 from AUTOPILOT_VERSION when available.
+    getAutopilotUid: () => {
+      if (!connectionState.isConnected) return null;
+      const sys = connectionState.systemId ?? 1;
+      const transport = connectionState.portPath ?? connectionState.transport ?? 'unknown';
+      return `sys${sys}@${transport}`;
+    },
+    getVehicleLabel: () => connectionState.autopilot ?? connectionState.vehicleType ?? null,
+    isFtpSupported: () => Boolean(currentTransport?.isOpen && connectionState.isConnected),
+    isVehicleArmed: () => lastReportedArmed === true,
+    isSitl: () => connectionState.isSitl === true,
+    probeWritability: async (probePath: string) => {
+      // SITL: write directly to the host filesystem in the SITL working dir.
+      // We control the SITL launcher (cwd = dirname(binaryPath)), so we know
+      // exactly where /APM/scripts/ should go - no need to round-trip through
+      // FTP. Probe = check the working dir is writable.
+      if (connectionState.isSitl) {
+        const cfg = ardupilotSitlProcess.currentConfig;
+        if (!cfg) return { verdict: 'no_response' as const, detail: 'SITL is connected but ArduDeck has lost track of the launcher config - restart SITL from the connection panel.' };
+        try {
+          const binaryPath = ardupilotSitlProcess.getBinaryPath(cfg.vehicleType, cfg.releaseTrack);
+          const fs = await import('fs/promises');
+          const path = await import('path');
+          // SITL loads scripts from <cwd>/scripts/, not /APM/scripts/.
+          const scriptsDir = path.join(path.dirname(binaryPath), 'scripts');
+          await fs.mkdir(scriptsDir, { recursive: true });
+          // Quick write+delete probe to confirm permissions.
+          const probe = path.join(scriptsDir, '.ardudeck_probe');
+          await fs.writeFile(probe, '');
+          await fs.unlink(probe);
+          return { verdict: 'writable' as const };
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return { verdict: 'rejected' as const, detail: `Could not write to SITL working directory: ${msg}` };
+        }
+      }
+      const targetSys = connectionState.systemId ?? 1;
+      const targetComp = 1;
+      const probeClient = new MavlinkFtpClient({
+        sendPacket: async (ftpPayload: Uint8Array) => {
+          const ftpMsg = serializeFileTransferProtocol({
+            targetNetwork: 0,
+            targetSystem: targetSys,
+            targetComponent: targetComp,
+            payload: Array.from(ftpPayload),
+          });
+          const packet = await sendMavlinkPacket(FILE_TRANSFER_PROTOCOL_ID, ftpMsg, FILE_TRANSFER_PROTOCOL_CRC_EXTRA);
+          await currentTransport!.write(packet);
+          connectionState.packetsSent++;
+        },
+        log: (level, message) => sendLog(mainWindow, level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'debug', message),
+      });
+      const previousFtpClient = ftpClient;
+      ftpClient = probeClient;
+      try {
+        const result = await probeClient.probeWrite(probePath, 1500);
+        if (result.ok) return { verdict: 'writable' as const };
+        const err = result.error ?? 'unknown';
+        if (/no response/i.test(err)) {
+          return { verdict: 'no_response' as const, detail: `FC did not respond to a write probe within 1.5 s. The MAVLink FTP server may be disabled or the FC has no writable filesystem (no SD card?).` };
+        }
+        if (/FileNotFound/i.test(err)) {
+          return { verdict: 'no_sd_card' as const, detail: `Parent directory missing - typically means there is no SD card present, or /APM/scripts/ has not been created. ArduPilot creates /APM/scripts/ on boot when SCR_ENABLE=1, so a reboot may help.` };
+        }
+        return { verdict: 'rejected' as const, detail: `FC rejected the write probe: ${err}` };
+      } finally {
+        ftpClient = previousFtpClient;
+      }
+    },
+    readParams: async (paramIds: string[]): Promise<Record<string, number>> => {
+      // Reuse the existing PARAM_READ_BATCH path. We don't want to duplicate
+      // the per-param request/timeout machinery, so call ourselves through
+      // the same internal helper (extracted into a local closure if needed).
+      // For simplicity we call the IPC handler's underlying logic here.
+      const targetSystem = connectionState.systemId ?? 1;
+      const targetComponent = 1;
+      const PER_PARAM_TIMEOUT_MS = 1500;
+      const out: Record<string, number> = {};
+      await Promise.all(paramIds.map((paramId) => new Promise<void>((resolve) => {
+        const timer = setTimeout(() => {
+          if (pendingParamReads.get(paramId)) pendingParamReads.delete(paramId);
+          resolve();
+        }, PER_PARAM_TIMEOUT_MS);
+        pendingParamReads.set(paramId, (value) => {
+          clearTimeout(timer);
+          out[paramId] = value;
+          resolve();
+        });
+        (async () => {
+          try {
+            const reqPayload = serializeParamRequestRead({
+              targetSystem, targetComponent, paramId, paramIndex: -1,
+            });
+            const packet = await sendMavlinkPacket(PARAM_REQUEST_READ_ID, reqPayload, PARAM_REQUEST_READ_CRC_EXTRA);
+            await currentTransport!.write(packet);
+            connectionState.packetsSent++;
+          } catch {
+            clearTimeout(timer);
+            resolve();
+          }
+        })();
+      })));
+      return out;
+    },
+    setParam: async (paramId: string, value: number): Promise<boolean> => {
+      // Best-effort PARAM_SET. We trust the existing receivedParams to track
+      // the resulting PARAM_VALUE update; here we just send and verify by
+      // re-reading after a short delay.
+      try {
+        const targetSystem = connectionState.systemId ?? 1;
+        const targetComponent = 1;
+        // Look up paramType from receivedParams cache, default to REAL32 (9).
+        const cached = receivedParams.get(paramId);
+        const paramType = cached?.paramType ?? 9;
+        const setPayload = serializeParamSet({
+          targetSystem, targetComponent, paramId, paramValue: value, paramType,
+        });
+        const packet = await sendMavlinkPacket(PARAM_SET_ID, setPayload, PARAM_SET_CRC_EXTRA);
+        await currentTransport!.write(packet);
+        connectionState.packetsSent++;
+        // Verify
+        await new Promise(r => setTimeout(r, 500));
+        const verify = await new Promise<number | null>((resolve) => {
+          const timer = setTimeout(() => {
+            if (pendingParamReads.get(paramId)) pendingParamReads.delete(paramId);
+            resolve(null);
+          }, 1500);
+          pendingParamReads.set(paramId, (v) => { clearTimeout(timer); resolve(v); });
+          (async () => {
+            const reqPayload = serializeParamRequestRead({
+              targetSystem, targetComponent, paramId, paramIndex: -1,
+            });
+            const pkt = await sendMavlinkPacket(PARAM_REQUEST_READ_ID, reqPayload, PARAM_REQUEST_READ_CRC_EXTRA);
+            await currentTransport!.write(pkt);
+            connectionState.packetsSent++;
+          })().catch(() => {});
+        });
+        return verify === value;
+      } catch (err) {
+        sendLog(mainWindow, 'error', `setParam ${paramId} failed`, err instanceof Error ? err.message : String(err));
+        return false;
+      }
+    },
+    rebootAndReconnect: async (timeoutSec: number): Promise<boolean> => {
+      try {
+        const targetSystem = connectionState.systemId ?? 1;
+        const targetComponent = 1;
+        // Schedule auto-reconnect BEFORE sending the reboot command, so the
+        // existing reconnect machinery captures the connection options while
+        // the connection is still alive (it reads connectionState).
+        scheduleReconnect({
+          reason: 'ArduDeck script install: applying parameter change',
+          delayMs: 4000,    // typical FC boot time
+          timeoutMs: timeoutSec * 1000,
+          maxAttempts: 20,
+        });
+        const cmdPayload = serializeCommandLong({
+          targetSystem, targetComponent,
+          command: 246, // MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN
+          confirmation: 0,
+          param1: 1, param2: 0, param3: 0, param4: 0, param5: 0, param6: 0, param7: 0,
+        });
+        const packet = await sendMavlinkPacket(COMMAND_LONG_ID, cmdPayload, COMMAND_LONG_CRC_EXTRA);
+        await currentTransport!.write(packet);
+        connectionState.packetsSent++;
+        sendLog(mainWindow, 'info', 'Sent FC reboot command; waiting for reconnect…');
+        // Poll for reconnect via the existing auto-reconnect logic
+        const deadline = Date.now() + timeoutSec * 1000;
+        while (Date.now() < deadline) {
+          if (connectionState.isConnected && !connectionState.isReconnecting) {
+            // Give the FC a moment to send its first heartbeat after reconnect
+            // so subsequent param reads have a known systemId.
+            await new Promise(r => setTimeout(r, 500));
+            return true;
+          }
+          await new Promise(r => setTimeout(r, 250));
+        }
+        sendLog(mainWindow, 'warn', 'FC did not reconnect within the timeout window');
+        return false;
+      } catch (err) {
+        sendLog(mainWindow, 'error', 'reboot failed', err instanceof Error ? err.message : String(err));
+        return false;
+      }
+    },
+    ftpUpload: async (path: string, contents: Uint8Array, onProgress) => {
+      // SITL: bypass MAVLink-FTP entirely and write straight to the host
+      // filesystem in the SITL working dir. ArduPilot's SITL FTP-write path
+      // is genuinely unreliable, but we control the launcher's cwd so we
+      // know exactly where the script should land. After writing, we also
+      // restart the SITL process - ArduPilot only loads scripts at boot,
+      // and a MAVLink reboot command on SITL kills the process without
+      // respawning it (HAL_SITL just exit()s).
+      if (connectionState.isSitl) {
+        const cfg = ardupilotSitlProcess.currentConfig;
+        if (!cfg) throw new Error('SITL launcher config unavailable - restart SITL from the connection panel');
+        const fs = await import('fs/promises');
+        const nodePath = await import('path');
+        const binaryPath = ardupilotSitlProcess.getBinaryPath(cfg.vehicleType, cfg.releaseTrack);
+        // SITL reads scripts from <cwd>/scripts/ — the /APM/ prefix used in
+        // FC-style paths is the SD-card mount point on real hardware and does
+        // NOT exist in HAL_SITL's filesystem. We strip the /APM/ prefix and
+        // also write a copy to the FTP-virtual location so MAVLink-FTP-based
+        // tooling sees the same file.
+        const relPath = path.replace(/^\/+/, '');
+        const sitlRelPath = relPath.replace(/^APM\//, '');
+        const sitlFsPath = nodePath.join(nodePath.dirname(binaryPath), sitlRelPath);
+        const ftpMirrorPath = nodePath.join(nodePath.dirname(binaryPath), relPath);
+        await fs.mkdir(nodePath.dirname(sitlFsPath), { recursive: true });
+        await fs.mkdir(nodePath.dirname(ftpMirrorPath), { recursive: true });
+        onProgress(0, contents.length);
+        await fs.writeFile(sitlFsPath, contents);
+        await fs.writeFile(ftpMirrorPath, contents);
+        onProgress(contents.length, contents.length);
+        sendLog(mainWindow, 'info', `SITL: wrote ${contents.length} B → ${sitlFsPath} (and FTP mirror)`);
+
+        // Restart SITL so ArduPilot loads the freshly-written script.
+        //
+        // Order matters here:
+        //  1. Schedule the reconnect FIRST so isReconnectPending() returns
+        //     true when the transport-close handler fires - otherwise the
+        //     handler would do full cleanup (clearing currentTransport etc.)
+        //     and the later reconnect would have no transport to recreate.
+        //  2. Use restart() which actually awaits the process exit before
+        //     respawning - the stock stop() is fire-and-forget and races
+        //     the OS releasing TCP port 5760 against the new bind.
+        //  3. Verify start() succeeded - it returns {success, error}, not
+        //     throws; silent failures here were the previous bug.
+        sendLog(mainWindow, 'info', 'SITL: restarting process to load the new script…');
+        scheduleReconnect({
+          reason: 'ArduDeck script install: restarting SITL to load script',
+          delayMs: 8000,
+          timeoutMs: 60000,
+          maxAttempts: 40,
+        });
+
+        const restartResult = await ardupilotSitlProcess.restart();
+        if (!restartResult.success) {
+          throw new Error(`SITL restart failed: ${restartResult.error ?? 'unknown error'}`);
+        }
+        sendLog(mainWindow, 'info', `SITL: relaunched OK, waiting for ArduPilot to boot and load the script…`);
+        return true;
+      }
+
+      const targetSys = connectionState.systemId ?? 1;
+      const targetComp = 1;
+      const client = new MavlinkFtpClient({
+        sendPacket: async (ftpPayload: Uint8Array) => {
+          const ftpMsg = serializeFileTransferProtocol({
+            targetNetwork: 0,
+            targetSystem: targetSys,
+            targetComponent: targetComp,
+            payload: Array.from(ftpPayload),
+          });
+          const packet = await sendMavlinkPacket(FILE_TRANSFER_PROTOCOL_ID, ftpMsg, FILE_TRANSFER_PROTOCOL_CRC_EXTRA);
+          await currentTransport!.write(packet);
+          connectionState.packetsSent++;
+        },
+        log: (level, message) => {
+          sendLog(mainWindow, level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'debug', message);
+        },
+      });
+      // Route incoming FTP responses to this client for the duration of upload.
+      // The existing global ftpClient is for downloads; we temporarily redirect.
+      const previousFtpClient = ftpClient;
+      ftpClient = client;
+      try {
+        const result = await client.uploadFile(path, contents, onProgress);
+        if (!result.ok) {
+          // Surface the actual NAK message via a thrown error so the installer
+          // service can include it in the user-facing error modal.
+          throw new Error(result.error ?? 'FTP upload failed');
+        }
+        return true;
+      } finally {
+        ftpClient = previousFtpClient;
+      }
+    },
+    getLoadedScriptCount: async () => null, // not implemented (best-effort optional check)
+  });
+
+  // Push script-health transitions to the renderer + auto-register the FC
+  // when a previously-unknown vehicle starts publishing the AD_HB heartbeat.
+  // This closes the loop for users who side-loaded the script manually:
+  // they don't need to reopen any dialog, the registry just notices the
+  // heartbeat and treats the FC as having ArduDeck commands installed.
+  subscribeHealth((health) => {
+    safeSend(mainWindow, IPC_CHANNELS.SCRIPT_HEALTH_CHANGED, health);
+    if (health.status === 'present') {
+      const adapter = buildFcAdapter();
+      const uid = adapter.getAutopilotUid();
+      if (!uid) return;
+      const existing = scriptRegistry.get(uid);
+      if (existing) return; // already known
+      const bundle = getScriptBundle();
+      const entry = scriptRegistry.buildFreshEntry({
+        autopilotUid: uid,
+        vehicleLabel: adapter.getVehicleLabel(),
+        scriptVersion: String(health.version),
+        scriptSha256: bundle.manifest.sha256,
+        enabledCommands: bundle.manifest.commands.map(c => c.name),
+        installMethod: 'manual',
+      });
+      scriptRegistry.setEntry(entry);
+      sendLog(mainWindow, 'info', `Detected manually-installed ArduDeck script v${health.version} on ${uid}`);
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_INSTALLER_GET_MANIFEST, () => {
+    return getScriptBundle().manifest;
+  });
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_INSTALLER_GET_SOURCE, () => {
+    return getScriptBundle().source;
+  });
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_INSTALLER_RUN_PREFLIGHT, async () => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return [{
+        id: 'not_connected',
+        label: 'Not connected to a flight controller',
+        severity: 'block' as const,
+        detail: 'Connect to an FC before running preflight checks.',
+        fix: null,
+      }];
+    }
+    const adapter = buildFcAdapter();
+    const bundle = getScriptBundle();
+    const requiredParams = bundle.manifest.requirements.map(r => r.param);
+    const params = await adapter.readParams([...requiredParams, 'SCR_LD_NUM']);
+    const loadedScriptCount = await adapter.getLoadedScriptCount();
+    const { runPreflight } = await import('./script-installer/preflight.js');
+    return runPreflight({
+      manifest: bundle.manifest,
+      paramValues: params,
+      vehicleArmed: adapter.isVehicleArmed(),
+      ftpSupported: adapter.isFtpSupported(),
+      loadedScriptCount: loadedScriptCount ?? undefined,
+    });
+  });
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_INSTALLER_BEGIN, async () => {
+    const adapter = buildFcAdapter();
+    const bundle = getScriptBundle();
+    void installerService.beginInstall({
+      bundle,
+      adapter,
+      emitter: (phase) => safeSend(mainWindow, IPC_CHANNELS.SCRIPT_INSTALLER_STATE, phase),
+    });
+  });
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_INSTALLER_GRANT_CONSENT, () => {
+    installerService.grantConsent();
+  });
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_INSTALLER_APPLY_FIX, async (_, fix: PreflightFix) => {
+    await installerService.applyFix(fix);
+  });
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_INSTALLER_CANCEL, () => {
+    installerService.cancelInstall();
+  });
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_INSTALLER_GET_REGISTRY, () => {
+    const adapter = buildFcAdapter();
+    const uid = adapter.getAutopilotUid();
+    return uid ? scriptRegistry.get(uid) : null;
+  });
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_INSTALLER_GET_ALL_REGISTRY, () => {
+    return scriptRegistry.getAll();
+  });
+  // Save the bundled Lua source to a user-chosen file path. Used as the
+  // manual-install fallback when MAVLink FTP write is rejected by the FC.
+  // The user copies the resulting .lua to /APM/scripts/ on the SD card and
+  // reboots; the script registers itself when the heartbeat arrives.
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_INSTALLER_SAVE_TO_DISK, async (): Promise<{ success: boolean; filePath?: string; error?: string }> => {
+    try {
+      const bundle = getScriptBundle();
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: 'Save ArduDeck Lua Script',
+        defaultPath: bundle.manifest.filename,
+        filters: [
+          { name: 'Lua Script', extensions: ['lua'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      });
+      if (result.canceled || !result.filePath) return { success: false, error: 'Cancelled' };
+      const fs = await import('fs/promises');
+      await fs.writeFile(result.filePath, bundle.sourceBytes);
+      sendLog(mainWindow, 'info', `Saved ${bundle.manifest.filename} → ${result.filePath} (${bundle.sourceBytes.length} bytes, sha256 ${bundle.manifest.sha256.slice(0, 12)}…)`);
+      return { success: true, filePath: result.filePath };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      sendLog(mainWindow, 'error', `Failed to save Lua script to disk: ${msg}`);
+      return { success: false, error: msg };
+    }
+  });
+
+  // ─── MAVLink-FTP file browser (read-only) ──────────────────────────
+  // Both handlers share the same transient FtpClient pattern as the script
+  // installer's probeWritability: build a client wired to the live MAVLink
+  // transport, swap it into the global ftpClient slot so incoming
+  // FILE_TRANSFER_PROTOCOL responses reach it, do the operation, restore.
+
+  function buildBrowserFtpClient(): MavlinkFtpClient {
+    const targetSys = connectionState.systemId ?? 1;
+    const targetComp = 1;
+    return new MavlinkFtpClient({
+      sendPacket: async (ftpPayload: Uint8Array) => {
+        const ftpMsg = serializeFileTransferProtocol({
+          targetNetwork: 0,
+          targetSystem: targetSys,
+          targetComponent: targetComp,
+          payload: Array.from(ftpPayload),
+        });
+        const packet = await sendMavlinkPacket(FILE_TRANSFER_PROTOCOL_ID, ftpMsg, FILE_TRANSFER_PROTOCOL_CRC_EXTRA);
+        await currentTransport!.write(packet);
+        connectionState.packetsSent++;
+      },
+      log: (level, message) => sendLog(mainWindow, level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'debug', message),
+    });
+  }
+
+  ipcMain.handle(IPC_CHANNELS.MAVLINK_FTP_LIST, async (_, path: string): Promise<{
+    success: boolean;
+    entries?: Array<{ kind: 'dir' | 'file'; name: string; size?: number }>;
+    error?: string;
+  }> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return { success: false, error: 'Not connected' };
+    }
+    if (connectionState.protocol !== 'mavlink') {
+      return { success: false, error: 'MAVLink-FTP requires a MAVLink connection' };
+    }
+    const client = buildBrowserFtpClient();
+    const previous = ftpClient;
+    ftpClient = client;
+    try {
+      const entries = await client.listDirectory(path);
+      if (entries === null) {
+        return { success: false, error: `Could not list ${path} - directory may not exist or FC FTP rejected the request` };
+      }
+      return { success: true, entries };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg };
+    } finally {
+      ftpClient = previous;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.MAVLINK_FTP_DOWNLOAD, async (_, fcPath: string): Promise<{
+    success: boolean;
+    savedTo?: string;
+    bytes?: number;
+    error?: string;
+  }> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return { success: false, error: 'Not connected' };
+    }
+    if (connectionState.protocol !== 'mavlink') {
+      return { success: false, error: 'MAVLink-FTP requires a MAVLink connection' };
+    }
+    // Ask user where to save the file before doing any FC work.
+    const defaultName = fcPath.split('/').filter(Boolean).pop() ?? 'download.bin';
+    const dlg = await dialog.showSaveDialog(mainWindow, {
+      title: `Save ${fcPath}`,
+      defaultPath: defaultName,
+    });
+    if (dlg.canceled || !dlg.filePath) {
+      return { success: false, error: 'Cancelled' };
+    }
+    const client = buildBrowserFtpClient();
+    const previous = ftpClient;
+    ftpClient = client;
+    try {
+      const bytes = await client.downloadFile(fcPath);
+      if (bytes === null) {
+        return { success: false, error: `FTP download of ${fcPath} failed` };
+      }
+      const fs = await import('fs/promises');
+      await fs.writeFile(dlg.filePath, bytes);
+      sendLog(mainWindow, 'info', `FTP downloaded ${fcPath} (${bytes.length} B) → ${dlg.filePath}`);
+      return { success: true, savedTo: dlg.filePath, bytes: bytes.length };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg };
+    } finally {
+      ftpClient = previous;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_INSTALLER_UNINSTALL, async () => {
+    const adapter = buildFcAdapter();
+    const uid = adapter.getAutopilotUid();
+    if (!uid) return;
+    const bundle = getScriptBundle();
+    const path = `/APM/scripts/${bundle.manifest.filename}`;
+    // TODO: implement FTP delete in MavlinkFtpClient. For now, mark uninstalled
+    // in the registry but warn the user the file remains until they remove it
+    // manually (via SD card or another GCS).
+    sendLog(mainWindow, 'warn', `Uninstall: registry cleared for ${uid}; file at ${path} must be removed manually until FTP delete is implemented.`);
+    scriptRegistry.appendAudit(uid, 'uninstall', `Cleared registry entry; file ${path} remains on FC.`);
+    scriptRegistry.remove(uid);
+    void adapter; // suppress unused
   });
 
   // Motor Test via MAV_CMD_DO_MOTOR_TEST (command 209)
@@ -6941,9 +7784,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     logDownloadManager?.cancel();
   });
 
-  ipcMain.handle(IPC_CHANNELS.LOG_OPEN_FILE, async (): Promise<{ path: string; data: number[] } | null> => {
+  ipcMain.handle(IPC_CHANNELS.LOG_OPEN_DIALOG, async (): Promise<{ path: string } | null> => {
     if (!mainWindow) return null;
-
     const result = await dialog.showOpenDialog(mainWindow, {
       title: 'Open Flight Log',
       filters: [
@@ -6952,26 +7794,55 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       ],
       properties: ['openFile'],
     });
-
     if (result.canceled || !result.filePaths[0]) return null;
-
-    const filePath = result.filePaths[0];
-    const data = await readFile(filePath);
-
-    // Add to recent logs
-    const name = filePath.split(/[\\/]/).pop() ?? filePath;
-    const logs = recentLogsStore.get('logs').filter((l) => l.path !== filePath);
-    logs.unshift({ path: filePath, name, size: data.length, openedAt: Date.now() });
-    recentLogsStore.set('logs', logs.slice(0, 20));
-
-    return { path: filePath, data: Array.from(data) };
+    return { path: result.filePaths[0] };
   });
 
-  ipcMain.handle(IPC_CHANNELS.LOG_PARSE, async (_, data: number[]): Promise<unknown> => {
-    const buffer = new Uint8Array(data);
-    const log = parseDataFlashLog(buffer);
+  // Read + parse a .bin in chunks on the main process and emit progress while
+  // the parser is actually working. Doing this on main avoids the previous
+  // model where the renderer received the file as `number[]` (100M JS Numbers
+  // for a 100MB log) and then sent it back to main for parsing — that
+  // double-IPC-marshal was the multi-minute "frozen UI" symptom users saw.
+  ipcMain.handle(IPC_CHANNELS.LOG_PARSE_FILE, async (_, filePath: string): Promise<unknown> => {
+    if (!existsSync(filePath)) {
+      // Stale recent — clean it up so the user doesn't keep seeing it.
+      const logs = recentLogsStore.get('logs').filter((l) => l.path !== filePath);
+      recentLogsStore.set('logs', logs);
+      throw new Error(`File no longer exists: ${filePath}`);
+    }
 
-    // Run health checks
+    const buffer = await readFile(filePath);
+    const totalBytes = buffer.length;
+
+    // Add to recent logs up-front so the UI can refresh its list while parsing.
+    const name = filePath.split(/[\\/]/).pop() ?? filePath;
+    const recents = recentLogsStore.get('logs').filter((l) => l.path !== filePath);
+    recents.unshift({ path: filePath, name, size: totalBytes, openedAt: Date.now() });
+    recentLogsStore.set('logs', recents.slice(0, 20));
+
+    // Stream the file into the parser in 1 MB chunks so we can emit progress
+    // and yield the event loop between feeds. Without the yield, IPC events
+    // queued by sendLogParseProgress would not flush to the renderer until
+    // the entire parse completed, leaving the progress bar stuck at 0%.
+    const parser = createDataFlashParser();
+    const CHUNK = 1024 * 1024;
+    const yieldEventLoop = () => new Promise<void>((r) => setImmediate(r));
+    const sendProgress = (bytesConsumed: number) => {
+      mainWindow?.webContents.send(IPC_CHANNELS.LOG_PARSE_PROGRESS, {
+        bytesConsumed, totalBytes,
+      });
+    };
+
+    sendProgress(0);
+    for (let offset = 0; offset < totalBytes; offset += CHUNK) {
+      const end = Math.min(offset + CHUNK, totalBytes);
+      const slice = new Uint8Array(buffer.buffer, buffer.byteOffset + offset, end - offset);
+      parser.feed(slice);
+      sendProgress(end);
+      await yieldEventLoop();
+    }
+    const log = parser.finalize();
+
     const healthResults = runHealthChecks(log);
 
     // Serialize Maps to plain objects for IPC transfer
@@ -6989,6 +7860,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         messageTypes: log.messageTypes,
       },
       healthResults,
+      path: filePath,
     };
   });
 
@@ -7042,16 +7914,6 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     recentLogsStore.set('logs', logs.slice(0, 20));
   });
 
-  ipcMain.handle(IPC_CHANNELS.LOG_READ_FILE, async (_, filePath: string): Promise<{ path: string; data: number[] } | null> => {
-    if (!existsSync(filePath)) {
-      // Remove stale entry from recent logs
-      const logs = recentLogsStore.get('logs').filter((l) => l.path !== filePath);
-      recentLogsStore.set('logs', logs);
-      return null;
-    }
-    const data = await readFile(filePath);
-    return { path: filePath, data: Array.from(data) };
-  });
 }
 
 async function callAiProvider(
@@ -7564,10 +8426,14 @@ export async function cleanupOnShutdown(): Promise<void> {
     heartbeatTimeout = null;
   }
 
-  // Clear heartbeat watchdog
+  // Clear heartbeat watchdog and grace timer
   if (heartbeatWatchdog) {
     clearTimeout(heartbeatWatchdog);
     heartbeatWatchdog = null;
+  }
+  if (heartbeatGraceTimer) {
+    clearTimeout(heartbeatGraceTimer);
+    heartbeatGraceTimer = null;
   }
 
   // Reset state

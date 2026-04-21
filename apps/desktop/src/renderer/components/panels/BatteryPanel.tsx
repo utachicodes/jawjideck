@@ -1,110 +1,101 @@
+import { Battery, BatteryLow, BatteryWarning, Zap } from 'lucide-react';
 import { useTelemetryStore } from '../../stores/telemetry-store';
-import { PanelContainer, StatRow, formatNumber } from './panel-utils';
+import { PanelContainer, formatNumber } from './panel-utils';
 
-function BatteryIcon({ percentage, voltage }: { percentage: number; voltage: number }) {
-  const isUnknown = percentage < 0;
-  const level = isUnknown ? 0 : Math.max(0, Math.min(100, percentage));
+interface LevelTone {
+  text: string;
+  fill: string;
+  border: string;
+  accent: string;
+}
 
-  // Color based on level - use neutral for unknown
-  const fillColor = isUnknown ? 'var(--text-secondary)' : level > 30 ? '#10b981' : level > 15 ? '#f59e0b' : '#ef4444';
-  const textColor = isUnknown ? 'text-content-secondary' : level > 30 ? 'text-emerald-400' : level > 15 ? 'text-yellow-400' : 'text-red-400';
+function toneForLevel(level: number, unknown: boolean): LevelTone {
+  if (unknown) {
+    return {
+      text: 'text-content-secondary',
+      fill: 'rgb(107 114 128)',
+      border: 'rgb(107 114 128 / 0.35)',
+      accent: 'rgb(107 114 128 / 0.15)',
+    };
+  }
+  if (level > 30) {
+    return {
+      text: 'text-emerald-400',
+      fill: 'rgb(16 185 129)',
+      border: 'rgb(16 185 129 / 0.35)',
+      accent: 'rgb(16 185 129 / 0.12)',
+    };
+  }
+  if (level > 15) {
+    return {
+      text: 'text-amber-400',
+      fill: 'rgb(245 158 11)',
+      border: 'rgb(245 158 11 / 0.4)',
+      accent: 'rgb(245 158 11 / 0.14)',
+    };
+  }
+  return {
+    text: 'text-red-400',
+    fill: 'rgb(239 68 68)',
+    border: 'rgb(239 68 68 / 0.45)',
+    accent: 'rgb(239 68 68 / 0.16)',
+  };
+}
 
-  // Calculate segments (show 4 segments) - none filled for unknown
-  const segments = 4;
-  const filledSegments = isUnknown ? 0 : Math.ceil((level / 100) * segments);
-
-  return (
-    <div className="flex flex-col items-center gap-3">
-      {/* Battery SVG */}
-      <svg width="80" height="140" viewBox="0 0 80 140" className="drop-shadow-lg">
-        {/* Glow effect */}
-        <defs>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-          <linearGradient id="batteryGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={fillColor} stopOpacity="0.8"/>
-            <stop offset="50%" stopColor={fillColor} stopOpacity="1"/>
-            <stop offset="100%" stopColor={fillColor} stopOpacity="0.8"/>
-          </linearGradient>
-        </defs>
-
-        {/* Battery terminal (top cap) */}
-        <rect x="25" y="2" width="30" height="10" rx="3" fill="var(--border-default)" stroke="var(--text-tertiary)" strokeWidth="1"/>
-
-        {/* Battery body outline */}
-        <rect x="10" y="12" width="60" height="120" rx="6" fill="var(--bg-surface)" stroke="var(--border-default)" strokeWidth="2"/>
-
-        {/* Inner background */}
-        <rect x="14" y="16" width="52" height="112" rx="4" fill="var(--bg-base)"/>
-
-        {/* Battery segments */}
-        {[0, 1, 2, 3].map((i) => {
-          const segmentHeight = 24;
-          const segmentGap = 4;
-          const yPos = 16 + 4 + (3 - i) * (segmentHeight + segmentGap);
-          const isFilled = i < filledSegments;
-
-          return (
-            <rect
-              key={i}
-              x="18"
-              y={yPos}
-              width="44"
-              height={segmentHeight}
-              rx="2"
-              fill={isFilled ? `url(#batteryGradient)` : 'var(--bg-surface)'}
-              filter={isFilled ? 'url(#glow)' : undefined}
-              style={{
-                transition: 'fill 0.3s ease-out',
-              }}
-            />
-          );
-        })}
-
-        {/* Percentage text inside battery */}
-        <text
-          x="40"
-          y="80"
-          textAnchor="middle"
-          fill={isUnknown ? 'var(--text-tertiary)' : fillColor}
-          fontSize="20"
-          fontWeight="bold"
-          fontFamily="monospace"
-        >
-          {isUnknown ? '—' : `${level}%`}
-        </text>
-      </svg>
-
-      {/* Voltage display below battery */}
-      <div className="text-center">
-        <span className={`text-3xl font-bold font-mono ${textColor}`}>
-          {formatNumber(voltage, 1)}
-        </span>
-        <span className="text-content-secondary text-lg ml-1">V</span>
-      </div>
-    </div>
-  );
+function LevelIcon({ level, unknown }: { level: number; unknown: boolean }) {
+  const Icon = unknown || level > 30 ? Battery : level > 15 ? BatteryLow : BatteryWarning;
+  return <Icon className="w-4 h-4" />;
 }
 
 export function BatteryPanel() {
   const battery = useTelemetryStore((s) => s.battery);
-
-  const textColor = battery.remaining < 0 ? 'text-content-secondary' : battery.remaining > 30 ? 'text-emerald-400' : battery.remaining > 15 ? 'text-yellow-400' : 'text-red-400';
+  const unknown = battery.remaining < 0;
+  const level = unknown ? 0 : Math.max(0, Math.min(100, battery.remaining));
+  const tone = toneForLevel(level, unknown);
 
   return (
-    <PanelContainer className="flex flex-col items-center justify-center">
-      <BatteryIcon percentage={battery.remaining} voltage={battery.voltage} />
+    <PanelContainer className="flex flex-col gap-3 justify-center">
+      {/* Voltage (primary) + remaining (secondary) */}
+      <div className="flex items-baseline justify-between gap-3">
+        <div className="flex items-baseline gap-1">
+          <span className={`text-2xl font-bold font-mono ${tone.text} leading-none`}>
+            {formatNumber(battery.voltage, 1)}
+          </span>
+          <span className="text-content-secondary text-sm font-medium">V</span>
+        </div>
+        <div className={`inline-flex items-center gap-1.5 ${tone.text}`}>
+          <LevelIcon level={level} unknown={unknown} />
+          <span className="font-mono text-sm font-semibold">
+            {unknown ? '—' : `${level}%`}
+          </span>
+        </div>
+      </div>
 
-      <div className="w-full mt-4 space-y-1">
-        <StatRow label="Current" value={formatNumber(Math.abs(battery.current), 1)} unit="A" />
-        {battery.remaining >= 0 && (
-          <StatRow label="Remaining" value={battery.remaining} unit="%" />
-        )}
+      {/* Level bar */}
+      <div
+        className="h-1.5 rounded-full overflow-hidden"
+        style={{ background: 'var(--bg-inset)' }}
+      >
+        <div
+          className="h-full rounded-full transition-all duration-300"
+          style={{
+            width: unknown ? '0%' : `${level}%`,
+            background: tone.fill,
+            boxShadow: unknown ? 'none' : `0 0 8px ${tone.border}`,
+          }}
+        />
+      </div>
+
+      {/* Current draw (tertiary) */}
+      <div className="flex items-center justify-between text-xs">
+        <span className="inline-flex items-center gap-1.5 text-content-secondary">
+          <Zap className="w-3 h-3" />
+          Current
+        </span>
+        <span className="font-mono text-content">
+          {formatNumber(Math.abs(battery.current), 1)}
+          <span className="text-content-tertiary text-[10px] ml-0.5">A</span>
+        </span>
       </div>
     </PanelContainer>
   );

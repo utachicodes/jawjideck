@@ -18,6 +18,7 @@ import '@xyflow/react/dist/style.css';
 import GraphNodeComponent from './GraphNodeComponent';
 import { useLuaGraphStore } from '../../stores/lua-graph-store';
 import { getNodeDefinition } from './node-library';
+import { useResolvedTheme } from '../../hooks/useTheme';
 import { CATEGORY_COLORS } from './lua-graph-types';
 
 const nodeTypes = {
@@ -25,6 +26,7 @@ const nodeTypes = {
 };
 
 export function GraphCanvas() {
+  const isLight = useResolvedTheme() === 'light';
   const rfInstance = useRef<ReactFlowInstance | null>(null);
   const nodes = useLuaGraphStore((s) => s.nodes);
   const edges = useLuaGraphStore((s) => s.edges);
@@ -181,10 +183,11 @@ export function GraphCanvas() {
         deleteKeyCode={null}
         edgesFocusable
         edgesReconnectable
+        colorMode={isLight ? 'light' : 'dark'}
         className="bg-transparent"
       >
         <Background
-          color="#374151"
+          color={isLight ? '#d1d5db' : '#374151'}
           gap={16}
           size={1}
         />
@@ -193,7 +196,7 @@ export function GraphCanvas() {
         />
         <MiniMap
           nodeColor={minimapNodeColor}
-          maskColor="rgba(0, 0, 0, 0.7)"
+          maskColor={isLight ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)'}
           className="!bg-surface !border-subtle !rounded-lg"
           pannable
           zoomable

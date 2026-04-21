@@ -2694,4 +2694,719 @@ export const GRAPH_TEMPLATES: GraphTemplate[] = [
       viewport: { x: 0, y: 0, zoom: 0.7 },
     },
   },
+
+  // ─── ArduDeck Heartbeat Beacon ────────────────────────────────
+  // The minimum-viable FC-side script: publish a NAMED_VALUE_FLOAT every
+  // second so the GCS can confirm the script is loaded and running.
+  // This is the same pattern ArduDeck's own ardudeck_commands.lua uses for AD_HB.
+  {
+    id: 'ad-heartbeat-beacon',
+    name: 'ArduDeck Heartbeat Beacon',
+    description: 'Publish a NAMED_VALUE_FLOAT heartbeat every second so the GCS can confirm the script is alive (mirrors the AD_HB pattern).',
+    category: 'FC Script',
+    graph: {
+      version: 1,
+      name: 'ArduDeck Heartbeat Beacon',
+      description: 'Publish AD_HB once per second',
+      runIntervalMs: 100,
+      createdAt: '2025-01-01T00:00:00.000Z',
+      updatedAt: '2025-01-01T00:00:00.000Z',
+      nodes: [
+        {
+          id: 'comment_timer',
+          type: 'flow-comment',
+          position: { x: 40, y: 20 },
+          data: {
+            definitionType: 'flow-comment',
+            label: 'Step 1',
+            category: 'flow',
+            propertyValues: { text: 'Tick once per second' },
+          },
+        },
+        {
+          id: 'comment_publish',
+          type: 'flow-comment',
+          position: { x: 480, y: 20 },
+          data: {
+            definitionType: 'flow-comment',
+            label: 'Step 2',
+            category: 'flow',
+            propertyValues: { text: 'Send AD_HB to the GCS so it knows we are alive' },
+          },
+        },
+        {
+          id: 'timer',
+          type: 'timing-run-every',
+          position: { x: 60, y: 100 },
+          data: {
+            definitionType: 'timing-run-every',
+            label: 'Every 1 sec',
+            category: 'timing',
+            propertyValues: { interval_ms: 1000 },
+          },
+        },
+        {
+          id: 'version',
+          type: 'var-constant',
+          position: { x: 240, y: 280 },
+          data: {
+            definitionType: 'var-constant',
+            label: 'Script version',
+            category: 'variables',
+            propertyValues: { type: 'number', value: '1.0' },
+          },
+        },
+        {
+          id: 'publish',
+          type: 'action-publish-named-float',
+          position: { x: 500, y: 110 },
+          data: {
+            definitionType: 'action-publish-named-float',
+            label: 'Publish AD_HB',
+            category: 'actions',
+            propertyValues: { name: 'AD_HB' },
+          },
+        },
+      ],
+      edges: [
+        { id: 'e1', source: 'timer',   target: 'publish', sourceHandle: 'flow',  targetHandle: 'trigger' },
+        { id: 'e2', source: 'version', target: 'publish', sourceHandle: 'value', targetHandle: 'value' },
+      ],
+      viewport: { x: 0, y: 0, zoom: 0.9 },
+    },
+  },
+
+  // ─── Telemetry Beacon (3 Channels) ────────────────────────────
+  // Publishes distance-to-home, satellite count, and battery voltage as
+  // NAMED_VALUE_FLOATs every second so a GCS dashboard can show them as
+  // first-class telemetry without parsing custom MAVLink.
+  {
+    id: 'telemetry-beacon',
+    name: 'Telemetry Beacon (3 Channels)',
+    description: 'Publish distance-to-home, sat count, and battery voltage as NAMED_VALUE_FLOATs every second for custom GCS dashboards.',
+    category: 'FC Script',
+    graph: {
+      version: 1,
+      name: 'Telemetry Beacon',
+      description: 'Publish DIST_H, SATS, BATT_V to GCS once per second',
+      runIntervalMs: 100,
+      createdAt: '2025-01-01T00:00:00.000Z',
+      updatedAt: '2025-01-01T00:00:00.000Z',
+      nodes: [
+        {
+          id: 'comment_sense',
+          type: 'flow-comment',
+          position: { x: 40, y: 20 },
+          data: {
+            definitionType: 'flow-comment',
+            label: 'Step 1',
+            category: 'flow',
+            propertyValues: { text: 'Read live position, GPS status, and battery' },
+          },
+        },
+        {
+          id: 'comment_compute',
+          type: 'flow-comment',
+          position: { x: 460, y: 20 },
+          data: {
+            definitionType: 'flow-comment',
+            label: 'Step 2',
+            category: 'flow',
+            propertyValues: { text: 'Compute distance from vehicle to home' },
+          },
+        },
+        {
+          id: 'comment_publish',
+          type: 'flow-comment',
+          position: { x: 880, y: 20 },
+          data: {
+            definitionType: 'flow-comment',
+            label: 'Step 3',
+            category: 'flow',
+            propertyValues: { text: 'Publish each value as a NAMED_VALUE_FLOAT' },
+          },
+        },
+        {
+          id: 'timer',
+          type: 'timing-run-every',
+          position: { x: 60, y: 100 },
+          data: {
+            definitionType: 'timing-run-every',
+            label: 'Every 1 sec',
+            category: 'timing',
+            propertyValues: { interval_ms: 1000 },
+          },
+        },
+        {
+          id: 'ahrs_loc',
+          type: 'sensor-ahrs-location',
+          position: { x: 60, y: 240 },
+          data: {
+            definitionType: 'sensor-ahrs-location',
+            label: 'Vehicle Location',
+            category: 'sensors',
+            propertyValues: {},
+          },
+        },
+        {
+          id: 'home',
+          type: 'sensor-home',
+          position: { x: 60, y: 380 },
+          data: {
+            definitionType: 'sensor-home',
+            label: 'Home Position',
+            category: 'sensors',
+            propertyValues: {},
+          },
+        },
+        {
+          id: 'gps_status',
+          type: 'sensor-gps-status',
+          position: { x: 60, y: 520 },
+          data: {
+            definitionType: 'sensor-gps-status',
+            label: 'GPS Status',
+            category: 'sensors',
+            propertyValues: { instance: 0 },
+          },
+        },
+        {
+          id: 'battery',
+          type: 'sensor-battery',
+          position: { x: 60, y: 660 },
+          data: {
+            definitionType: 'sensor-battery',
+            label: 'Battery',
+            category: 'sensors',
+            propertyValues: { instance: 0 },
+          },
+        },
+        {
+          id: 'distance',
+          type: 'math-location-distance',
+          position: { x: 480, y: 290 },
+          data: {
+            definitionType: 'math-location-distance',
+            label: 'Vehicle → Home',
+            category: 'math',
+            propertyValues: {},
+          },
+        },
+        {
+          id: 'pub_dist',
+          type: 'action-publish-named-float',
+          position: { x: 900, y: 240 },
+          data: {
+            definitionType: 'action-publish-named-float',
+            label: 'Publish DIST_H',
+            category: 'actions',
+            propertyValues: { name: 'DIST_H' },
+          },
+        },
+        {
+          id: 'pub_sats',
+          type: 'action-publish-named-float',
+          position: { x: 900, y: 420 },
+          data: {
+            definitionType: 'action-publish-named-float',
+            label: 'Publish SATS',
+            category: 'actions',
+            propertyValues: { name: 'SATS' },
+          },
+        },
+        {
+          id: 'pub_batt',
+          type: 'action-publish-named-float',
+          position: { x: 900, y: 600 },
+          data: {
+            definitionType: 'action-publish-named-float',
+            label: 'Publish BATT_V',
+            category: 'actions',
+            propertyValues: { name: 'BATT_V' },
+          },
+        },
+      ],
+      edges: [
+        // Compute distance from vehicle to home
+        { id: 'e1', source: 'ahrs_loc', target: 'distance', sourceHandle: 'location', targetHandle: 'a' },
+        { id: 'e2', source: 'home',     target: 'distance', sourceHandle: 'location', targetHandle: 'b' },
+        // Publish each value once per timer tick
+        { id: 'e3', source: 'timer',    target: 'pub_dist', sourceHandle: 'flow', targetHandle: 'trigger' },
+        { id: 'e4', source: 'distance', target: 'pub_dist', sourceHandle: 'distance_m', targetHandle: 'value' },
+        { id: 'e5', source: 'timer',    target: 'pub_sats', sourceHandle: 'flow', targetHandle: 'trigger' },
+        { id: 'e6', source: 'gps_status', target: 'pub_sats', sourceHandle: 'num_sats', targetHandle: 'value' },
+        { id: 'e7', source: 'timer',    target: 'pub_batt', sourceHandle: 'flow', targetHandle: 'trigger' },
+        { id: 'e8', source: 'battery',  target: 'pub_batt', sourceHandle: 'voltage', targetHandle: 'value' },
+      ],
+      viewport: { x: 0, y: 0, zoom: 0.65 },
+    },
+  },
+
+  // ─── GUIDED Set-Target via RC Switch ──────────────────────────
+  // RC AUX HIGH → command vehicle to fly to a fixed offset from home (e.g.
+  // "the staging spot 50m due north"). Demonstrates the RC-trigger →
+  // location-math → set-target-location chain that powers most ad-hoc
+  // commanding scripts.
+  {
+    id: 'guided-set-target-rc',
+    name: 'GUIDED Set-Target via RC Switch',
+    description: 'When an RC AUX switch is HIGH in GUIDED mode, command the vehicle to fly to a fixed offset from home (e.g. 50m north of takeoff).',
+    category: 'FC Script',
+    graph: {
+      version: 1,
+      name: 'GUIDED Set-Target via RC Switch',
+      description: 'RC AUX HIGH → fly to home + 50m north',
+      runIntervalMs: 200,
+      createdAt: '2025-01-01T00:00:00.000Z',
+      updatedAt: '2025-01-01T00:00:00.000Z',
+      nodes: [
+        {
+          id: 'comment_trigger',
+          type: 'flow-comment',
+          position: { x: 40, y: 20 },
+          data: {
+            definitionType: 'flow-comment',
+            label: 'Step 1',
+            category: 'flow',
+            propertyValues: { text: 'Watch RC AUX switch state' },
+          },
+        },
+        {
+          id: 'comment_target',
+          type: 'flow-comment',
+          position: { x: 480, y: 20 },
+          data: {
+            definitionType: 'flow-comment',
+            label: 'Step 2',
+            category: 'flow',
+            propertyValues: { text: 'Compute target = home offset by 50m at 0° (north)' },
+          },
+        },
+        {
+          id: 'comment_action',
+          type: 'flow-comment',
+          position: { x: 900, y: 20 },
+          data: {
+            definitionType: 'flow-comment',
+            label: 'Step 3',
+            category: 'flow',
+            propertyValues: { text: 'Push GUIDED target while switch is HIGH' },
+          },
+        },
+        {
+          id: 'rc_aux',
+          type: 'sensor-rc-aux-switch',
+          position: { x: 60, y: 110 },
+          data: {
+            definitionType: 'sensor-rc-aux-switch',
+            label: 'RC AUX 7',
+            category: 'sensors',
+            propertyValues: { aux_fn: 7 },
+          },
+        },
+        {
+          id: 'home',
+          type: 'sensor-home',
+          position: { x: 60, y: 280 },
+          data: {
+            definitionType: 'sensor-home',
+            label: 'Home',
+            category: 'sensors',
+            propertyValues: {},
+          },
+        },
+        {
+          id: 'bearing',
+          type: 'var-constant',
+          position: { x: 280, y: 460 },
+          data: {
+            definitionType: 'var-constant',
+            label: 'Bearing (deg)',
+            category: 'variables',
+            propertyValues: { type: 'number', value: '0' },
+          },
+        },
+        {
+          id: 'distance',
+          type: 'var-constant',
+          position: { x: 280, y: 580 },
+          data: {
+            definitionType: 'var-constant',
+            label: 'Distance (m)',
+            category: 'variables',
+            propertyValues: { type: 'number', value: '50' },
+          },
+        },
+        {
+          id: 'offset',
+          type: 'math-location-offset',
+          position: { x: 500, y: 280 },
+          data: {
+            definitionType: 'math-location-offset',
+            label: 'Home + 50m N',
+            category: 'math',
+            propertyValues: {},
+          },
+        },
+        {
+          id: 'set_target',
+          type: 'action-set-target-location',
+          position: { x: 920, y: 200 },
+          data: {
+            definitionType: 'action-set-target-location',
+            label: 'GUIDED → target',
+            category: 'actions',
+            propertyValues: {},
+          },
+        },
+      ],
+      edges: [
+        // Build the offset target location
+        { id: 'e1', source: 'home',     target: 'offset', sourceHandle: 'location',    targetHandle: 'from' },
+        { id: 'e2', source: 'bearing',  target: 'offset', sourceHandle: 'value',       targetHandle: 'bearing_deg' },
+        { id: 'e3', source: 'distance', target: 'offset', sourceHandle: 'value',       targetHandle: 'distance_m' },
+        // Push the target while the switch is HIGH
+        { id: 'e4', source: 'rc_aux',   target: 'set_target', sourceHandle: 'is_high', targetHandle: 'trigger' },
+        { id: 'e5', source: 'offset',   target: 'set_target', sourceHandle: 'location', targetHandle: 'location' },
+      ],
+      viewport: { x: 0, y: 0, zoom: 0.7 },
+    },
+  },
+
+  // ─── Distance-Triggered RTL ───────────────────────────────────
+  // When the vehicle drifts more than N metres from home, automatically
+  // switch to RTL mode. Useful as a backup geofence in case the operator
+  // misses an alert. Demonstrates location math + mode change.
+  {
+    id: 'distance-triggered-rtl',
+    name: 'Distance-Triggered RTL',
+    description: 'When vehicle drifts more than 200m from home, automatically switch to RTL mode. Backup geofence using location math + mode change.',
+    category: 'FC Script',
+    graph: {
+      version: 1,
+      name: 'Distance-Triggered RTL',
+      description: 'Auto-RTL when distance from home exceeds 200m',
+      runIntervalMs: 500,
+      createdAt: '2025-01-01T00:00:00.000Z',
+      updatedAt: '2025-01-01T00:00:00.000Z',
+      nodes: [
+        {
+          id: 'comment_sense',
+          type: 'flow-comment',
+          position: { x: 40, y: 20 },
+          data: {
+            definitionType: 'flow-comment',
+            label: 'Step 1',
+            category: 'flow',
+            propertyValues: { text: 'Read live position + home' },
+          },
+        },
+        {
+          id: 'comment_check',
+          type: 'flow-comment',
+          position: { x: 460, y: 20 },
+          data: {
+            definitionType: 'flow-comment',
+            label: 'Step 2',
+            category: 'flow',
+            propertyValues: { text: 'Are we more than 200m from home?' },
+          },
+        },
+        {
+          id: 'comment_action',
+          type: 'flow-comment',
+          position: { x: 880, y: 20 },
+          data: {
+            definitionType: 'flow-comment',
+            label: 'Step 3',
+            category: 'flow',
+            propertyValues: { text: 'Switch to RTL mode (Copter mode 6) + warn pilot' },
+          },
+        },
+        {
+          id: 'ahrs_loc',
+          type: 'sensor-ahrs-location',
+          position: { x: 60, y: 110 },
+          data: {
+            definitionType: 'sensor-ahrs-location',
+            label: 'Vehicle',
+            category: 'sensors',
+            propertyValues: {},
+          },
+        },
+        {
+          id: 'home',
+          type: 'sensor-home',
+          position: { x: 60, y: 260 },
+          data: {
+            definitionType: 'sensor-home',
+            label: 'Home',
+            category: 'sensors',
+            propertyValues: {},
+          },
+        },
+        {
+          id: 'distance',
+          type: 'math-location-distance',
+          position: { x: 480, y: 180 },
+          data: {
+            definitionType: 'math-location-distance',
+            label: 'Distance to home',
+            category: 'math',
+            propertyValues: {},
+          },
+        },
+        {
+          id: 'limit',
+          type: 'var-constant',
+          position: { x: 280, y: 420 },
+          data: {
+            definitionType: 'var-constant',
+            label: 'Limit (m)',
+            category: 'variables',
+            propertyValues: { type: 'number', value: '200' },
+          },
+        },
+        {
+          id: 'compare',
+          type: 'logic-compare',
+          position: { x: 480, y: 360 },
+          data: {
+            definitionType: 'logic-compare',
+            label: 'Distance > 200?',
+            category: 'logic',
+            propertyValues: { operator: '>' },
+          },
+        },
+        {
+          id: 'set_rtl',
+          type: 'action-set-mode',
+          position: { x: 900, y: 120 },
+          data: {
+            definitionType: 'action-set-mode',
+            label: 'Switch to RTL',
+            category: 'actions',
+            propertyValues: { mode_num: 6 },
+          },
+        },
+        {
+          id: 'warn',
+          type: 'action-gcs-text',
+          position: { x: 900, y: 280 },
+          data: {
+            definitionType: 'action-gcs-text',
+            label: 'Warn pilot',
+            category: 'actions',
+            propertyValues: { message: 'AUTO RTL: distance from home exceeded', severity: 4 },
+          },
+        },
+      ],
+      edges: [
+        { id: 'e1', source: 'ahrs_loc', target: 'distance', sourceHandle: 'location',  targetHandle: 'a' },
+        { id: 'e2', source: 'home',     target: 'distance', sourceHandle: 'location',  targetHandle: 'b' },
+        { id: 'e3', source: 'distance', target: 'compare',  sourceHandle: 'distance_m', targetHandle: 'a' },
+        { id: 'e4', source: 'limit',    target: 'compare',  sourceHandle: 'value',     targetHandle: 'b' },
+        { id: 'e5', source: 'compare',  target: 'set_rtl',  sourceHandle: 'result',    targetHandle: 'trigger' },
+        { id: 'e6', source: 'compare',  target: 'warn',     sourceHandle: 'result',    targetHandle: 'trigger' },
+      ],
+      viewport: { x: 0, y: 0, zoom: 0.75 },
+    },
+  },
+
+  // ─── Patrol Between Two Anchors ───────────────────────────────
+  // Toggle between two fixed offsets from home every 30 seconds. A simple
+  // ad-hoc patrol pattern that doesn't need a planned mission. Demonstrates
+  // the timing-latch pattern + dual conditional set-target-location.
+  {
+    id: 'patrol-two-anchors',
+    name: 'Patrol Between Two Anchors',
+    description: 'Toggle the GUIDED target between two fixed offsets from home every 30 seconds. Simple ad-hoc patrol with no mission required.',
+    category: 'FC Script',
+    graph: {
+      version: 1,
+      name: 'Patrol Between Two Anchors',
+      description: 'Alternate target between home+80m N and home+80m S every 30s',
+      runIntervalMs: 200,
+      createdAt: '2025-01-01T00:00:00.000Z',
+      updatedAt: '2025-01-01T00:00:00.000Z',
+      nodes: [
+        {
+          id: 'comment_timer',
+          type: 'flow-comment',
+          position: { x: 40, y: 20 },
+          data: {
+            definitionType: 'flow-comment',
+            label: 'Step 1',
+            category: 'flow',
+            propertyValues: { text: 'Toggle every 30s using a latch' },
+          },
+        },
+        {
+          id: 'comment_anchors',
+          type: 'flow-comment',
+          position: { x: 480, y: 20 },
+          data: {
+            definitionType: 'flow-comment',
+            label: 'Step 2',
+            category: 'flow',
+            propertyValues: { text: 'Build two anchor positions from home' },
+          },
+        },
+        {
+          id: 'comment_select',
+          type: 'flow-comment',
+          position: { x: 920, y: 20 },
+          data: {
+            definitionType: 'flow-comment',
+            label: 'Step 3',
+            category: 'flow',
+            propertyValues: { text: 'Push the active anchor as GUIDED target' },
+          },
+        },
+        // Toggle source
+        {
+          id: 'timer',
+          type: 'timing-run-every',
+          position: { x: 60, y: 100 },
+          data: {
+            definitionType: 'timing-run-every',
+            label: 'Every 30s',
+            category: 'timing',
+            propertyValues: { interval_ms: 30000 },
+          },
+        },
+        {
+          id: 'latch',
+          type: 'timing-latch',
+          position: { x: 240, y: 200 },
+          data: {
+            definitionType: 'timing-latch',
+            label: 'Patrol toggle',
+            category: 'timing',
+            propertyValues: {},
+          },
+        },
+        {
+          id: 'not_latch',
+          type: 'logic-not',
+          position: { x: 240, y: 320 },
+          data: {
+            definitionType: 'logic-not',
+            label: 'Other anchor',
+            category: 'logic',
+            propertyValues: {},
+          },
+        },
+        // Anchor positions
+        {
+          id: 'home',
+          type: 'sensor-home',
+          position: { x: 480, y: 200 },
+          data: {
+            definitionType: 'sensor-home',
+            label: 'Home',
+            category: 'sensors',
+            propertyValues: {},
+          },
+        },
+        {
+          id: 'bearing_a',
+          type: 'var-constant',
+          position: { x: 480, y: 380 },
+          data: {
+            definitionType: 'var-constant',
+            label: 'A bearing (N)',
+            category: 'variables',
+            propertyValues: { type: 'number', value: '0' },
+          },
+        },
+        {
+          id: 'bearing_b',
+          type: 'var-constant',
+          position: { x: 480, y: 480 },
+          data: {
+            definitionType: 'var-constant',
+            label: 'B bearing (S)',
+            category: 'variables',
+            propertyValues: { type: 'number', value: '180' },
+          },
+        },
+        {
+          id: 'patrol_dist',
+          type: 'var-constant',
+          position: { x: 480, y: 580 },
+          data: {
+            definitionType: 'var-constant',
+            label: 'Leg length (m)',
+            category: 'variables',
+            propertyValues: { type: 'number', value: '80' },
+          },
+        },
+        {
+          id: 'anchor_a',
+          type: 'math-location-offset',
+          position: { x: 720, y: 230 },
+          data: {
+            definitionType: 'math-location-offset',
+            label: 'Anchor A',
+            category: 'math',
+            propertyValues: {},
+          },
+        },
+        {
+          id: 'anchor_b',
+          type: 'math-location-offset',
+          position: { x: 720, y: 430 },
+          data: {
+            definitionType: 'math-location-offset',
+            label: 'Anchor B',
+            category: 'math',
+            propertyValues: {},
+          },
+        },
+        // Two set-target nodes, one per anchor, gated by the latch state.
+        {
+          id: 'set_a',
+          type: 'action-set-target-location',
+          position: { x: 940, y: 230 },
+          data: {
+            definitionType: 'action-set-target-location',
+            label: 'Go to A',
+            category: 'actions',
+            propertyValues: {},
+          },
+        },
+        {
+          id: 'set_b',
+          type: 'action-set-target-location',
+          position: { x: 940, y: 430 },
+          data: {
+            definitionType: 'action-set-target-location',
+            label: 'Go to B',
+            category: 'actions',
+            propertyValues: {},
+          },
+        },
+      ],
+      edges: [
+        // Toggle latch each 30s pulse, then NOT for the other branch
+        { id: 'e1', source: 'timer',     target: 'latch',     sourceHandle: 'flow',  targetHandle: 'set' },
+        { id: 'e2', source: 'latch',     target: 'not_latch', sourceHandle: 'state', targetHandle: 'input' },
+        // Build Anchor A = home + (0°, 80m)
+        { id: 'e3', source: 'home',        target: 'anchor_a', sourceHandle: 'location', targetHandle: 'from' },
+        { id: 'e4', source: 'bearing_a',   target: 'anchor_a', sourceHandle: 'value',    targetHandle: 'bearing_deg' },
+        { id: 'e5', source: 'patrol_dist', target: 'anchor_a', sourceHandle: 'value',    targetHandle: 'distance_m' },
+        // Build Anchor B = home + (180°, 80m)
+        { id: 'e6', source: 'home',        target: 'anchor_b', sourceHandle: 'location', targetHandle: 'from' },
+        { id: 'e7', source: 'bearing_b',   target: 'anchor_b', sourceHandle: 'value',    targetHandle: 'bearing_deg' },
+        { id: 'e8', source: 'patrol_dist', target: 'anchor_b', sourceHandle: 'value',    targetHandle: 'distance_m' },
+        // Set targets: A when latch=true, B when latch=false
+        { id: 'e9',  source: 'latch',     target: 'set_a', sourceHandle: 'state',    targetHandle: 'trigger' },
+        { id: 'e10', source: 'anchor_a',  target: 'set_a', sourceHandle: 'location', targetHandle: 'location' },
+        { id: 'e11', source: 'not_latch', target: 'set_b', sourceHandle: 'result',   targetHandle: 'trigger' },
+        { id: 'e12', source: 'anchor_b',  target: 'set_b', sourceHandle: 'location', targetHandle: 'location' },
+      ],
+      viewport: { x: 0, y: 0, zoom: 0.6 },
+    },
+  },
 ];

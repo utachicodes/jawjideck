@@ -5,6 +5,7 @@ import { useParameterStore } from '../../stores/parameter-store';
 import { useTelemetryStore } from '../../stores/telemetry-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useUpdateStore } from '../../stores/update-store';
+import { ScriptInstallModal } from '../script-installer/ScriptInstallModal';
 
 // Display unit conversion helpers - storage is always mm/g/mAh
 function fmtWeight(g: number, units: DisplayUnits): string {
@@ -1878,6 +1879,8 @@ function ExperimentalFeaturesSection() {
   const setCompanionUnlocked = useSettingsStore((s) => s.setCompanionUnlocked);
   const experimentalLogs = useSettingsStore((s) => s.experimentalLogs);
   const setExperimentalLogs = useSettingsStore((s) => s.setExperimentalLogs);
+  const advancedCommandsUnlocked = useSettingsStore((s) => s.advancedCommandsUnlocked);
+  const setAdvancedCommandsUnlocked = useSettingsStore((s) => s.setAdvancedCommandsUnlocked);
 
   return (
     <div className="mt-8">
@@ -1957,8 +1960,60 @@ function ExperimentalFeaturesSection() {
               }`} />
             </button>
           </div>
+
+          {/* Advanced map commands (Orbit, Land + FC-side Lua install path) */}
+          <div className="bg-surface-input rounded-lg p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 mr-3">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className="text-sm text-content font-medium">Advanced map commands</div>
+                  <span className="px-1.5 py-0 text-[9px] font-bold tracking-wider rounded bg-rose-600/20 text-rose-400 border border-rose-600/40">
+                    RISKY
+                  </span>
+                </div>
+                <div className="text-xs text-content-secondary mt-0.5">
+                  Unlocks <strong>Orbit</strong> and <strong>Land at point</strong> in the map command popup
+                  (the popup defaults to <strong>Move</strong> only). Also enables the optional <strong>Lua script
+                  installer</strong> for flight controllers that lack native CIRCLE mode - ArduDeck can write a
+                  small script to the FC's SD card after explicit consent and source-code preview.
+                  <span className="block mt-1 text-rose-400">
+                    Triggers flight-mode changes and may modify parameters. Bench-test every command before flight.
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setAdvancedCommandsUnlocked(!advancedCommandsUnlocked)}
+                className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${
+                  advancedCommandsUnlocked ? 'bg-purple-600' : 'bg-surface-raised'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${
+                  advancedCommandsUnlocked ? 'left-[18px]' : 'left-0.5'
+                }`} />
+              </button>
+            </div>
+            {advancedCommandsUnlocked && <ScriptInstallerActions />}
+          </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+function ScriptInstallerActions() {
+  const [modalOpen, setModalOpen] = useState(false);
+  return (
+    <div className="mt-3 pt-3 border-t border-subtle/50 flex items-center justify-between">
+      <span className="text-[11px] text-content-tertiary">
+        Manage and review ArduDeck-installed scripts on the connected vehicle
+      </span>
+      <button
+        onClick={() => setModalOpen(true)}
+        className="px-3 py-1.5 text-xs bg-purple-600/80 hover:bg-purple-600 text-white rounded"
+      >
+        Open installer…
+      </button>
+      <ScriptInstallModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   );
 }

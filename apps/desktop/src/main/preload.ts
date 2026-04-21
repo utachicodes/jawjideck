@@ -8,7 +8,7 @@ import { IPC_CHANNELS, type ConnectOptions, type ConnectionState, type ConsoleLo
 import type { SystemInfo, NetworkInfo, MetricsData, ProcessInfo, LogEntry, FileEntry, ServiceInfo, ServiceAction, ContainerInfo, ContainerAction, ExtensionInfo } from '@ardudeck/companion-types';
 import type { InstalledModule, ModuleProgress, UpdateAvailable } from '../shared/module-types.js';
 import type { ParamChange, ParamCheckpoint } from '../shared/param-history-types.js';
-import type { AttitudeData, PositionData, GpsData, BatteryData, VfrHudData, FlightState, RcChannelsData } from '../shared/telemetry-types.js';
+import type { AttitudeData, PositionData, GpsData, BatteryData, VfrHudData, WindData, FlightState, RcChannelsData } from '../shared/telemetry-types.js';
 import type { MotorTestStartRequest, MotorTestResponse } from '../shared/motor-test-types.js';
 import type { ParamValuePayload, ParameterProgress } from '../shared/parameter-types.js';
 import type { ParameterMetadataStore } from '../shared/parameter-metadata.js';
@@ -36,6 +36,7 @@ interface TelemetryBatch {
   gps?: GpsData;
   battery?: BatteryData;
   vfrHud?: VfrHudData;
+  wind?: WindData;
   flight?: FlightState;
   rcChannels?: RcChannelsData;
 }
@@ -93,6 +94,75 @@ const api = {
 
   mavlinkTakeoff: (altitude: number): Promise<boolean> =>
     ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_COMMAND_TAKEOFF, altitude),
+
+  mavlinkGoto: (lat: number, lon: number, alt: number): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_GOTO, lat, lon, alt),
+
+  mavlinkOrbit: (lat: number, lon: number, alt: number, radius: number): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_ORBIT, lat, lon, alt, radius),
+
+  mavlinkLand: (lat: number, lon: number): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_LAND, lat, lon),
+
+  mavlinkUserCommand: (
+    cmdId: number,
+    lat: number,
+    lon: number,
+    alt: number,
+    param1: number,
+    param2: number,
+    param3?: number,
+    param4?: number,
+  ): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_USER_COMMAND, cmdId, lat, lon, alt, param1, param2, param3 ?? 0, param4 ?? 0),
+
+  // Script installer
+  scriptInstallerGetManifest: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_INSTALLER_GET_MANIFEST),
+  scriptInstallerGetSource: (): Promise<string> =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_INSTALLER_GET_SOURCE),
+  scriptInstallerRunPreflight: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_INSTALLER_RUN_PREFLIGHT),
+  scriptInstallerBegin: (): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_INSTALLER_BEGIN),
+  scriptInstallerGrantConsent: (): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_INSTALLER_GRANT_CONSENT),
+  scriptInstallerApplyFix: (fix: unknown): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_INSTALLER_APPLY_FIX, fix),
+  scriptInstallerCancel: (): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_INSTALLER_CANCEL),
+  scriptInstallerGetRegistry: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_INSTALLER_GET_REGISTRY),
+  scriptInstallerGetAllRegistry: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_INSTALLER_GET_ALL_REGISTRY),
+  scriptInstallerUninstall: (): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_INSTALLER_UNINSTALL),
+  scriptInstallerSaveToDisk: (): Promise<{ success: boolean; filePath?: string; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_INSTALLER_SAVE_TO_DISK),
+
+  // ─── MAVLink-FTP file browser (read-only) ──────────────────────────
+  mavlinkFtpList: (path: string): Promise<{
+    success: boolean;
+    entries?: Array<{ kind: 'dir' | 'file'; name: string; size?: number }>;
+    error?: string;
+  }> => ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_FTP_LIST, path),
+  mavlinkFtpDownload: (fcPath: string): Promise<{
+    success: boolean;
+    savedTo?: string;
+    bytes?: number;
+    error?: string;
+  }> => ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_FTP_DOWNLOAD, fcPath),
+  /** Subscribe to install state push events. Returns an unsubscribe function. */
+  onScriptInstallerState: (callback: (phase: unknown) => void): (() => void) => {
+    const handler = (_: unknown, phase: unknown) => callback(phase);
+    ipcRenderer.on(IPC_CHANNELS.SCRIPT_INSTALLER_STATE, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.SCRIPT_INSTALLER_STATE, handler);
+  },
+  onScriptHealthChanged: (callback: (health: unknown) => void): (() => void) => {
+    const handler = (_: unknown, health: unknown) => callback(health);
+    ipcRenderer.on(IPC_CHANNELS.SCRIPT_HEALTH_CHANGED, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.SCRIPT_HEALTH_CHANGED, handler);
+  },
 
   // Motor Test
   motorTestStart: (request: MotorTestStartRequest): Promise<MotorTestResponse> =>
@@ -488,11 +558,14 @@ const api = {
   logDownloadCancel: (): Promise<void> =>
     ipcRenderer.invoke(IPC_CHANNELS.LOG_DOWNLOAD_CANCEL),
 
-  logOpenFile: (): Promise<{ path: string; data: number[] } | null> =>
-    ipcRenderer.invoke(IPC_CHANNELS.LOG_OPEN_FILE),
+  logOpenDialog: (): Promise<{ path: string } | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LOG_OPEN_DIALOG),
 
-  logParse: (data: number[]): Promise<unknown> =>
-    ipcRenderer.invoke(IPC_CHANNELS.LOG_PARSE, data),
+  /** Read + parse a .bin in main process. Streams progress on the
+   *  LOG_PARSE_PROGRESS channel; subscribe via onLogParseProgress to drive
+   *  the UI bar. */
+  logParseFile: (filePath: string): Promise<unknown> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LOG_PARSE_FILE, filePath),
 
   logAiAnalyze: (args: {
     provider: 'claude' | 'openai' | 'gemini';
@@ -516,9 +589,6 @@ const api = {
 
   logRecentAdd: (entry: { path: string; name: string; size: number }): Promise<void> =>
     ipcRenderer.invoke(IPC_CHANNELS.LOG_RECENT_ADD, entry),
-
-  logReadFile: (filePath: string): Promise<{ path: string; data: number[] } | null> =>
-    ipcRenderer.invoke(IPC_CHANNELS.LOG_READ_FILE, filePath),
 
   onLogDownloadProgress: (callback: (progress: { logId: number; received: number; total: number }) => void) => {
     const handler = (_: unknown, progress: { logId: number; received: number; total: number }) => callback(progress);

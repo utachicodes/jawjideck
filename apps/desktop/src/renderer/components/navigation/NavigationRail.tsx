@@ -275,13 +275,6 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
           Report a Bug
         </div>
       </button>
-
-      {/* ArduDeck logo/branding at bottom */}
-      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-subtle flex items-center justify-center" title="ArduDeck">
-        <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-        </svg>
-      </div>
     </nav>
   );
 }

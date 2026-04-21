@@ -2462,7 +2462,7 @@ export function MspConfigView() {
                         </svg>
                       </button>
                       {showPlatformDropdown && (
-                        <div className="absolute top-full left-0 mt-1 bg-surface-raised border rounded-lg shadow-xl z-50 min-w-[140px]">
+                        <div className="absolute top-full left-0 mt-1 bg-surface-solid border rounded-lg shadow-xl z-50 min-w-[140px]">
                           {PLATFORM_OPTIONS.map((opt) => (
                             <button
                               key={opt.value}
@@ -2625,7 +2625,7 @@ export function MspConfigView() {
                 <ChevronDown className={`w-3 h-3 transition-transform ${showMixingDropdown ? 'rotate-180' : ''}`} />
               </button>
               {showMixingDropdown && (
-                <div className="absolute top-full left-0 mt-1 bg-surface-raised border rounded-lg shadow-xl z-50 min-w-[180px] py-1">
+                <div className="absolute top-full left-0 mt-1 bg-surface-solid border rounded-lg shadow-xl z-50 min-w-[180px] py-1">
                   {[
                     { id: 'servo-tuning', label: 'Servo Tuning', icon: SlidersHorizontal, color: 'text-orange-400', desc: 'Endpoints' },
                     { id: 'servo-mixer', label: 'Servo Mixer', icon: Shuffle, color: 'text-cyan-400', desc: 'Surfaces' },

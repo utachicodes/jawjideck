@@ -8,6 +8,7 @@ import type { GraphNodeData, PortValueType } from './lua-graph-types';
 import { getNodeDefinition } from './node-library';
 import { CATEGORY_COLORS } from './lua-graph-types';
 import { useLuaGraphStore } from '../../stores/lua-graph-store';
+import { useResolvedTheme } from '../../hooks/useTheme';
 
 const PORT_TYPE_COLORS: Record<PortValueType, string> = {
   number: '#3b82f6',   // blue
@@ -21,6 +22,7 @@ function GraphNodeComponent({ id, data, selected }: NodeProps<Node<GraphNodeData
   const def = getNodeDefinition(data.definitionType);
   const categoryColor = CATEGORY_COLORS[data.category] ?? '#6b7280';
   const setSelectedNode = useLuaGraphStore((s) => s.setSelectedNode);
+  const isLight = useResolvedTheme() === 'light';
 
   const handleClick = useCallback(() => {
     setSelectedNode(id);
@@ -66,16 +68,20 @@ function GraphNodeComponent({ id, data, selected }: NodeProps<Node<GraphNodeData
         min-w-[160px] rounded-lg border shadow-lg backdrop-blur-sm
         transition-all duration-150
         ${selected
-          ? 'border-white/40 shadow-white/10 ring-1 ring-white/20'
-          : 'border shadow-black/30 hover:border-gray-500/60'
+          ? isLight
+            ? 'border-gray-400 shadow-gray-300/30 ring-1 ring-gray-400/30'
+            : 'border-white/40 shadow-white/10 ring-1 ring-white/20'
+          : isLight
+            ? 'border-gray-300 shadow-gray-200/40 hover:border-gray-400'
+            : 'border shadow-black/30 hover:border-gray-500/60'
         }
       `}
-      style={{ background: 'rgba(30, 30, 40, 0.92)' }}
+      style={{ background: isLight ? 'rgba(255, 255, 255, 0.95)' : 'rgba(30, 30, 40, 0.92)' }}
     >
       {/* Header bar with category color */}
       <div
-        className="flex items-center gap-2 px-3 py-1.5 rounded-t-lg text-xs font-semibold text-white"
-        style={{ background: `${categoryColor}30`, borderBottom: `1px solid ${categoryColor}40` }}
+        className={`flex items-center gap-2 px-3 py-1.5 rounded-t-lg text-xs font-semibold ${isLight ? 'text-white' : 'text-white'}`}
+        style={{ background: isLight ? `${categoryColor}cc` : `${categoryColor}30`, borderBottom: `1px solid ${categoryColor}${isLight ? '40' : '40'}` }}
       >
         <div className="w-2 h-2 rounded-full" style={{ background: categoryColor }} />
         <span className="truncate">{data.label}</span>

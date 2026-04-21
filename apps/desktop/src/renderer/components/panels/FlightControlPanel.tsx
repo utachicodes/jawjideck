@@ -12,10 +12,11 @@ import { useTelemetryStore } from '../../stores/telemetry-store';
 import { useFlightControlStore } from '../../stores/flight-control-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useMessagesStore } from '../../stores/messages-store';
+import { useMissionStore } from '../../stores/mission-store';
 import { isPreArmMessage, extractPreArmReason, matchPreArmError } from '../../../shared/prearm-checks';
 import { PreArmParamFix } from '../prearm/PreArmParamFix';
 import { PanelContainer, SectionTitle } from './panel-utils';
-import { getVehicleClass, ARDUPILOT_COMMON_MODES } from '../../../shared/telemetry-types';
+import { getVehicleClass, ARDUPILOT_COMMON_MODES, type ArduPilotVehicleClass } from '../../../shared/telemetry-types';
 
 // =============================================================================
 // Visual Components
@@ -356,8 +357,9 @@ function ModeChip({
     <button
       onClick={onClick}
       disabled={!isConfigured}
+      title={name}
       className={`
-        px-3 py-1.5 rounded-full text-xs font-medium
+        px-3 py-1.5 rounded-full text-xs font-medium truncate
         transition-all duration-200 ease-out
         ${isConfigured ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}
         ${isActive
@@ -440,12 +442,29 @@ const COMMON_MODES = [
 // MAVLink Flight Control (ArduPilot)
 // =============================================================================
 
+// AUTO + pause mode numbers per vehicle class. Pause mode is whichever holds
+// position cleanly without giving up the mission (BRAKE on copter, LOITER on
+// plane, HOLD on rover, POSHOLD on sub) — switching back to AUTO resumes.
+const MISSION_MODES: Record<ArduPilotVehicleClass, { auto: number; pause: number; pauseLabel: string }> = {
+  copter: { auto: 3,  pause: 17, pauseLabel: 'Brake'   },
+  plane:  { auto: 10, pause: 12, pauseLabel: 'Loiter'  },
+  rover:  { auto: 10, pause: 4,  pauseLabel: 'Hold'    },
+  sub:    { auto: 3,  pause: 16, pauseLabel: 'PosHold' },
+};
+
 function MavlinkFlightControl() {
   const flight = useTelemetryStore((s) => s.flight);
   const messages = useMessagesStore((s) => s.messages);
   const connectionState = useConnectionStore((s) => s.connectionState);
   const vehicleClass = getVehicleClass(connectionState.mavType);
   const availableModes = ARDUPILOT_COMMON_MODES[vehicleClass];
+  const missionItems = useMissionStore((s) => s.missionItems);
+  const currentSeq = useMissionStore((s) => s.currentSeq);
+  const fetchMission = useMissionStore((s) => s.fetchMission);
+  const missionLoaded = missionItems.length > 0;
+  const missionModes = MISSION_MODES[vehicleClass];
+  const isInAuto = flight.modeNum === missionModes.auto;
+  const isInPause = flight.modeNum === missionModes.pause;
 
   const [isLoading, setIsLoading] = useState(false);
   const [forceArm, setForceArm] = useState(false);
@@ -581,13 +600,85 @@ function MavlinkFlightControl() {
     }
   }, [flight.modeNum, modeLoading, flight.mode]);
 
-  // Takeoff: arm if needed, switch to Guided, then send MAV_CMD_NAV_TAKEOFF
+  // Poll telemetry state until a condition is met, or timeout.
+  // Reads directly from Zustand store (no re-renders).
+  const waitForState = useCallback(async (
+    check: () => boolean,
+    timeoutMs: number,
+    intervalMs = 200,
+  ): Promise<boolean> => {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (check()) return true;
+      await new Promise((r) => setTimeout(r, intervalMs));
+    }
+    return check(); // one last check
+  }, []);
+
+  // Takeoff sequence: wait for GPS/EKF, ensure STABILIZE, arm, switch to
+  // GUIDED, takeoff. Forcing STABILIZE before arming is the canonical
+  // ArduCopter pattern - it works regardless of what mode the vehicle is
+  // sitting in (e.g. GUIDED left over from an aborted attempt would otherwise
+  // refuse to arm if EKF isn't fully happy). After arming we flip to GUIDED
+  // and fire the takeoff back-to-back to beat the ~10 s auto-disarm timer.
   const handleTakeoff = async () => {
     setShowTakeoffDialog(false);
     const guidedMode = vehicleClass === 'plane' ? 15 : 4;
+    const stabilizeMode = vehicleClass === 'copter' ? 0 : null; // Copter STABILIZE
+    const store = useTelemetryStore.getState;
 
-    // Step 1: Arm if not armed
-    if (!flight.armed) {
+    // Step 1: Wait for GPS/EKF readiness BEFORE arming (avoid auto-disarm).
+    if (vehicleClass !== 'plane') {
+      const gpsReady = () => {
+        const g = store().gps;
+        return g.fixType >= 3 && g.hdop < 2.5;
+      };
+      if (!gpsReady()) {
+        const GPS_TIMEOUT_MS = 25000;
+        const gpsStart = Date.now();
+        let lastShown = -1;
+        const tick = setInterval(() => {
+          const waited = Math.round((Date.now() - gpsStart) / 1000);
+          if (waited !== lastShown) {
+            lastShown = waited;
+            const g = store().gps;
+            setStatusMsg({
+              text: `Waiting for GPS/EKF (${waited}s) — fix=${g.fixType} sats=${g.satellites} hdop=${g.hdop.toFixed(1)}`,
+              type: 'info',
+            });
+          }
+        }, 500);
+        const ready = await waitForState(gpsReady, GPS_TIMEOUT_MS, 250);
+        clearInterval(tick);
+        if (!ready) {
+          setStatusMsg({ text: 'GPS/EKF not ready - check sats/HDOP', type: 'error' });
+          setTimeout(() => setStatusMsg(null), 5000);
+          return;
+        }
+      }
+    }
+
+    // Step 2: Force STABILIZE before arming (Copter only). Arming in GUIDED or
+    // similar advanced modes can be rejected on the first try; STABILIZE is
+    // permissive and always lets arm through once pre-arm checks pass.
+    if (stabilizeMode !== null && store().flight.modeNum !== stabilizeMode && !store().flight.armed) {
+      setStatusMsg({ text: 'Switching to Stabilize...', type: 'info' });
+      await window.electronAPI.mavlinkSetMode(stabilizeMode);
+      const inStab = await waitForState(() => store().flight.modeNum === stabilizeMode, 2500);
+      if (!inStab) {
+        // Retry once
+        await window.electronAPI.mavlinkSetMode(stabilizeMode);
+        const retry = await waitForState(() => store().flight.modeNum === stabilizeMode, 2500);
+        if (!retry) {
+          setStatusMsg({ text: 'Failed to switch to Stabilize', type: 'error' });
+          setTimeout(() => setStatusMsg(null), 3000);
+          return;
+        }
+      }
+    }
+
+    // Step 3: Arm if not armed
+    if (!store().flight.armed) {
       setStatusMsg({ text: 'Arming...', type: 'info' });
       const armOk = await window.electronAPI.mavlinkArmDisarm(true, forceArm);
       if (!armOk) {
@@ -595,20 +686,43 @@ function MavlinkFlightControl() {
         setTimeout(() => setStatusMsg(null), 3000);
         return;
       }
-      // Wait for armed confirmation
-      await new Promise((r) => setTimeout(r, 1500));
+      const armed = await waitForState(() => store().flight.armed, 5000);
+      if (!armed) {
+        setStatusMsg({ text: 'Arm timed out - check pre-arm', type: 'error' });
+        setTimeout(() => setStatusMsg(null), 3000);
+        return;
+      }
     }
 
-    // Step 2: Switch to Guided
+    // Step 4: Switch to Guided. EKF is ready by now so this should be quick.
     setStatusMsg({ text: 'Switching to Guided...', type: 'info' });
-    await window.electronAPI.mavlinkSetMode(guidedMode);
-    await new Promise((r) => setTimeout(r, 1000));
+    let inGuided = store().flight.modeNum === guidedMode;
+    if (!inGuided) {
+      await window.electronAPI.mavlinkSetMode(guidedMode);
+      inGuided = await waitForState(() => store().flight.modeNum === guidedMode, 2500);
+      if (!inGuided) {
+        await window.electronAPI.mavlinkSetMode(guidedMode);
+        inGuided = await waitForState(() => store().flight.modeNum === guidedMode, 2500);
+      }
+    }
+    if (!inGuided) {
+      setStatusMsg({ text: 'Failed to switch to Guided', type: 'error' });
+      setTimeout(() => setStatusMsg(null), 3000);
+      return;
+    }
 
-    // Step 3: Send takeoff command
+    // Step 5: Verify still armed (auto-disarm window is tight but possible)
+    if (!store().flight.armed) {
+      setStatusMsg({ text: 'Auto-disarmed before takeoff - retry', type: 'error' });
+      setTimeout(() => setStatusMsg(null), 3000);
+      return;
+    }
+
+    // Step 6: Send takeoff command
     setStatusMsg({ text: `Taking off to ${takeoffAlt}m...`, type: 'info' });
     const ok = await window.electronAPI.mavlinkTakeoff(takeoffAlt);
     if (!ok) {
-      setStatusMsg({ text: 'Takeoff failed', type: 'error' });
+      setStatusMsg({ text: 'Takeoff command failed', type: 'error' });
     }
     setTimeout(() => setStatusMsg(null), 3000);
   };
@@ -623,7 +737,7 @@ function MavlinkFlightControl() {
 
   return (
     <PanelContainer>
-      <div ref={containerRef} className="h-full min-h-0">
+      <div ref={containerRef} data-tour="telemetry-flight-control" className="h-full min-h-0">
         {isHorizontal ? (
           /* Horizontal layout — ARM button is THE hero control */
           <div className="h-full flex flex-col justify-center gap-3">
@@ -735,98 +849,174 @@ function MavlinkFlightControl() {
             )}
           </div>
         ) : (
-          /* Vertical layout for side panels */
+          /* Vertical layout for side panels — compact to reclaim vertical
+             space for other panels. Principles:
+               - No giant hero arm circle; a wide short button is enough.
+               - Status dot + state + mode + protocol live on a single line
+                 (no separate Land / MAVLink header duplicating the mode pill).
+               - Mode pills in a 4-column grid (2 rows), not free-flowing.
+               - Drop duplicate RTL / Land from Quick Actions — they're already
+                 in Flight Mode. Keep Takeoff because it has an altitude param.
+               - Mission collapses to one compact card with status + Start/Pause
+                 side-by-side, no section header.  */
           <div className="flex flex-col h-full overflow-auto">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-content font-medium">{flight.mode || 'Unknown'}</div>
-              <div className="text-xs text-content-secondary">MAVLink</div>
+            {/* Top status strip */}
+            <div className="flex items-center gap-2 mb-2 text-xs">
+              <div className={`w-2 h-2 rounded-full shrink-0 ${
+                flight.armed ? 'bg-red-400 animate-pulse' : 'bg-content-tertiary'
+              }`} />
+              <span className={`font-medium ${flight.armed ? 'text-red-400' : 'text-content-secondary'}`}>
+                {flight.armed ? 'ARMED' : 'DISARMED'}
+              </span>
+              <span className="text-content-tertiary">·</span>
+              <span className="text-content truncate">{flight.mode || 'Unknown'}</span>
+              <span className="ml-auto text-[10px] text-content-tertiary shrink-0">MAVLink</span>
             </div>
 
-            <div className="flex justify-center mb-4">
-              <ArmButton
-                isArmed={flight.armed}
-                canArm={true}
-                armSwitchOn={flight.armed}
-                onToggle={() => handleArmDisarm()}
-              />
-            </div>
+            {/* Compact ARM row */}
+            <button
+              onClick={() => handleArmDisarm()}
+              disabled={isLoading}
+              className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 mb-2 rounded-lg
+                font-bold text-sm uppercase tracking-wider transition-all border-2
+                ${isLoading ? 'cursor-wait opacity-70' : 'cursor-pointer'}
+                ${flight.armed
+                  ? 'bg-red-500/15 border-red-500/50 text-red-400 hover:bg-red-500/25'
+                  : forceArm
+                    ? 'bg-amber-500/15 border-amber-500/50 text-amber-400 hover:bg-amber-500/25'
+                    : 'bg-surface border-subtle text-content hover:bg-surface-raised hover:border-default'
+                }`}
+            >
+              {isLoading
+                ? (flight.armed ? 'Disarming…' : 'Arming…')
+                : flight.armed ? 'Disarm' : forceArm ? 'Force Arm' : 'Arm'}
+            </button>
 
             {statusMsg && (
-              <div className={`text-center text-xs font-medium mb-3 ${statusColor}`}>{statusMsg.text}</div>
+              <div className={`text-center text-[11px] font-medium mb-2 ${statusColor}`}>{statusMsg.text}</div>
             )}
 
-            {/* Flight Modes */}
-            <div className="mb-3">
-              <SectionTitle>Flight Mode</SectionTitle>
-              <div className="flex flex-wrap gap-1.5">
-                {availableModes.map((mode) => (
-                  <ModeChip
+            {/* Flight Modes — rounded-rectangle grid. Pills (rounded-full)
+                don't tile cleanly in a grid and need extra horizontal padding
+                that clipped longer names. Rectangles fill their cell so text
+                fits at any column count, and they match the visual language
+                of every other control on this panel. */}
+            <div className="grid grid-cols-3 gap-1 mb-2">
+              {availableModes.map((mode) => {
+                const isActive = flight.modeNum === mode.modeNum;
+                return (
+                  <button
                     key={mode.modeNum}
-                    name={mode.name}
-                    isActive={flight.modeNum === mode.modeNum}
-                    isConfigured={true}
                     onClick={() => handleSetMode(mode.modeNum)}
-                  />
-                ))}
-              </div>
+                    title={mode.name}
+                    className={`px-1 py-1.5 rounded-md text-[11px] font-medium truncate
+                      transition-colors duration-150
+                      ${isActive
+                        ? 'bg-blue-500 text-white shadow-sm shadow-blue-500/30'
+                        : 'bg-surface-raised text-content hover:bg-surface-raised hover:text-white border border-transparent hover:border-default'}
+                    `}
+                  >
+                    {mode.name}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Quick Actions */}
-            <div className="mb-3">
-              <SectionTitle>Quick Actions</SectionTitle>
-              <div className="flex gap-2">
-                {vehicleClass !== 'rover' && vehicleClass !== 'sub' && (
-                  <button
-                    onClick={() => setShowTakeoffDialog(true)}
-                    className="flex-1 px-2 py-1.5 text-xs font-medium rounded-lg bg-surface border border-subtle hover:bg-surface-raised hover:border-default text-content transition-all"
-                  >
-                    Takeoff
-                  </button>
-                )}
-                <button
-                  onClick={() => handleSetMode(rtlModeNum)}
-                  disabled={!flight.armed}
-                  className="flex-1 px-2 py-1.5 text-xs font-medium rounded-lg bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-amber-300 transition-all"
-                >
-                  RTL
-                </button>
-                <button
-                  onClick={() => handleSetMode(landModeNum)}
-                  disabled={!flight.armed}
-                  className="flex-1 px-2 py-1.5 text-xs font-medium rounded-lg bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-red-300 transition-all"
-                >
-                  {vehicleClass === 'sub' ? 'Surface' : 'Land'}
-                </button>
-              </div>
-            </div>
+            {/* Takeoff (only vehicle classes that can take off). RTL/Land are
+                already reachable through the mode grid above. */}
+            {vehicleClass !== 'rover' && vehicleClass !== 'sub' && (
+              <button
+                onClick={() => setShowTakeoffDialog(true)}
+                disabled={flight.armed}
+                className="w-full px-2 py-1.5 mb-2 text-xs font-medium rounded-lg bg-surface border border-subtle hover:bg-surface-raised hover:border-default disabled:opacity-40 disabled:cursor-not-allowed text-content transition-all"
+                title={flight.armed ? 'Already armed — click disarm first' : 'Arm, switch to GUIDED, takeoff'}
+              >
+                Takeoff…
+              </button>
+            )}
 
-            {/* Takeoff altitude dialog */}
-            {showTakeoffDialog && (
-              <div className="mb-3 p-2.5 bg-surface-raised rounded-lg border border-default">
-                <div className="text-xs text-content-secondary mb-2">Takeoff Altitude</div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={takeoffAlt}
-                    onChange={(e) => setTakeoffAlt(Math.max(1, Math.min(100, Number(e.target.value))))}
-                    className="flex-1 px-2 py-1.5 text-sm font-mono bg-surface-input border border-subtle rounded text-content"
-                  />
-                  <span className="text-xs text-content-secondary">m</span>
+            {/* Mission — compact 2-line card. Cramming status + buttons on a
+                single line overflowed at typical side-panel widths and made
+                button title-tooltips clip into the canvas. */}
+            <div className="mb-2 rounded-lg bg-surface border border-subtle p-1.5">
+              <div className="flex items-center justify-between mb-1 px-1">
+                <span className="text-[11px] text-content truncate">
+                  {missionLoaded
+                    ? <>
+                        {missionItems.length} wp
+                        <span className="text-content-tertiary"> · </span>
+                        {/* Arrow makes the semantics unambiguous: this is the
+                            NEXT/active waypoint, not "X complete of Y". */}
+                        <span className="font-mono text-content-secondary">
+                          {currentSeq != null
+                            ? `→ ${currentSeq + 1}/${missionItems.length}`
+                            : (isInAuto ? 'starting…' : 'idle')}
+                        </span>
+                      </>
+                    : <span className="text-content-secondary">No mission</span>}
+                </span>
+                <button
+                  onClick={() => { void fetchMission(); }}
+                  className="text-[11px] text-content-tertiary hover:text-content shrink-0"
+                  title="Reload mission from FC"
+                >⟳</button>
+              </div>
+              {missionLoaded && (
+                <div className="flex gap-1">
                   <button
-                    onClick={handleTakeoff}
-                    className="px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+                    onClick={() => handleSetMode(missionModes.auto)}
+                    disabled={!flight.armed || isInAuto}
+                    className="flex-1 px-2 py-1 text-[11px] font-medium rounded bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-emerald-300 transition-all"
+                    title={!flight.armed ? 'Arm first' : 'Switch to AUTO'}
                   >
-                    Go
+                    {isInAuto ? 'Running' : 'Start'}
                   </button>
-                  <button
-                    onClick={() => setShowTakeoffDialog(false)}
-                    className="px-2 py-1.5 text-xs text-content-secondary hover:text-content transition-colors"
-                  >
-                    Cancel
-                  </button>
+                  {isInAuto ? (
+                    <button
+                      onClick={() => handleSetMode(missionModes.pause)}
+                      disabled={!flight.armed}
+                      className="flex-1 px-2 py-1 text-[11px] font-medium rounded bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-amber-300 transition-all"
+                    >Pause</button>
+                  ) : (
+                    <button
+                      onClick={() => handleSetMode(missionModes.auto)}
+                      disabled={!flight.armed || !isInPause}
+                      className="flex-1 px-2 py-1 text-[11px] font-medium rounded bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-blue-300 transition-all"
+                      title={isInPause ? `Resume from ${missionModes.pauseLabel}` : `Pause first`}
+                    >Resume</button>
+                  )}
                 </div>
+              )}
+            </div>
+
+            {/* Takeoff altitude dialog — compact single-row: label, small
+                fixed-width number input, Go, and an ✕ for cancel. The
+                previous `flex-1` input hogged the row and pushed Cancel off
+                the panel. */}
+            {showTakeoffDialog && (
+              <div className="mb-2 p-1.5 bg-surface-raised rounded-lg border border-default flex items-center gap-1.5">
+                <span className="text-[11px] text-content-secondary shrink-0">Takeoff to</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={takeoffAlt}
+                  onChange={(e) => setTakeoffAlt(Math.max(1, Math.min(100, Number(e.target.value))))}
+                  className="w-14 px-1.5 py-1 text-sm font-mono bg-surface-input border border-subtle rounded text-content"
+                />
+                <span className="text-[11px] text-content-secondary shrink-0">m</span>
+                <button
+                  onClick={handleTakeoff}
+                  className="ml-auto px-2.5 py-1 text-[11px] font-medium bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
+                >
+                  Go
+                </button>
+                <button
+                  onClick={() => setShowTakeoffDialog(false)}
+                  className="px-1.5 py-1 text-content-secondary hover:text-content transition-colors text-sm leading-none"
+                  title="Cancel"
+                  aria-label="Cancel takeoff"
+                >✕</button>
               </div>
             )}
 
@@ -873,25 +1063,20 @@ function MavlinkFlightControl() {
 
             <button
               onClick={() => setForceArm(!forceArm)}
-              className={`
-                flex items-center justify-between w-full px-3 py-2.5 rounded-lg transition-all
+              title="Bypass pre-arm checks — use only when the failing check is known-safe."
+              className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg transition-all
                 ${forceArm
                   ? 'bg-amber-500/10 border border-amber-500/30'
-                  : 'bg-surface border border-subtle hover:border-default'
-                }
-              `}
+                  : 'bg-surface border border-subtle hover:border-default'}`}
             >
-              <div className="flex items-center gap-2.5">
-                <svg className={`w-4 h-4 ${forceArm ? 'text-amber-400' : 'text-content-secondary'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="flex items-center gap-2">
+                <svg className={`w-3.5 h-3.5 ${forceArm ? 'text-amber-400' : 'text-content-secondary'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
-                <div className="text-left">
-                  <div className={`text-xs font-medium ${forceArm ? 'text-amber-300' : 'text-content'}`}>Force ARM</div>
-                  <div className="text-[10px] text-content-secondary">Bypass pre-arm checks</div>
-                </div>
+                <span className={`text-[11px] font-medium ${forceArm ? 'text-amber-300' : 'text-content'}`}>Force ARM</span>
               </div>
-              <div className={`w-8 h-4 rounded-full transition-colors relative ${forceArm ? 'bg-amber-500' : 'bg-surface-raised'}`}>
-                <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${forceArm ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              <div className={`w-7 h-3.5 rounded-full transition-colors relative ${forceArm ? 'bg-amber-500' : 'bg-surface-raised'}`}>
+                <div className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white shadow transition-transform ${forceArm ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
               </div>
             </button>
 
@@ -1034,15 +1219,16 @@ export function FlightControlPanel() {
   }
 
   return (
-    <PanelContainer>
-      <div className="flex flex-col h-full">
-        {/* Header with status */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="text-content font-medium">{flight.mode || 'Unknown'}</div>
+    <div data-tour="telemetry-flight-control" className="h-full w-full">
+      <PanelContainer>
+        <div className="flex flex-col h-full">
+          {/* Header with status */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="text-content font-medium">{flight.mode || 'Unknown'}</div>
+            </div>
+            <RcStatusIndicator isActive={isOverrideActive} />
           </div>
-          <RcStatusIndicator isActive={isOverrideActive} />
-        </div>
 
         {/* ARM Control - Centered and prominent */}
         <div className="flex justify-center mb-4">
@@ -1170,5 +1356,6 @@ export function FlightControlPanel() {
         )}
       </div>
     </PanelContainer>
+    </div>
   );
 }

@@ -150,6 +150,19 @@ function f32Equal(a: number, b: number): boolean {
   return Math.fround(a) === Math.fround(b);
 }
 
+/**
+ * Clean a JS double for storage as an ArduPilot REAL32 param.
+ * Math.fround mirrors the float32 truncation the FC will perform; toPrecision(7)
+ * + parseFloat strips the float64 noise that survives that truncation
+ * (e.g. 4 * 3.8 = 15.200000000000001 → 15.2 instead of 15.199999809265137).
+ * Integers and non-REAL32 types pass through unchanged.
+ */
+function cleanFloat32(value: number, paramType: number): number {
+  if (paramType !== 9) return value;
+  if (Number.isInteger(value)) return value;
+  return parseFloat(Math.fround(value).toPrecision(7));
+}
+
 // Tracks params the user has actively edited via setParameter (pending FC confirmation)
 const userModifiedParams = new Set<string>();
 
@@ -383,16 +396,17 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
     }
   },
 
-  setParameter: async (paramId, value) => {
+  setParameter: async (paramId, rawValue) => {
+    const param = get().parameters.get(paramId);
+    // Use existing type if known, otherwise default to REAL32 (9) for ArduPilot
+    const paramType = param?.type ?? 9;
+    const value = cleanFloat32(rawValue, paramType);
+
     // In offline mode, just update local state - no IPC
     if (get().offlineMode) {
       get().setOfflineParameter(paramId, value);
       return true;
     }
-
-    const param = get().parameters.get(paramId);
-    // Use existing type if known, otherwise default to REAL32 (9) for ArduPilot
-    const paramType = param?.type ?? 9;
 
     const result = await window.electronAPI?.setParameter(paramId, value, paramType);
 
@@ -705,12 +719,13 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
     get().reset();
   },
 
-  setOfflineParameter: (paramId: string, value: number) => {
+  setOfflineParameter: (paramId: string, rawValue: number) => {
     set(state => {
       const params = new Map(state.parameters);
       const existing = params.get(paramId);
       if (!existing) return state;
 
+      const value = cleanFloat32(rawValue, existing.type);
       const isModified = !f32Equal(existing.originalValue ?? existing.value, value);
       params.set(paramId, { ...existing, value, isModified });
 

@@ -35,12 +35,18 @@ export function serializeLogData(msg: LogData): Uint8Array {
 }
 
 export function deserializeLogData(payload: Uint8Array): LogData {
-  const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+  // MAVLink v2 trims trailing zero bytes - zero-pad to expected length
+  let buf = payload;
+  if (payload.byteLength < 97) {
+    buf = new Uint8Array(97);
+    buf.set(payload);
+  }
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
 
   return {
     ofs: view.getUint32(0, true),
     id: view.getUint16(4, true),
-    count: payload[6],
-    data: Array.from({ length: 90 }, (_, i) => payload[7 + i * 1]),
+    count: buf[6],
+    data: Array.from({ length: 90 }, (_, i) => buf[7 + i * 1]),
   };
 }

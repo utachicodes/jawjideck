@@ -266,6 +266,51 @@ class ArduPilotSitlProcessManager {
     }
   }
 
+  /**
+   * Stop the SITL process and resolve only after it has actually exited (or
+   * after `timeoutMs` if the OS is being slow). Unlike stop(), this awaits
+   * the underlying child process's 'exit' event before returning, which is
+   * required when you intend to immediately respawn SITL with the same TCP
+   * port - otherwise start() races the dying child for the port and the new
+   * SITL silently fails to bind.
+   */
+  async stopAndWait(timeoutMs: number = 5000): Promise<void> {
+    const proc = this.process;
+    if (!proc) return;
+    return new Promise<void>((resolve) => {
+      let settled = false;
+      const settle = () => { if (!settled) { settled = true; resolve(); } };
+      proc.once('exit', settle);
+      try {
+        proc.kill('SIGTERM');
+        setTimeout(() => {
+          try { proc.kill('SIGKILL'); } catch { /* already dead */ }
+        }, 2000);
+      } catch { /* ignore */ }
+      this.process = null;
+      this._isRunning = false;
+      this._currentConfig = null;
+      // Belt-and-braces fallback so we don't hang forever.
+      setTimeout(settle, timeoutMs);
+    });
+  }
+
+  /**
+   * Stop the running SITL (waiting for actual exit) and immediately start
+   * it again with the same config. Returns whatever start() returns.
+   *
+   * Use this when you've changed something on disk that ArduPilot only picks
+   * up on cold boot (e.g. wrote a new Lua script under /APM/scripts/).
+   */
+  async restart(): Promise<{ success: boolean; command?: string; error?: string }> {
+    const cfg = this._currentConfig;
+    if (!cfg) return { success: false, error: 'No active SITL config to restart with' };
+    await this.stopAndWait(5000);
+    // Brief pause for the OS to fully release the bound TCP port (5760).
+    await new Promise<void>(r => setTimeout(r, 1000));
+    return this.start(cfg);
+  }
+
   getStatus(): ArduPilotSitlStatus {
     return {
       isRunning: this._isRunning,

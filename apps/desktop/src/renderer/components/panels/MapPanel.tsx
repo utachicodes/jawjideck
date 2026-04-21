@@ -3,12 +3,22 @@ import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents, Circle
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTelemetryStore } from '../../stores/telemetry-store';
+import { useConnectionStore } from '../../stores/connection-store';
 import { useMissionStore } from '../../stores/mission-store';
-import { commandHasLocation, MAV_CMD, type MissionItem } from '../../../shared/mission-types';
+import { commandHasLocation, hasValidCoordinates, MAV_CMD, type MissionItem } from '../../../shared/mission-types';
 import { AttitudeIndicator } from './AttitudePanel';
 import { useIpLocation } from '../../utils/ip-geolocation';
 import { useEditModeStore } from '../../stores/edit-mode-store';
 import { Mission3DPanel } from '../mission/Mission3DPanel';
+import { TAKEOFF_AT_HOME_ICON } from '../mission/takeoff-icon';
+import { createTacticalVehicleIcon, updateTacticalIconDOM } from '../map/TacticalVehicleIcon';
+import { mavTypeToTacticalClass, type VehicleState } from '../map/tactical-icon-pool';
+import { dispatchMapCommand, type ActiveCommandTarget, type MapCommand } from '../map/map-command-types';
+import { useCommandTargetStore, useSelfActiveTarget, SELF_VEHICLE_ID } from '../../stores/command-target-store';
+import { useImperativeMapLayer } from '../map/ImperativeMapLayer';
+import { MapCommandPopup } from '../map/MapCommandPopup';
+import { createPortal } from 'react-dom';
+import { computeOffsetPosition } from '../../utils/geo-offset';
 
 // Geofence and Rally overlays (read-only in telemetry view)
 import { FenceMapOverlay } from '../geofence/FenceMapOverlay';
@@ -30,6 +40,7 @@ import { MAP_LAYERS, type LayerKey, type MapLayer } from '../../../shared/map-la
 // Map overlays (weather radar, aviation, airspace zones)
 import { WeatherRadarOverlay } from '../map/overlays/WeatherRadarOverlay';
 import { OpenAipOverlay } from '../map/overlays/OpenAipOverlay';
+import { DipulOverlay } from '../map/overlays/DipulOverlay';
 import { AirspaceOverlay } from '../map/overlays/AirspaceOverlay';
 import { AirspaceLegend } from '../map/overlays/AirspaceLegend';
 import { OverlayToggles } from '../map/overlays/OverlayToggles';
@@ -265,29 +276,6 @@ const MISSION_HOME_ICON = createMissionHomeIcon();
 // END MISSION WAYPOINT RENDERING
 // =====================================================
 
-// Custom vehicle marker icon (arrow pointing in heading direction)
-function createVehicleIcon(heading: number, armed: boolean): L.DivIcon {
-  const fillColor = armed ? '#f97316' : '#22d3ee'; // Orange when armed, cyan when disarmed
-  const strokeColor = armed ? '#7c2d12' : '#0e7490'; // Dark orange / dark cyan outlines
-
-  return L.divIcon({
-    className: 'vehicle-marker',
-    html: `
-      <div style="transform: rotate(${heading}deg); width: 48px; height: 48px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
-        <svg viewBox="0 0 24 24">
-          <!-- Dark outline for contrast -->
-          <path d="M12 2L4 20l8-4 8 4L12 2z" fill="none" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
-          <!-- White outline -->
-          <path d="M12 2L4 20l8-4 8 4L12 2z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
-          <!-- Colored fill -->
-          <path d="M12 2L4 20l8-4 8 4L12 2z" fill="${fillColor}" stroke="${strokeColor}" stroke-width="1" stroke-linejoin="round"/>
-        </svg>
-      </div>
-    `,
-    iconSize: [48, 48],
-    iconAnchor: [24, 24],
-  });
-}
 
 // Home marker icon
 const homeIcon = L.divIcon({
@@ -313,11 +301,15 @@ function MapController({
   position,
   followVehicle,
   onUserInteraction,
+  onMapClick,
+  onContextMenu,
   containerRef,
 }: {
   position: [number, number];
   followVehicle: boolean;
   onUserInteraction: () => void;
+  onMapClick?: () => void;
+  onContextMenu?: (lat: number, lon: number) => void;
   containerRef: React.RefObject<HTMLDivElement>;
 }) {
   const map = useMap();
@@ -353,14 +345,24 @@ function MapController({
       onUserInteraction();
     };
 
+    const handleClick = () => onMapClick?.();
+
+    const handleContextMenu = (e: L.LeafletMouseEvent) => {
+      onContextMenu?.(e.latlng.lat, e.latlng.lng);
+    };
+
     map.on('dragstart', handleInteraction);
     map.on('zoomstart', handleInteraction);
+    map.on('click', handleClick);
+    map.on('contextmenu', handleContextMenu);
 
     return () => {
       map.off('dragstart', handleInteraction);
       map.off('zoomstart', handleInteraction);
+      map.off('click', handleClick);
+      map.off('contextmenu', handleContextMenu);
     };
-  }, [map, onUserInteraction]);
+  }, [map, onUserInteraction, onMapClick, onContextMenu]);
 
   // Clear last position when follow is disabled so re-enabling always snaps to vehicle
   useEffect(() => {
@@ -383,51 +385,42 @@ function MapController({
   return null;
 }
 
-// Heading line component
+// Speed-proportional heading line - length scales with groundspeed (meters on the map).
+// At 0 m/s it vanishes, at speed it shows where the vehicle is going.
+// Multiplier: groundspeed * seconds of lookahead (e.g. 5s = 50m at 10m/s, 250m at 50m/s)
+const HEADING_LINE_LOOKAHEAD_S = 5;
+const HEADING_LINE_MIN_SPEED = 0.5; // m/s - below this, hide the line
+
 function HeadingLine({
   position,
   heading,
-  length = 100,
+  groundspeed,
   armed,
 }: {
   position: [number, number];
   heading: number;
-  length?: number;
+  groundspeed: number;
   armed: boolean;
 }) {
-  const endPoint = calculateDestination(position[0], position[1], heading, length);
-  const lineColor = armed ? '#f97316' : '#22d3ee'; // Match vehicle colors
+  if (groundspeed < HEADING_LINE_MIN_SPEED) return null;
+
+  const length = groundspeed * HEADING_LINE_LOOKAHEAD_S;
+  // Start line well ahead of vehicle (past the icon arrowhead) so it doesn't overlap
+  const GAP = 30; // meters - clears the icon at typical zoom levels
+  const startPoint = calculateDestination(position[0], position[1], heading, GAP);
+  const endPoint = calculateDestination(position[0], position[1], heading, length + GAP);
+  const lineColor = armed ? '#f97316' : '#4ade80';
 
   return (
-    <>
-      {/* Dark outline for contrast */}
-      <Polyline
-        positions={[position, endPoint]}
-        pathOptions={{
-          color: '#000',
-          weight: 6,
-          opacity: 0.6,
-        }}
-      />
-      {/* White outline */}
-      <Polyline
-        positions={[position, endPoint]}
-        pathOptions={{
-          color: '#fff',
-          weight: 4,
-          opacity: 0.9,
-        }}
-      />
-      {/* Main colored line */}
-      <Polyline
-        positions={[position, endPoint]}
-        pathOptions={{
-          color: lineColor,
-          weight: 3,
-          opacity: 1,
-        }}
-      />
-    </>
+    <Polyline
+      positions={[startPoint, endPoint]}
+      pathOptions={{
+        color: lineColor,
+        weight: 2,
+        opacity: 0.8,
+        dashArray: '8 5',
+      }}
+    />
   );
 }
 
@@ -449,6 +442,316 @@ function HomeLine({
         dashArray: '3, 6',
       }}
     />
+  );
+}
+
+// Command target icons + line styles (module-level, created once)
+const GOTO_TARGET_ICON = L.divIcon({
+  className: '',
+  html: `
+    <div style="
+      width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+      filter:drop-shadow(0 0 6px rgba(34,211,238,0.8));
+    ">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="3" fill="#22d3ee" fill-opacity="0.4"/>
+        <line x1="12" y1="2" x2="12" y2="6"/>
+        <line x1="12" y1="18" x2="12" y2="22"/>
+        <line x1="2" y1="12" x2="6" y2="12"/>
+        <line x1="18" y1="12" x2="22" y2="12"/>
+      </svg>
+    </div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+});
+
+// Orbit center: crosshair / target reticle in violet (matches ring)
+const ORBIT_CENTER_ICON = L.divIcon({
+  className: '',
+  html: `
+    <div style="
+      width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+      filter:drop-shadow(0 0 6px rgba(167,139,250,0.9));
+    ">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round">
+        <circle cx="14" cy="14" r="4" fill="#a78bfa" fill-opacity="0.5" stroke="#fff" stroke-width="1.5"/>
+        <line x1="14" y1="2" x2="14" y2="7"/>
+        <line x1="14" y1="21" x2="14" y2="26"/>
+        <line x1="2" y1="14" x2="7" y2="14"/>
+        <line x1="21" y1="14" x2="26" y2="14"/>
+      </svg>
+    </div>
+  `,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+});
+
+const LAND_TARGET_ICON = L.divIcon({
+  className: '',
+  html: `
+    <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 6px rgba(244,63,94,0.8));">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="#fb7185" stroke="#fff" stroke-width="1.5" stroke-linejoin="round">
+        <path d="M12 21l-7-9h4V3h6v9h4z"/>
+      </svg>
+    </div>
+  `,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+});
+
+// Per-command line styles. Color matches the command's accent color.
+const GOTO_LINE_OPTIONS: L.PolylineOptions = {
+  color: '#22d3ee',
+  weight: 2,
+  opacity: 0.7,
+  dashArray: '8 6',
+};
+const ORBIT_LINE_OPTIONS: L.PolylineOptions = {
+  color: '#a78bfa',
+  weight: 2,
+  opacity: 0.55,
+  dashArray: '4 6',
+};
+const LAND_LINE_OPTIONS: L.PolylineOptions = {
+  color: '#fb7185',
+  weight: 2,
+  opacity: 0.7,
+  dashArray: '8 6',
+};
+
+const ORBIT_RING_OPTIONS: L.CircleMarkerOptions = {
+  color: '#a78bfa',
+  weight: 2.5,
+  opacity: 0.95,
+  fill: true,
+  fillColor: '#a78bfa',
+  fillOpacity: 0.08,
+  dashArray: '8 6',
+};
+
+/**
+ * Build a small arrow marker pointing tangentially around the orbit, indicating
+ * direction (CW for positive radius, CCW for negative). Placed at 4 points
+ * around the ring so direction is unambiguous from any zoom level.
+ */
+function createOrbitArrowIcon(rotationDeg: number): L.DivIcon {
+  return L.divIcon({
+    className: '',
+    html: `
+      <div style="
+        width:18px;height:18px;
+        transform:rotate(${rotationDeg}deg);
+        display:flex;align-items:center;justify-content:center;
+      ">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="#a78bfa" stroke="#fff" stroke-width="1">
+          <path d="M7 1 L12 11 L7 8 L2 11 Z"/>
+        </svg>
+      </div>
+    `,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  });
+}
+
+/**
+ * Command layer - uses useImperativeMapLayer() to manage target marker and
+ * target line. The COMMAND POPUP itself is rendered as a React overlay
+ * positioned via map.latLngToContainerPoint(), NOT a leaflet popup.
+ *
+ * Why: React 18 event delegation runs from the React root. Leaflet popups call
+ * disableClickPropagation on their content which kills React synthetic events,
+ * so portaling React UI into a leaflet popup makes onClick handlers no-op. By
+ * rendering the popup as a normal React child inside the MapContainer, events
+ * stay live while we still get pixel-perfect positioning by tracking the map.
+ */
+function CommandLayer({
+  commandPopup,
+  activeTarget,
+  vehiclePosition,
+  onConfirm,
+  onCancel,
+}: {
+  commandPopup: { lat: number; lon: number } | null;
+  activeTarget: ActiveCommandTarget | null;
+  vehiclePosition: [number, number];
+  onConfirm: (command: MapCommand) => void;
+  onCancel: () => void;
+}) {
+  const layer = useImperativeMapLayer();
+  const map = layer.map;
+
+  // Track screen-space anchor for the popup. Updated on every map move so the
+  // popup stays glued to the lat/lon as the user pans/zooms.
+  const [anchorPx, setAnchorPx] = useState<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (!commandPopup) {
+      setAnchorPx(null);
+      return;
+    }
+    const updateAnchor = () => {
+      const pt = map.latLngToContainerPoint([commandPopup.lat, commandPopup.lon]);
+      setAnchorPx({ x: pt.x, y: pt.y });
+    };
+    updateAnchor();
+    map.on('move zoom moveend zoomend', updateAnchor);
+    return () => { map.off('move zoom moveend zoomend', updateAnchor); };
+  }, [commandPopup, map]);
+
+  // Distance + telemetry context for the popup
+  const popupContext = useMemo(() => {
+    if (!commandPopup) return null;
+    const dist = calculateDistance(
+      vehiclePosition[0], vehiclePosition[1],
+      commandPopup.lat, commandPopup.lon,
+    );
+    const altAgl = useTelemetryStore.getState().position.relativeAlt;
+    const mode = useTelemetryStore.getState().flight.mode;
+    return { dist, altAgl, mode };
+  }, [commandPopup, vehiclePosition]);
+
+  // --- Active target marker + line + orbit ring + direction arrows ---
+  useEffect(() => {
+    const ARROW_IDS = ['cmd-orbit-arrow-0', 'cmd-orbit-arrow-1', 'cmd-orbit-arrow-2', 'cmd-orbit-arrow-3'] as const;
+    const cleanupArrows = () => ARROW_IDS.forEach(id => layer.remove(id));
+
+    if (!activeTarget) {
+      layer.remove('cmd-target');
+      layer.remove('cmd-line');
+      layer.remove('cmd-orbit-ring');
+      cleanupArrows();
+      return;
+    }
+
+    if (activeTarget.type === 'goto') {
+      layer.polyline('cmd-line', [vehiclePosition, [activeTarget.lat, activeTarget.lon]], GOTO_LINE_OPTIONS);
+      layer.marker('cmd-target', [activeTarget.lat, activeTarget.lon], { icon: GOTO_TARGET_ICON });
+      layer.remove('cmd-orbit-ring');
+      cleanupArrows();
+    } else if (activeTarget.type === 'orbit' || activeTarget.type === 'spiral') {
+      // Spiral renders the same circular footprint as Orbit - the climb is a
+      // temporal property, not a static path. Direction arrows still apply.
+      layer.polyline('cmd-line', [vehiclePosition, [activeTarget.lat, activeTarget.lon]], ORBIT_LINE_OPTIONS);
+      layer.marker('cmd-target', [activeTarget.lat, activeTarget.lon], { icon: ORBIT_CENTER_ICON });
+      layer.circle('cmd-orbit-ring', [activeTarget.lat, activeTarget.lon], Math.abs(activeTarget.radius), ORBIT_RING_OPTIONS);
+      const isCw = activeTarget.radius >= 0;
+      const tangentOffset = isCw ? 90 : -90;
+      const r = Math.abs(activeTarget.radius);
+      [0, 90, 180, 270].forEach((bearing, i) => {
+        const pos = computeOffsetPosition(activeTarget.lat, activeTarget.lon, bearing, r);
+        const arrowRotation = (bearing + tangentOffset + 360) % 360;
+        layer.marker(ARROW_IDS[i]!, [pos.lat, pos.lon], { icon: createOrbitArrowIcon(arrowRotation), interactive: false });
+      });
+    } else if (activeTarget.type === 'watchtower') {
+      // Watchtower flies the vehicle TO the point (approach phase) before
+      // starting yaw rotation. Render the same line + marker intent indicator
+      // as Move/Orbit so the operator sees what was commanded.
+      layer.polyline('cmd-line', [vehiclePosition, [activeTarget.lat, activeTarget.lon]], ORBIT_LINE_OPTIONS);
+      layer.marker('cmd-target', [activeTarget.lat, activeTarget.lon], { icon: ORBIT_CENTER_ICON });
+      layer.remove('cmd-orbit-ring');
+      cleanupArrows();
+    } else if (activeTarget.type === 'reveal' || activeTarget.type === 'strafe') {
+      // Reveal/Strafe: line from vehicle to target as the "look-at" indicator.
+      // The exact pull-back / dolly path is computed FC-side from the vehicle
+      // pose at command START; from the GCS side we can only show the target
+      // and the look-at line as an intent indicator.
+      layer.polyline('cmd-line', [vehiclePosition, [activeTarget.lat, activeTarget.lon]], ORBIT_LINE_OPTIONS);
+      layer.marker('cmd-target', [activeTarget.lat, activeTarget.lon], { icon: ORBIT_CENTER_ICON });
+      layer.remove('cmd-orbit-ring');
+      cleanupArrows();
+    } else if (activeTarget.type === 'climbRtl') {
+      // No spatial target - vehicle climbs in place. Clear all overlays.
+      layer.remove('cmd-line');
+      layer.remove('cmd-target');
+      layer.remove('cmd-orbit-ring');
+      cleanupArrows();
+    } else {
+      layer.polyline('cmd-line', [vehiclePosition, [activeTarget.lat, activeTarget.lon]], LAND_LINE_OPTIONS);
+      layer.marker('cmd-target', [activeTarget.lat, activeTarget.lon], { icon: LAND_TARGET_ICON });
+      layer.remove('cmd-orbit-ring');
+      cleanupArrows();
+    }
+  }, [activeTarget, vehiclePosition, layer]);
+
+  // Render the popup as a React overlay portaled to document.body so it's
+  // outside the leaflet map subtree (otherwise leaflet's native click listener
+  // fires before React's synthetic events and kills the popup).
+  // Position is calculated by adding the map container's viewport offset to
+  // the lat/lon → container point projection.
+  if (!commandPopup || !anchorPx || !popupContext) return null;
+
+  return (
+    <CommandPopupOverlay
+      anchorPx={anchorPx}
+      mapContainer={map.getContainer()}
+      lat={commandPopup.lat}
+      lon={commandPopup.lon}
+      distanceMeters={popupContext.dist}
+      currentAltAgl={popupContext.altAgl}
+      currentMode={popupContext.mode}
+      onConfirm={onConfirm}
+      onCancel={onCancel}
+    />
+  );
+}
+
+interface CommandPopupOverlayProps {
+  anchorPx: { x: number; y: number };
+  mapContainer: HTMLElement;
+  lat: number;
+  lon: number;
+  distanceMeters: number;
+  currentAltAgl: number;
+  currentMode: string;
+  onConfirm: (command: MapCommand) => void;
+  onCancel: () => void;
+}
+
+function CommandPopupOverlay({
+  anchorPx,
+  mapContainer,
+  lat,
+  lon,
+  distanceMeters,
+  currentAltAgl,
+  currentMode,
+  onConfirm,
+  onCancel,
+}: CommandPopupOverlayProps) {
+  // Convert map-container-relative anchor to viewport-relative position
+  // (the portal target is document.body, which uses viewport coordinates).
+  const [viewportPos, setViewportPos] = useState<{ left: number; top: number } | null>(null);
+  useEffect(() => {
+    const rect = mapContainer.getBoundingClientRect();
+    setViewportPos({
+      left: rect.left + anchorPx.x + 12,
+      top: rect.top + anchorPx.y - 12,
+    });
+  }, [anchorPx.x, anchorPx.y, mapContainer]);
+
+  if (!viewportPos) return null;
+
+  return createPortal(
+    <div
+      className="tactical-command-popup fixed z-[2000] pointer-events-auto rounded-lg shadow-2xl border border-cyan-700/40 bg-gray-900/95 backdrop-blur-sm p-3"
+      style={{
+        left: viewportPos.left,
+        top: viewportPos.top,
+        transform: 'translateY(-100%)',
+      }}
+    >
+      <MapCommandPopup
+        lat={lat}
+        lon={lon}
+        distanceMeters={distanceMeters}
+        currentAltAgl={currentAltAgl}
+        currentMode={currentMode}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
+    </div>,
+    document.body,
   );
 }
 
@@ -478,7 +781,7 @@ function LayerSwitcher({
       {isOpen && (
         <>
           <div className="fixed inset-0 z-[999]" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 bg-surface border border-subtle rounded shadow-xl z-[1000] py-1 min-w-[100px]">
+          <div className="absolute right-0 top-full mt-1 bg-surface-solid border border-subtle rounded shadow-xl z-[1000] py-1 min-w-[100px]">
             {(Object.keys(TELEMETRY_LAYERS) as TelemetryLayerKey[]).map((key) => (
               <button
                 key={key}
@@ -594,30 +897,6 @@ function TelemetryViewportSync() {
   return null;
 }
 
-// ─── 2D/3D toggle (shared between telemetry 2D and 3D wrappers) ─────────────
-
-function MapModeToggle({ className }: { className?: string }) {
-  const mapMode = useEditModeStore((s) => s.mapMode);
-  const setMapMode = useEditModeStore((s) => s.setMapMode);
-
-  return (
-    <div className={`flex rounded-lg overflow-hidden shadow-lg border border-default ${className ?? ''}`}>
-      <button
-        onClick={() => setMapMode('2d')}
-        className={`px-2 py-1 text-xs font-medium transition-colors ${
-          mapMode === '2d' ? 'bg-surface-raised text-content' : 'bg-surface text-content-secondary hover:text-content'
-        }`}
-      >2D</button>
-      <button
-        onClick={() => setMapMode('3d')}
-        className={`px-2 py-1 text-xs font-medium transition-colors ${
-          mapMode === '3d' ? 'bg-surface-raised text-content' : 'bg-surface text-content-secondary hover:text-content'
-        }`}
-      >3D</button>
-    </div>
-  );
-}
-
 // ─── 3D Telemetry Map (wraps Mission3DPanel with HUD overlays) ───────────────
 
 const TelemetryMap3D = React.memo(function TelemetryMap3D() {
@@ -704,10 +983,15 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
     }
   }, [gpsPosition, hasValidGps]);
 
+  // Map-readiness flag so the command-overlay effect knows when the MapLibre
+  // instance is wired up and styles are loaded.
+  const [mapReady, setMapReady] = useState(false);
+
   // Handle map ready — store ref, attach drag listener, and center on vehicle
   const handleMapReady = useCallback((map: import('maplibre-gl').Map) => {
     mapInstanceRef.current = map;
     map.on('dragstart', () => setFollowVehicle(false));
+    setMapReady(true);
     // Center on vehicle immediately when 3D map loads (follow effect uses a ref
     // that isn't a dependency, so it won't fire until the next GPS update)
     const g = useTelemetryStore.getState().gps;
@@ -721,6 +1005,123 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
     if (!followVehicle || !hasValidGps || !mapInstanceRef.current) return;
     mapInstanceRef.current.flyTo({ center: [gps.lon, gps.lat], duration: 500 });
   }, [followVehicle, hasValidGps, gps.lat, gps.lon]);
+
+  // ── Command-target overlay (3D) ────────────────────────────────────────
+  // Mirrors the 2D map's command visualisation: draws the orbit ring, line
+  // from vehicle to target, and target marker on top of the MapLibre 3D map
+  // so the operator sees the same intent regardless of the active map mode.
+  // Reads from the shared command-target store so the overlay survives the
+  // 2D ↔ 3D switch (the bug this whole refactor was about).
+  const activeTarget3D = useSelfActiveTarget();
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !mapReady) return;
+
+    // All overlay layers/sources share this prefix so cleanup is a single
+    // sweep — no chance of leaking layers when the target type changes.
+    const PREFIX = 'ad-cmd-';
+    const cleanup = () => {
+      // Remove layers first (they reference sources), then sources.
+      const style = map.getStyle();
+      if (!style?.layers) return;
+      for (const layer of [...style.layers]) {
+        if (layer.id.startsWith(PREFIX) && map.getLayer(layer.id)) map.removeLayer(layer.id);
+      }
+      for (const sourceId of Object.keys(style.sources ?? {})) {
+        if (sourceId.startsWith(PREFIX) && map.getSource(sourceId)) map.removeSource(sourceId);
+      }
+    };
+    cleanup();
+
+    if (!activeTarget3D) return;
+
+    // Helper: GeoJSON Polygon ring approximating a circle of radius `r` (m)
+    // around (lat, lon). 64 segments is smooth enough at typical zoom levels.
+    const circlePoly = (lat: number, lon: number, r: number): [number, number][] => {
+      const segs = 64;
+      const out: [number, number][] = [];
+      const latM = 111320;
+      const lonM = 111320 * Math.cos((lat * Math.PI) / 180);
+      for (let i = 0; i <= segs; i++) {
+        const a = (i / segs) * 2 * Math.PI;
+        out.push([lon + (r * Math.sin(a)) / lonM, lat + (r * Math.cos(a)) / latM]);
+      }
+      return out;
+    };
+
+    const addLine = (id: string, from: [number, number], to: [number, number], color: string) => {
+      map.addSource(`${PREFIX}${id}`, {
+        type: 'geojson',
+        data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [from, to] } },
+      });
+      map.addLayer({
+        id: `${PREFIX}${id}`,
+        type: 'line',
+        source: `${PREFIX}${id}`,
+        paint: { 'line-color': color, 'line-width': 2, 'line-dasharray': [2, 2] },
+      });
+    };
+
+    const addPoint = (id: string, lng: number, lat: number, color: string) => {
+      map.addSource(`${PREFIX}${id}`, {
+        type: 'geojson',
+        data: { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [lng, lat] } },
+      });
+      map.addLayer({
+        id: `${PREFIX}${id}`,
+        type: 'circle',
+        source: `${PREFIX}${id}`,
+        paint: {
+          'circle-radius': 8,
+          'circle-color': color,
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 2,
+        },
+      });
+    };
+
+    const addRing = (id: string, lat: number, lon: number, r: number, color: string) => {
+      map.addSource(`${PREFIX}${id}`, {
+        type: 'geojson',
+        data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: circlePoly(lat, lon, r) } },
+      });
+      map.addLayer({
+        id: `${PREFIX}${id}`,
+        type: 'line',
+        source: `${PREFIX}${id}`,
+        paint: { 'line-color': color, 'line-width': 2.5, 'line-dasharray': [3, 2] },
+      });
+    };
+
+    const vehLngLat: [number, number] = [vehicleLngLat[0], vehicleLngLat[1]];
+
+    if (activeTarget3D.type === 'goto') {
+      const tgt: [number, number] = [activeTarget3D.lon, activeTarget3D.lat];
+      addLine('line', vehLngLat, tgt, '#22d3ee');
+      addPoint('target', tgt[0], tgt[1], '#22d3ee');
+    } else if (activeTarget3D.type === 'orbit' || activeTarget3D.type === 'spiral') {
+      const tgt: [number, number] = [activeTarget3D.lon, activeTarget3D.lat];
+      addLine('line', vehLngLat, tgt, '#a78bfa');
+      addPoint('target', tgt[0], tgt[1], '#a78bfa');
+      addRing('ring', activeTarget3D.lat, activeTarget3D.lon, Math.abs(activeTarget3D.radius), '#a78bfa');
+    } else if (activeTarget3D.type === 'watchtower') {
+      const tgt: [number, number] = [activeTarget3D.lon, activeTarget3D.lat];
+      addLine('line', vehLngLat, tgt, '#a78bfa');
+      addPoint('target', tgt[0], tgt[1], '#a78bfa');
+    } else if (activeTarget3D.type === 'reveal' || activeTarget3D.type === 'strafe') {
+      // Same intent indicator as 2D: line from vehicle to target + target dot.
+      const tgt: [number, number] = [activeTarget3D.lon, activeTarget3D.lat];
+      addLine('line', vehLngLat, tgt, '#a78bfa');
+      addPoint('target', tgt[0], tgt[1], '#a78bfa');
+    } else if (activeTarget3D.type === 'land') {
+      const tgt: [number, number] = [activeTarget3D.lon, activeTarget3D.lat];
+      addLine('line', vehLngLat, tgt, '#f43f5e');
+      addPoint('target', tgt[0], tgt[1], '#f43f5e');
+    }
+    // climbRtl has no spatial point — nothing to draw.
+
+    return cleanup;
+  }, [activeTarget3D, vehicleLngLat, mapReady]);
 
   const clearTrail = useCallback(() => { setTrail([]); }, []);
 
@@ -855,7 +1256,6 @@ const TelemetryMap3D = React.memo(function TelemetryMap3D() {
   return (
     <div className="relative h-full w-full">
       <Mission3DPanel
-        showMapModeToggle
         onMapReady={handleMapReady}
         isTelemetryMode
         headingLineEnd={headingLineEnd}
@@ -984,6 +1384,13 @@ function OverlayFetcher() {
   }, []);
 
   useEffect(() => {
+    const b = map.getBounds();
+    useOverlayStore.getState().updateRegionalAvailability({
+      south: b.getSouth(), north: b.getNorth(), west: b.getWest(), east: b.getEast(),
+    });
+  }, [map]);
+
+  useEffect(() => {
     if (activeOverlays.has('airspace')) {
       const center = map.getCenter();
       fetchAirspaceData(center.lat, center.lng, map.getZoom());
@@ -992,6 +1399,10 @@ function OverlayFetcher() {
 
   useMapEvents({
     moveend: () => {
+      const b = map.getBounds();
+      useOverlayStore.getState().updateRegionalAvailability({
+        south: b.getSouth(), north: b.getNorth(), west: b.getWest(), east: b.getEast(),
+      });
       if (useOverlayStore.getState().activeOverlays.has('airspace')) {
         const center = map.getCenter();
         fetchAirspaceData(center.lat, center.lng, map.getZoom());
@@ -1012,6 +1423,7 @@ function MapOverlayLayers({ baseLayer }: { baseLayer: string }) {
       {activeOverlays.has('airspace') && <AirspaceOverlay />}
       {activeOverlays.has('radar') && <WeatherRadarOverlay baseLayer={baseLayer} />}
       {activeOverlays.has('openaip') && <OpenAipOverlay />}
+      {activeOverlays.has('dipul') && <DipulOverlay />}
     </>
   );
 }
@@ -1044,6 +1456,9 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
   const vfrHud = useTelemetryStore((s) => s.vfrHud);
   const flight = useTelemetryStore((s) => s.flight);
   const attitude = useTelemetryStore((s) => s.attitude);
+  const battery = useTelemetryStore((s) => s.battery);
+  const wind = useTelemetryStore((s) => s.wind);
+  const connectionState = useConnectionStore((s) => s.connectionState);
   const [followVehicle, setFollowVehicle] = useState(true);
   const [trail, setTrail] = useState<[number, number][]>([]);
   const [homePosition, setHomePosition] = useState<[number, number] | null>(null);
@@ -1070,9 +1485,20 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
   // Mission store (read-only display)
   const { missionItems, homePosition: missionHome, currentSeq } = useMissionStore();
 
-  // Filter to only items with locations
+  // Filter to only items with locations and real coordinates
+  // (TAKEOFF and other commands often have lat/lon = 0; render those separately at home)
   const waypoints = useMemo(() =>
-    missionItems.filter(item => commandHasLocation(item.command)),
+    missionItems.filter(item =>
+      commandHasLocation(item.command) && hasValidCoordinates(item.latitude, item.longitude)
+    ),
+    [missionItems]
+  );
+
+  // TAKEOFF items with placeholder (0,0) coords - render at home with rocket icon
+  const ghostTakeoffItems = useMemo(() =>
+    missionItems.filter(item =>
+      item.command === MAV_CMD.NAV_TAKEOFF && !hasValidCoordinates(item.latitude, item.longitude)
+    ),
     [missionItems]
   );
 
@@ -1100,6 +1526,54 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
     () => gpsPosition || homePosition || defaultPosition,
     [gpsPosition, homePosition, defaultPosition]
   );
+
+  // Selection state
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const VEHICLE_ID = 'vehicle-1';
+
+  // Tactical icon properties
+  const tacticalClass = mavTypeToTacticalClass(connectionState.mavType);
+  const vehicleState: VehicleState = useMemo(() => {
+    if (flight.armed && battery.remaining > 0 && battery.remaining < 20) return 'critical';
+    if (flight.armed && gps.fixType < 2) return 'critical';
+    if (flight.armed) return 'armed';
+    return 'disarmed';
+  }, [flight.armed, battery.remaining, gps.fixType]);
+
+  const isSelected = selectedVehicleId === VEHICLE_ID;
+
+  // Icon is only rebuilt when stable props change (state, mode, selection, vehicle class).
+  // Heading/speed/alt are updated via cheap DOM mutations to avoid flicker.
+  const tacticalIcon = useMemo(
+    () => createTacticalVehicleIcon({
+      vehicleClass: tacticalClass,
+      state: vehicleState,
+      selected: isSelected,
+      mode: flight.mode,
+    }),
+    [tacticalClass, vehicleState, isSelected, flight.mode],
+  );
+
+  // Ref to the Leaflet marker for DOM-based updates
+  const vehicleMarkerRef = useRef<L.Marker | null>(null);
+
+  // Update heading/speed/alt via DOM manipulation - no icon rebuild, no flicker
+  useEffect(() => {
+    const marker = vehicleMarkerRef.current;
+    if (!marker) return;
+    const el = marker.getElement();
+    if (!el) return;
+    updateTacticalIconDOM(el, {
+      heading: vfrHud.heading,
+      groundspeed: vfrHud.groundspeed,
+      altitudeAgl: position.relativeAlt,
+      windDirection: wind.direction,
+      windSpeed: wind.speed,
+    }, tacticalClass === 'antenna');
+    // tacticalIcon is in deps so that whenever the icon DOM is regenerated
+    // (e.g. selection change rebuilds it with reset rotation), we reapply
+    // the current heading immediately - prevents a brief flip-to-north flicker.
+  }, [vfrHud.heading, vfrHud.groundspeed, position.relativeAlt, wind.direction, wind.speed, tacticalClass, tacticalIcon]);
 
   // Calculate distance and bearing to home
   const homeStats = useMemo(() => {
@@ -1141,6 +1615,132 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
     setFollowVehicle(false);
   }, []);
 
+  // Command popup is local UI state — only relevant while the popover is up.
+  const [commandPopup, setCommandPopup] = useState<{ lat: number; lon: number } | null>(null);
+  // Active target lives in a global store so it survives 2D ↔ 3D switches and
+  // panel remounts, and so the 3D map can render the same overlay. Keyed by
+  // vehicle id (currently always SELF) for future multi-vehicle support.
+  const activeTarget = useSelfActiveTarget();
+  const setActiveTarget = useCallback((next: ActiveCommandTarget | null) => {
+    useCommandTargetStore.getState().setTarget(SELF_VEHICLE_ID, next);
+  }, []);
+
+  // Escape key: close popup first, then deselect vehicle
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (commandPopup) {
+          setCommandPopup(null);
+        } else {
+          setSelectedVehicleId(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [commandPopup]);
+
+  // Right-click handler: open go-to popup (only when vehicle selected AND armed)
+  const handleMapContextMenu = useCallback((lat: number, lon: number) => {
+    if (!selectedVehicleId) return;
+    if (!useTelemetryStore.getState().flight.armed) return; // safety: no commands when disarmed
+    setCommandPopup({ lat, lon });
+  }, [selectedVehicleId]);
+
+  // Command confirm: dispatch the chosen MapCommand and visualize the target.
+  // The popup decides the dispatch path (native vs script) and passes through
+  // here so we don't duplicate that decision.
+  //
+  // Script→Native handoff: if the previously-active target was script-managed
+  // (orbit / spiral / POI / watchtower / climb-RTL) the script keeps pushing
+  // set_target_location every tick. Any subsequent NATIVE command (Move /
+  // Land / native DO_ORBIT) will appear ignored unless we first send STOP to
+  // the script's USER_1 dispatcher. We do this transparently here based on
+  // the prior activeTarget.
+  const handleCommandConfirm = useCallback(async (command: MapCommand, options?: { preferScript?: boolean }) => {
+    // Safety: verify still armed before sending any flight command
+    if (!useTelemetryStore.getState().flight.armed) {
+      setCommandPopup(null);
+      return;
+    }
+    const prev = useCommandTargetStore.getState().getTarget(SELF_VEHICLE_ID);
+    const prevWasScriptHeld = !!prev && (
+      prev.type === 'orbit' || prev.type === 'spiral' ||
+      prev.type === 'watchtower' || prev.type === 'climbRtl' ||
+      prev.type === 'reveal' || prev.type === 'strafe'
+    );
+    const newIsNative =
+      command.type === 'goto' ||
+      command.type === 'land' ||
+      (command.type === 'orbit' && !options?.preferScript);
+    const stopScriptFirst = prevWasScriptHeld && newIsNative;
+    const result = await dispatchMapCommand(command, { ...options, stopScriptFirst });
+    if (result.success) {
+      // ActiveTarget mirrors the issued command's variant for correct overlay rendering.
+      if (command.type === 'goto') {
+        setActiveTarget({ type: 'goto', lat: command.lat, lon: command.lon, alt: command.alt });
+      } else if (command.type === 'orbit') {
+        setActiveTarget({ type: 'orbit', lat: command.lat, lon: command.lon, alt: command.alt, radius: command.radius });
+      } else if (command.type === 'spiral') {
+        setActiveTarget({
+          type: 'spiral', lat: command.lat, lon: command.lon, radius: command.radius,
+          startAlt: command.startAlt, targetAlt: command.targetAlt,
+        });
+      } else if (command.type === 'watchtower') {
+        setActiveTarget({ type: 'watchtower', lat: command.lat, lon: command.lon, alt: command.alt, yawRate: command.yawRate });
+      } else if (command.type === 'climbRtl') {
+        setActiveTarget({ type: 'climbRtl', targetAlt: command.targetAlt });
+      } else if (command.type === 'reveal') {
+        setActiveTarget({
+          type: 'reveal', lat: command.lat, lon: command.lon, alt: command.alt,
+          pullbackDist: command.pullbackDist,
+        });
+      } else if (command.type === 'strafe') {
+        setActiveTarget({
+          type: 'strafe', lat: command.lat, lon: command.lon, alt: command.alt,
+          offsetDist: command.offsetDist, length: command.length,
+        });
+      } else {
+        setActiveTarget({ type: 'land', lat: command.lat, lon: command.lon });
+      }
+    }
+    setCommandPopup(null);
+  }, []);
+
+  const handleCommandCancel = useCallback(() => {
+    setCommandPopup(null);
+  }, []);
+
+  // Clear active target based on command type:
+  //  - goto:  mode != GUIDED, OR vehicle within 5m of target (arrived)
+  //  - orbit/spiral/watchtower: mode != GUIDED (script keeps running otherwise)
+  //  - climbRtl: mode != GUIDED && != RTL (RTL is the expected next mode)
+  //  - land:  mode != GUIDED && mode != LAND (LAND is the expected next mode)
+  useEffect(() => {
+    if (!activeTarget) return;
+    const modeUpper = flight.mode.toUpperCase();
+
+    if (activeTarget.type === 'land') {
+      if (modeUpper !== 'GUIDED' && modeUpper !== 'LAND') setActiveTarget(null);
+      return;
+    }
+    if (activeTarget.type === 'climbRtl') {
+      if (modeUpper !== 'GUIDED' && modeUpper !== 'RTL') setActiveTarget(null);
+      return;
+    }
+    if (modeUpper !== 'GUIDED') {
+      setActiveTarget(null);
+      return;
+    }
+    if (activeTarget.type === 'goto') {
+      const dist = calculateDistance(
+        vehiclePosition[0], vehiclePosition[1],
+        activeTarget.lat, activeTarget.lon,
+      );
+      if (dist < 5) setActiveTarget(null);
+    }
+  }, [activeTarget, flight.mode, vehiclePosition]);
+
   const clearTrail = useCallback(() => {
     setTrail([]);
   }, []);
@@ -1159,9 +1759,9 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
   const layer = TELEMETRY_LAYERS[currentLayer];
 
   return (
-    <div ref={containerRef} className="h-full w-full flex flex-col bg-surface-base relative">
+    <div ref={containerRef} data-tour="telemetry-map" className="h-full w-full flex flex-col bg-surface-base relative">
       {/* Top toolbar */}
-      <div className="absolute top-2 right-2 z-[1000] flex flex-col gap-1">
+      <div data-tour="telemetry-map-overlays" className="absolute top-2 right-2 z-[1000] flex flex-col gap-1">
         <LayerSwitcher currentLayer={currentLayer} onLayerChange={setCurrentLayer} />
         <button
           onClick={() => setFollowVehicle(!followVehicle)}
@@ -1441,6 +2041,8 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
           position={vehiclePosition}
           followVehicle={followVehicle}
           onUserInteraction={handleUserMapInteraction}
+          onMapClick={() => { setSelectedVehicleId(null); setCommandPopup(null); }}
+          onContextMenu={handleMapContextMenu}
           containerRef={containerRef}
         />
 
@@ -1473,12 +2075,12 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
           <HomeLine vehiclePosition={vehiclePosition} homePosition={homePosition} />
         )}
 
-        {/* Heading line */}
+        {/* Heading line - speed proportional */}
         {showHeadingLine && (
           <HeadingLine
             position={vehiclePosition}
             heading={vfrHud.heading}
-            length={headingLineLength}
+            groundspeed={vfrHud.groundspeed}
             armed={flight.armed}
           />
         )}
@@ -1537,6 +2139,16 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
               />
             )}
 
+            {/* TAKEOFF (placeholder coords) rendered at mission home */}
+            {missionHome && ghostTakeoffItems.map((wp) => (
+              <Marker
+                key={`takeoff-${wp.seq}`}
+                position={[missionHome.lat, missionHome.lon]}
+                icon={TAKEOFF_AT_HOME_ICON}
+                zIndexOffset={-500}
+              />
+            ))}
+
             {/* Waypoint markers (read-only) */}
             {waypoints.map((wp) => (
               <Marker
@@ -1558,10 +2170,27 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
         {/* Map overlays (self-subscribed to avoid re-rendering terrain) */}
         <MapOverlayLayers baseLayer={currentLayer} />
 
-        {/* Vehicle marker - always show */}
+        {/* Vehicle marker - tactical icon */}
         <Marker
+          ref={vehicleMarkerRef}
           position={vehiclePosition}
-          icon={createVehicleIcon(vfrHud.heading, flight.armed)}
+          zIndexOffset={5000}
+          icon={tacticalIcon}
+          eventHandlers={{
+            click: (e) => {
+              L.DomEvent.stopPropagation(e.originalEvent);
+              setSelectedVehicleId(prev => prev === VEHICLE_ID ? null : VEHICLE_ID);
+            },
+          }}
+        />
+
+        {/* Imperative command layer - popup/target/line managed via refs, immune to re-renders */}
+        <CommandLayer
+          commandPopup={commandPopup}
+          activeTarget={activeTarget}
+          vehiclePosition={vehiclePosition}
+          onConfirm={handleCommandConfirm}
+          onCancel={handleCommandCancel}
         />
       </MapContainer>
     </div>

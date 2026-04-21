@@ -24,6 +24,24 @@ interface CompileContext {
   entryInterval: number;
   /** Counter for generating unique variable names */
   varCounter: number;
+  /**
+   * Code emitted at module scope between the state vars and the update()
+   * function definition. Used by nodes that need one-time setup (e.g. the
+   * MAV_CMD_USER_x receiver registers MAVLink rx hooks at script load time,
+   * not on every update tick).
+   */
+  prelude: string[];
+  /**
+   * Per-node MAVLink USER_x receiver registrations. We collect them while
+   * compiling node bodies and emit ONE shared receive loop at the start of
+   * update() so messages aren't consumed by the wrong node's drain loop.
+   */
+  mavlinkRxNodes: Array<{
+    cmdId: number;
+    triggerVar: string;
+    p1Var: string; p2Var: string; p3Var: string; p4Var: string;
+    locVar: string;
+  }>;
 }
 
 export interface CompileResult {
@@ -266,6 +284,7 @@ function compileNode(
     emit(ctx, `local ${latVar} = ${locVar} and ${locVar}:lat() * 1.0e-7 or 0`);
     emit(ctx, `local ${lngVar} = ${locVar} and ${locVar}:lng() * 1.0e-7 or 0`);
     emit(ctx, `local ${altVar} = ${locVar} and ${locVar}:alt() * 0.01 or 0`);
+    ctx.varMap.set(varKey(node.id, 'location'), locVar);
     ctx.varMap.set(varKey(node.id, 'lat'), latVar);
     ctx.varMap.set(varKey(node.id, 'lng'), lngVar);
     ctx.varMap.set(varKey(node.id, 'alt'), altVar);
@@ -284,6 +303,31 @@ function compileNode(
     ctx.varMap.set(varKey(node.id, 'vel_n'), nVar);
     ctx.varMap.set(varKey(node.id, 'vel_e'), eVar);
     ctx.varMap.set(varKey(node.id, 'vel_d'), dVar);
+    return;
+  }
+
+  if (type === 'sensor-ahrs-location') {
+    // Location_ud is a single object containing lat/lng/alt; downstream Location
+    // math nodes operate on it directly. nil is possible if AHRS not ready.
+    const v = nextVar(ctx, 'ahrs_loc');
+    emit(ctx, `local ${v} = ahrs:get_location()`);
+    ctx.varMap.set(varKey(node.id, 'location'), v);
+    return;
+  }
+
+  if (type === 'sensor-named-float') {
+    // ArduPilot Lua doesn't have a built-in NAMED_VALUE_FLOAT subscriber, so
+    // we fake one by parsing inbound MAVLink messages. For now this returns
+    // 0/false (placeholder); a future iteration could wire this through the
+    // mavlink:receive_chan path. Marking the output 'fresh=false' so any
+    // downstream logic gates on actual data arrival.
+    const valVar = nextVar(ctx, 'nf_val');
+    const freshVar = nextVar(ctx, 'nf_fresh');
+    emit(ctx, `-- Read Named Float "${String(prop('name'))}" - subscriber not yet implemented`);
+    emit(ctx, `local ${valVar} = 0`);
+    emit(ctx, `local ${freshVar} = false`);
+    ctx.varMap.set(varKey(node.id, 'value'), valVar);
+    ctx.varMap.set(varKey(node.id, 'fresh'), freshVar);
     return;
   }
 
@@ -410,6 +454,40 @@ function compileNode(
     return;
   }
 
+  // ── Location math (operate on Location_ud objects) ──────
+
+  if (type === 'math-location-bearing') {
+    const from = input('from', 'nil');
+    const to = input('to', 'nil');
+    setOutput('bearing_deg', `((${from} and ${to}) and math.deg(${from}:get_bearing(${to})) or 0)`);
+    return;
+  }
+
+  if (type === 'math-location-distance') {
+    const a = input('a', 'nil');
+    const b = input('b', 'nil');
+    setOutput('distance_m', `((${a} and ${b}) and ${a}:get_distance(${b}) or 0)`);
+    return;
+  }
+
+  if (type === 'math-location-offset') {
+    // Offsets a copy of `from` by bearing/distance, returning a new Location.
+    // Returns nil if `from` is nil so downstream nil-checks still work.
+    const from = input('from', 'nil');
+    const bearing = input('bearing_deg', '0');
+    const distance = input('distance_m', '0');
+    const v = nextVar(ctx, 'loc_offset');
+    emit(ctx, `local ${v} = nil`);
+    emit(ctx, `if ${from} then`);
+    ctx.indent += 1;
+    emit(ctx, `${v} = ${from}:copy()`);
+    emit(ctx, `${v}:offset_bearing(${bearing}, ${distance})`);
+    ctx.indent -= 1;
+    emit(ctx, 'end');
+    ctx.varMap.set(varKey(node.id, 'location'), v);
+    return;
+  }
+
   // ── Actions ─────────────────────────────────────────────
 
   if (type === 'action-gcs-text') {
@@ -527,6 +605,69 @@ function compileNode(
     emit(ctx, `mission:set_current_cmd(${idx})`);
     ctx.indent -= 1;
     emit(ctx, 'end');
+    return;
+  }
+
+  // ── FC-side script primitives ───────────────────────────
+
+  if (type === 'action-set-target-location') {
+    // Push a GUIDED-mode position target. nil-checks the location so a missing
+    // upstream sensor doesn't crash the script.
+    const trigger = input('trigger', 'true');
+    const loc = input('location', 'nil');
+    emit(ctx, `if ${trigger} and ${loc} then`);
+    ctx.indent += 1;
+    emit(ctx, `vehicle:set_target_location(${loc})`);
+    ctx.indent -= 1;
+    emit(ctx, 'end');
+    return;
+  }
+
+  if (type === 'action-publish-named-float') {
+    // gcs:send_named_float(name, value). Name capped at 10 chars by MAVLink.
+    const trigger = input('trigger', 'true');
+    const val = input('value', '0');
+    const name = String(prop('name')).slice(0, 10);
+    emit(ctx, `if ${trigger} then`);
+    ctx.indent += 1;
+    emit(ctx, `gcs:send_named_float("${name.replace(/"/g, '\\"')}", ${val})`);
+    ctx.indent -= 1;
+    emit(ctx, 'end');
+    return;
+  }
+
+  if (type === 'action-mavlink-on-user-cmd') {
+    // Receiver for MAV_CMD_USER_x. Three things have to happen:
+    //   1. Module-scope: mavlink:init + register_rx_msgid (once per script)
+    //   2. Module-scope: mavlink:block_command(cmd_id) per registered cmd
+    //      (without this, ArduPilot auto-acks UNSUPPORTED before scripts see)
+    //   3. update body: drain the rx queue, dispatch to per-node state vars
+    // We emit (1)+(2) via the ctx.prelude lines; (3) is emitted as a SHARED
+    // loop at the start of update() by compileGraph, so multiple receiver
+    // nodes share one drain pass and don't steal each other's messages.
+    const cmdId = Number(prop('cmd_id')) || 31010;
+    const idSuffix = sanitizeVarName(node.id);
+    const triggerVar = `_mlu_trig_${idSuffix}`;
+    const p1Var = `_mlu_p1_${idSuffix}`;
+    const p2Var = `_mlu_p2_${idSuffix}`;
+    const p3Var = `_mlu_p3_${idSuffix}`;
+    const p4Var = `_mlu_p4_${idSuffix}`;
+    const locVar = `_mlu_loc_${idSuffix}`;
+    ctx.stateVars.set(triggerVar, 'false');
+    ctx.stateVars.set(p1Var, '0');
+    ctx.stateVars.set(p2Var, '0');
+    ctx.stateVars.set(p3Var, '0');
+    ctx.stateVars.set(p4Var, '0');
+    ctx.stateVars.set(locVar, 'nil');
+    ctx.mavlinkRxNodes.push({
+      cmdId, triggerVar, p1Var, p2Var, p3Var, p4Var, locVar,
+    });
+    ctx.varMap.set(varKey(node.id, 'trigger'),  triggerVar);
+    ctx.varMap.set(varKey(node.id, 'param1'),   p1Var);
+    ctx.varMap.set(varKey(node.id, 'param2'),   p2Var);
+    ctx.varMap.set(varKey(node.id, 'param3'),   p3Var);
+    ctx.varMap.set(varKey(node.id, 'param4'),   p4Var);
+    ctx.varMap.set(varKey(node.id, 'location'), locVar);
     return;
   }
 
@@ -678,6 +819,8 @@ export function compileGraph(
     userVars: new Set(),
     entryInterval: runIntervalMs,
     varCounter: 0,
+    prelude: [],
+    mavlinkRxNodes: [],
   };
 
   // Generate body code into a separate buffer
@@ -687,13 +830,59 @@ export function compileGraph(
     compileNode(node, edges, bodyCtx);
   }
 
+  // If any MAVLink USER_x receiver nodes were registered, build:
+  //   - Module-scope init prelude (once: init + register + block_command per cmd)
+  //   - A shared receive loop INSERTED at the start of the update body, so a
+  //     single drain pass dispatches to every registered cmd_id (otherwise the
+  //     first node's loop would steal messages destined for other nodes).
+  if (bodyCtx.mavlinkRxNodes.length > 0) {
+    const distinctCmdIds = Array.from(new Set(bodyCtx.mavlinkRxNodes.map(n => n.cmdId)));
+    bodyCtx.prelude.push('-- MAV_CMD_USER_x receiver setup (once at script load)');
+    bodyCtx.prelude.push('pcall(function()');
+    bodyCtx.prelude.push('  mavlink:init(10, 4)');
+    bodyCtx.prelude.push('  mavlink:register_rx_msgid(75)  -- COMMAND_INT');
+    for (const cmd of distinctCmdIds) {
+      bodyCtx.prelude.push(`  mavlink:block_command(${cmd})`);
+    }
+    bodyCtx.prelude.push('end)');
+
+    // Build the shared rx-drain loop. Resets all triggers to false first so
+    // a tick without messages doesn't keep firing the previous trigger.
+    const rxLines: string[] = [];
+    rxLines.push('  -- MAVLink USER_x dispatch (drain queue, route to nodes)');
+    for (const n of bodyCtx.mavlinkRxNodes) {
+      rxLines.push(`  ${n.triggerVar} = false`);
+    }
+    rxLines.push('  while true do');
+    rxLines.push('    local _msg = mavlink:receive_chan()');
+    rxLines.push('    if _msg == nil then break end');
+    rxLines.push('    if #_msg >= 42 then');
+    rxLines.push('      local _ok, _p1, _p2, _p3, _p4, _x, _y, _z, _cmd =');
+    rxLines.push("        pcall(string.unpack, '<ffffiifH', _msg, 13)");
+    rxLines.push('      if _ok then');
+    for (const n of bodyCtx.mavlinkRxNodes) {
+      rxLines.push(`        if _cmd == ${n.cmdId} then`);
+      rxLines.push(`          ${n.triggerVar} = true`);
+      rxLines.push(`          ${n.p1Var}, ${n.p2Var}, ${n.p3Var}, ${n.p4Var} = _p1, _p2, _p3, _p4`);
+      rxLines.push(`          ${n.locVar} = Location()`);
+      rxLines.push(`          ${n.locVar}:lat(_x); ${n.locVar}:lng(_y)`);
+      rxLines.push(`          ${n.locVar}:alt(math.floor(_z * 100)); ${n.locVar}:relative_alt(true)`);
+      rxLines.push('        end');
+    }
+    rxLines.push('      end');
+    rxLines.push('    end');
+    rxLines.push('  end');
+    // Prepend the rx loop to body so per-node logic sees fresh trigger values.
+    bodyCtx.lines = [...rxLines, ...bodyCtx.lines];
+  }
+
   // Now assemble the full script
   const out: string[] = [];
   out.push(`-- ${graphName}`);
   out.push('-- Generated by ArduDeck Lua Graph Editor');
   out.push('');
 
-  // State variables
+  // State variables (must come before the prelude — prelude may reference them)
   if (bodyCtx.stateVars.size > 0 || bodyCtx.userVars.size > 0) {
     for (const name of bodyCtx.userVars) {
       out.push(`local ${name} = nil`);
@@ -701,6 +890,12 @@ export function compileGraph(
     for (const [name, init] of bodyCtx.stateVars) {
       out.push(`local ${name} = ${init}`);
     }
+    out.push('');
+  }
+
+  // Prelude (one-time setup like mavlink:init)
+  if (bodyCtx.prelude.length > 0) {
+    out.push(...bodyCtx.prelude);
     out.push('');
   }
 

@@ -330,12 +330,12 @@ export function CalibrationCompleteStep() {
         </p>
       )}
       {saveSuccess && !isMavlink && !savePersistentSuccess && (
-        <p className="text-center text-xs text-green-500/70">
+        <p className="text-center text-xs text-green-600">
           Calibration saved to flash memory. You can also save to persistent storage above to survive firmware updates.
         </p>
       )}
       {savePersistentSuccess && (
-        <p className="text-center text-xs text-green-500/70">
+        <p className="text-center text-xs text-green-600">
           All saved. Returning to calibration menu...
         </p>
       )}
@@ -370,8 +370,8 @@ function CalibrationVerificationCard({ verification }: { verification: Calibrati
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
           <div>
-            <p className="text-sm font-medium text-amber-300 mb-1">Could not verify calibration</p>
-            <p className="text-xs text-amber-400/80">{verification.error ?? 'Parameter readback failed.'} The flight controller still reported success, but ArduDeck could not confirm the new values were written.</p>
+            <p className="text-sm font-medium text-amber-400 mb-1">Could not verify calibration</p>
+            <p className="text-xs text-amber-600">{verification.error ?? 'Parameter readback failed.'} The flight controller still reported success, but ArduDeck could not confirm the new values were written.</p>
           </div>
         </div>
       </div>
@@ -380,8 +380,8 @@ function CalibrationVerificationCard({ verification }: { verification: Calibrati
 
   const isUnchanged = verification.status === 'unchanged';
   const palette = isUnchanged
-    ? { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-300', sub: 'text-amber-400/80', icon: 'text-amber-400' }
-    : { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-300', sub: 'text-emerald-400/80', icon: 'text-emerald-400' };
+    ? { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-300', sub: 'text-amber-600', icon: 'text-amber-500' }
+    : { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-300', sub: 'text-emerald-600', icon: 'text-emerald-500' };
 
   const changedCount = verification.results.filter(r => r.changed).length;
   const totalCount = verification.results.length;

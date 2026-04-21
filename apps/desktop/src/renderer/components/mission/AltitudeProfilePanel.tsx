@@ -1,8 +1,10 @@
 import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { useMissionStore } from '../../stores/mission-store';
 import { useSettingsStore } from '../../stores/settings-store';
-import { commandHasLocation, MAV_CMD, type MissionItem } from '../../../shared/mission-types';
+import { commandHasLocation, hasValidCoordinates, MAV_CMD, type MissionItem } from '../../../shared/mission-types';
 import { getElevations, interpolatePathPoints } from '../../utils/elevation-api';
+import { AutoAdjustAltitudeDialog } from './AutoAdjustAltitudeDialog';
+import type { PlanResult, PlannerWaypoint } from './terrain-altitude-planner';
 
 // Terrain data point
 interface TerrainPoint {
@@ -77,13 +79,18 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
   const [terrainLoading, setTerrainLoading] = useState(false);
   const [waypointElevations, setWaypointElevations] = useState<Map<number, number>>(new Map());
 
-  const { missionItems, selectedSeq, currentSeq, setSelectedSeq, updateWaypoint, setHasTerrainCollisions } = useMissionStore();
+  const { missionItems, selectedSeq, currentSeq, setSelectedSeq, updateWaypoint, setHasTerrainCollisions, applyTerrainPlan } = useMissionStore();
+  const [autoAdjustOpen, setAutoAdjustOpen] = useState(false);
   const { missionDefaults } = useSettingsStore();
   const safeAltitudeBuffer = missionDefaults.safeAltitudeBuffer;
 
-  // Filter to only items with locations
+  // Filter to items with location AND valid coordinates. Takeoff uses (0,0)
+  // as a "take off from current position" sentinel; including it would make
+  // the profile span ~5000km through Null Island.
   const waypoints = useMemo(
-    () => missionItems.filter(item => commandHasLocation(item.command)),
+    () => missionItems.filter(
+      item => commandHasLocation(item.command) && hasValidCoordinates(item.latitude, item.longitude),
+    ),
     [missionItems]
   );
 
@@ -476,32 +483,28 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
     }
   };
 
-  // Auto-adjust all waypoint altitudes to be above terrain + safe buffer.
-  // Uses the higher of safeAltitudeBuffer or the waypoint's current altitude
-  // as the target clearance, so a survey configured at 80m AGL won't be
-  // reduced to just the 30m safe buffer.
-  const handleAutoAdjustHeight = useCallback(() => {
-    if (waypointElevations.size === 0 || waypoints.length === 0) return;
+  // Build planner waypoints (seq + lat/lon/alt) for the auto-adjust dialog.
+  // Exclude waypoints with (0,0) coords — ArduPilot's NAV_TAKEOFF uses
+  // lat=0/lon=0 as a "take off from current position" sentinel, and sampling
+  // a segment to Null Island would produce ~800k terrain samples.
+  const plannerWaypoints: PlannerWaypoint[] = useMemo(
+    () => waypoints
+      .filter(wp => hasValidCoordinates(wp.latitude, wp.longitude))
+      .map(wp => ({
+        seq: wp.seq,
+        latitude: wp.latitude,
+        longitude: wp.longitude,
+        altitude: wp.altitude,
+      })),
+    [waypoints],
+  );
 
-    let adjustedCount = 0;
-    for (const wp of waypoints) {
-      const groundElev = waypointElevations.get(wp.seq);
-      if (groundElev === undefined) continue;
-
-      // Maintain at least the waypoint's intended clearance or the safe buffer,
-      // whichever is greater
-      const targetClearance = Math.max(safeAltitudeBuffer, wp.altitude);
-      const minSafe = groundElev + targetClearance;
-      if (wp.altitude < minSafe) {
-        updateWaypoint(wp.seq, { altitude: Math.ceil(minSafe) });
-        adjustedCount++;
-      }
-    }
-
-    if (adjustedCount === 0) {
-      // All waypoints are already safe - no changes needed
-    }
-  }, [waypoints, waypointElevations, safeAltitudeBuffer, updateWaypoint]);
+  const handleApplyPlan = useCallback((plan: PlanResult) => {
+    applyTerrainPlan({
+      raisedAltitudes: plan.raisedAltitudes,
+      inserts: plan.inserts,
+    });
+  }, [applyTerrainPlan]);
 
   // Format distance for display
   const formatDistance = (meters: number): string => {
@@ -512,7 +515,7 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
   };
 
   return (
-    <div ref={containerRef} className="h-full w-full bg-surface overflow-hidden relative">
+    <div ref={containerRef} data-tour="mission-altitude-panel" className="h-full w-full bg-surface overflow-hidden relative">
       {waypoints.length === 0 ? (
         <div className="h-full flex items-center justify-center text-content-secondary text-sm">
           {readOnly ? 'No mission loaded' : 'No waypoints to display'}
@@ -544,11 +547,11 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
           )}
           {!readOnly && terrainData.length > 0 && !terrainLoading && collisionSegments.length > 0 && (
             <button
-              onClick={handleAutoAdjustHeight}
+              onClick={() => setAutoAdjustOpen(true)}
               className="px-2 py-0.5 text-[10px] font-medium text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 rounded transition-colors"
-              title={`Raise waypoints below terrain + ${safeAltitudeBuffer}m buffer`}
+              title={`Keep flight path ${safeAltitudeBuffer}m above terrain`}
             >
-              Auto Adjust
+              Auto Adjust...
             </button>
           )}
           {!readOnly && <span className="text-content-secondary pointer-events-none">Drag points to edit</span>}
@@ -811,6 +814,15 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
           </g>
         </svg>
         </>
+      )}
+
+      {autoAdjustOpen && (
+        <AutoAdjustAltitudeDialog
+          waypoints={plannerWaypoints}
+          safeBuffer={safeAltitudeBuffer}
+          onApply={handleApplyPlan}
+          onClose={() => setAutoAdjustOpen(false)}
+        />
       )}
     </div>
   );

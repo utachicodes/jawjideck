@@ -168,6 +168,38 @@ export const MotorTestTab: React.FC = () => {
     );
   }, [canTest, throttle, duration, motorCount, setActiveMotor, setLastError, setSequenceRunning]);
 
+  const testAllAtOnce = useCallback(async () => {
+    if (!canTest) return;
+    setLastError(null);
+    setSequenceRunning(true);
+    try {
+      // Send individual test commands for all motors simultaneously
+      const promises = motorsByTestOrder.map((m) =>
+        window.electronAPI?.motorTestStart?.({
+          motor: m.Number,
+          throttle,
+          duration,
+          throttleType: 'percent' as const,
+        })
+      );
+      const results = await Promise.all(promises);
+      const failed = results.find((r) => !r?.success);
+      if (failed) {
+        setLastError(failed?.error ?? 'Command failed');
+        setSequenceRunning(false);
+        return;
+      }
+    } catch (err) {
+      setLastError(err instanceof Error ? err.message : String(err));
+      setSequenceRunning(false);
+      return;
+    }
+    window.setTimeout(() => {
+      setSequenceRunning(false);
+      setActiveMotor(null);
+    }, duration * 1000 + 500);
+  }, [canTest, throttle, duration, motorsByTestOrder, setActiveMotor, setLastError, setSequenceRunning]);
+
   const stopAll = useCallback(async () => {
     setSequenceRunning(false);
     setActiveMotor(null);
@@ -369,7 +401,7 @@ export const MotorTestTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Sequence + Stop */}
+          {/* Sequence + All At Once + Stop */}
           <div className="space-y-2">
             <button
               onClick={testAllInSequence}
@@ -378,6 +410,14 @@ export const MotorTestTab: React.FC = () => {
             >
               <Play className="w-4 h-4" />
               Test All In Sequence
+            </button>
+            <button
+              onClick={testAllAtOnce}
+              disabled={!canTest || sequenceRunning}
+              className="w-full px-4 py-2.5 bg-blue-500/15 border-blue-500/30 hover:bg-blue-500/25 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-semibold text-blue-300 transition-colors flex items-center justify-center gap-2"
+            >
+              <Zap className="w-4 h-4" />
+              Test All At Once
             </button>
             <button
               onClick={stopAll}

@@ -68,7 +68,7 @@ export function HealthCheckCard({ result, onViewData, onAskAi, aiLabel }: { resu
         <p className="text-xs text-content-secondary">{result.details}</p>
       )}
       {result.recommendation && (
-        <p className="text-xs text-content-secondary mt-2 pl-3 border-l-2 border">{result.recommendation}</p>
+        <p className="text-xs text-content-secondary mt-2 pl-3 border-l-2 border-strong">{result.recommendation}</p>
       )}
       {(onViewData || onAskAi) && result.status !== 'skip' && (
         <div className="flex gap-2 mt-3">

@@ -218,6 +218,16 @@ interface SettingsStore {
   setCompanionUnlocked: (enabled: boolean) => void;
   experimentalLogs: boolean;
   setExperimentalLogs: (enabled: boolean) => void;
+  /**
+   * Advanced map commands - one experimental umbrella covering:
+   *  - Orbit and Land tabs in the map command popup (mode-changing ops)
+   *  - The Lua script installer for FC-side commands (writes to SD card,
+   *    may set parameters and require a reboot)
+   * Off by default. When off, only Move is exposed and no Lua install
+   * machinery is reachable.
+   */
+  advancedCommandsUnlocked: boolean;
+  setAdvancedCommandsUnlocked: (enabled: boolean) => void;
 
   // Console
   showDebugLogs: boolean;
@@ -306,6 +316,7 @@ interface SettingsStore {
 
   // Actions - Connection memory
   updateConnectionMemory: (updates: Partial<ConnectionMemory>) => void;
+  removeRecentConnection: (label: string) => void;
 
   // Actions - SITL preferences
   setDefaultSitlType: (type: DefaultSitlType) => void;
@@ -638,6 +649,10 @@ export const useSettingsStore = create<SettingsStore>()(
   setExperimentalLogs: (enabled: boolean) => {
     set({ experimentalLogs: enabled });
   },
+  advancedCommandsUnlocked: false,
+  setAdvancedCommandsUnlocked: (enabled: boolean) => {
+    set({ advancedCommandsUnlocked: enabled });
+  },
 
   showDebugLogs: false,
   setShowDebugLogs: (enabled: boolean) => {
@@ -742,6 +757,7 @@ export const useSettingsStore = create<SettingsStore>()(
           surveyUnlocked: !!((settings as unknown as Record<string, unknown>).surveyUnlocked),
           companionUnlocked: !!((settings as unknown as Record<string, unknown>).companionUnlocked),
           experimentalLogs: !!((settings as unknown as Record<string, unknown>).experimentalLogs),
+          advancedCommandsUnlocked: !!((settings as unknown as Record<string, unknown>).advancedCommandsUnlocked),
           showDebugLogs: !!((settings as unknown as Record<string, unknown>).showDebugLogs),
           aiProvider: ((settings as unknown as Record<string, unknown>).aiProvider as 'claude' | 'openai' | 'gemini' | null) ?? null,
           aiWarningDismissed: !!((settings as unknown as Record<string, unknown>).aiWarningDismissed),
@@ -779,6 +795,7 @@ export const useSettingsStore = create<SettingsStore>()(
         surveyUnlocked: state.surveyUnlocked,
         companionUnlocked: state.companionUnlocked,
         experimentalLogs: state.experimentalLogs,
+        advancedCommandsUnlocked: state.advancedCommandsUnlocked,
         showDebugLogs: state.showDebugLogs,
         aiProvider: state.aiProvider,
         aiWarningDismissed: state.aiWarningDismissed,
@@ -981,6 +998,15 @@ export const useSettingsStore = create<SettingsStore>()(
     });
   },
 
+  removeRecentConnection: (label) => {
+    set((state) => ({
+      connectionMemory: {
+        ...state.connectionMemory,
+        recentConnections: (state.connectionMemory.recentConnections ?? []).filter((c) => c.label !== label),
+      },
+    }));
+  },
+
   // Actions - SITL preferences
   setDefaultSitlType: (type) => {
     set({ defaultSitlType: type });
@@ -1070,6 +1096,7 @@ useSettingsStore.subscribe(
     surveyUnlocked: state.surveyUnlocked,
     companionUnlocked: state.companionUnlocked,
     experimentalLogs: state.experimentalLogs,
+    advancedCommandsUnlocked: state.advancedCommandsUnlocked,
     showDebugLogs: state.showDebugLogs,
     aiProvider: state.aiProvider,
     aiWarningDismissed: state.aiWarningDismissed,
@@ -1095,6 +1122,7 @@ useSettingsStore.subscribe(
         curr.surveyUnlocked !== prev.surveyUnlocked ||
         curr.companionUnlocked !== prev.companionUnlocked ||
         curr.experimentalLogs !== prev.experimentalLogs ||
+        curr.advancedCommandsUnlocked !== prev.advancedCommandsUnlocked ||
         curr.showDebugLogs !== prev.showDebugLogs ||
         curr.aiProvider !== prev.aiProvider ||
         curr.aiWarningDismissed !== prev.aiWarningDismissed

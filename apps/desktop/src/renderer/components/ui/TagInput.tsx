@@ -137,7 +137,7 @@ export function TagInput({ tags, onChange, placeholder = 'Add tags...', suggesti
 
       {/* Suggestions dropdown */}
       {showSuggestions && filtered.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-surface-raised border border-border rounded-lg shadow-xl overflow-hidden z-10">
+        <div className="absolute left-0 right-0 top-full mt-1 bg-surface-solid border border-border rounded-lg shadow-xl overflow-hidden z-10">
           {filtered.map((suggestion, idx) => (
             <button
               key={suggestion}

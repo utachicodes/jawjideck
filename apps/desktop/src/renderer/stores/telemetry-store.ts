@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { TelemetryState, AttitudeData, PositionData, GpsData, BatteryData, VfrHudData, FlightState, RcChannelsData, SensorHealth } from '../../shared/telemetry-types';
+import type { TelemetryState, AttitudeData, PositionData, GpsData, BatteryData, VfrHudData, WindData, FlightState, RcChannelsData, SensorHealth } from '../../shared/telemetry-types';
 import type { VibrationData, EscTelemetryData, ServoOutputData } from '../../shared/motor-test-types';
 
 /** Batch telemetry update - all fields optional */
@@ -9,6 +9,7 @@ export interface TelemetryBatch {
   gps?: GpsData;
   battery?: BatteryData;
   vfrHud?: VfrHudData;
+  wind?: WindData;
   flight?: FlightState;
   rcChannels?: RcChannelsData;
   vibration?: VibrationData;
@@ -46,6 +47,7 @@ const initialState: TelemetryState = {
   gps: { fixType: 0, satellites: 0, hdop: 99, lat: 0, lon: 0, alt: 0 },
   battery: { voltage: 0, current: 0, remaining: 0 },
   vfrHud: { airspeed: 0, groundspeed: 0, heading: 0, throttle: 0, alt: 0, climb: 0 },
+  wind: { direction: 0, speed: 0, speedZ: 0 },
   flight: { mode: 'Unknown', modeNum: 0, armed: false, isFlying: false },
   rcChannels: { channels: [], chancount: 0, rssi: 0 },
   vibration: null,
@@ -89,6 +91,9 @@ export const useTelemetryStore = create<TelemetryStore>((set) => ({
     if (batch.vfrHud) {
       updates.vfrHud = batch.vfrHud;
       updates.lastVfrHud = now;
+    }
+    if (batch.wind) {
+      updates.wind = batch.wind;
     }
     if (batch.flight) {
       updates.flight = batch.flight;

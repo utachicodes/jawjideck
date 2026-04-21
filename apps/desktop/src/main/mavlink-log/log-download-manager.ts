@@ -13,8 +13,17 @@ import {
   type LogEntry,
 } from '@ardudeck/mavlink-ts';
 
-const LOG_TIMEOUT_MS = 3000;
-const LOG_MAX_RETRIES = 5;
+/** Total wait for the FIRST chunk of a burst - FC may need a moment to start. */
+const LOG_TIMEOUT_MS = 5000;
+/**
+ * Inter-chunk inactivity timeout once a burst has started streaming. The FC
+ * sends LOG_DATA packets back-to-back at sub-millisecond intervals on TCP/USB,
+ * so 300 ms of silence reliably means "this burst is done" without burning
+ * 5 s of pure waiting at the end of every burst. The previous behaviour was
+ * the dominant cost of a multi-MB log download.
+ */
+const LOG_BURST_INACTIVITY_MS = 300;
+const LOG_MAX_RETRIES = 10;
 const LOG_CHUNK_SIZE = 90;
 const MSG_LOG_ENTRY = 118;
 const MSG_LOG_DATA = 120;
@@ -58,6 +67,7 @@ export class LogDownloadManager {
   }
 
   private handleLogEntry(entry: LogEntry): void {
+    this.log('info', `LOG_ENTRY received: id=${entry.id} numLogs=${entry.numLogs} lastLogNum=${entry.lastLogNum} size=${entry.size}`);
     this.logEntries.push({
       id: entry.id,
       numLogs: entry.numLogs,
@@ -87,6 +97,7 @@ export class LogDownloadManager {
     this.listResolve = null;
     const entries = [...this.logEntries];
     this.logEntries = [];
+    this.log('info', `Log list resolved: ${entries.length} entries${entries.length === 0 ? ' (timeout with no response from FC)' : ''}`);
     resolve?.(entries);
   }
 
@@ -132,14 +143,16 @@ export class LogDownloadManager {
         start: 0,
         end: 0xFFFF,
       });
-      this.sendPacket(LOG_REQUEST_LIST_ID, payload, LOG_REQUEST_LIST_CRC_EXTRA).then((packet) => {
-        this.writeTransport(packet);
+      this.sendPacket(LOG_REQUEST_LIST_ID, payload, LOG_REQUEST_LIST_CRC_EXTRA).then(async (packet) => {
+        await this.writeTransport(packet);
         this.log('info', 'Requesting log list from FC');
+      }).catch((err) => {
+        this.log('error', `Failed to send log list request: ${err instanceof Error ? err.message : JSON.stringify(err)}`);
       });
     });
   }
 
-  /** Download a specific log by ID */
+  /** Download a specific log by ID using burst/streaming mode */
   async downloadLog(
     logId: number,
     logSize: number,
@@ -147,54 +160,151 @@ export class LogDownloadManager {
   ): Promise<Uint8Array | null> {
     this.cancelled = false;
     const fileData = new Uint8Array(logSize);
-    let offset = 0;
+    const received = new Uint8Array(Math.ceil(logSize / LOG_CHUNK_SIZE)); // track which chunks arrived
+    let highestOffset = 0;
 
     this.log('info', `Starting download of log ${logId} (${(logSize / 1024).toFixed(0)} KB)`);
 
-    while (offset < logSize && !this.cancelled) {
-      const remaining = logSize - offset;
-      const count = Math.min(LOG_CHUNK_SIZE, remaining);
-      let received = false;
-
-      for (let retry = 0; retry < LOG_MAX_RETRIES && !received && !this.cancelled; retry++) {
-        const chunk = await this.requestChunk(logId, offset, count);
-        if (!chunk) {
-          this.log('debug', `Log chunk timeout at offset ${offset} (attempt ${retry + 1}/${LOG_MAX_RETRIES})`);
-          continue;
+    // Burst mode: request a large range, FC streams LOG_DATA packets back
+    // We collect them and re-request any gaps.
+    //
+    // LOG_MAX_RETRIES caps consecutive *failed* bursts (no new bytes received),
+    // not the total number of bursts. A 1+ MB log needs many bursts to cover
+    // its full extent - counting each burst as a retry would truncate at
+    // LOG_MAX_RETRIES * burstCount bytes (~180 KB at the defaults).
+    let consecutiveFailedBursts = 0;
+    let lastAttemptHighest = 0;
+    for (let attempt = 0; consecutiveFailedBursts < LOG_MAX_RETRIES && !this.cancelled; attempt++) {
+      // Find first missing chunk
+      let requestOffset = 0;
+      for (let i = 0; i < received.length; i++) {
+        if (!received[i]) {
+          requestOffset = i * LOG_CHUNK_SIZE;
+          break;
         }
+        if (i === received.length - 1) {
+          // All chunks received
+          await this.sendEndRequest();
+          return fileData.subarray(0, highestOffset);
+        }
+      }
+
+      // Request from the gap to end - FC will stream data back
+      const remaining = logSize - requestOffset;
+      const burstCount = Math.min(remaining, LOG_CHUNK_SIZE * 200); // request up to ~18KB at a time
+
+      this.log('debug', `Requesting log data: offset=${requestOffset} count=${burstCount} (attempt ${attempt + 1})`);
+
+      // Send the request
+      const payload = serializeLogRequestData({
+        targetSystem: this.targetSystem,
+        targetComponent: this.targetComponent,
+        id: logId,
+        ofs: requestOffset,
+        count: burstCount,
+      });
+      const packet = await this.sendPacket(LOG_REQUEST_DATA_ID, payload, LOG_REQUEST_DATA_CRC_EXTRA);
+      this.writeTransport(packet);
+
+      // Collect streamed responses. Use the long timeout for the FIRST chunk
+      // (FC may need a moment to start), then switch to the short inactivity
+      // timeout - back-to-back chunks arrive in microseconds, so any gap >
+      // LOG_BURST_INACTIVITY_MS reliably means the burst is finished.
+      // We also exit immediately once we've received all the bytes we asked
+      // for, sidestepping the inactivity wait entirely on a clean burst.
+      const burstEndOffset = requestOffset + burstCount;
+      let endOfLog = false;
+      let firstChunk = true;
+
+      while (!this.cancelled && !endOfLog) {
+        const waitMs = firstChunk ? LOG_TIMEOUT_MS : LOG_BURST_INACTIVITY_MS;
+        const chunk = await this.waitForData(waitMs);
+        if (!chunk) break; // inactivity → burst done (or FC unresponsive)
+        firstChunk = false;
 
         const chunkView = new DataView(chunk.buffer, chunk.byteOffset, chunk.byteLength);
         const respOfs = chunkView.getUint32(0, true);
         const respCount = chunkView.getUint32(4, true);
 
         if (respCount === 0) {
-          this.log('info', `Log ${logId} download complete (end marker at offset ${offset})`);
-          await this.sendEndRequest();
-          return fileData.subarray(0, offset);
+          endOfLog = true;
+          break;
         }
 
         const data = chunk.subarray(8);
         fileData.set(data.subarray(0, respCount), respOfs);
-        offset = respOfs + respCount;
-        received = true;
-        onProgress(offset, logSize);
+
+        // Mark chunk as received
+        const chunkIdx = Math.floor(respOfs / LOG_CHUNK_SIZE);
+        if (chunkIdx < received.length) received[chunkIdx] = 1;
+
+        if (respOfs + respCount > highestOffset) {
+          highestOffset = respOfs + respCount;
+        }
+
+        onProgress(highestOffset, logSize);
+
+        // We got everything we asked for in this burst - request the next
+        // range immediately rather than waiting LOG_BURST_INACTIVITY_MS for
+        // a packet that won't arrive.
+        if (highestOffset >= burstEndOffset || highestOffset >= logSize) {
+          break;
+        }
       }
 
-      if (!received && !this.cancelled) {
-        this.log('error', `Failed to download log ${logId} at offset ${offset} after ${LOG_MAX_RETRIES} retries`);
+      if (endOfLog) {
+        this.log('info', `Log ${logId} download complete (end marker)`);
         await this.sendEndRequest();
-        return null;
+        return fileData.subarray(0, highestOffset);
+      }
+
+      // Check if we got everything
+      if (highestOffset >= logSize) {
+        await this.sendEndRequest();
+        return fileData.subarray(0, highestOffset);
+      }
+
+      // Track progress between bursts. Failed = no new bytes received this
+      // attempt. Successful bursts reset the consecutive-failure counter so
+      // we keep going until either the log ends or we genuinely stall out.
+      if (highestOffset > lastAttemptHighest) {
+        consecutiveFailedBursts = 0;
+        lastAttemptHighest = highestOffset;
+      } else {
+        consecutiveFailedBursts++;
+        this.log('debug', `Log ${logId} burst ${attempt + 1} made no progress (${consecutiveFailedBursts}/${LOG_MAX_RETRIES} consecutive failures)`);
       }
     }
 
-    await this.sendEndRequest();
-
     if (this.cancelled) {
+      await this.sendEndRequest();
       this.log('info', `Log ${logId} download cancelled`);
       return null;
     }
 
-    return fileData;
+    // Partial download - return what we got if we have something
+    if (highestOffset > 0) {
+      this.log('warn', `Log ${logId} partially downloaded: ${highestOffset}/${logSize} bytes`);
+      await this.sendEndRequest();
+      return fileData.subarray(0, highestOffset);
+    }
+
+    this.log('error', `Failed to download log ${logId} after ${LOG_MAX_RETRIES} attempts`);
+    await this.sendEndRequest();
+    return null;
+  }
+
+  /** Wait for a single LOG_DATA response */
+  private waitForData(timeoutMs: number): Promise<Uint8Array | null> {
+    return new Promise<Uint8Array | null>((resolve) => {
+      this.pendingResolve = resolve;
+      this.pendingTimer = setTimeout(() => {
+        this.pendingTimer = null;
+        const r = this.pendingResolve;
+        this.pendingResolve = null;
+        r?.(null);
+      }, timeoutMs);
+    });
   }
 
   /** Cancel an in-progress download */
@@ -204,33 +314,10 @@ export class LogDownloadManager {
     this.resolveList();
   }
 
-  private requestChunk(logId: number, offset: number, count: number): Promise<Uint8Array | null> {
-    return new Promise<Uint8Array | null>((resolve) => {
-      this.pendingResolve = resolve;
-      this.pendingTimer = setTimeout(() => {
-        this.pendingTimer = null;
-        const r = this.pendingResolve;
-        this.pendingResolve = null;
-        r?.(null);
-      }, LOG_TIMEOUT_MS);
-
-      const payload = serializeLogRequestData({
-        targetSystem: this.targetSystem,
-        targetComponent: this.targetComponent,
-        id: logId,
-        ofs: offset,
-        count,
-      });
-      this.sendPacket(LOG_REQUEST_DATA_ID, payload, LOG_REQUEST_DATA_CRC_EXTRA).then((packet) => {
-        this.writeTransport(packet);
-      });
-    });
-  }
-
   private async sendEndRequest(): Promise<void> {
     const payload = serializeLogRequestEnd({
-      targetSystem: 1,
-      targetComponent: 1,
+      targetSystem: this.targetSystem,
+      targetComponent: this.targetComponent,
     });
     const packet = await this.sendPacket(LOG_REQUEST_END_ID, payload, LOG_REQUEST_END_CRC_EXTRA);
     this.writeTransport(packet);

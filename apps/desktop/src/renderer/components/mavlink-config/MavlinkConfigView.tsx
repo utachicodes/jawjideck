@@ -37,6 +37,10 @@ import {
   History,
   AlertTriangle,
   Fan,
+  Move,
+  ChevronDown,
+  HardDrive,
+  FolderOpen,
 } from 'lucide-react';
 import { useParameterStore } from '../../stores/parameter-store';
 import { useConnectionStore } from '../../stores/connection-store';
@@ -53,6 +57,8 @@ import ReceiverTab from './ReceiverTab';
 import SerialPortsTab from './SerialPortsTab';
 import ParamHistoryModal from './ParamHistoryModal';
 import { MotorTestTab } from './motor-test/MotorTestTab';
+import ServoOutputTab from './servo-output/ServoOutputTab';
+import { FilesTab } from './FilesTab';
 
 // Toast notification state
 type ToastType = 'success' | 'error' | 'info';
@@ -61,7 +67,7 @@ interface Toast {
   type: ToastType;
 }
 
-type TabId = 'pid' | 'rates' | 'modes' | 'receiver' | 'serial-ports' | 'safety' | 'sensors' | 'tuning' | 'battery' | 'parameters' | 'rover-tuning' | 'rover-nav' | 'motor-test';
+type TabId = 'pid' | 'rates' | 'modes' | 'receiver' | 'serial-ports' | 'safety' | 'sensors' | 'tuning' | 'battery' | 'parameters' | 'files' | 'rover-tuning' | 'rover-nav' | 'motor-test' | 'servo-output';
 
 interface Tab {
   id: TabId;
@@ -71,6 +77,18 @@ interface Tab {
   description: string;
   badge?: string;
 }
+
+interface TabGroup {
+  kind: 'group';
+  id: string;
+  name: string;
+  Icon: React.FC<{ className?: string }>;
+  color: string;
+  description: string;
+  children: Tab[];
+}
+
+type TabNode = ({ kind: 'item' } & Tab) | TabGroup;
 
 type VehicleCategory = 'copter' | 'plane' | 'rover';
 
@@ -89,33 +107,144 @@ function isRoverType(mavType: number | undefined): boolean {
   return getVehicleCategory(mavType) === 'rover';
 }
 
-// Aircraft tabs (copters, planes, VTOL)
-const AIRCRAFT_TABS: Tab[] = [
-  { id: 'pid', name: 'PID Tuning', Icon: Gauge, color: 'text-blue-400', description: 'Fine-tune PID gains for each axis' },
-  { id: 'rates', name: 'Rates', Icon: Activity, color: 'text-purple-400', description: 'Configure rate curves and expo' },
-  { id: 'modes', name: 'Flight Modes', Icon: Settings, color: 'text-green-400', description: 'Configure your transmitter switch positions' },
-  { id: 'receiver', name: 'Receiver', Icon: Radio, color: 'text-teal-400', description: 'RC receiver protocol and live channel monitor' },
-  { id: 'serial-ports', name: 'Serial Ports', Icon: Cable, color: 'text-sky-400', description: 'Configure serial port protocols and baud rates' },
-  { id: 'safety', name: 'Safety', Icon: Shield, color: 'text-amber-400', description: 'Failsafes, arming checks, geofence' },
-  { id: 'sensors', name: 'Sensors', Icon: Cpu, color: 'text-cyan-400', description: 'Live telemetry and sensor health' },
-  { id: 'motor-test', name: 'Motor Test', Icon: Fan, color: 'text-yellow-400', description: 'Spin individual motors with live vibration monitoring' },
-  { id: 'tuning', name: 'Tuning', Icon: Sliders, color: 'text-emerald-400', description: 'Performance presets and basic tuning' },
-  { id: 'battery', name: 'Battery', Icon: Battery, color: 'text-orange-400', description: 'Battery monitor configuration' },
-  { id: 'parameters', name: 'All Parameters', Icon: Table, color: 'text-content-secondary', description: 'Full parameter list for experts', badge: 'Expert' },
+// "Tuning" group: PID + Rates + Presets share a parent tab with sub-tabs
+const TUNING_GROUP: TabGroup = {
+  kind: 'group',
+  id: 'tuning-group',
+  name: 'Tuning',
+  Icon: Sliders,
+  color: 'text-emerald-400',
+  description: 'PID gains, rate curves, and performance presets',
+  children: [
+    { id: 'pid', name: 'PID', Icon: Gauge, color: 'text-blue-400', description: 'Fine-tune PID gains for each axis' },
+    { id: 'rates', name: 'Rates', Icon: Activity, color: 'text-purple-400', description: 'Configure rate curves and expo' },
+    { id: 'tuning', name: 'Tuning', Icon: Sliders, color: 'text-emerald-400', description: 'Performance presets and basic tuning' },
+  ],
+};
+
+// "RC" group: Receiver protocol + Flight Mode switch mapping. Both are about
+// pilot input — natural setup-flow pairing ("configure receiver, then assign
+// mode switches"). Reused across all vehicle classes.
+const RC_GROUP: TabGroup = {
+  kind: 'group',
+  id: 'rc-group',
+  name: 'RC',
+  Icon: Radio,
+  color: 'text-teal-400',
+  description: 'RC receiver protocol + flight-mode switch mapping',
+  children: [
+    { id: 'receiver', name: 'Receiver',     Icon: Radio,    color: 'text-teal-400',  description: 'RC receiver protocol and live channel monitor' },
+    { id: 'modes',    name: 'Flight Modes', Icon: Settings, color: 'text-green-400', description: 'Configure your transmitter switch positions' },
+  ],
+};
+
+// Rover variant — same structure but the modes tab is labelled "Drive Modes".
+// We can't share children across groups because the label differs; this keeps
+// the per-vehicle vocabulary correct without hacks.
+const ROVER_RC_GROUP: TabGroup = {
+  kind: 'group',
+  id: 'rc-group',
+  name: 'RC',
+  Icon: Radio,
+  color: 'text-teal-400',
+  description: 'RC receiver protocol + drive-mode switch mapping',
+  children: [
+    { id: 'receiver', name: 'Receiver',    Icon: Radio,    color: 'text-teal-400',  description: 'RC receiver protocol and live channel monitor' },
+    { id: 'modes',    name: 'Drive Modes', Icon: Settings, color: 'text-green-400', description: 'Configure your transmitter switch positions' },
+  ],
+};
+
+// "Outputs" group (Copter only — Plane/Rover have no Motor Test): Motor Test
+// + Servo Output. Both are about FC→actuator wiring/verification, used
+// during initial setup, rare in normal operation.
+const OUTPUTS_GROUP: TabGroup = {
+  kind: 'group',
+  id: 'outputs-group',
+  name: 'Outputs',
+  Icon: Fan,
+  color: 'text-yellow-400',
+  description: 'Motor test + servo output mapping',
+  children: [
+    { id: 'motor-test',   name: 'Motor Test',   Icon: Fan,  color: 'text-yellow-400', description: 'Spin individual motors with live vibration monitoring' },
+    { id: 'servo-output', name: 'Servo Output', Icon: Move, color: 'text-pink-400',   description: 'Per-channel servo function, range, and live output' },
+  ],
+};
+
+// "Storage" group: All Parameters (EEPROM) + Files (SD card via MAVLink-FTP).
+// Both are FC-side persistent state and both are escape-hatch / power-user
+// surfaces, so grouping them keeps the top-level tab strip from sprawling.
+const STORAGE_GROUP: TabGroup = {
+  kind: 'group',
+  id: 'storage-group',
+  name: 'Storage',
+  Icon: HardDrive,
+  color: 'text-content-secondary',
+  description: 'Raw parameter table + FC filesystem browser',
+  children: [
+    { id: 'parameters', name: 'Parameters', Icon: Table,      color: 'text-content-secondary', description: 'Full parameter list for experts' },
+    { id: 'files',      name: 'Files',      Icon: FolderOpen, color: 'text-content-secondary', description: 'Browse and download files from the FC via MAVLink-FTP' },
+  ],
+};
+
+// Tabs ordered by usage frequency (hottest first). "All Parameters" always last
+// even though it's hot, because it's the expert escape hatch.
+
+// Copter/multirotor tabs — groups: Tuning · RC · Outputs · Storage
+const COPTER_TABS: TabNode[] = [
+  TUNING_GROUP,
+  RC_GROUP,
+  OUTPUTS_GROUP,
+  { kind: 'item', id: 'safety', name: 'Safety', Icon: Shield, color: 'text-amber-400', description: 'Failsafes, arming checks, geofence' },
+  { kind: 'item', id: 'battery', name: 'Battery', Icon: Battery, color: 'text-orange-400', description: 'Battery monitor configuration' },
+  { kind: 'item', id: 'sensors', name: 'Sensors', Icon: Cpu, color: 'text-cyan-400', description: 'Live telemetry and sensor health' },
+  { kind: 'item', id: 'serial-ports', name: 'Serial Ports', Icon: Cable, color: 'text-sky-400', description: 'Configure serial port protocols and baud rates' },
+  STORAGE_GROUP,
 ];
 
-// Rover/Boat tabs
-const ROVER_TABS: Tab[] = [
-  { id: 'rover-tuning', name: 'Speed & Steering', Icon: Car, color: 'text-blue-400', description: 'Configure speed limits and steering behavior' },
-  { id: 'rover-nav', name: 'Navigation', Icon: Navigation, color: 'text-purple-400', description: 'Waypoint following and loiter settings' },
-  { id: 'modes', name: 'Drive Modes', Icon: Settings, color: 'text-green-400', description: 'Configure your transmitter switch positions' },
-  { id: 'receiver', name: 'Receiver', Icon: Radio, color: 'text-teal-400', description: 'RC receiver protocol and live channel monitor' },
-  { id: 'serial-ports', name: 'Serial Ports', Icon: Cable, color: 'text-sky-400', description: 'Configure serial port protocols and baud rates' },
-  { id: 'safety', name: 'Safety', Icon: Shield, color: 'text-amber-400', description: 'Failsafes, arming checks, geofence' },
-  { id: 'sensors', name: 'Sensors', Icon: Cpu, color: 'text-cyan-400', description: 'Live telemetry and sensor health' },
-  { id: 'battery', name: 'Battery', Icon: Battery, color: 'text-orange-400', description: 'Battery monitor configuration' },
-  { id: 'parameters', name: 'All Parameters', Icon: Table, color: 'text-content-secondary', description: 'Full parameter list for experts', badge: 'Expert' },
+// Fixed-wing / VTOL tabs — no Motor Test, so Servo Output stays flat (single-
+// item "Outputs" group would be visual noise) and is bumped to position #2
+// since control surfaces are fundamental to plane setup.
+const PLANE_TABS: TabNode[] = [
+  TUNING_GROUP,
+  { kind: 'item', id: 'servo-output', name: 'Servo Output', Icon: Move, color: 'text-pink-400', description: 'Per-channel servo function, range, and live output' },
+  RC_GROUP,
+  { kind: 'item', id: 'safety', name: 'Safety', Icon: Shield, color: 'text-amber-400', description: 'Failsafes, arming checks, geofence' },
+  { kind: 'item', id: 'battery', name: 'Battery', Icon: Battery, color: 'text-orange-400', description: 'Battery monitor configuration' },
+  { kind: 'item', id: 'sensors', name: 'Sensors', Icon: Cpu, color: 'text-cyan-400', description: 'Live telemetry and sensor health' },
+  { kind: 'item', id: 'serial-ports', name: 'Serial Ports', Icon: Cable, color: 'text-sky-400', description: 'Configure serial port protocols and baud rates' },
+  STORAGE_GROUP,
 ];
+
+// Rover/Boat tabs — same Servo-Output-flat treatment as plane (no Motor Test
+// for ground vehicles either). Uses the rover-specific RC group whose modes
+// tab is labelled "Drive Modes".
+const ROVER_TABS: TabNode[] = [
+  { kind: 'item', id: 'rover-tuning', name: 'Speed & Steering', Icon: Car, color: 'text-blue-400', description: 'Configure speed limits and steering behavior' },
+  { kind: 'item', id: 'rover-nav', name: 'Navigation', Icon: Navigation, color: 'text-purple-400', description: 'Waypoint following and loiter settings' },
+  ROVER_RC_GROUP,
+  { kind: 'item', id: 'servo-output', name: 'Servo Output', Icon: Move, color: 'text-pink-400', description: 'Per-channel servo function, range, and live output' },
+  { kind: 'item', id: 'safety', name: 'Safety', Icon: Shield, color: 'text-amber-400', description: 'Failsafes, arming checks, geofence' },
+  { kind: 'item', id: 'battery', name: 'Battery', Icon: Battery, color: 'text-orange-400', description: 'Battery monitor configuration' },
+  { kind: 'item', id: 'sensors', name: 'Sensors', Icon: Cpu, color: 'text-cyan-400', description: 'Live telemetry and sensor health' },
+  { kind: 'item', id: 'serial-ports', name: 'Serial Ports', Icon: Cable, color: 'text-sky-400', description: 'Configure serial port protocols and baud rates' },
+  STORAGE_GROUP,
+];
+
+function collectTabIds(nodes: TabNode[]): TabId[] {
+  const ids: TabId[] = [];
+  for (const node of nodes) {
+    if (node.kind === 'item') ids.push(node.id);
+    else for (const child of node.children) ids.push(child.id);
+  }
+  return ids;
+}
+
+function findGroupForTab(nodes: TabNode[], tabId: TabId): TabGroup | undefined {
+  for (const node of nodes) {
+    if (node.kind === 'group' && node.children.some(c => c.id === tabId)) return node;
+  }
+  return undefined;
+}
 
 export const MavlinkConfigView: React.FC = () => {
   const paramCount = useParameterStore((s) => s.paramCount);
@@ -130,17 +259,32 @@ export const MavlinkConfigView: React.FC = () => {
   // Determine vehicle type and appropriate tabs
   const vehicleCategory = getVehicleCategory(connectionState.mavType);
   const isRover = vehicleCategory === 'rover';
-  const tabs = useMemo(() => isRover ? ROVER_TABS : AIRCRAFT_TABS, [isRover]);
+  const isPlane = vehicleCategory === 'plane';
+  const tabs = useMemo(() => isRover ? ROVER_TABS : isPlane ? PLANE_TABS : COPTER_TABS, [isRover, isPlane]);
   const defaultTab = isRover ? 'rover-tuning' : 'pid';
   const [activeTab, setActiveTab] = useState<TabId>(defaultTab);
 
   // Reset active tab when vehicle type changes
   useEffect(() => {
-    const validTabIds = tabs.map(t => t.id);
+    const validTabIds = collectTabIds(tabs);
     if (!validTabIds.includes(activeTab)) {
       setActiveTab(defaultTab);
     }
   }, [tabs, activeTab, defaultTab]);
+
+  const activeGroup = useMemo(() => findGroupForTab(tabs, activeTab), [tabs, activeTab]);
+  const [openGroupId, setOpenGroupId] = useState<string | null>(null);
+  const groupMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!openGroupId) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (!groupMenuRef.current) return;
+      if (!groupMenuRef.current.contains(e.target as Node)) setOpenGroupId(null);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [openGroupId]);
 
   const [isWritingFlash, setIsWritingFlash] = useState(false);
   const [showWriteConfirm, setShowWriteConfirm] = useState(false);
@@ -267,10 +411,14 @@ export const MavlinkConfigView: React.FC = () => {
         return <SensorsTab />;
       case 'motor-test':
         return <MotorTestTab />;
+      case 'servo-output':
+        return <ServoOutputTab />;
       case 'battery':
         return <BatteryTab />;
       case 'parameters':
         return <ParameterTable />;
+      case 'files':
+        return <FilesTab />;
       default:
         return null;
     }
@@ -365,24 +513,72 @@ export const MavlinkConfigView: React.FC = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1.5 mt-4 flex-wrap items-center">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
+        <div ref={groupMenuRef} className="flex gap-1.5 mt-4 flex-wrap items-center">
+          {tabs.map((node) => {
+            if (node.kind === 'group') {
+              const isActive = activeGroup?.id === node.id;
+              const isOpen = openGroupId === node.id;
+              // Always show the parent name; the active child is indicated inside the dropdown.
+              const DisplayIcon = node.Icon;
+              const displayColor = node.color;
+              return (
+                <div key={node.id} className="relative" data-tour={`mavlink-tab-group-${node.id}`}>
+                  <button
+                    onClick={() => setOpenGroupId(isOpen ? null : node.id)}
+                    title={node.description}
+                    className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
+                      isActive
+                        ? 'bg-surface-raised text-content'
+                        : 'text-content-secondary hover:text-content hover:bg-surface-raised'
+                    }`}
+                  >
+                    <DisplayIcon className={`w-4 h-4 ${isActive ? displayColor : `${displayColor} opacity-50`}`} />
+                    <span className="text-sm font-medium">{node.name}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-content-tertiary transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {isOpen && (
+                    <div className="absolute left-0 top-full mt-1 min-w-[200px] rounded-lg border border-subtle bg-surface-solid shadow-xl z-40 py-1">
+                      {node.children.map((child) => {
+                        const childActive = activeTab === child.id;
+                        return (
+                          <button
+                            key={child.id}
+                            onClick={() => { setActiveTab(child.id); setOpenGroupId(null); }}
+                            className={`w-full px-3 py-2 flex items-center gap-2 text-left transition-colors ${
+                              childActive
+                                ? 'bg-surface-raised text-content'
+                                : 'text-content-secondary hover:bg-surface-raised hover:text-content'
+                            }`}
+                          >
+                            <child.Icon className={`w-4 h-4 ${child.color} ${childActive ? '' : 'opacity-70'}`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium">{child.name}</div>
+                              <div className="text-[11px] text-content-secondary truncate">{child.description}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            const isActive = activeTab === node.id;
             return (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                key={node.id}
+                onClick={() => setActiveTab(node.id)}
                 className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
                   isActive
                     ? 'bg-surface-raised text-content'
                     : 'text-content-secondary hover:text-content hover:bg-surface-raised'
                 }`}
               >
-                <tab.Icon className={`w-4 h-4 ${isActive ? tab.color : `${tab.color} opacity-50`}`} />
-                <span className="text-sm font-medium">{tab.name}</span>
-                {tab.badge && (
+                <node.Icon className={`w-4 h-4 ${isActive ? node.color : `${node.color} opacity-50`}`} />
+                <span className="text-sm font-medium">{node.name}</span>
+                {node.badge && (
                   <span className="ml-0.5 px-1.5 py-0.5 text-[10px] bg-surface-raised rounded text-content-secondary">
-                    {tab.badge}
+                    {node.badge}
                   </span>
                 )}
               </button>

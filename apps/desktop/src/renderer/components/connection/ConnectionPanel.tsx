@@ -7,13 +7,16 @@ import { useSigningStore, initSigningListener } from '../../stores/signing-store
 import type { SerialPortInfo } from '@ardudeck/comms';
 import { formatPortDisplayName } from '../../utils/usb-device-names';
 import { DriverAssistant } from './DriverAssistant';
+import { RecentConnectionsButton } from './RecentConnectionsButton';
+import type { SavedConnection } from '../../stores/settings-store';
 import { MessagesPanel } from '../panels/MessagesPanel';
 
 const BAUD_RATES = [1500000, 921600, 460800, 230400, 115200, 57600, 38400, 19200, 9600];
 
 export function ConnectionPanel() {
   const { connectionState, isConnecting, error, connect, disconnect, setError } = useConnectionStore();
-  const { connectionMemory, updateConnectionMemory } = useSettingsStore();
+  const { connectionMemory, updateConnectionMemory, removeRecentConnection } = useSettingsStore();
+  const settingsInitialized = useSettingsStore((s) => s._isInitialized);
   const [ports, setPorts] = useState<SerialPortInfo[]>([]);
   const [selectedPort, setSelectedPort] = useState('');
   const [baudRate, setBaudRate] = useState(115200);
@@ -34,42 +37,23 @@ export function ConnectionPanel() {
   const hasAppliedMemory = useRef(false);
   const { hasKey, keyBase64, keyMismatch, savedKeys, loading: signingLoading, setKey: signingSetKey } = useSigningStore();
 
-  // Apply connection memory on mount
+  // Apply connection memory once settings have loaded from disk.
+  // Gating on settingsInitialized prevents applying the empty default memory
+  // before loadSettings() completes and then ignoring the real values.
   useEffect(() => {
-    if (connectionMemory && !hasAppliedMemory.current) {
-      if (connectionMemory.lastConnectionType) {
-        setConnectionType(connectionMemory.lastConnectionType);
-      }
-      if (connectionMemory.lastBaudRate) {
-        setBaudRate(connectionMemory.lastBaudRate);
-      }
-      if (connectionMemory.lastTcpHost) {
-        setTcpHost(connectionMemory.lastTcpHost);
-      }
-      if (connectionMemory.lastTcpPort) {
-        setTcpPort(connectionMemory.lastTcpPort);
-      }
-      if (connectionMemory.lastUdpPort) {
-        setUdpPort(connectionMemory.lastUdpPort);
-      }
-      if (connectionMemory.lastUdpMode) {
-        setUdpMode(connectionMemory.lastUdpMode);
-      }
-      if (connectionMemory.lastUdpRemoteHost) {
-        setUdpRemoteHost(connectionMemory.lastUdpRemoteHost);
-      }
-      if (connectionMemory.lastUdpRemotePort) {
-        setUdpRemotePort(connectionMemory.lastUdpRemotePort);
-      }
-      if (connectionMemory.lastTcpProtocol) {
-        setTcpProtocol(connectionMemory.lastTcpProtocol);
-      }
-      if (connectionMemory.lastUdpProtocol) {
-        setUdpProtocol(connectionMemory.lastUdpProtocol);
-      }
-      hasAppliedMemory.current = true;
-    }
-  }, [connectionMemory]);
+    if (!settingsInitialized || hasAppliedMemory.current) return;
+    if (connectionMemory.lastConnectionType) setConnectionType(connectionMemory.lastConnectionType);
+    if (connectionMemory.lastBaudRate) setBaudRate(connectionMemory.lastBaudRate);
+    if (connectionMemory.lastTcpHost) setTcpHost(connectionMemory.lastTcpHost);
+    if (connectionMemory.lastTcpPort) setTcpPort(connectionMemory.lastTcpPort);
+    if (connectionMemory.lastUdpPort) setUdpPort(connectionMemory.lastUdpPort);
+    if (connectionMemory.lastUdpMode) setUdpMode(connectionMemory.lastUdpMode);
+    if (connectionMemory.lastUdpRemoteHost) setUdpRemoteHost(connectionMemory.lastUdpRemoteHost);
+    if (connectionMemory.lastUdpRemotePort) setUdpRemotePort(connectionMemory.lastUdpRemotePort);
+    if (connectionMemory.lastTcpProtocol) setTcpProtocol(connectionMemory.lastTcpProtocol);
+    if (connectionMemory.lastUdpProtocol) setUdpProtocol(connectionMemory.lastUdpProtocol);
+    hasAppliedMemory.current = true;
+  }, [settingsInitialized, connectionMemory]);
 
   // Get SITL switch flag and default SITL type
   const { pendingSitlSwitch, setPendingSitlSwitch, defaultSitlType, setDefaultSitlType } = useSettingsStore();
@@ -303,6 +287,35 @@ export function ConnectionPanel() {
     }
   };
 
+  // Apply a recent connection entry to the form fields. Switching modes is
+  // allowed (e.g. clicking a listen recent while in client mode switches to
+  // listen) so the popover always surfaces every recent for the tab.
+  const applyRecent = (c: SavedConnection) => {
+    if (c.type === 'tcp') {
+      setTcpHost(c.host ?? '127.0.0.1');
+      setTcpPort(c.port);
+      setTcpProtocol(c.protocol);
+    } else {
+      setUdpProtocol(c.protocol);
+      if (c.udpMode === 'client') {
+        setUdpMode('client');
+        setUdpRemoteHost(c.udpRemoteHost ?? '192.168.1.1');
+        setUdpRemotePort(c.udpRemotePort ?? 14550);
+      } else {
+        setUdpMode('listen');
+        setUdpPort(c.port);
+      }
+    }
+  };
+
+  // Filter recents for the current tab, computed once per render.
+  const tcpRecents = (connectionMemory.recentConnections ?? []).filter((c) => c.type === 'tcp');
+  const udpRecents = (connectionMemory.recentConnections ?? []).filter((c) => c.type === 'udp');
+  const tcpCurrentLabel = `${tcpHost}:${tcpPort} (${tcpProtocol.toUpperCase()})`;
+  const udpCurrentLabel = udpMode === 'client'
+    ? `${udpRemoteHost}:${udpRemotePort} (UDP ${udpProtocol.toUpperCase()})`
+    : `UDP :${udpPort} listen (${udpProtocol.toUpperCase()})`;
+
   const handleConnect = async () => {
     let success = false;
 
@@ -504,50 +517,6 @@ export function ConnectionPanel() {
           ))}
         </div>
 
-        {/* Recent connections - show for TCP/UDP when not connected */}
-        {!connectionState.isConnected && (connectionType === 'tcp' || connectionType === 'udp') && (() => {
-          const filtered = (connectionMemory.recentConnections ?? []).filter(c => c.type === connectionType);
-          if (filtered.length === 0) return null;
-          // Build current label to match against recents
-          const currentLabel = connectionType === 'tcp'
-            ? `${tcpHost}:${tcpPort} (${tcpProtocol.toUpperCase()})`
-            : udpMode === 'client'
-              ? `${udpRemoteHost}:${udpRemotePort} (UDP ${udpProtocol.toUpperCase()})`
-              : `UDP :${udpPort} listen (${udpProtocol.toUpperCase()})`;
-          const selectedRecent = filtered.find(c => c.label === currentLabel)?.label ?? '';
-          return (
-            <div>
-              <select
-                value={selectedRecent}
-                onChange={(e) => {
-                  const c = filtered.find(r => r.label === e.target.value);
-                  if (!c) return;
-                  if (c.type === 'tcp') {
-                    setTcpHost(c.host ?? '127.0.0.1');
-                    setTcpPort(c.port);
-                    setTcpProtocol(c.protocol);
-                  } else {
-                    setUdpProtocol(c.protocol);
-                    if (c.udpMode === 'client') {
-                      setUdpMode('client');
-                      setUdpRemoteHost(c.udpRemoteHost ?? '192.168.1.1');
-                      setUdpRemotePort(c.udpRemotePort ?? 14550);
-                    } else {
-                      setUdpMode('listen');
-                      setUdpPort(c.port);
-                    }
-                  }
-                }}
-                className="select text-xs"
-              >
-                <option value="" disabled>Recent connections...</option>
-                {filtered.map((c) => (
-                  <option key={c.label} value={c.label}>{c.label}</option>
-                ))}
-              </select>
-            </div>
-          );
-        })()}
 
         {/* Serial settings */}
         {connectionType === 'serial' && (
@@ -593,14 +562,23 @@ export function ConnectionPanel() {
           <div className="space-y-4">
             <div>
               <label className="label">Host</label>
-              <input
-                type="text"
-                value={tcpHost}
-                onChange={(e) => setTcpHost(e.target.value)}
-                className="input"
-                placeholder="127.0.0.1"
-                disabled={connectionState.isConnected}
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={tcpHost}
+                  onChange={(e) => setTcpHost(e.target.value)}
+                  className="input pr-16"
+                  placeholder="127.0.0.1"
+                  disabled={connectionState.isConnected}
+                />
+                <RecentConnectionsButton
+                  recents={tcpRecents}
+                  currentLabel={tcpCurrentLabel}
+                  onSelect={applyRecent}
+                  onRemove={removeRecentConnection}
+                  disabled={connectionState.isConnected}
+                />
+              </div>
             </div>
             <div>
               <label className="label">Port</label>
@@ -667,13 +645,22 @@ export function ConnectionPanel() {
               <>
                 <div>
                   <label className="label">Local Port</label>
-                  <input
-                    type="number"
-                    value={udpPort}
-                    onChange={(e) => setUdpPort(Number(e.target.value))}
-                    className="input"
-                    disabled={connectionState.isConnected}
-                  />
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={udpPort}
+                      onChange={(e) => setUdpPort(Number(e.target.value))}
+                      className="input pr-16"
+                      disabled={connectionState.isConnected}
+                    />
+                    <RecentConnectionsButton
+                      recents={udpRecents}
+                      currentLabel={udpCurrentLabel}
+                      onSelect={applyRecent}
+                      onRemove={removeRecentConnection}
+                      disabled={connectionState.isConnected}
+                    />
+                  </div>
                 </div>
                 <p className="text-xs text-content-secondary">
                   Listen for incoming packets on this port
@@ -683,14 +670,23 @@ export function ConnectionPanel() {
               <>
                 <div>
                   <label className="label">Remote Host</label>
-                  <input
-                    type="text"
-                    value={udpRemoteHost}
-                    onChange={(e) => setUdpRemoteHost(e.target.value)}
-                    className="input"
-                    placeholder="192.168.1.1"
-                    disabled={connectionState.isConnected}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={udpRemoteHost}
+                      onChange={(e) => setUdpRemoteHost(e.target.value)}
+                      className="input pr-16"
+                      placeholder="192.168.1.1"
+                      disabled={connectionState.isConnected}
+                    />
+                    <RecentConnectionsButton
+                      recents={udpRecents}
+                      currentLabel={udpCurrentLabel}
+                      onSelect={applyRecent}
+                      onRemove={removeRecentConnection}
+                      disabled={connectionState.isConnected}
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="label">Remote Port</label>

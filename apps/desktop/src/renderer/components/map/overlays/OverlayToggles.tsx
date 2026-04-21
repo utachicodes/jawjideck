@@ -29,15 +29,26 @@ const OVERLAYS: Array<{ id: OverlayId; label: string; icon: JSX.Element }> = [
       </svg>
     ),
   },
+  {
+    id: 'dipul',
+    label: 'DIPUL',
+    icon: (
+      <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+      </svg>
+    ),
+  },
 ];
 
 export function OverlayToggles() {
   const activeOverlays = useOverlayStore((s) => s.activeOverlays);
   const toggleOverlay = useOverlayStore((s) => s.toggleOverlay);
+  const dipulAvailable = useOverlayStore((s) => s.dipulAvailable);
 
   return (
     <>
       {OVERLAYS.map(({ id, label, icon }) => {
+        if (id === 'dipul' && !dipulAvailable) return null;
         const isActive = activeOverlays.has(id);
         return (
           <button

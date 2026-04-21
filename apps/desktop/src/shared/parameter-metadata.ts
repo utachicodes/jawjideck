@@ -34,6 +34,23 @@ export const PARAMETER_METADATA_URLS: Record<VehicleType, string> = {
   tracker: 'https://autotest.ardupilot.org/Parameters/AntennaTracker/apm.pdef.xml',
 };
 
+// Human-facing ArduPilot docs use a different slug for tracker.
+// (https://ardupilot.org/tracker/... returns 404 — the live path is antennatracker)
+const DOCS_SLUG: Record<VehicleType, string> = {
+  copter: 'copter',
+  plane: 'plane',
+  rover: 'rover',
+  sub: 'sub',
+  tracker: 'antennatracker',
+};
+
+export function getParameterDocsUrl(vehicleType: VehicleType, paramId: string): string {
+  // Anchor format on ardupilot.org: lowercased with underscores → hyphens.
+  // e.g. ACRO_RP_RATE_TC → #acro-rp-rate-tc
+  const anchor = paramId.toLowerCase().replace(/_/g, '-');
+  return `https://ardupilot.org/${DOCS_SLUG[vehicleType]}/docs/parameters.html#${anchor}`;
+}
+
 // Map MAVLink MAV_TYPE to our VehicleType
 /**
  * Validation result for parameter values

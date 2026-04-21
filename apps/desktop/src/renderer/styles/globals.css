@@ -70,7 +70,7 @@
   /* Backgrounds */
   --bg-base: #f5f6f8;
   --bg-surface: #ffffff;
-  --bg-surface-raised: #f0f1f4;
+  --bg-surface-raised: #e5e7ec;
   --bg-inset: #e0e2e7;
   --bg-input: #ffffff;
   --bg-nav: rgba(255, 255, 255, 0.95);
@@ -449,6 +449,71 @@ select,
   overflow: visible;
 }
 
+/* ── Tactical vehicle icon ─────────────────────────────────────── */
+
+@keyframes tactical-ring-spin {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: 14; }
+}
+
+
+/* The Leaflet marker wrapper - must beat .leaflet-marker-icon's z-index: 601 !important */
+.tactical-vehicle-marker {
+  z-index: 10000 !important;
+  background: transparent !important;
+  border: none !important;
+  overflow: visible !important;
+}
+
+.tactical-vehicle-icon {
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.tactical-vehicle-icon:hover {
+  filter: brightness(1.25) !important;
+}
+
+.tactical-selection-ring {
+  animation: tactical-ring-spin 2s linear infinite;
+}
+
+/* Armed/critical pulse - only pulses the disc border via box-shadow, not opacity */
+.tactical-pulse-orange .tvi-svg circle:first-child {
+  filter: drop-shadow(0 0 4px #f97316);
+  animation: tactical-disc-pulse 1.5s ease-in-out infinite;
+}
+
+.tactical-pulse-red .tvi-svg circle:first-child {
+  filter: drop-shadow(0 0 4px #ef4444);
+  animation: tactical-disc-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes tactical-disc-pulse {
+  0%, 100% { filter: drop-shadow(0 0 6px currentColor); }
+  50% { filter: drop-shadow(0 0 2px currentColor); }
+}
+
+/* Override Leaflet popup for tactical command popup */
+.tactical-command-popup .leaflet-popup-content-wrapper {
+  background: rgba(17, 24, 39, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: 6px;
+  color: inherit;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.tactical-command-popup .leaflet-popup-tip {
+  background: rgba(17, 24, 39, 0.95);
+  border-right: 1px solid rgba(34, 211, 238, 0.3);
+  border-bottom: 1px solid rgba(34, 211, 238, 0.3);
+}
+
+.tactical-command-popup .leaflet-popup-content {
+  margin: 10px;
+}
+
 /* Waypoint markers - ensure proper drag behavior */
 .waypoint-marker {
   cursor: grab !important;
@@ -713,3 +778,38 @@ select,
 .light .bg-purple-900\/40,
 .light .bg-purple-900\/30,
 .light .bg-purple-900\/20 { background-color: rgb(243 232 255 / 0.7); } /* purple-100 */
+
+/* Yellow/amber 500/10 and 500/20 buttons/badges — too pale in light mode.
+   Bump to proper light-mode tints that provide visible contrast. */
+.light .bg-yellow-500\/10 { background-color: rgb(254 249 195 / 0.6); } /* yellow-100 */
+.light .bg-yellow-500\/20,
+.light .hover\:bg-yellow-500\/30:hover { background-color: rgb(254 240 138 / 0.5); } /* yellow-200 */
+.light .bg-amber-500\/10 { background-color: rgb(254 243 199 / 0.6); }  /* amber-100 */
+.light .bg-amber-500\/20,
+.light .hover\:bg-amber-500\/30:hover { background-color: rgb(253 230 138 / 0.5); }  /* amber-200 */
+
+
+/* React Flow Controls + MiniMap dark theme for ScriptGraphReadonlyView.
+   Scoped under .script-graph-readonly so it only affects the script-installer
+   preview - the main Lua Graph editor keeps its own styling. */
+.script-graph-readonly .react-flow__controls-button {
+  background: rgba(30, 41, 59, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e5e7eb;
+  fill: #e5e7eb;
+}
+.script-graph-readonly .react-flow__controls-button:hover {
+  background: rgba(55, 65, 81, 0.95);
+}
+.script-graph-readonly .react-flow__controls-button svg {
+  fill: currentColor;
+  max-width: 14px;
+  max-height: 14px;
+}
+.script-graph-readonly .react-flow__minimap-mask {
+  fill: rgba(13, 17, 23, 0.7);
+}
+.script-graph-readonly .react-flow__edge-path {
+  stroke-linecap: round;
+}
+

@@ -35,7 +35,13 @@ export function serializeLogEntry(msg: LogEntry): Uint8Array {
 }
 
 export function deserializeLogEntry(payload: Uint8Array): LogEntry {
-  const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+  // MAVLink v2 trims trailing zero bytes - zero-pad to expected length
+  let buf = payload;
+  if (payload.byteLength < 14) {
+    buf = new Uint8Array(14);
+    buf.set(payload);
+  }
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
 
   return {
     timeUtc: view.getUint32(0, true),

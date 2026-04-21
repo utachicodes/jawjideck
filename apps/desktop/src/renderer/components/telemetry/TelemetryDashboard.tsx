@@ -16,6 +16,7 @@ import { useLayoutStore } from '../../stores/layout-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import { useEditModeStore } from '../../stores/edit-mode-store';
+import { useTelemetryLayoutStore } from '../../stores/telemetry-layout-store';
 import { useResolvedTheme } from '../../hooks/useTheme';
 import type { TelemetrySpeed } from '../../../shared/ipc-channels';
 
@@ -92,62 +93,58 @@ function isPresetLayout(name: string): name is PresetLayoutKey {
   return name in PRESET_LAYOUTS;
 }
 
-// Pilot View preset - Map on left, all telemetry panels in 3x2 grid on right
+// Pilot View preset - Map + FlightControl left, compact telemetry on right.
+// Attitude panel intentionally omitted - the map already renders an attitude indicator overlay.
 const PILOT_VIEW_LAYOUT: SerializedDockview = {
   grid: {
     root: {
       type: 'branch',
       data: [
+        // Map (primary, takes most of the horizontal space)
         {
           type: 'leaf',
           data: { views: ['map'], activeView: 'map', id: '1' },
-          size: 600,
+          size: 620,
         },
+        // Flight Control gets its own tall column next to the map
+        {
+          type: 'leaf',
+          data: { views: ['flightControl'], activeView: 'flightControl', id: '8' },
+          size: 280,
+        },
+        // Right telemetry stack
         {
           type: 'branch',
           data: [
+            { type: 'leaf', data: { views: ['battery'], activeView: 'battery', id: '3' }, size: 180 },
+            { type: 'leaf', data: { views: ['gps'], activeView: 'gps', id: '4' }, size: 210 },
             {
               type: 'branch',
               data: [
-                { type: 'leaf', data: { views: ['battery'], activeView: 'battery', id: '3' }, size: 200 },
-                { type: 'leaf', data: { views: ['attitude'], activeView: 'attitude', id: '2' }, size: 200 },
+                { type: 'leaf', data: { views: ['altitude'], activeView: 'altitude', id: '7' }, size: 160 },
+                { type: 'leaf', data: { views: ['speed'], activeView: 'speed', id: '6' }, size: 160 },
               ],
-              size: 300,
+              size: 220,
             },
-            {
-              type: 'branch',
-              data: [
-                { type: 'leaf', data: { views: ['gps'], activeView: 'gps', id: '4' }, size: 200 },
-                { type: 'leaf', data: { views: ['altitude'], activeView: 'altitude', id: '7' }, size: 200 },
-              ],
-              size: 300,
-            },
-            {
-              type: 'branch',
-              data: [
-                { type: 'leaf', data: { views: ['position'], activeView: 'position', id: '5' }, size: 200 },
-                { type: 'leaf', data: { views: ['speed'], activeView: 'speed', id: '6' }, size: 200 },
-              ],
-              size: 300,
-            },
+            { type: 'leaf', data: { views: ['position'], activeView: 'position', id: '5' }, size: 180 },
           ],
-          size: 400,
+          size: 320,
         },
       ],
       size: 900,
     },
-    width: 1000,
+    width: 1220,
     height: 900,
     orientation: Orientation.HORIZONTAL,
   },
   panels: {
     map: { id: 'map', contentComponent: 'MapPanel', title: 'Map' },
-    attitude: { id: 'attitude', contentComponent: 'AttitudePanel', title: 'Attitude' },
+    flightControl: { id: 'flightControl', contentComponent: 'FlightControlPanel', title: 'Flight Control' },
     battery: { id: 'battery', contentComponent: 'BatteryPanel', title: 'Battery' },
     gps: { id: 'gps', contentComponent: 'GpsPanel', title: 'GPS' },
-    position: { id: 'position', contentComponent: 'PositionPanel', title: 'Position' },
-    speed: { id: 'speed', contentComponent: 'SpeedPanel', title: 'Speed' },
     altitude: { id: 'altitude', contentComponent: 'AltitudePanel', title: 'Altitude' },
+    speed: { id: 'speed', contentComponent: 'SpeedPanel', title: 'Speed' },
+    position: { id: 'position', contentComponent: 'PositionPanel', title: 'Position' },
   },
   activeGroup: '1',
 };
@@ -178,7 +175,7 @@ const MISSION_TELEMETRY_LAYOUT: SerializedDockview = {
               type: 'branch',
               data: [
                 { type: 'leaf', data: { views: ['altitudeProfile'], activeView: 'altitudeProfile', id: '2' }, size: 476 },
-                { type: 'leaf', data: { views: ['attitude'], activeView: 'attitude', id: '5' }, size: 331 },
+                { type: 'leaf', data: { views: ['flightControl'], activeView: 'flightControl', id: '5' }, size: 331 },
               ],
               size: 401,
             },
@@ -197,7 +194,7 @@ const MISSION_TELEMETRY_LAYOUT: SerializedDockview = {
     altitudeProfile: { id: 'altitudeProfile', contentComponent: 'AltitudeProfilePanel', title: 'Altitude Profile' },
     waypoints: { id: 'waypoints', contentComponent: 'WaypointTablePanel', title: 'Waypoints' },
     battery: { id: 'battery', contentComponent: 'BatteryPanel', title: 'Battery' },
-    attitude: { id: 'attitude', contentComponent: 'AttitudePanel', title: 'Attitude' },
+    flightControl: { id: 'flightControl', contentComponent: 'FlightControlPanel', title: 'Flight Control' },
   },
   activeGroup: '5',
 };
@@ -212,10 +209,9 @@ const ALL_PANELS_LAYOUT: SerializedDockview = {
         {
           type: 'branch',
           data: [
-            { type: 'leaf', data: { views: ['attitude'], activeView: 'attitude', id: '1' }, size: 300 },
+            { type: 'leaf', data: { views: ['flightControl'], activeView: 'flightControl', id: '10' }, size: 360 },
             { type: 'leaf', data: { views: ['altitude'], activeView: 'altitude', id: '2' }, size: 200 },
             { type: 'leaf', data: { views: ['speed'], activeView: 'speed', id: '3' }, size: 200 },
-            { type: 'leaf', data: { views: ['flightControl'], activeView: 'flightControl', id: '10' }, size: 200 },
           ],
           size: 220,
         },
@@ -249,7 +245,6 @@ const ALL_PANELS_LAYOUT: SerializedDockview = {
   },
   panels: {
     map: { id: 'map', contentComponent: 'MapPanel', title: 'Map' },
-    attitude: { id: 'attitude', contentComponent: 'AttitudePanel', title: 'Attitude' },
     altitude: { id: 'altitude', contentComponent: 'AltitudePanel', title: 'Altitude' },
     speed: { id: 'speed', contentComponent: 'SpeedPanel', title: 'Speed' },
     battery: { id: 'battery', contentComponent: 'BatteryPanel', title: 'Battery' },
@@ -264,7 +259,7 @@ const ALL_PANELS_LAYOUT: SerializedDockview = {
   activeGroup: '4',
 };
 
-// SITL preset - Map + Messages center, Attitude/Altitude/Speed left, GPS + SITL panels right
+// SITL preset - Map + Messages center, Flight Control + telemetry left, GPS + SITL panels right
 const SITL_LAYOUT: SerializedDockview = {
   grid: {
     root: {
@@ -274,9 +269,9 @@ const SITL_LAYOUT: SerializedDockview = {
         {
           type: 'branch',
           data: [
-            { type: 'leaf', data: { views: ['attitude'], activeView: 'attitude', id: '1' }, size: 300 },
-            { type: 'leaf', data: { views: ['altitude'], activeView: 'altitude', id: '2' }, size: 300 },
-            { type: 'leaf', data: { views: ['speed'], activeView: 'speed', id: '3' }, size: 300 },
+            { type: 'leaf', data: { views: ['flightControl'], activeView: 'flightControl', id: '1' }, size: 360 },
+            { type: 'leaf', data: { views: ['altitude'], activeView: 'altitude', id: '2' }, size: 260 },
+            { type: 'leaf', data: { views: ['speed'], activeView: 'speed', id: '3' }, size: 260 },
           ],
           size: 200,
         },
@@ -306,7 +301,7 @@ const SITL_LAYOUT: SerializedDockview = {
     orientation: Orientation.HORIZONTAL,
   },
   panels: {
-    attitude: { id: 'attitude', contentComponent: 'AttitudePanel', title: 'Attitude' },
+    flightControl: { id: 'flightControl', contentComponent: 'FlightControlPanel', title: 'Flight Control' },
     altitude: { id: 'altitude', contentComponent: 'AltitudePanel', title: 'Altitude' },
     speed: { id: 'speed', contentComponent: 'SpeedPanel', title: 'Speed' },
     map: { id: 'map', contentComponent: 'MapPanel', title: 'Map' },
@@ -329,12 +324,12 @@ function createDefaultLayout(api: DockviewApi): void {
     position: { referenceGroup: centerGroup },
   });
 
-  // Left group - Attitude and flight data
-  const leftGroup = api.addGroup({ direction: 'left', initialWidth: 220 });
+  // Left group - Flight control + altitude/speed
+  const leftGroup = api.addGroup({ direction: 'left', initialWidth: 260 });
   api.addPanel({
-    id: 'attitude',
-    component: 'AttitudePanel',
-    title: 'Attitude',
+    id: 'flightControl',
+    component: 'FlightControlPanel',
+    title: 'Flight Control',
     position: { referenceGroup: leftGroup },
   });
   api.addPanel({
@@ -445,6 +440,7 @@ function LayoutToolbar({
       <span className="text-xs text-content-secondary">Layout:</span>
 
       <select
+        data-tour="telemetry-layout-select"
         value={activeLayout}
         onChange={(e) => onLoad(e.target.value)}
         className="bg-surface-raised border border-default rounded px-2 py-1 text-xs text-content focus:outline-none focus:ring-1 focus:ring-blue-500/50"
@@ -585,7 +581,7 @@ function AddPanelDropdown({ onAddPanel, supportsMissionPlanning, isMavlink, isSi
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 bg-surface border border-subtle rounded-lg shadow-xl z-20 py-1 min-w-[150px]">
+          <div className="absolute right-0 top-full mt-1 bg-surface-solid border border-subtle rounded-lg shadow-xl z-20 py-1 min-w-[150px]">
             {availablePanels.map(([id, { component, title }]) => (
               <button
                 key={id}
@@ -855,6 +851,53 @@ export function TelemetryDashboard() {
       title,
     });
   }, []);
+
+  // Expose a tour-facing bridge so the tour manager can check/provision panels.
+  useEffect(() => {
+    const setBridge = useTelemetryLayoutStore.getState().setBridge;
+    setBridge({
+      hasPanel: (panelId) => {
+        const api = apiRef.current;
+        if (!api) return false;
+        // Preset layouts use panelId as the panel id directly.
+        // User-added panels use `${panelId}-${timestamp}`.
+        return api.panels.some(
+          (p) => p.id === panelId || p.id.startsWith(`${panelId}-`),
+        );
+      },
+      addPanel: (panelId) => {
+        const api = apiRef.current;
+        if (!api) return;
+        const entry = PANEL_COMPONENTS[panelId as keyof typeof PANEL_COMPONENTS];
+        if (!entry) return;
+        const uniqueId = `${panelId}-${Date.now()}`;
+        const panel = api.addPanel({
+          id: uniqueId,
+          component: entry.component,
+          title: entry.title,
+        });
+        // Make sure the new panel's tab is the active one in its group,
+        // otherwise it renders hidden and selectors won't find it.
+        panel?.api.setActive();
+      },
+      activatePanel: (panelId) => {
+        const api = apiRef.current;
+        if (!api) return;
+        const existing = api.panels.find(
+          (p) => p.id === panelId || p.id.startsWith(`${panelId}-`),
+        );
+        existing?.api.setActive();
+      },
+      loadPreset: (presetKey) => {
+        if (!apiRef.current || !isPresetLayout(presetKey)) return;
+        apiRef.current.clear();
+        loadPresetLayout(apiRef.current, presetKey);
+      },
+    });
+    return () => {
+      useTelemetryLayoutStore.getState().setBridge(null);
+    };
+  }, [handleAddPanel]);
 
   return (
     <div className="h-full flex flex-col">

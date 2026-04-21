@@ -1,4 +1,4 @@
-export type OverlayId = 'radar' | 'openaip' | 'airspace';
+export type OverlayId = 'radar' | 'openaip' | 'airspace' | 'dipul';
 
 // ─── RainViewer ──────────────────────────────────────────────────────────────
 
@@ -47,3 +47,13 @@ export interface OverlayFetchParams {
   lon: number;
   zoom: number;
 }
+
+// ─── DIPUL (German UAS geozones, WMS) ────────────────────────────────────────
+
+/** Axis-aligned bounding box covering Germany (lat/lon). */
+export const GERMANY_BBOX = {
+  south: 47.27,
+  north: 55.1,
+  west: 5.87,
+  east: 15.04,
+} as const;

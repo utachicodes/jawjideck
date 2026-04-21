@@ -138,8 +138,14 @@ export function parseFtpPayload(raw: Uint8Array): FtpPayload {
 /** Default read size per FTP packet (matches Mission Planner's optimized size for param.pck) */
 export const FTP_READ_SIZE = 110;
 
-/** Timeout waiting for FTP response (ms) */
-export const FTP_TIMEOUT_MS = 2000;
+/**
+ * Max FTP data field for MAVLink v1: 251-byte payload minus the 12-byte
+ * FTP header. Used for uploads where the per-chunk RTT dominates throughput.
+ */
+export const FTP_WRITE_SIZE = 239;
+
+/** Timeout waiting for FTP response (ms) - 4s to handle slow radio links */
+export const FTP_TIMEOUT_MS = 4000;
 
 /** Timeout for burst read inactivity (ms) */
 export const FTP_BURST_TIMEOUT_MS = 1500;

@@ -21,6 +21,40 @@ export const IPC_CHANNELS = {
   MAVLINK_ARM_DISARM: 'mavlink:arm-disarm',
   MAVLINK_SET_MODE: 'mavlink:set-mode',
   MAVLINK_COMMAND_TAKEOFF: 'mavlink:command-takeoff',
+  MAVLINK_GOTO: 'mavlink:goto',
+  MAVLINK_ORBIT: 'mavlink:orbit',
+  MAVLINK_ORBIT_STOP: 'mavlink:orbit-stop',
+  MAVLINK_LAND: 'mavlink:land',
+  /**
+   * Send MAV_CMD_USER_1..5 (commands 31010..31014) via COMMAND_INT, with
+   * arbitrary float params + global coordinates. Invokes handlers registered
+   * by FC-side Lua scripts (e.g. ArduDeck's orbit script).
+   */
+  MAVLINK_USER_COMMAND: 'mavlink:user-command',
+
+  // Script installer (FC-side Lua scripts)
+  SCRIPT_INSTALLER_GET_MANIFEST: 'script-installer:get-manifest',
+  SCRIPT_INSTALLER_GET_SOURCE: 'script-installer:get-source',
+  SCRIPT_INSTALLER_RUN_PREFLIGHT: 'script-installer:run-preflight',
+  SCRIPT_INSTALLER_BEGIN: 'script-installer:begin',
+  SCRIPT_INSTALLER_GRANT_CONSENT: 'script-installer:grant-consent',
+  SCRIPT_INSTALLER_APPLY_FIX: 'script-installer:apply-fix',
+  SCRIPT_INSTALLER_CANCEL: 'script-installer:cancel',
+  SCRIPT_INSTALLER_GET_REGISTRY: 'script-installer:get-registry',
+  SCRIPT_INSTALLER_GET_ALL_REGISTRY: 'script-installer:get-all-registry',
+  SCRIPT_INSTALLER_UNINSTALL: 'script-installer:uninstall',
+  /** Push channel: main → renderer install state updates */
+  SCRIPT_INSTALLER_STATE: 'script-installer:state',
+  /** Push channel: main → renderer script health changes */
+  SCRIPT_HEALTH_CHANGED: 'script-installer:health-changed',
+  /** Save the bundled Lua source to a user-chosen path (manual install fallback) */
+  SCRIPT_INSTALLER_SAVE_TO_DISK: 'script-installer:save-to-disk',
+
+  // MAVLink-FTP file browser (read-only ops; write ops live in script installer)
+  /** List a directory on the FC. Returns DirectoryEntry[] or null on failure. */
+  MAVLINK_FTP_LIST: 'mavlink-ftp:list',
+  /** Download a file from the FC to a user-chosen save path. */
+  MAVLINK_FTP_DOWNLOAD: 'mavlink-ftp:download',
 
   // MAVLink Signing
   MAVLINK_SIGNING_SET_KEY: 'mavlink:signing-set-key',
@@ -475,16 +509,22 @@ export const IPC_CHANNELS = {
   LOG_DOWNLOAD_COMPLETE: 'log:download-complete',
   LOG_DOWNLOAD_ERROR: 'log:download-error',
   LOG_DOWNLOAD_CANCEL: 'log:download-cancel',
-  LOG_PARSE: 'log:parse',
+  /** Show open-file dialog only (no read). Returns just the chosen path so
+   *  the renderer never has to round-trip the file bytes through IPC — that
+   *  was the root cause of multi-minute freezes on 100MB+ logs. */
+  LOG_OPEN_DIALOG: 'log:open-dialog',
+  /** Read + parse a .bin file by path on the main process. Streams progress
+   *  via LOG_PARSE_PROGRESS events and returns the serialized log + health
+   *  results. Replaces the old LOG_OPEN_FILE / LOG_READ_FILE / LOG_PARSE
+   *  trio which all marshalled the file as `number[]` between processes. */
+  LOG_PARSE_FILE: 'log:parse-file',
   LOG_PARSE_PROGRESS: 'log:parse-progress',
   LOG_PARSE_COMPLETE: 'log:parse-complete',
-  LOG_OPEN_FILE: 'log:open-file',
   LOG_AI_ANALYZE: 'log:ai-analyze',
   LOG_CHAT_SAVE: 'log:chat-save',
   LOG_CHAT_LOAD: 'log:chat-load',
   LOG_RECENT_GET: 'log:recent-get',
   LOG_RECENT_ADD: 'log:recent-add',
-  LOG_READ_FILE: 'log:read-file',
 } as const;
 
 export type IpcChannels = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];
@@ -579,6 +619,16 @@ export interface ConnectionState {
   reconnectReason?: string; // "Saving configuration", "Rebooting board"
   reconnectAttempt?: number; // Current attempt (1-based)
   reconnectMaxAttempts?: number; // Max attempts before giving up
+  /**
+   * Link stale - TRUE when no vehicle heartbeat has arrived within the soft
+   * watchdog window, but the transport is still open. UI should show a "no
+   * data for Ns" warning instead of tearing the connection down, since this
+   * is often a transient radio/link drop (especially over TCP/WireGuard).
+   * Cleared automatically when heartbeats resume.
+   */
+  isStale?: boolean;
+  /** Timestamp (ms since epoch) when the link went stale. Used to render elapsed time. */
+  staleSince?: number;
   /** Detected MAVLink protocol version (1 or 2) */
   mavlinkVersion?: number;
   /** Unique board identifier from AUTOPILOT_VERSION uid/uid2 (hex string) */

@@ -57,9 +57,9 @@ export function CameraPresetSelector({ value, onChange }: CameraPresetSelectorPr
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-surface-raised border border rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-surface-solid border border rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
           {/* Search */}
-          <div className="sticky top-0 bg-surface-raised p-2 border-b border-subtle">
+          <div className="sticky top-0 bg-surface-solid p-2 border-b border-subtle">
             <input
               type="text"
               value={search}

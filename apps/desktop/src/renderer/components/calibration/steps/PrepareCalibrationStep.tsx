@@ -24,7 +24,7 @@ const CalibrationThemes: Record<CalibrationTypeId, {
     iconBg: 'from-emerald-500/20 to-teal-500/20',
     iconColor: 'text-emerald-400',
     accentColor: 'bg-emerald-500/20 text-emerald-400',
-    bgPattern: 'text-emerald-500/[0.05]',
+    bgPattern: 'text-emerald-500/10',
   },
   'accel-6point': {
     gradient: 'from-blue-500/10 via-transparent to-indigo-500/10',
@@ -32,7 +32,7 @@ const CalibrationThemes: Record<CalibrationTypeId, {
     iconBg: 'from-blue-500/20 to-indigo-500/20',
     iconColor: 'text-blue-400',
     accentColor: 'bg-blue-500/20 text-blue-400',
-    bgPattern: 'text-blue-500/[0.05]',
+    bgPattern: 'text-blue-500/10',
   },
   compass: {
     gradient: 'from-amber-500/10 via-transparent to-orange-500/10',
@@ -40,7 +40,7 @@ const CalibrationThemes: Record<CalibrationTypeId, {
     iconBg: 'from-amber-500/20 to-orange-500/20',
     iconColor: 'text-amber-400',
     accentColor: 'bg-amber-500/20 text-amber-400',
-    bgPattern: 'text-amber-500/[0.05]',
+    bgPattern: 'text-amber-500/10',
   },
   gyro: {
     gradient: 'from-violet-500/10 via-transparent to-purple-500/10',
@@ -48,7 +48,7 @@ const CalibrationThemes: Record<CalibrationTypeId, {
     iconBg: 'from-violet-500/20 to-purple-500/20',
     iconColor: 'text-violet-400',
     accentColor: 'bg-violet-500/20 text-violet-400',
-    bgPattern: 'text-violet-500/[0.05]',
+    bgPattern: 'text-violet-500/10',
   },
   opflow: {
     gradient: 'from-cyan-500/10 via-transparent to-sky-500/10',
@@ -56,7 +56,7 @@ const CalibrationThemes: Record<CalibrationTypeId, {
     iconBg: 'from-cyan-500/20 to-sky-500/20',
     iconColor: 'text-cyan-400',
     accentColor: 'bg-cyan-500/20 text-cyan-400',
-    bgPattern: 'text-cyan-500/[0.05]',
+    bgPattern: 'text-cyan-500/10',
   },
 };
 
@@ -364,10 +364,10 @@ function InstructionItem({
 function WarningBox({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
-      <svg className="w-4 h-4 text-yellow-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
       </svg>
-      <p className="text-yellow-400/90 text-sm">{children}</p>
+      <p className="text-amber-600 text-sm">{children}</p>
     </div>
   );
 }
@@ -384,7 +384,7 @@ function InfoBox({
       <svg className={`w-4 h-4 flex-shrink-0 ${theme.iconColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
-      <p className={`${theme.iconColor} text-sm opacity-80`}>{children}</p>
+      <p className="text-content-secondary text-sm">{children}</p>
     </div>
   );
 }

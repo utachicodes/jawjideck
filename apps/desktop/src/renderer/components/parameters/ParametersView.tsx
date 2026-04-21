@@ -608,7 +608,7 @@ export function ParametersView() {
                 </button>
               </div>
               {saveDropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 w-56 bg-surface-raised border-subtle rounded-lg shadow-xl z-50 py-1">
+                <div className="absolute top-full left-0 mt-1 w-56 bg-surface-solid border-subtle rounded-lg shadow-xl z-50 py-1">
                   <button
                     onClick={() => handleSaveToFile('all')}
                     className="w-full px-3 py-2 text-left text-sm text-content hover:bg-surface-raised transition-colors"

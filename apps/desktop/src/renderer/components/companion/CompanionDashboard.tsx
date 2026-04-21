@@ -859,7 +859,7 @@ function CompanionAddPanelDropdown({ onAddPanel }: { onAddPanel: (id: string, co
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 bg-surface-raised border border-subtle rounded-lg shadow-xl z-20 py-1 min-w-[150px]">
+          <div className="absolute right-0 top-full mt-1 bg-surface-solid border border-subtle rounded-lg shadow-xl z-20 py-1 min-w-[150px]">
             {Object.entries(COMPANION_PANEL_COMPONENTS).map(([id, { component, title }]) => (
               <button
                 key={id}

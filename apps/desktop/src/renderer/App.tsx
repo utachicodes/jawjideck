@@ -29,6 +29,7 @@ import { useLegacyConfigStore } from './stores/legacy-config-store';
 import { useCliStore, setupCliDataListener, cleanupCliDataListener } from './stores/cli-store';
 import { initializeSettings, useSettingsStore, type VehicleType, type ExperienceLevel } from './stores/settings-store';
 import { ExperienceLevelDialog } from './components/ui/ExperienceLevelDialog';
+import { AppTourProvider } from './components/tours/AppTourProvider';
 import { useFlightControlStore } from './stores/flight-control-store';
 import { useCompanionStore } from './stores/companion-store';
 import { useMessagesStore } from './stores/messages-store';
@@ -737,6 +738,7 @@ function App() {
   };
 
   return (
+    <AppTourProvider>
     <AppShell>
       <div className="flex h-full">
         {/* Navigation Rail */}
@@ -830,6 +832,7 @@ function App() {
       )}
 
     </AppShell>
+    </AppTourProvider>
   );
 }
 

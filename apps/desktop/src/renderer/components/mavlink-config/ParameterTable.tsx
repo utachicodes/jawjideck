@@ -7,12 +7,14 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { History, AlertTriangle, RotateCw, Loader2, Star, CheckCircle, XCircle, Info } from 'lucide-react';
+import { History, AlertTriangle, RotateCw, Loader2, Star, CheckCircle, XCircle, Info, ExternalLink } from 'lucide-react';
 import { useParameterStore, type SortColumn } from '../../stores/parameter-store';
 import { PARAMETER_GROUPS } from '../../../shared/parameter-groups';
 import { useConnectionStore } from '../../stores/connection-store';
+import { getParameterDocsUrl, mavTypeToVehicleType } from '../../../shared/parameter-metadata';
 import BitmaskEditor from './BitmaskEditor';
 import ParamHistoryModal from './ParamHistoryModal';
+import { Tooltip } from '../ui/Tooltip';
 
 // Toast notification state
 type ToastType = 'success' | 'error' | 'info';
@@ -32,6 +34,9 @@ function formatParamValue(value: number): string {
   // toPrecision(7) then parseFloat strips trailing zeros.
   return String(parseFloat(value.toPrecision(7)));
 }
+
+// Column widths kept in one place so header and rows stay aligned.
+const PARAM_GRID_COLUMNS = 'minmax(220px, 260px) minmax(180px, 240px) minmax(0, 1fr) 140px';
 
 // Group colors now come from PARAMETER_GROUPS[].color
 
@@ -490,6 +495,9 @@ const ParameterTable: React.FC = () => {
   const paramCount = parameters.size;
   const modified = modifiedCount();
 
+  // Vehicle slug for the per-param ArduPilot docs link. Null when vehicle is unknown.
+  const docsVehicle = connectionState.mavType != null ? mavTypeToVehicleType(connectionState.mavType) : null;
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const rowVirtualizer = useVirtualizer({
     count: displayParams.length,
@@ -542,7 +550,7 @@ const ParameterTable: React.FC = () => {
               </button>
             </div>
             {saveDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-52 bg-surface-raised border-subtle rounded-lg shadow-xl z-50 py-1">
+              <div className="absolute top-full left-0 mt-1 w-52 bg-surface-solid border-subtle rounded-lg shadow-xl z-50 py-1">
                 <button
                   onClick={() => handleSaveToFile(false)}
                   className="w-full px-3 py-2 text-left text-sm text-content hover:bg-surface-raised transition-colors"
@@ -761,37 +769,41 @@ const ParameterTable: React.FC = () => {
             </div>
           </div>
         ) : (
-          <table className="w-full table-fixed">
-            <thead className="sticky top-0 bg-surface backdrop-blur border-b border-subtle z-10">
-              <tr className="text-left text-xs text-content-secondary uppercase tracking-wider">
-                <th className="px-4 py-3 font-medium w-[220px]">
-                  <button
-                    onClick={() => toggleSort('name')}
-                    className="group flex items-center hover:text-content transition-colors"
-                  >
-                    Name
-                    <SortIndicator column="name" currentColumn={sortColumn} direction={sortDirection} />
-                  </button>
-                </th>
-                <th className="px-4 py-3 font-medium w-[140px]">Value</th>
-                <th className="px-4 py-3 font-medium">Description</th>
-                <th className="px-4 py-3 font-medium w-[100px]">
-                  <button
-                    onClick={() => toggleSort('status')}
-                    className="group flex items-center hover:text-content transition-colors"
-                  >
-                    Status
-                    <SortIndicator column="status" currentColumn={sortColumn} direction={sortDirection} />
-                  </button>
-                </th>
-              </tr>
-            </thead>
-            <tbody style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
+          <div className="w-full">
+            {/* Header */}
+            <div
+              className="sticky top-0 bg-surface backdrop-blur border-b border-subtle z-10 grid text-left text-xs text-content-secondary uppercase tracking-wider"
+              style={{ gridTemplateColumns: PARAM_GRID_COLUMNS }}
+            >
+              <div className="px-4 py-3 font-medium">
+                <button
+                  onClick={() => toggleSort('name')}
+                  className="group flex items-center hover:text-content transition-colors uppercase"
+                >
+                  Name
+                  <SortIndicator column="name" currentColumn={sortColumn} direction={sortDirection} />
+                </button>
+              </div>
+              <div className="px-4 py-3 font-medium">Value</div>
+              <div className="px-4 py-3 font-medium">Description</div>
+              <div className="px-4 py-3 font-medium text-right">
+                <button
+                  onClick={() => toggleSort('status')}
+                  className="group inline-flex items-center hover:text-content transition-colors uppercase"
+                >
+                  Status
+                  <SortIndicator column="status" currentColumn={sortColumn} direction={sortDirection} />
+                </button>
+              </div>
+            </div>
+
+            {/* Virtualized rows */}
+            <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
               {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                 const param = displayParams[virtualRow.index]!;
                 const idx = virtualRow.index;
                 return (
-                <tr
+                <div
                   key={param.id}
                   style={{
                     position: 'absolute',
@@ -800,11 +812,13 @@ const ParameterTable: React.FC = () => {
                     width: '100%',
                     height: virtualRow.size,
                     transform: `translateY(${virtualRow.start}px)`,
+                    gridTemplateColumns: PARAM_GRID_COLUMNS,
+                    zIndex: bitmaskParam === param.id ? 40 : undefined,
                   }}
-                  className={`hover:bg-surface transition-colors ${idx % 2 === 0 ? 'bg-surface-overlay-subtle' : ''}`}
+                  className={`group/row grid items-center hover:bg-surface transition-colors ${idx % 2 === 0 ? 'bg-surface-overlay-subtle' : ''}`}
                 >
-                  <td className="px-4 py-2.5">
-                    <div className="flex items-center gap-1.5">
+                  <div className="px-4 py-2.5 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleFavourite(param.id); }}
                         className="shrink-0 p-0.5 rounded transition-colors hover:bg-surface-raised"
@@ -812,15 +826,15 @@ const ParameterTable: React.FC = () => {
                       >
                         <Star className={`w-3.5 h-3.5 ${isFavourite(param.id) ? 'fill-yellow-400 text-yellow-400' : 'text-content-tertiary hover:text-content-secondary'}`} />
                       </button>
-                      <span className="font-mono text-sm text-content">{param.id}</span>
+                      <span className="font-mono text-sm text-content truncate">{param.id}</span>
                       {isRebootRequired(param.id) && (
-                        <span className="px-1 py-0.5 text-[9px] leading-none bg-amber-500/15 text-amber-500/70 rounded border-amber-500/20" title="Requires reboot to take effect">
+                        <span className="shrink-0 px-1 py-0.5 text-[9px] leading-none bg-amber-500/15 text-amber-500/70 rounded border-amber-500/20" title="Requires reboot to take effect">
                           Reboot
                         </span>
                       )}
                     </div>
-                  </td>
-                  <td className="px-4 py-2.5">
+                  </div>
+                  <div className="px-4 py-2.5 min-w-0">
                     {param.isReadOnly ? (
                       <span className="font-mono text-sm text-content-secondary tabular-nums" title="Read-only parameter">
                         {formatParamValue(param.value)}
@@ -849,26 +863,47 @@ const ParameterTable: React.FC = () => {
                     ) : (() => {
                       const meta = getParameterMetadata(param.id);
                       const hasBitmask = meta?.bitmask && Object.keys(meta.bitmask).length > 0;
+                      // Only show enum dropdown for integer-valued params (not float suggestions like expo)
+                      const isIntegerParam = Number.isInteger(param.value);
+                      const hasEnumValues = !hasBitmask && isIntegerParam && meta?.values && Object.keys(meta.values).length > 0;
                       return (
-                        <div className="relative flex items-center gap-2">
-                          <button
-                            onClick={() => startEdit(param.id, param.value)}
-                            className="font-mono text-sm text-content hover:text-blue-400 transition-colors tabular-nums"
-                            title={(() => {
-                              const hints: string[] = [];
-                              hints.push(`Raw: ${param.value}`);
-                              if (meta?.range) hints.push(`Range: ${meta.range.min} to ${meta.range.max}`);
-                              if (meta?.values) hints.push(`Values: ${Object.entries(meta.values).map(([k,v]) => `${k}=${v}`).join(', ')}`);
-                              if (meta?.units) hints.push(`Units: ${meta.units}`);
-                              return hints.join('\n');
-                            })()}
-                          >
-                            {formatParamValue(param.value)}
-                          </button>
+                        <div className="relative flex items-center gap-1.5 min-w-0">
+                          {hasEnumValues ? (
+                            <select
+                              value={Math.round(param.value)}
+                              onChange={(e) => setParameter(param.id, Number(e.target.value))}
+                              className="w-full h-7 px-2 bg-surface-input border rounded-md text-sm leading-none text-content focus:outline-none focus:border-blue-500 truncate"
+                            >
+                              {Object.entries(meta!.values!).map(([code, label]) => (
+                                <option key={code} value={code}>{code}: {label}</option>
+                              ))}
+                              {!(String(Math.round(param.value)) in meta!.values!) && (
+                                <option value={Math.round(param.value)}>{Math.round(param.value)}: Custom</option>
+                              )}
+                            </select>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => startEdit(param.id, param.value)}
+                                className="font-mono text-sm text-content hover:text-blue-400 transition-colors tabular-nums"
+                                title={(() => {
+                                  const hints: string[] = [];
+                                  if (meta?.range) hints.push(`Range: ${meta.range.min} - ${meta.range.max}`);
+                                  if (meta?.values) hints.push(`Values: ${Object.entries(meta.values).map(([k,v]) => `${k}=${v}`).join(', ')}`);
+                                  return hints.join('\n') || `Click to edit`;
+                                })()}
+                              >
+                                {formatParamValue(param.value)}
+                              </button>
+                              {meta?.units && (
+                                <span className="text-[11px] text-content-tertiary ml-1 truncate">{meta.units}</span>
+                              )}
+                            </>
+                          )}
                           {hasBitmask && (
                             <button
                               onClick={() => setBitmaskParam(bitmaskParam === param.id ? null : param.id)}
-                              className="px-2 py-0.5 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 rounded text-xs font-medium transition-colors"
+                              className="shrink-0 px-2 py-0.5 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 rounded text-xs font-medium transition-colors"
                               title="Open bitmask editor"
                             >
                               Bitmask
@@ -886,44 +921,64 @@ const ParameterTable: React.FC = () => {
                         </div>
                       );
                     })()}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <span
-                      className={`text-sm line-clamp-1 ${
-                        hasOfficialDescription(param.id)
-                          ? 'text-content-secondary'
-                          : 'text-content-secondary italic'
-                      }`}
-                      title={getDescription(param.id)}
+                  </div>
+                  <div className="px-4 py-2.5 min-w-0 flex items-center gap-2">
+                    <Tooltip
+                      content={getDescription(param.id)}
+                      placement="top"
+                      nowrap={false}
+                      className="max-w-md text-left"
                     >
-                      {getDescription(param.id)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5">
+                      <span
+                        className={`text-sm line-clamp-1 ${
+                          hasOfficialDescription(param.id)
+                            ? 'text-content-secondary'
+                            : 'text-content-secondary italic'
+                        }`}
+                      >
+                        {getDescription(param.id)}
+                      </span>
+                    </Tooltip>
+                    {docsVehicle && (
+                      <Tooltip content="Open ArduPilot docs" placement="top">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.electronAPI?.openExternal(getParameterDocsUrl(docsVehicle, param.id));
+                          }}
+                          className="shrink-0 p-1 rounded text-content-tertiary hover:text-blue-400 hover:bg-surface-raised transition-colors"
+                          aria-label={`Open ArduPilot docs for ${param.id}`}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </button>
+                      </Tooltip>
+                    )}
+                  </div>
+                  <div className="px-4 py-2.5 flex items-center justify-end gap-2">
                     {param.isReadOnly ? (
                       <span className="px-2 py-0.5 bg-surface-raised text-content-secondary rounded text-xs">
                         Read-only
                       </span>
                     ) : param.isModified ? (
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs">
-                          Modified
-                        </span>
+                      <>
                         <button
                           onClick={() => revertParameter(param.id)}
                           className="text-xs text-content-secondary hover:text-content"
                           title={`Revert to ${formatParamValue(param.originalValue as number)}`}
                         >
-                          (revert)
+                          revert
                         </button>
-                      </div>
+                        <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs">
+                          Modified
+                        </span>
+                      </>
                     ) : null}
-                  </td>
-                </tr>
+                  </div>
+                </div>
                 );
               })}
-            </tbody>
-          </table>
+            </div>
+          </div>
         )}
       </div>
 
