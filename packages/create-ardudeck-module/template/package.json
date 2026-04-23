@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "build": "node esbuild.config.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "package": "node scripts/package.mjs"
   },
   "devDependencies": {
     "@ardudeck/module-sdk": "github:codeforges/ardudeck#master&path:packages/module-sdk",
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "adm-zip": "^0.5.17",
     "esbuild": "^0.20.0",
     "typescript": "^5.4.0"
   },
