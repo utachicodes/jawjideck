@@ -16,7 +16,7 @@ import { useMissionStore } from '../../stores/mission-store';
 import { isPreArmMessage, extractPreArmReason, matchPreArmError } from '../../../shared/prearm-checks';
 import { PreArmParamFix } from '../prearm/PreArmParamFix';
 import { PanelContainer, SectionTitle } from './panel-utils';
-import { getVehicleClass, ARDUPILOT_COMMON_MODES, type ArduPilotVehicleClass } from '../../../shared/telemetry-types';
+import { getVehicleClass, ARDUPILOT_COMMON_MODES, VEHICLE_CAPABILITIES, type ArduPilotVehicleClass } from '../../../shared/telemetry-types';
 
 // =============================================================================
 // Visual Components
@@ -458,6 +458,7 @@ function MavlinkFlightControl() {
   const connectionState = useConnectionStore((s) => s.connectionState);
   const vehicleClass = getVehicleClass(connectionState.mavType);
   const availableModes = ARDUPILOT_COMMON_MODES[vehicleClass];
+  const capabilities = VEHICLE_CAPABILITIES[vehicleClass];
   const missionItems = useMissionStore((s) => s.missionItems);
   const currentSeq = useMissionStore((s) => s.currentSeq);
   const fetchMission = useMissionStore((s) => s.fetchMission);
@@ -623,8 +624,13 @@ function MavlinkFlightControl() {
   // and fire the takeoff back-to-back to beat the ~10 s auto-disarm timer.
   const handleTakeoff = async () => {
     setShowTakeoffDialog(false);
-    const guidedMode = vehicleClass === 'plane' ? 15 : 4;
-    const stabilizeMode = vehicleClass === 'copter' ? 0 : null; // Copter STABILIZE
+    if (!capabilities.takeoff.supported) {
+      setStatusMsg({ text: `${vehicleClass} does not support takeoff`, type: 'error' });
+      setTimeout(() => setStatusMsg(null), 3000);
+      return;
+    }
+    const guidedMode = capabilities.guidedModeNum;
+    const stabilizeMode = vehicleClass === 'copter' ? capabilities.stabilizeModeNum : null;
     const store = useTelemetryStore.getState;
 
     // Step 1: Wait for GPS/EKF readiness BEFORE arming (avoid auto-disarm).
@@ -694,6 +700,36 @@ function MavlinkFlightControl() {
       }
     }
 
+    // ArduPlane does NOT support MAV_CMD_NAV_TAKEOFF in GUIDED mode — the FC
+    // replies COMMAND_ACK: FAILED. Use dedicated TAKEOFF mode (13) instead:
+    // set TKOFF_ALT to target, switch mode, plane auto-launches and climbs.
+    // Refs:
+    //   https://discuss.ardupilot.org/t/got-command-ack-nav-takeoff-failed/142133
+    //   https://github.com/ArduPilot/ardupilot/issues/6279
+    if (capabilities.takeoff.method === 'mode' && capabilities.takeoff.modeNum !== undefined) {
+      const takeoffModeNum = capabilities.takeoff.modeNum;
+      if (capabilities.takeoff.altParam) {
+        setStatusMsg({ text: `Setting ${capabilities.takeoff.altParam}=${takeoffAlt}m...`, type: 'info' });
+        try {
+          // MAV_PARAM_TYPE_REAL32 = 9
+          await window.electronAPI.setParameter(capabilities.takeoff.altParam, takeoffAlt, 9);
+        } catch {
+          // non-fatal — TAKEOFF mode will still fly using existing value
+        }
+      }
+      setStatusMsg({ text: `Switching to TAKEOFF mode...`, type: 'info' });
+      await window.electronAPI.mavlinkSetMode(takeoffModeNum);
+      const inTakeoff = await waitForState(() => store().flight.modeNum === takeoffModeNum, 2500);
+      if (!inTakeoff) {
+        setStatusMsg({ text: 'Failed to switch to TAKEOFF mode', type: 'error' });
+        setTimeout(() => setStatusMsg(null), 3000);
+        return;
+      }
+      setStatusMsg({ text: `Taking off to ${takeoffAlt}m...`, type: 'success' });
+      setTimeout(() => setStatusMsg(null), 3000);
+      return;
+    }
+
     // Step 4: Switch to Guided. EKF is ready by now so this should be quick.
     setStatusMsg({ text: 'Switching to Guided...', type: 'info' });
     let inGuided = store().flight.modeNum === guidedMode;
@@ -718,7 +754,7 @@ function MavlinkFlightControl() {
       return;
     }
 
-    // Step 6: Send takeoff command
+    // Step 6: Send takeoff command (copter path)
     setStatusMsg({ text: `Taking off to ${takeoffAlt}m...`, type: 'info' });
     const ok = await window.electronAPI.mavlinkTakeoff(takeoffAlt);
     if (!ok) {
@@ -727,10 +763,12 @@ function MavlinkFlightControl() {
     setTimeout(() => setStatusMsg(null), 3000);
   };
 
-  // RTL mode number per vehicle class
-  const rtlModeNum = vehicleClass === 'plane' ? 11 : vehicleClass === 'rover' ? 11 : 6;
-  // Land mode number per vehicle class
-  const landModeNum = vehicleClass === 'sub' ? 9 : 9; // Land=9 for copter, Surface=9 for sub
+  // RTL/Land sourced from the per-vehicle capability matrix.
+  const rtlModeNum = capabilities.rtlModeNum;
+  const landModeNum = capabilities.land.modeNum;
+  const landSupported = capabilities.land.supported;
+  const landLabel = capabilities.land.label;
+  const landDisabledReason = capabilities.land.disabledReason;
 
   // Status message color
   const statusColor = statusMsg?.type === 'success' ? 'text-emerald-400' : statusMsg?.type === 'error' ? 'text-red-400' : 'text-content-secondary';

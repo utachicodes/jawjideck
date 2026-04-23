@@ -46,15 +46,22 @@ export function ModuleRuntime({ children }: { children: ReactNode }) {
 
     (async () => {
       const loaded = (await window.electronAPI.moduleHostListLoaded()) as LoadedModuleInfo[];
+      console.log(`[ModuleRuntime] ${loaded.length} loaded module(s) reported by host`);
       for (const rec of loaded) {
         const rendererEntry = rec.manifest?.entry?.renderer;
         if (!rendererEntry) continue;
-        const url = `file://${rec.installPath}/${rendererEntry}`;
+        // Custom protocol registered in main so Electron's webSecurity allows
+        // dynamic-import from the vite-served renderer.
+        const url = `ardudeck-module://${rec.slug}/${rendererEntry}`;
+        console.log(`[ModuleRuntime] loading ${rec.slug} from ${url}`);
         try {
           const mod = (await import(/* @vite-ignore */ url)) as RendererExports;
           if (typeof mod.activate === 'function') {
             const host = createRendererHostApi(rec.slug, register);
             await mod.activate(host);
+            console.log(`[ModuleRuntime] activated ${rec.slug}`);
+          } else {
+            console.warn(`[ModuleRuntime] ${rec.slug} has no activate() export`);
           }
         } catch (err) {
           console.error(`[ModuleRuntime] failed to load ${rec.slug}:`, err);

@@ -14,6 +14,8 @@ export interface FileParamDiff {
   fileValue: number;
   type: number;
   selected: boolean;
+  /** Optional caption shown below the param name (e.g. Claude's reasoning). */
+  note?: string;
 }
 
 // localStorage key for persisting favourites across sessions

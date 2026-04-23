@@ -1,8 +1,11 @@
 import { build } from 'esbuild';
-import { mkdir, copyFile } from 'node:fs/promises';
+import { mkdir, copyFile, writeFile } from 'node:fs/promises';
 import { ardudeckModulePlugin } from '@ardudeck/module-sdk/esbuild';
 
 await mkdir('dist', { recursive: true });
+
+// Tell Node the bundled main.js is ESM (no surrounding package.json otherwise).
+await writeFile('dist/package.json', JSON.stringify({ type: 'module' }, null, 2));
 
 await build({
   entryPoints: ['src/main/index.ts'],

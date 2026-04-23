@@ -251,7 +251,7 @@ function EmptyState() {
 
 export function ModuleManagerView() {
   const {
-    modules: allModules,
+    modules,
     isLoading,
     error,
     activating,
@@ -264,9 +264,6 @@ export function ModuleManagerView() {
     setProgress,
     clearError,
   } = useModuleStore();
-
-  // Hide internal modules (reserved slug namespace)
-  const modules = allModules.filter((m) => !m.slug.startsWith('ardudeck.internal.'));
 
   const [keyInput, setKeyInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);

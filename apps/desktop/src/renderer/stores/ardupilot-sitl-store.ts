@@ -141,7 +141,7 @@ export const ARDUPILOT_MODELS: Record<ArduPilotVehicleType, Array<{ value: strin
 const DEFAULT_HOME = {
   lat: 37.7749,
   lng: -122.4194,
-  alt: 10,
+  alt: 0, // AMSL; 0 grounds SITL to terrain. >0 spawns airborne → planes drift.
   heading: 270,
 };
 
@@ -150,10 +150,13 @@ const DEFAULT_RC_STATE: VirtualRCState = {
   pitch: 0,
   yaw: 0,
   throttle: -1, // Minimum for safety
-  aux1: 0,
-  aux2: 0,
-  aux3: 0,
-  aux4: 0,
+  // Ch5-8 default LOW so FLTMODE_CH (default Ch8 on plane, Ch5 on copter) lands
+  // in the lowest FLTMODE slot. For plane that's Manual; for copter Stabilize.
+  // Prevents boot from snapping into FBWA / Loiter.
+  aux1: -1,
+  aux2: -1,
+  aux3: -1,
+  aux4: -1,
 };
 
 // =============================================================================

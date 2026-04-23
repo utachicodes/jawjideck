@@ -22,6 +22,12 @@ export const TESTING_CHANNELS = {
   WAIT_FOR_ELEMENT: 'testing:wait-for-element',
   WAIT_FOR_STORE: 'testing:wait-for-store',
   WAIT_FOR_IDLE: 'testing:wait-for-idle',
+
+  // Data ensure (assistant helpers)
+  ENSURE_PARAMETERS_LOADED: 'testing:ensure-parameters-loaded',
+
+  // Parameter write (approval-gated via compare modal)
+  PROPOSE_PARAMETERS: 'testing:propose-parameters',
 } as const;
 
 export type TestingChannel = typeof TESTING_CHANNELS[keyof typeof TESTING_CHANNELS];

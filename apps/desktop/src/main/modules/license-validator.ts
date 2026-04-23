@@ -15,7 +15,7 @@ import type { LicensePayload } from '../../shared/module-types.js';
  * IMPORTANT: Replace this placeholder with the actual public key before production use.
  */
 const PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
-MC4wBQYDK2VwAyEAPlaceholderKeyReplaceWithActualPublicKey00=
+MCowBQYDK2VwAyEA+JX7ieaqUzi1WMTzPrWb3vAeUJOj8cbmFaYuZT5rnZ0=
 -----END PUBLIC KEY-----`;
 
 let cachedPublicKey: ReturnType<typeof createPublicKey> | null = null;
@@ -29,13 +29,13 @@ function getPublicKey() {
 
 /**
  * Verify a license key's Ed25519 signature and decode the payload.
- * Format: ARDUDECK-{base64url(payload)}-{base64url(signature)}
+ * Format: ARDUDECK.{base64url(payload)}.{base64url(signature)}
+ * (dot separator: base64url alphabet contains `-` and `_` so they cannot split the key)
  */
 export function verifyLicenseKey(
   key: string,
 ): { valid: boolean; payload?: LicensePayload; error?: string } {
-  const parts = key.split('-');
-  // Format: ARDUDECK-{payload}-{signature}
+  const parts = key.split('.');
   if (parts.length !== 3 || parts[0] !== 'ARDUDECK') {
     return { valid: false, error: 'Invalid key format' };
   }

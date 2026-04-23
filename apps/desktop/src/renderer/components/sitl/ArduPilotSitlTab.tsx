@@ -90,7 +90,9 @@ export default function ArduPilotSitlTab() {
       setHomeLocation({
         lat: Math.round(loc.lat * 10000) / 10000,
         lng: Math.round(loc.lon * 10000) / 10000,
-        alt: homeLocation.alt || 10,
+        // Preserve user's alt; 0 is valid (= ground at terrain). Don't coerce
+        // falsy → 10: that spawns planes airborne and they drift.
+        alt: homeLocation.alt,
         heading: homeLocation.heading,
       });
     } catch {

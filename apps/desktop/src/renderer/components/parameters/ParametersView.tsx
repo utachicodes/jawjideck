@@ -1149,7 +1149,12 @@ export function ParametersView() {
                               )}
                             </div>
                           </td>
-                          <td className="py-2 font-mono text-content">{diff.paramId}</td>
+                          <td className="py-2 font-mono text-content">
+                            {diff.paramId}
+                            {diff.note && (
+                              <div className="text-xs text-content-tertiary font-sans mt-0.5">{diff.note}</div>
+                            )}
+                          </td>
                           <td className="py-2 text-right font-mono text-content-secondary">{formatParamValue(diff.currentValue)}</td>
                           <td className="py-2 text-center text-content-tertiary">
                             <svg className="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">

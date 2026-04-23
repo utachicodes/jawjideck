@@ -29,8 +29,8 @@ export async function initTestingMcp(mainWindow: BrowserWindow): Promise<void> {
       url: `http://127.0.0.1:${port}`,
       sseUrl: `http://127.0.0.1:${port}/sse`,
       messagesUrl: `http://127.0.0.1:${port}/messages`,
-      name: 'ardudeck-test-driver',
-      description: 'UI testing tools for ArduDeck — click, type, screenshot, read Zustand state. Dev-only.',
+      name: 'ardudeck',
+      description: 'ArduDeck MCP: read vehicle state, parameters, messages; drive UI for tests.',
     };
 
     writeFileSync(discoveryPath, JSON.stringify(discoveryContent, null, 2));

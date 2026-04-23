@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import { setupIpcHandlers, cleanupOnShutdown } from './ipc-handlers.js';
 import { setupModuleIpc } from './modules/module-ipc.js';
 import { registerTileCacheScheme, setupTileCacheProtocol, setupTileCacheHandlers } from './tile-cache.js';
+import { registerModuleSchemePrivileges, setupModuleProtocol } from './modules/module-protocol.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -59,6 +60,7 @@ app.name = 'ardudeck';
 
 // Register tile-cache:// scheme BEFORE app.ready (Electron requirement)
 registerTileCacheScheme();
+registerModuleSchemePrivileges();
 
 function createWindow(): BrowserWindow {
   // Get the icon path based on platform
@@ -125,6 +127,7 @@ app.whenReady().then(() => {
 
   // Setup tile cache protocol handler (must be after app.ready)
   setupTileCacheProtocol();
+  setupModuleProtocol();
 
   const mainWindow = createWindow();
 

@@ -27,10 +27,11 @@ class ArduPilotRcSender {
     pitch: 0,
     yaw: 0,
     throttle: -1, // Minimum for safety
-    aux1: 0,
-    aux2: 0,
-    aux3: 0,
-    aux4: 0,
+    // Ch5-8 LOW so mode switch lands in FLTMODE1 (Manual on plane, Stabilize on copter)
+    aux1: -1,
+    aux2: -1,
+    aux3: -1,
+    aux4: -1,
   };
 
   get isRunning(): boolean {
@@ -103,10 +104,10 @@ class ArduPilotRcSender {
       pitch: 0,
       yaw: 0,
       throttle: -1, // Minimum for safety
-      aux1: 0,
-      aux2: 0,
-      aux3: 0,
-      aux4: 0,
+      aux1: -1,
+      aux2: -1,
+      aux3: -1,
+      aux4: -1,
     };
   }
 

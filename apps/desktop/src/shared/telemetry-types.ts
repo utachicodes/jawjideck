@@ -234,6 +234,93 @@ export function getVehicleClass(mavType: number | undefined): ArduPilotVehicleCl
   return 'copter';
 }
 
+// Per-vehicle capability matrix. Single source of truth for what UI actions
+// are available and what mode numbers back them. Add new fields here rather
+// than scattering `if (vehicleClass === 'plane')` across the codebase.
+export interface VehicleCapabilities {
+  /** Stabilization mode number (used as a safe mode to switch to before arming). */
+  stabilizeModeNum: number;
+  /** Manual mode number (pure passthrough for plane / rover). */
+  manualModeNum: number | null;
+  /** Guided mode number. */
+  guidedModeNum: number;
+  /** RTL mode number. */
+  rtlModeNum: number;
+  /** Does RTL automatically land at home, or just loiter? Plane loiters until landing approach configured. */
+  rtlAutoLands: boolean;
+  takeoff: {
+    supported: boolean;
+    /** 'command' = arm+guided+NAV_TAKEOFF (copter). 'mode' = switch to dedicated mode (plane). */
+    method: 'command' | 'mode';
+    /** For 'mode' method: which mode to switch to. */
+    modeNum?: number;
+    /** For 'mode' method: which param to set with target altitude. */
+    altParam?: string;
+  };
+  land: {
+    supported: boolean;
+    /** null = no direct land mode, needs approach planning. Number = switch to this mode. */
+    modeNum: number | null;
+    /** Human-readable label used on the button. */
+    label: string;
+    /** If false, button should be disabled with a note. */
+    disabledReason?: string;
+  };
+}
+
+export const VEHICLE_CAPABILITIES: Record<ArduPilotVehicleClass, VehicleCapabilities> = {
+  copter: {
+    stabilizeModeNum: 0,
+    manualModeNum: null, // copter has no manual
+    guidedModeNum: 4,
+    rtlModeNum: 6,
+    rtlAutoLands: true,
+    takeoff: { supported: true, method: 'command' },
+    land: { supported: true, modeNum: 9, label: 'Land' },
+  },
+  plane: {
+    stabilizeModeNum: 2,
+    manualModeNum: 0,
+    guidedModeNum: 15,
+    rtlModeNum: 11,
+    rtlAutoLands: false, // plane loiters at home unless RTL_AUTOLAND + DO_LAND_START configured
+    takeoff: { supported: true, method: 'mode', modeNum: 13, altParam: 'TKOFF_ALT' },
+    // Plane has no one-shot land — needs a NAV_LAND waypoint / landing approach.
+    land: {
+      supported: false,
+      modeNum: null,
+      label: 'Land',
+      disabledReason: 'Fixed-wing landing requires a mission with NAV_LAND waypoint (or AUTOLAND mode + DO_LAND_START)',
+    },
+  },
+  rover: {
+    stabilizeModeNum: 0,
+    manualModeNum: 0,
+    guidedModeNum: 15,
+    rtlModeNum: 11,
+    rtlAutoLands: false,
+    takeoff: { supported: false, method: 'command' },
+    land: {
+      supported: true,
+      modeNum: 4, // HOLD
+      label: 'Hold',
+    },
+  },
+  sub: {
+    stabilizeModeNum: 0,
+    manualModeNum: null,
+    guidedModeNum: 4,
+    rtlModeNum: 6, // copter-family mode numbers
+    rtlAutoLands: false,
+    takeoff: { supported: false, method: 'command' },
+    land: {
+      supported: true,
+      modeNum: 9, // Surface
+      label: 'Surface',
+    },
+  },
+};
+
 // Commonly used modes per vehicle class for the Flight Control panel
 export const ARDUPILOT_COMMON_MODES: Record<ArduPilotVehicleClass, { name: string; modeNum: number }[]> = {
   copter: [

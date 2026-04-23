@@ -4463,11 +4463,16 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     }
   });
 
-  // MAV_CMD_NAV_TAKEOFF (command 22) - takeoff to altitude
-  ipcMain.handle(IPC_CHANNELS.MAVLINK_COMMAND_TAKEOFF, async (_, altitude: number): Promise<boolean> => {
+  // MAV_CMD_NAV_TAKEOFF (command 22) - takeoff to altitude.
+  // param1 = minimum pitch angle (deg). Copter ignores it; plane uses it as
+  // initial climb pitch. 0° means "climb level" → plane won't lift off.
+  // Default 15° is a safe climb pitch for fixed-wing.
+  ipcMain.handle(IPC_CHANNELS.MAVLINK_COMMAND_TAKEOFF, async (_, altitude: number, pitchDeg?: number): Promise<boolean> => {
     if (!currentTransport?.isOpen || !connectionState.isConnected) {
       return false;
     }
+
+    const pitch = typeof pitchDeg === 'number' ? pitchDeg : 15;
 
     try {
       const payload = serializeCommandLong({
@@ -4475,7 +4480,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         targetComponent: 1,
         command: 22,
         confirmation: 0,
-        param1: 0,
+        param1: pitch,
         param2: 0,
         param3: 0,
         param4: 0,
@@ -4488,7 +4493,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       await currentTransport.write(packet);
       connectionState.packetsSent++;
 
-      sendLog(mainWindow, 'info', `Sent TAKEOFF command, altitude=${altitude}m`);
+      sendLog(mainWindow, 'info', `Sent TAKEOFF command, altitude=${altitude}m pitch=${pitch}°`);
       return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -7196,7 +7201,11 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   // Start ArduPilot SITL process
   ipcMain.handle(IPC_CHANNELS.ARDUPILOT_SITL_START, async (_event, config: ArduPilotSitlConfig): Promise<{ success: boolean; command?: string; error?: string }> => {
-    return ardupilotSitlProcess.start(config);
+    const result = await ardupilotSitlProcess.start(config);
+    if (result.success && !ardupilotRcSender.isRunning) {
+      ardupilotRcSender.start();
+    }
+    return result;
   });
 
   // Stop ArduPilot SITL process

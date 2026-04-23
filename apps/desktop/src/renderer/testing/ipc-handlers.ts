@@ -192,6 +192,200 @@ async function init(): Promise<void> {
     });
   });
 
+  register(TESTING_CHANNELS.ENSURE_PARAMETERS_LOADED, async (params) => {
+    // Reads the parameter store (lazy-imported to avoid circular deps).
+    // If the param map is empty, triggers fetchParameters() and waits for
+    // isLoading to flip back to false (or timeout).
+    const timeout = params?.timeout ?? 30000;
+    const mod = await import('../stores/parameter-store');
+    const store = mod.useParameterStore;
+    const snap = () => {
+      const s = store.getState();
+      return {
+        size: (s as any).parameters?.size ?? 0,
+        isLoading: !!(s as any).isLoading,
+      };
+    };
+
+    const initial = snap();
+    if (initial.size > 0) {
+      return { ok: true, count: initial.size, alreadyLoaded: true };
+    }
+
+    // Kick off a download if no fetch is already in flight.
+    if (!initial.isLoading) {
+      const fetchParameters = (store.getState() as any).fetchParameters as
+        | (() => Promise<void>)
+        | undefined;
+      if (typeof fetchParameters !== 'function') {
+        throw new Error('parameter store has no fetchParameters action');
+      }
+      void fetchParameters();
+    }
+
+    // Wait until size > 0 AND isLoading=false, or timeout.
+    return new Promise<{ ok: true; count: number; alreadyLoaded: false }>((resolve, reject) => {
+      const start = Date.now();
+      let stableStart: number | null = null;
+      const unsub = store.subscribe(() => {});
+      const tick = () => {
+        const s = snap();
+        if (s.size > 0 && !s.isLoading) {
+          // Settle for 250ms to avoid returning mid-download when batches arrive.
+          if (stableStart === null) stableStart = Date.now();
+          if (Date.now() - stableStart >= 250) {
+            unsub();
+            resolve({ ok: true, count: s.size, alreadyLoaded: false });
+            return;
+          }
+        } else {
+          stableStart = null;
+        }
+        if (Date.now() - start > timeout) {
+          unsub();
+          reject(new Error(`Timeout (${timeout}ms) waiting for parameters to load`));
+          return;
+        }
+        setTimeout(tick, 100);
+      };
+      tick();
+    });
+  });
+
+  register(TESTING_CHANNELS.PROPOSE_PARAMETERS, async (params) => {
+    // Armed-guard + denylist + drive the existing file-diff compare modal.
+    // Waits for the user to apply or dismiss, then returns the outcome.
+    const DENY = new Set<string>([
+      'MOT_PWM_TYPE', 'FRAME_CLASS', 'FRAME_TYPE',
+      'COMPASS_ORIENT', 'BRD_TYPE',
+    ]);
+    const TIMEOUT_MS = params?.timeout ?? 5 * 60 * 1000;
+    const proposals = (params?.proposals ?? []) as Array<{
+      name: string;
+      value: number;
+      reason?: string;
+    }>;
+    if (!Array.isArray(proposals) || proposals.length === 0) {
+      throw new Error('proposals array is empty');
+    }
+
+    const telemetryMod = await import('../stores/telemetry-store');
+    const navMod = await import('../stores/navigation-store');
+    const paramMod = await import('../stores/parameter-store');
+
+    const tState = telemetryMod.useTelemetryStore.getState() as any;
+    if (tState?.flight?.armed) {
+      return {
+        ok: false,
+        reason: 'vehicle is armed — disarm before applying parameter changes',
+      };
+    }
+
+    // Ensure params are loaded so we can look up types / current values.
+    const pStore = paramMod.useParameterStore;
+    if (((pStore.getState() as any).parameters?.size ?? 0) === 0) {
+      const fetchParameters = (pStore.getState() as any).fetchParameters as
+        | (() => Promise<void>)
+        | undefined;
+      if (typeof fetchParameters === 'function') {
+        await fetchParameters();
+        const deadline = Date.now() + 45_000;
+        while (Date.now() < deadline) {
+          const sz = (pStore.getState() as any).parameters?.size ?? 0;
+          const loading = !!(pStore.getState() as any).isLoading;
+          if (sz > 0 && !loading) break;
+          await new Promise((r) => setTimeout(r, 100));
+        }
+      }
+    }
+
+    const paramMap: Map<string, any> = (pStore.getState() as any).parameters;
+    const diffs: any[] = [];
+    const rejected: Array<{ name: string; reason: string }> = [];
+    for (const p of proposals) {
+      if (DENY.has(p.name)) {
+        rejected.push({ name: p.name, reason: 'denylisted (identity/motor-topology)' });
+        continue;
+      }
+      const existing = paramMap.get(p.name);
+      if (!existing) {
+        rejected.push({ name: p.name, reason: 'unknown parameter' });
+        continue;
+      }
+      if (existing.isReadOnly) {
+        rejected.push({ name: p.name, reason: 'read-only' });
+        continue;
+      }
+      const newValue = Number(p.value);
+      if (Number.isNaN(newValue)) {
+        rejected.push({ name: p.name, reason: 'value is not numeric' });
+        continue;
+      }
+      diffs.push({
+        paramId: p.name,
+        currentValue: existing.value,
+        fileValue: newValue,
+        type: existing.type,
+        selected: true,
+        note: p.reason,
+      });
+    }
+
+    if (diffs.length === 0) {
+      return { ok: false, reason: 'no applicable proposals', rejected };
+    }
+
+    // Drive the existing compare modal
+    pStore.setState({
+      fileParamDiffs: diffs,
+      fileSkippedParams: [],
+      fileSkippedCount: 0,
+      fileTotalCount: diffs.length,
+      fileVehicleType: null,
+      showCompareModal: true,
+      applyProgress: null,
+      fileApplyResult: null,
+    } as any);
+
+    // Surface the review to the user: switch to Parameters view.
+    try {
+      const navSet = (navMod.useNavigationStore.getState() as any).setView;
+      if (typeof navSet === 'function') navSet('parameters');
+    } catch {
+      // ignore; staying on current view still works
+    }
+
+    // Wait for the modal to close (apply or cancel). Resolve with outcome.
+    return new Promise<any>((resolve, reject) => {
+      const started = Date.now();
+      const tick = () => {
+        if (Date.now() - started > TIMEOUT_MS) {
+          pStore.setState({ showCompareModal: false, fileParamDiffs: [] } as any);
+          reject(new Error('Timeout waiting for user to review proposed parameters'));
+          return;
+        }
+        const s = pStore.getState() as any;
+        if (!s.showCompareModal && !s.isApplyingFileParams) {
+          const result = s.fileApplyResult;
+          if (result) {
+            resolve({
+              ok: true,
+              applied: result.applied,
+              failed: result.failed,
+              rebootRequired: result.rebootRequired,
+              rejected,
+            });
+          } else {
+            resolve({ ok: false, reason: 'user cancelled', rejected });
+          }
+          return;
+        }
+        setTimeout(tick, 200);
+      };
+      tick();
+    });
+  });
+
   // Signal that the test driver is ready
   window.__testing.signalReady();
   console.log('[test-driver] All IPC handlers registered and ready');

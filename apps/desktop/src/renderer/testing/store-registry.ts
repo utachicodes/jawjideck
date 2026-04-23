@@ -11,6 +11,17 @@ export function registerStore(name: string, store: StoreApi): void {
   registry.set(name, store);
 }
 
+function serialize(value: any): any {
+  return JSON.parse(
+    JSON.stringify(value, (_key, v) => {
+      if (typeof v === 'function') return undefined;
+      if (v instanceof Map) return Object.fromEntries(v.entries());
+      if (v instanceof Set) return Array.from(v.values());
+      return v;
+    }),
+  );
+}
+
 export function getStoreState(storeName: string, path?: string): any {
   const store = registry.get(storeName);
   if (!store) {
@@ -21,12 +32,7 @@ export function getStoreState(storeName: string, path?: string): any {
 
   const state = store.getState();
 
-  if (!path) {
-    return JSON.parse(JSON.stringify(state, (_key, value) => {
-      if (typeof value === 'function') return undefined;
-      return value;
-    }));
-  }
+  if (!path) return serialize(state);
 
   const parts = path.split('.');
   let current: any = state;
@@ -34,11 +40,7 @@ export function getStoreState(storeName: string, path?: string): any {
     if (current == null) return undefined;
     current = current[part];
   }
-
-  return JSON.parse(JSON.stringify(current, (_key, value) => {
-    if (typeof value === 'function') return undefined;
-    return value;
-  }));
+  return serialize(current);
 }
 
 export function waitForStoreCondition(

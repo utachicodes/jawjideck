@@ -22,6 +22,11 @@ import {
   waitForElementTool,
   waitForStoreTool,
   waitForIdleTool,
+  getVehicleSnapshotTool,
+  getParameterTool,
+  listParametersTool,
+  getRecentMessagesTool,
+  proposeParametersTool,
 } from './tools';
 
 let httpServer: http.Server | null = null;
@@ -29,7 +34,7 @@ let transport: SSEServerTransport | null = null;
 
 export async function startMcpServer(): Promise<{ port: number }> {
   const server = new McpServer({
-    name: 'ardudeck-test-driver',
+    name: 'ardudeck',
     version: '1.0.0',
   });
 
@@ -111,6 +116,70 @@ export async function startMcpServer(): Promise<{ port: number }> {
     {},
     async () => {
       const result = await getViewsTool();
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  // --- Assistant read-only helpers ---
+
+  server.tool(
+    'get_vehicle_snapshot',
+    'Get a compact snapshot of the connected vehicle: connection state, attitude, position, battery, flight mode, armed state, current view. Read-only.',
+    {},
+    async () => {
+      const result = await getVehicleSnapshotTool();
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    'get_parameter',
+    'Read a single ArduPilot parameter by exact name (e.g. ATC_ANG_RLL_P). Returns current value and metadata. Read-only.',
+    { name: z.string() },
+    async (params) => {
+      const result = await getParameterTool(params as any);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    'list_parameters',
+    'List ArduPilot parameters filtered by name prefix (e.g. "ATC_") and/or search substring. Capped at `limit` (default 50). Read-only.',
+    {
+      prefix: z.string().optional(),
+      search: z.string().optional(),
+      limit: z.number().optional(),
+    },
+    async (params) => {
+      const result = await listParametersTool(params as any);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    'get_recent_messages',
+    'Get the most recent MAVLink STATUSTEXT messages (prearm checks, errors, mode changes, etc.). Read-only.',
+    { limit: z.number().optional() },
+    async (params) => {
+      const result = await getRecentMessagesTool(params as any);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    'propose_parameters',
+    'Propose one or more ArduPilot parameter changes. The user sees a review modal in ArduDeck and must click Apply. Returns { ok, applied, failed, rebootRequired, rejected } once they act. Blocked while vehicle is armed. Certain identity/motor-topology params are denylisted. Use this for tuning suggestions — NOT for arming, mode changes, or any mid-flight action.',
+    {
+      proposals: z.array(
+        z.object({
+          name: z.string().describe('Exact parameter name, e.g. ATC_ANG_RLL_P'),
+          value: z.number().describe('Proposed new value'),
+          reason: z.string().optional().describe('Short justification shown to user under the param name'),
+        }),
+      ),
+    },
+    async (params) => {
+      const result = await proposeParametersTool(params as any);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -260,7 +329,7 @@ export async function startMcpServer(): Promise<{ port: number }> {
     httpServer.on('request', async (req, res) => {
       if (req.url === '/health') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: 'ok', name: 'ardudeck-test-driver' }));
+        res.end(JSON.stringify({ status: 'ok', name: 'ardudeck' }));
         return;
       }
 

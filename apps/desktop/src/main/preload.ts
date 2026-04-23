@@ -92,8 +92,8 @@ const api = {
   mavlinkSetMode: (customMode: number): Promise<boolean> =>
     ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_SET_MODE, customMode),
 
-  mavlinkTakeoff: (altitude: number): Promise<boolean> =>
-    ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_COMMAND_TAKEOFF, altitude),
+  mavlinkTakeoff: (altitude: number, pitchDeg?: number): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_COMMAND_TAKEOFF, altitude, pitchDeg),
 
   mavlinkGoto: (lat: number, lon: number, alt: number): Promise<boolean> =>
     ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_GOTO, lat, lon, alt),

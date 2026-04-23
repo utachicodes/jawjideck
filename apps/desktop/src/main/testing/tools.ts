@@ -146,6 +146,109 @@ export async function waitForStoreTool(params: { storeName: string; path: string
   return callRenderer(TESTING_CHANNELS.WAIT_FOR_STORE, params);
 }
 
+// --- Assistant-facing semantic helpers ------------------------------------
+// Thin wrappers over store reads that give the assistant a compact, stable
+// shape so it doesn't burn tokens navigating raw Zustand state.
+
+async function readStore(name: string, path?: string): Promise<any> {
+  return callRenderer(TESTING_CHANNELS.GET_STORE_STATE, { storeName: name, path });
+}
+
+export async function getVehicleSnapshotTool(): Promise<any> {
+  const [connection, telemetry, nav] = await Promise.all([
+    readStore('connection').catch(() => null),
+    readStore('telemetry').catch(() => null),
+    readStore('navigation').catch(() => null),
+  ]);
+  const cs = connection?.connectionState ?? {};
+  const attitude = telemetry?.attitude ?? null;
+  const position = telemetry?.position ?? null;
+  const battery = telemetry?.battery ?? null;
+  const flight = telemetry?.flight ?? null;
+  return {
+    connection: {
+      connected: !!cs.isConnected,
+      vehicleType: cs.vehicleType ?? null,
+      systemId: cs.systemId ?? null,
+      packetsReceived: cs.packetsReceived ?? 0,
+    },
+    telemetry: {
+      attitude: attitude && {
+        roll: attitude.roll, pitch: attitude.pitch, yaw: attitude.yaw,
+      },
+      position: position && {
+        lat: position.lat, lon: position.lon, alt: position.alt, relativeAlt: position.relativeAlt,
+      },
+      battery: battery && {
+        voltage: battery.voltage, current: battery.current, remaining: battery.remaining,
+      },
+      flight: flight && {
+        mode: flight.mode, armed: flight.armed, isFlying: flight.isFlying,
+      },
+    },
+    currentView: nav?.currentView ?? null,
+  };
+}
+
+async function ensureParametersLoaded(): Promise<{ count: number }> {
+  return callRenderer(TESTING_CHANNELS.ENSURE_PARAMETERS_LOADED, { timeout: 45000 });
+}
+
+export async function getParameterTool(params: { name: string }): Promise<any> {
+  await ensureParametersLoaded();
+  const paramState = await readStore('parameter').catch(() => ({ parameters: {} }));
+  const p = paramState?.parameters;
+  if (!p) return { found: false };
+  const entry = p instanceof Map ? p.get(params.name) : p?.[params.name];
+  if (!entry) return { found: false };
+  return { found: true, parameter: entry };
+}
+
+export async function listParametersTool(params: {
+  prefix?: string;
+  search?: string;
+  limit?: number;
+}): Promise<any> {
+  await ensureParametersLoaded();
+  const paramState = await readStore('parameter').catch(() => ({ parameters: {} }));
+  const p = paramState?.parameters;
+  if (!p) return { total: 0, items: [] };
+  const all: any[] = p instanceof Map ? Array.from(p.values()) : Object.values(p);
+  const pref = params.prefix?.toUpperCase();
+  const needle = params.search?.toLowerCase();
+  const filtered = all.filter((entry: any) => {
+    const name = String(entry?.name ?? entry?.paramId ?? '').toUpperCase();
+    if (pref && !name.startsWith(pref)) return false;
+    if (needle && !name.toLowerCase().includes(needle)) return false;
+    return true;
+  });
+  const limit = params.limit ?? 50;
+  return {
+    total: filtered.length,
+    items: filtered.slice(0, limit),
+    truncated: filtered.length > limit,
+  };
+}
+
+export async function getRecentMessagesTool(params: { limit?: number }): Promise<any> {
+  const state = await readStore('messages').catch(() => ({ messages: [] }));
+  const msgs: any[] = state?.messages ?? [];
+  const limit = params.limit ?? 20;
+  return {
+    total: msgs.length,
+    items: msgs.slice(-limit),
+  };
+}
+
+export async function proposeParametersTool(params: {
+  proposals: Array<{ name: string; value: number; reason?: string }>;
+  timeout?: number;
+}): Promise<any> {
+  return callRenderer(TESTING_CHANNELS.PROPOSE_PARAMETERS, params);
+}
+
+// --- Control flow -----------------------------------------------------------
+
 export async function waitForIdleTool(params?: { timeout?: number }): Promise<any> {
   return callRenderer(TESTING_CHANNELS.WAIT_FOR_IDLE, params || {});
 }
