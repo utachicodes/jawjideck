@@ -15,6 +15,8 @@ import { CalibrationView } from './components/calibration/CalibrationView';
 import { MissionLibraryView } from './components/mission-library/MissionLibraryView';
 import { LuaGraphView } from './components/lua-graph/LuaGraphView';
 import { ModuleManagerView } from './components/modules/ModuleManagerView';
+import { ModuleRuntime } from './modules/ModuleRuntime';
+import { MountPoint } from './modules/MountPoint';
 import { CompanionDashboard } from './components/companion/CompanionDashboard';
 import { LogsView } from './components/logs/LogsView';
 import { useConnectionStore } from './stores/connection-store';
@@ -738,6 +740,7 @@ function App() {
   };
 
   return (
+    <ModuleRuntime>
     <AppTourProvider>
     <AppShell>
       <div className="flex h-full">
@@ -833,6 +836,8 @@ function App() {
 
     </AppShell>
     </AppTourProvider>
+    <MountPoint name="floatingOverlay" />
+    </ModuleRuntime>
   );
 }
 

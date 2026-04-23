@@ -12,6 +12,8 @@ import {
   checkForUpdates,
   heartbeatAll,
 } from './module-manager.js';
+import { getLoadedModules, loadAllModules } from './module-registry.js';
+import { killPty, resizePty, spawnPty, writePty } from './module-pty-service.js';
 
 export function setupModuleIpc(mainWindow: BrowserWindow): void {
   // Activate a license key
@@ -57,10 +59,70 @@ export function setupModuleIpc(mainWindow: BrowserWindow): void {
     }
   });
 
+  // --------------------------------------------------------------------------
+  // Module Host (runtime API for loaded modules)
+  // --------------------------------------------------------------------------
+
+  ipcMain.handle(IPC_CHANNELS.MODULE_HOST_LIST_LOADED, () => {
+    return getLoadedModules().map((r) => ({
+      slug: r.slug,
+      manifest: r.manifest,
+      installPath: r.installPath,
+    }));
+  });
+
+  ipcMain.handle(
+    IPC_CHANNELS.MODULE_HOST_PTY_CREATE,
+    (
+      event,
+      slug: string,
+      opts: {
+        shell: string;
+        args?: string[];
+        cwd?: string;
+        env?: Record<string, string>;
+        cols?: number;
+        rows?: number;
+      },
+    ) => {
+      const rec = getLoadedModules().find((r) => r.slug === slug);
+      if (!rec) throw new Error(`unknown module: ${slug}`);
+      if (!rec.manifest.permissions?.includes('pty')) {
+        throw new Error(`module ${slug} lacks pty permission`);
+      }
+      return spawnPty({
+        moduleSlug: slug,
+        windowId: event.sender.id,
+        shell: opts.shell,
+        args: opts.args,
+        cwd: opts.cwd,
+        env: opts.env,
+        cols: opts.cols,
+        rows: opts.rows,
+      });
+    },
+  );
+
+  ipcMain.handle(IPC_CHANNELS.MODULE_HOST_PTY_WRITE, (_e, id: string, data: string) =>
+    writePty(id, data),
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.MODULE_HOST_PTY_RESIZE,
+    (_e, id: string, cols: number, rows: number) => resizePty(id, cols, rows),
+  );
+
+  ipcMain.handle(IPC_CHANNELS.MODULE_HOST_PTY_KILL, (_e, id: string) => killPty(id));
+
   // Run heartbeat on app launch (background, non-blocking)
   setTimeout(() => {
     heartbeatAll().catch((err) => {
       console.warn('[ModuleIPC] Background heartbeat failed:', err);
     });
   }, 5000); // Delay 5s after startup
+
+  // Load all installed modules (background, non-blocking)
+  loadAllModules().catch((err) => {
+    console.error('[ModuleIPC] Load-all failed:', err);
+  });
 }

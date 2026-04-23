@@ -4,12 +4,14 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { rm } from 'node:fs/promises';
+import { readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { app } from 'electron';
 import Store from 'electron-store';
+import { parseModuleManifest } from '@ardudeck/module-sdk';
 import { verifyLicenseKey, verifyBundleSignature } from './license-validator.js';
 import * as marketplace from './marketplace-client.js';
+import { extractBundle } from './module-extract.js';
 import type {
   InstalledModule,
   ModuleProgress,
@@ -141,14 +143,26 @@ export async function activateLicense(
         console.warn(`[ModuleManager] No bundle hash for ${slug}, skipping hash verification`);
       }
 
+      // 5. Extract bundle and parse manifest
+      const installPath = join(app.getPath('userData'), 'modules', slug, 'extracted');
+      await extractBundle(filePath, installPath);
+
+      const manifestRaw = await readFile(join(installPath, 'module.json'), 'utf-8');
+      const parsed = parseModuleManifest(JSON.parse(manifestRaw));
+      if (!parsed.ok) {
+        throw new Error(`Invalid manifest for ${slug}: ${parsed.error}`);
+      }
+
       newModules.push({
-        slug,
-        name: slug.split('.').pop() || slug,
-        version: 'latest', // Will be updated when module manifest is read
+        slug: parsed.manifest.slug,
+        name: parsed.manifest.name,
+        version: parsed.manifest.version,
         installedAt: new Date().toISOString(),
         licenseKey: key,
         licenseType: verification.payload!.type,
         bundleName: activateResult.bundle,
+        installPath,
+        manifestVersion: parsed.manifest.manifestVersion,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
