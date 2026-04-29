@@ -11,6 +11,8 @@ import {
 } from '../../shared/mission-types';
 import { useSettingsStore } from './settings-store';
 import { useConnectionStore } from './connection-store';
+import { useParameterStore } from './parameter-store';
+import { useArduPilotSitlStore } from './ardupilot-sitl-store';
 import { getVehicleClass } from '../../shared/telemetry-types';
 
 // MSP Waypoint types (matching msp-ts)
@@ -422,8 +424,13 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
 
     if (missionItems.length === 0) {
       const { connectionState } = useConnectionStore.getState();
-      const vehicleClass = getVehicleClass(connectionState.mavType);
-      const needsTakeoff = vehicleClass === 'copter' || vehicleClass === 'plane';
+      const qParam = useParameterStore.getState().parameters.get('Q_ENABLE');
+      const sitl = useArduPilotSitlStore.getState();
+      const vehicleClass = getVehicleClass(connectionState.mavType, {
+        qEnable: typeof qParam?.value === 'number' ? qParam.value : undefined,
+        sitlFrame: sitl.isRunning ? sitl.model : undefined,
+      });
+      const needsTakeoff = vehicleClass === 'copter' || vehicleClass === 'plane' || vehicleClass === 'vtol';
 
       if (needsTakeoff) {
         const takeoff = createTakeoffWaypoint(0, lat, lon, missionDefaults.defaultTakeoffAltitude);

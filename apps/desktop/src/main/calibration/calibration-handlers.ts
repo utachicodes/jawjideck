@@ -24,6 +24,7 @@ import {
   confirmMavlinkPosition,
   cancelMavlinkCalibration,
   isMavlinkCalibrationActive,
+  sendFixedMagCalYaw,
   type MavlinkCalibrationDeps,
 } from './mavlink-calibration.js';
 
@@ -546,6 +547,11 @@ export function initCalibrationHandlers(
   );
   ipcMain.handle(IPC_CHANNELS.CALIBRATION_CANCEL, async () => cancelCalibration());
 
+  // Large Vehicle MagCal (ArduPilot) - one-shot MAV_CMD_FIXED_MAG_CAL_YAW
+  ipcMain.handle(IPC_CHANNELS.CALIBRATION_LARGE_VEHICLE_MAGCAL, async (_event, headingDeg: number) =>
+    sendFixedMagCalYaw(headingDeg)
+  );
+
   // Persistent storage (MSP/INAV) - saves calibration to bootloader partition via CLI `cali_save`
   // For MAVLink/ArduPilot, the renderer uses writeParamsToFlash() directly (MAV_CMD_PREFLIGHT_STORAGE)
   ipcMain.handle(IPC_CHANNELS.CALIBRATION_SAVE_PERSISTENT, async () => {
@@ -569,6 +575,7 @@ export function cleanupCalibrationHandlers(): void {
   ipcMain.removeHandler(IPC_CHANNELS.CALIBRATION_CONFIRM_POSITION);
   ipcMain.removeHandler(IPC_CHANNELS.CALIBRATION_CANCEL);
   ipcMain.removeHandler(IPC_CHANNELS.CALIBRATION_SAVE_PERSISTENT);
+  ipcMain.removeHandler(IPC_CHANNELS.CALIBRATION_LARGE_VEHICLE_MAGCAL);
 
   cancelCalibration();
   cleanupMavlinkCalibration();

@@ -6,6 +6,20 @@ import { useTelemetryStore } from '../../stores/telemetry-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useUpdateStore } from '../../stores/update-store';
 import { ScriptInstallModal } from '../script-installer/ScriptInstallModal';
+import { VehicleTemplatePicker } from './vehicle-profile/VehicleTemplatePicker';
+import { ApplyProfileButton } from './vehicle-profile/ApplyProfileButton';
+import { DriftBadge } from './vehicle-profile/DriftBadge';
+import { SnapshotList } from './vehicle-profile/SnapshotList';
+import { TemplateChip } from './vehicle-profile/TemplateChip';
+import { ConfigSelectors } from './vehicle-profile/ConfigSelectors';
+import { PhysicsAdvanced } from './vehicle-profile/PhysicsAdvanced';
+import { ParamsPreview } from './vehicle-profile/ParamsPreview';
+import { StallSpeedCalcButton } from './vehicle-profile/StallSpeedCalcButton';
+import { inferProfileFromParams } from '../../lib/vehicle-templates/import';
+import { saveParmToFile } from '../../lib/vehicle-templates/export-parm';
+import { getTemplate, defaultTemplateForType } from '../../lib/vehicle-templates/registry';
+import { Download } from 'lucide-react';
+import type { VehicleTemplate } from '../../lib/vehicle-templates/types';
 
 // Display unit conversion helpers - storage is always mm/g/mAh
 function fmtWeight(g: number, units: DisplayUnits): string {
@@ -994,6 +1008,7 @@ export function SettingsView() {
 
   const { connectionState } = useConnectionStore();
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [missionLocalValues, setMissionLocalValues] = useState<Record<string, string>>({});
   const [missionErrors, setMissionErrors] = useState<Record<string, string | null>>({});
   const activeVehicle = getActiveVehicle();
@@ -1561,16 +1576,7 @@ export function SettingsView() {
                   Vehicle Profiles
                 </h2>
                 <button
-                  onClick={() => {
-                    addVehicle({
-                      name: `Vehicle ${vehicles.length + 1}`,
-                      type: 'copter',
-                      frameSize: 127,  // 5" = 127mm
-                      weight: 600,
-                      batteryCells: 4,
-                      batteryCapacity: 1500,
-                    });
-                  }}
+                  onClick={() => setShowTemplatePicker(true)}
                   className="px-2.5 py-1 bg-emerald-600/80 hover:bg-emerald-500/80 text-white text-xs rounded-lg transition-colors flex items-center gap-1"
                 >
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1580,7 +1586,7 @@ export function SettingsView() {
                 </button>
               </div>
 
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              <div className="space-y-2 max-h-[32rem] overflow-y-auto">
                 {vehicles.map((vehicle) => (
                   <VehicleCard
                     key={vehicle.id}
@@ -1596,6 +1602,43 @@ export function SettingsView() {
                   />
                 ))}
               </div>
+
+              {showTemplatePicker && (
+                <VehicleTemplatePicker
+                  onClose={() => setShowTemplatePicker(false)}
+                  onSelect={(tpl: VehicleTemplate) => {
+                    const newId = addVehicle({
+                      ...tpl.defaults,
+                      name: tpl.name,
+                      type: tpl.vehicleType,
+                      templateSlug: tpl.slug,
+                      weight: tpl.defaults.weight ?? 500,
+                      batteryCells: tpl.defaults.batteryCells ?? 4,
+                      batteryCapacity: tpl.defaults.batteryCapacity ?? 1500,
+                    });
+                    setShowTemplatePicker(false);
+                    setEditingVehicleId(newId);
+                    setActiveVehicle(newId);
+                  }}
+                  onImportFromConnected={() => {
+                    const paramMap = new Map<string, number>();
+                    for (const [k, v] of useParameterStore.getState().parameters) paramMap.set(k, v.value);
+                    const inferred = inferProfileFromParams(paramMap);
+                    if (!inferred) {
+                      return;
+                    }
+                    const newId = addVehicle({
+                      ...inferred.profile,
+                      weight: inferred.profile.weight ?? 500,
+                      batteryCells: inferred.profile.batteryCells ?? 4,
+                      batteryCapacity: inferred.profile.batteryCapacity ?? 1500,
+                    });
+                    setShowTemplatePicker(false);
+                    setEditingVehicleId(newId);
+                    setActiveVehicle(newId);
+                  }}
+                />
+              )}
             </section>
           </div>
         </div>
@@ -2649,6 +2692,9 @@ function VehicleEditModal({
             </div>
           </div>
 
+          {/* ========== CONFIG SPECIFIERS (wing shape / VTOL style / motor arrangement) ========== */}
+          <ConfigSelectors vehicle={vehicle} onUpdate={onUpdate} />
+
           {/* ========== COPTER-SPECIFIC ========== */}
           {isCopter && (
             <div>
@@ -2734,15 +2780,33 @@ function VehicleEditModal({
                   unit="cm²"
                   placeholder="2400"
                 />
-                <VehicleInputField
-                  label="Stall Speed"
-                  value={getDisplayValue('stallSpeed')}
-                  onChange={(v) => handleChange('stallSpeed', v)}
-                  onBlur={() => handleBlur('stallSpeed')}
-                  error={getError('stallSpeed')}
-                  unit="m/s"
-                  placeholder="8"
-                />
+                <div>
+                  <div className="flex items-center justify-between mb-1 min-h-[18px]">
+                    <label className="text-xs text-content-secondary">Stall Speed</label>
+                    <StallSpeedCalcButton
+                      vehicle={vehicle}
+                      onCompute={(mps) => onUpdate({ stallSpeed: mps })}
+                    />
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={getDisplayValue('stallSpeed') ?? ''}
+                      onChange={(e) => handleChange('stallSpeed', e.target.value)}
+                      onBlur={() => handleBlur('stallSpeed')}
+                      placeholder="8"
+                      className={`w-full px-3 py-2 pr-12 bg-surface-input border rounded-lg text-content text-sm focus:outline-none ${
+                        getError('stallSpeed')
+                          ? 'border-red-500/60 focus:border-red-500'
+                          : 'border-border focus:border-blue-500'
+                      }`}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-content-secondary text-xs pointer-events-none">m/s</span>
+                  </div>
+                  {getError('stallSpeed') && (
+                    <div className="text-[10px] text-red-400 mt-0.5">{getError('stallSpeed')}</div>
+                  )}
+                </div>
                 <PropSizeInput
                   value={vehicle.propSize}
                   onChange={(v) => onUpdate({ propSize: v })}
@@ -3074,6 +3138,10 @@ function VehicleEditModal({
               <svg className="w-4 h-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
               Advanced (optional)
             </summary>
             <div className="mt-3 space-y-3">
@@ -3168,13 +3236,35 @@ function VehicleEditModal({
               </div>
             </div>
           </details>
+
+          {/* ========== PHYSICS (SITL fidelity) ========== */}
+          <PhysicsAdvanced vehicle={vehicle} onUpdate={onUpdate} />
+
+          {/* ========== PARAMS PREVIEW + APPLY ========== */}
+          <ParamsPreview vehicle={vehicle} onBeforeApply={onClose} />
+
+          {/* ========== AUTO-APPLY TOGGLE ========== */}
+          <label className="flex items-start gap-2 text-sm text-content-secondary cursor-pointer">
+            <input
+              type="checkbox"
+              checked={vehicle.autoApplyOnSitl ?? false}
+              onChange={(e) => onUpdate({ autoApplyOnSitl: e.target.checked })}
+              className="mt-1"
+            />
+            <span>
+              <span className="text-content">Auto-apply to SITL on start</span>
+              <span className="block text-xs text-content-tertiary mt-0.5">
+                When you launch SITL, this profile's params are reapplied automatically.
+              </span>
+            </span>
+          </label>
         </div>
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-border flex justify-end">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-content font-medium rounded-lg transition-colors"
+            className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors"
           >
             Done
           </button>
@@ -3301,6 +3391,17 @@ function VehicleCard({
             </div>
           </div>
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            <ApplyProfileButton profile={vehicle} />
+            <button
+              onClick={async () => {
+                const tpl = getTemplate(vehicle.templateSlug) ?? defaultTemplateForType(vehicle.type);
+                await saveParmToFile(vehicle, tpl, { includeSim: false });
+              }}
+              className="p-1.5 text-content-secondary hover:text-content transition-colors"
+              title="Export .parm file"
+            >
+              <Download className="w-4 h-4" />
+            </button>
             <button onClick={onEdit} className="p-1.5 text-content-secondary hover:text-content transition-colors" title="Edit">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -3314,6 +3415,11 @@ function VehicleCard({
               </button>
             )}
           </div>
+        </div>
+        <div className="mt-2 flex items-center gap-2 flex-wrap">
+          <TemplateChip slug={vehicle.templateSlug} />
+          <DriftBadge profile={vehicle} />
+          <SnapshotList profile={vehicle} />
         </div>
       </div>
     </>

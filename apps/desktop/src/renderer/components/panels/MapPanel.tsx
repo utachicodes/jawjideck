@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -719,26 +719,72 @@ function CommandPopupOverlay({
   onConfirm,
   onCancel,
 }: CommandPopupOverlayProps) {
-  // Convert map-container-relative anchor to viewport-relative position
-  // (the portal target is document.body, which uses viewport coordinates).
-  const [viewportPos, setViewportPos] = useState<{ left: number; top: number } | null>(null);
-  useEffect(() => {
+  // Two-pass positioning: render off-screen first, measure, then re-place with
+  // viewport-edge collision avoidance. Default anchors above-and-right of the
+  // click; flips below if it would clip the top, shifts left if it would clip
+  // the right edge.
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
+    left: -9999, top: -9999, ready: false,
+  });
+
+  useLayoutEffect(() => {
+    const el = popupRef.current;
+    if (!el) return;
     const rect = mapContainer.getBoundingClientRect();
-    setViewportPos({
-      left: rect.left + anchorPx.x + 12,
-      top: rect.top + anchorPx.y - 12,
-    });
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const popupW = el.offsetWidth;
+    const popupH = el.offsetHeight;
+    const margin = 12;
+    const clickX = rect.left + anchorPx.x;
+    const clickY = rect.top + anchorPx.y;
+
+    // Horizontal: prefer 12px right of click; flip to 12px left if it would
+    // overflow the viewport on the right.
+    let left = clickX + margin;
+    if (left + popupW > vw - margin) {
+      left = clickX - margin - popupW;
+    }
+    if (left < margin) left = margin;
+
+    // Vertical: prefer above the click (12px gap). Flip below if it would
+    // overflow the top. Clamp to bottom margin as last resort.
+    let top = clickY - margin - popupH;
+    if (top < margin) {
+      top = clickY + margin;
+    }
+    if (top + popupH > vh - margin) {
+      top = Math.max(margin, vh - margin - popupH);
+    }
+
+    setPos({ left, top, ready: true });
   }, [anchorPx.x, anchorPx.y, mapContainer]);
 
-  if (!viewportPos) return null;
+  // Click-outside dismiss. mousedown so the click that started outside the
+  // popup doesn't accidentally hit a button after re-render. Left-button only
+  // — a right-click elsewhere on the map should relocate the popup, not
+  // dismiss-and-reopen it.
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      const el = popupRef.current;
+      if (!el) return;
+      if (e.target instanceof Node && el.contains(e.target)) return;
+      onCancel();
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onCancel]);
 
   return createPortal(
     <div
-      className="tactical-command-popup fixed z-[2000] pointer-events-auto rounded-lg shadow-2xl border border-cyan-700/40 bg-gray-900/95 backdrop-blur-sm p-3"
+      ref={popupRef}
+      className="tactical-command-popup fixed z-[2000] pointer-events-auto rounded-lg shadow-2xl border border-cyan-700/40 bg-gray-900/95 backdrop-blur-sm p-3 max-w-[340px]"
       style={{
-        left: viewportPos.left,
-        top: viewportPos.top,
-        transform: 'translateY(-100%)',
+        left: pos.left,
+        top: pos.top,
+        visibility: pos.ready ? 'visible' : 'hidden',
       }}
     >
       <MapCommandPopup

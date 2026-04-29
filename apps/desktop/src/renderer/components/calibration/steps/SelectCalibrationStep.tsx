@@ -5,9 +5,11 @@
  * Shows calibration status (green checkmark if calibrated, warning if needed).
  */
 
+import { useState } from 'react';
 import { useCalibrationStore, getAvailableCalibrationTypes, isCalibrationTypeAvailable } from '../../../stores/calibration-store';
 import { useTelemetryStore } from '../../../stores/telemetry-store';
 import { type CalibrationTypeId } from '../../../../shared/calibration-types';
+import { LargeVehicleMagCalDialog } from '../LargeVehicleMagCalDialog';
 
 // Map calibration type IDs to arming flag names that indicate calibration is needed
 // iNav flags: 'Accelerometer', 'Compass', 'No Gyro'
@@ -200,6 +202,7 @@ const BackgroundPatterns: Record<CalibrationTypeId, React.ReactNode> = {
 export function SelectCalibrationStep() {
   const { protocol, sensors, isSensorsLoading, selectCalibrationType, error, completedCalibrations } = useCalibrationStore();
   const flight = useTelemetryStore((s) => s.flight);
+  const [showLargeVehicleMagCal, setShowLargeVehicleMagCal] = useState(false);
 
   // Get arming disabled reasons from telemetry
   const armingDisabledReasons = flight.armingDisabledReasons || [];
@@ -335,6 +338,32 @@ export function SelectCalibrationStep() {
         </div>
       )}
 
+      {/* Large Vehicle MagCal (ArduPilot only) */}
+      {protocol === 'mavlink' && !isSensorsLoading && (
+        <div className="mt-2">
+          <div className="flex items-center gap-3 p-4 rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 via-transparent to-orange-500/5">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 text-amber-400 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-sm font-semibold text-content">Large Vehicle MagCal</h4>
+              <p className="text-xs text-content-secondary mt-0.5 leading-relaxed">
+                Single-shot compass cal for aircraft too large to rotate. Requires GPS lock and a known true heading.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowLargeVehicleMagCal(true)}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium text-amber-300 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 hover:border-amber-400/60 transition-colors shrink-0"
+            >
+              Run
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Help text */}
       <div className="text-center text-xs text-content-secondary mt-6">
         <p>
@@ -342,6 +371,10 @@ export function SelectCalibrationStep() {
           {protocol === 'msp' && ' For best results, disconnect motors.'}
         </p>
       </div>
+
+      {showLargeVehicleMagCal && (
+        <LargeVehicleMagCalDialog onClose={() => setShowLargeVehicleMagCal(false)} />
+      )}
     </div>
   );
 }

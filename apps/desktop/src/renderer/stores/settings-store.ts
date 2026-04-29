@@ -14,6 +14,27 @@ export type VehicleType = 'copter' | 'plane' | 'vtol' | 'rover' | 'boat' | 'sub'
  */
 export type { BoardStats } from '../../shared/ipc-channels.js';
 
+/**
+ * Configuration specifier values shared across plane/vtol templates.
+ * These are orthogonal axes: a profile combines vehicle `type` with some
+ * subset of these to describe any ArduPilot-supported airframe.
+ */
+export type WingShape = 'standard' | 'delta' | 'flying-wing' | 'v-tail' | 'biplane' | 'inverted-v';
+export type VtolStyle = 'quadplane' | 'tailsitter' | 'tiltrotor' | 'tiltwing';
+export type MotorArrangement =
+  | 'quad-x' | 'quad-plus' | 'quad-h'
+  | 'hex-x' | 'hex-plus'
+  | 'octo-x' | 'octo-plus'
+  | 'y6' | 'tri' | 'coaxial'
+  | 'inline-2' | 'twin-tractor' | 'twin-pusher';
+
+/** Snapshot of where a profile was last applied (SITL vs real FC). */
+export interface ProfileApplyTarget {
+  isSitl: boolean;
+  sysid: number;
+  label: string;  // user-facing connection label
+}
+
 export interface VehicleProfile {
   id: string;
   name: string;
@@ -68,6 +89,28 @@ export interface VehicleProfile {
   maxDepth?: number;          // meters - rated depth
   thrusterCount?: number;     // Number of thrusters
   buoyancy?: 'positive' | 'neutral' | 'negative';
+
+  // === CONFIG SPECIFIERS (orthogonal axes) ===
+  // These drive which ArduPilot FRAME_CLASS / FRAME_TYPE / Q_* params a template emits.
+  wingShape?: WingShape;
+  vtolStyle?: VtolStyle;
+  motorArrangement?: MotorArrangement;
+
+  // === PHYSICS (advanced, for SITL SIM_* fidelity) ===
+  cogOffset?: { x: number; y: number; z: number };  // mm from airframe center
+  thrustToWeight?: number;                           // ratio, used for SIM engine tuning
+  propDiameter?: number;                             // mm (distinct from propSize string)
+  dragCoefficient?: number;                          // optional advanced; SIM_DRAG_COEF
+  servoSpeed?: number;                               // deg/sec, SIM_SERVO_SPEED
+
+  // === TEMPLATE BINDING ===
+  templateSlug?: string;       // which vehicle-template seeded this profile
+  autoApplyOnSitl?: boolean;   // auto re-apply when SITL starts
+
+  // === APPLY TRACKING ===
+  lastAppliedAt?: string;              // ISO timestamp of last apply
+  lastAppliedTo?: ProfileApplyTarget;  // where it was last applied
+  lastSnapshotId?: string;             // id of snapshot for undo
 
   // Notes
   notes?: string;

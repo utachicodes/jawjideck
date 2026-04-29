@@ -4,7 +4,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type SettingsStoreSchema, type MSPConnectOptions, type MSPConnectionState, type MSPTelemetryData, type SitlConfig, type SitlStatus, type SitlExitData, type VirtualRCState, type ArduPilotSitlConfig, type ArduPilotSitlStatus, type ArduPilotSitlExitData, type ArduPilotSitlDownloadProgress, type ArduPilotSitlBinaryInfo, type ArduPilotVehicleType, type ArduPilotReleaseTrack, type AppUpdateInfo, type SigningStatus, type TelemetrySpeed, type StatusMessage, type TileCacheStats, type TileCacheDownloadProgress, type TileCacheSettings, type TileCacheDownloadRegion, type CompanionConnectOptions, type CompanionConnectionIpcState, type CompanionDiscoveryResult } from '../shared/ipc-channels.js';
+import { IPC_CHANNELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type SettingsStoreSchema, type MSPConnectOptions, type MSPConnectionState, type MSPTelemetryData, type SitlConfig, type SitlStatus, type SitlExitData, type VirtualRCState, type ArduPilotSitlConfig, type ArduPilotSitlStatus, type ArduPilotSitlExitData, type ArduPilotSitlDownloadProgress, type ArduPilotSitlBinaryInfo, type ArduPilotFrameCatalog, type ArduPilotVehicleType, type ArduPilotReleaseTrack, type AppUpdateInfo, type SigningStatus, type TelemetrySpeed, type StatusMessage, type TileCacheStats, type TileCacheDownloadProgress, type TileCacheSettings, type TileCacheDownloadRegion, type CompanionConnectOptions, type CompanionConnectionIpcState, type CompanionDiscoveryResult } from '../shared/ipc-channels.js';
 import type { SystemInfo, NetworkInfo, MetricsData, ProcessInfo, LogEntry, FileEntry, ServiceInfo, ServiceAction, ContainerInfo, ContainerAction, ExtensionInfo } from '@ardudeck/companion-types';
 import type { InstalledModule, ModuleProgress, UpdateAvailable } from '../shared/module-types.js';
 import type { ParamChange, ParamCheckpoint } from '../shared/param-history-types.js';
@@ -94,6 +94,9 @@ const api = {
 
   mavlinkTakeoff: (altitude: number, pitchDeg?: number): Promise<boolean> =>
     ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_COMMAND_TAKEOFF, altitude, pitchDeg),
+
+  mavlinkVtolTakeoff: (altitude: number): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_COMMAND_VTOL_TAKEOFF, altitude),
 
   mavlinkGoto: (lat: number, lon: number, alt: number): Promise<boolean> =>
     ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_GOTO, lat, lon, alt),
@@ -1220,6 +1223,12 @@ const api = {
   ardupilotSitlRcStop: (): Promise<{ success: boolean }> =>
     ipcRenderer.invoke(IPC_CHANNELS.ARDUPILOT_SITL_RC_STOP),
 
+  ardupilotSitlListFrames: (): Promise<ArduPilotFrameCatalog> =>
+    ipcRenderer.invoke(IPC_CHANNELS.ARDUPILOT_SITL_LIST_FRAMES),
+
+  ardupilotSitlRefreshFrames: (): Promise<ArduPilotFrameCatalog> =>
+    ipcRenderer.invoke(IPC_CHANNELS.ARDUPILOT_SITL_REFRESH_FRAMES),
+
   onArdupilotSitlStdout: (callback: (data: string) => void) => {
     const handler = (_: unknown, data: string) => callback(data);
     ipcRenderer.on(IPC_CHANNELS.ARDUPILOT_SITL_STDOUT, handler);
@@ -1429,6 +1438,11 @@ const api = {
   /** Save calibration to bootloader persistent storage (INAV only, survives firmware updates) */
   calibrationSavePersistent: (): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.CALIBRATION_SAVE_PERSISTENT),
+
+  /** Large Vehicle MagCal (ArduPilot) - sends MAV_CMD_FIXED_MAG_CAL_YAW with the
+   * vehicle's current true heading (degrees). Requires GPS 3D lock. */
+  calibrationLargeVehicleMagCal: (headingDeg: number): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.CALIBRATION_LARGE_VEHICLE_MAGCAL, headingDeg),
 
   /** Listen for calibration progress updates */
   onCalibrationProgress: (callback: (progress: CalibrationProgressEvent) => void) => {

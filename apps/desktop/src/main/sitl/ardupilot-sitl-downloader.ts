@@ -15,7 +15,7 @@
 
 import { app, BrowserWindow } from 'electron';
 import { createWriteStream } from 'node:fs';
-import { mkdir, access, rm, rename } from 'node:fs/promises';
+import { mkdir, access, rm, rename, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import type {
   ArduPilotVehicleType,
@@ -36,7 +36,7 @@ const CYGWIN_BASE_URL = 'https://firmware.ardupilot.org/Tools/MissionPlanner/sit
  * Must match the release tag produced by build-sitl.yml.
  * Update this when a new SITL build is published.
  */
-const SITL_RELEASE_TAG = 'sitl-v4.5.7';
+const SITL_RELEASE_TAG = 'sitl-vmaster-20260429';
 
 // ── Vehicle mapping ──────────────────────────────────────────────────────────
 
@@ -109,14 +109,61 @@ class ArduPilotSitlDownloader {
     return path.join(app.getPath('userData'), 'ardupilot-sitl');
   }
 
+  /**
+   * One-shot cleanup of legacy macOS cache layouts and stale tag dirs:
+   *  - Pre-tag layout: `<base>/{stable,dev,beta}/<vehicle>/ardu*` for
+   *    macOS users who installed before we keyed by SITL_RELEASE_TAG.
+   *    These point at the broken older binaries that SIGILL on Apple
+   *    Silicon — must be removed so users can't accidentally still run
+   *    them (e.g. via a launch path that shortcut around getBinaryPath).
+   *  - Tag-keyed layout: `<base>/macos/<old_tag>/...` from a previous
+   *    SITL_RELEASE_TAG that's been bumped. Pure disk hygiene.
+   * Best-effort; failures are logged but don't block startup.
+   */
+  async cleanupLegacyMacBinaries(): Promise<void> {
+    if (process.platform !== 'darwin') return;
+    const base = this.getBasePath();
+
+    // (1) Strip the old per-track layout. Anything at `<base>/{stable,beta,dev}/`
+    // is left over from before we keyed by tag.
+    for (const legacyTrack of ['stable', 'beta', 'dev']) {
+      const dir = path.join(base, legacyTrack);
+      try {
+        const s = await stat(dir);
+        if (s.isDirectory()) await rm(dir, { recursive: true, force: true });
+      } catch { /* not present, skip */ }
+    }
+
+    // (2) Sweep tag-keyed entries that aren't the current SITL_RELEASE_TAG.
+    const macDir = path.join(base, 'macos');
+    try {
+      const entries = await readdir(macDir);
+      await Promise.all(
+        entries
+          .filter(name => name !== SITL_RELEASE_TAG)
+          .map(name => rm(path.join(macDir, name), { recursive: true, force: true }).catch(() => {})),
+      );
+    } catch { /* macos dir doesn't exist yet — fresh install, nothing to clean */ }
+  }
+
   getBinaryPath(vehicleType: ArduPilotVehicleType, releaseTrack: ArduPilotReleaseTrack): string {
     const vehicle = VEHICLE_MAP[vehicleType];
     const basePath = this.getBasePath();
 
+    // macOS path is keyed by SITL_RELEASE_TAG, NOT by releaseTrack: we host
+    // a single ARM64 build per tag in our GH releases (`getMacDownloadUrl`
+    // ignores releaseTrack), so cache should mirror that. Bumping the tag
+    // in code → fresh path → automatic re-download for every existing user
+    // when they update the app. Old `<basePath>/{stable,dev}/...` files
+    // become orphans the OS or our future cleanup pass can sweep.
+    if (process.platform === 'darwin') {
+      return path.join(basePath, 'macos', SITL_RELEASE_TAG, vehicleType, vehicle.binary);
+    }
     if (process.platform === 'win32') {
       return path.join(basePath, releaseTrack, vehicleType, `${vehicle.cygwinBinary}.exe`);
     }
-    // macOS and Linux: native binary, no extension
+    // Linux: keyed by releaseTrack — Linux binaries come from upstream
+    // firmware.ardupilot.org and the URL differs by stable/beta/dev.
     return path.join(basePath, releaseTrack, vehicleType, vehicle.binary);
   }
 

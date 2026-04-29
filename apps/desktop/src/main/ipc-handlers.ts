@@ -1063,11 +1063,6 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
     sendLog(mainWindow, 'debug', `Received MSG #${msgid} (len=${payload.length}): ${hexPayload}`);
   }
 
-  // DIAGNOSTIC: Log ALL incoming messages during upload to see what FC sends
-  if (missionUploadState || missionDownloadState) {
-    console.log(`[MISSION DIAG] Incoming MSG #${msgid} (len=${payload.length})`);
-  }
-
   switch (msgid) {
     case MSG_HEARTBEAT: {
       // MAVLink wire order: custom_mode(4), type(1), autopilot(1), base_mode(1), system_status(1), mavlink_version(1)
@@ -1519,13 +1514,19 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
         sendLog(mainWindow, ackResult === 0 ? 'info' : 'warn', text);
       }
 
-      // Forward calibration-related COMMAND_ACKs (241=PREFLIGHT_CALIBRATION, 42424=ACCELCAL_VEHICLE_POS)
+      // Forward calibration-related COMMAND_ACKs (241=PREFLIGHT_CALIBRATION,
+      // 42429=ACCELCAL_VEHICLE_POS, 42006=FIXED_MAG_CAL_YAW). FIXED_MAG_CAL_YAW
+      // runs outside the activeCalType state machine — always forward it so
+      // its dedicated pending-ACK resolver can fire.
       if (ackCommand === 241 || ackCommand === 42429) {
         const calActive = isMavlinkCalibrationActive();
         sendLog(mainWindow, 'info', `[CAL DIAG] COMMAND_ACK cmd=${ackCommand} result=${resultName} calActive=${calActive}`);
         if (calActive) {
           handleCalibrationCommandAck(ackCommand, ackResult);
         }
+      } else if (ackCommand === 42006) {
+        sendLog(mainWindow, 'info', `[CAL DIAG] COMMAND_ACK cmd=${ackCommand} (FIXED_MAG_CAL_YAW) result=${resultName}`);
+        handleCalibrationCommandAck(ackCommand, ackResult);
       }
       break;
     }
@@ -4433,9 +4434,17 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     }
   });
 
-  // SET_MODE (msg 11) - switch ArduPilot flight mode.
-  // baseMode must include MAV_MODE_FLAG_CUSTOM_MODE_ENABLED (1).
-  // If armed, also set MAV_MODE_FLAG_SAFETY_ARMED (128) to avoid inadvertent disarm.
+  // Switch ArduPilot flight mode. We send BOTH:
+  //   1. MAV_CMD_DO_SET_MODE (command 176) via COMMAND_LONG — the modern,
+  //      universally-supported path. FCU returns COMMAND_ACK so we know
+  //      whether it took. This is what Mission Planner, QGC, and every
+  //      current GCS use.
+  //   2. The legacy SET_MODE message (msg 11) as a follow-up — some older
+  //      ArduPilot builds and certain edge states accept the message but
+  //      not the command. Belt-and-suspenders.
+  // Symptom that drove us here: from a disarmed RTL state on a tailsitter,
+  // legacy SET_MODE alone was being silently dropped — user couldn't get
+  // out of RTL to arm. The COMMAND_LONG path resolves it.
   ipcMain.handle(IPC_CHANNELS.MAVLINK_SET_MODE, async (_, customMode: number): Promise<boolean> => {
     if (!currentTransport?.isOpen || !connectionState.isConnected) {
       return false;
@@ -4443,22 +4452,91 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
     try {
       const armedBit = lastReportedArmed ? 128 : 0;
+      const baseMode = 1 | armedBit; // MAV_MODE_FLAG_CUSTOM_MODE_ENABLED + armed bit
 
-      const payload = serializeSetMode({
+      // 1. MAV_CMD_DO_SET_MODE — preferred path
+      const cmdPayload = serializeCommandLong({
         targetSystem: connectionState.systemId ?? 1,
-        baseMode: 1 | armedBit,
-        customMode,
+        targetComponent: 1,
+        command: 176, // MAV_CMD_DO_SET_MODE
+        confirmation: 0,
+        param1: baseMode,
+        param2: customMode,
+        param3: 0,
+        param4: 0,
+        param5: 0,
+        param6: 0,
+        param7: 0,
       });
-
-      const packet = await sendMavlinkPacket(SET_MODE_ID, payload, SET_MODE_CRC_EXTRA);
-      await currentTransport.write(packet);
+      const cmdPacket = await sendMavlinkPacket(COMMAND_LONG_ID, cmdPayload, COMMAND_LONG_CRC_EXTRA);
+      await currentTransport.write(cmdPacket);
       connectionState.packetsSent++;
 
-      sendLog(mainWindow, 'info', `Sent SET_MODE customMode=${customMode}`);
+      // 2. Legacy SET_MODE — fallback for older builds that don't honor cmd 176
+      const setModePayload = serializeSetMode({
+        targetSystem: connectionState.systemId ?? 1,
+        baseMode,
+        customMode,
+      });
+      const setModePacket = await sendMavlinkPacket(SET_MODE_ID, setModePayload, SET_MODE_CRC_EXTRA);
+      await currentTransport.write(setModePacket);
+      connectionState.packetsSent++;
+
+      sendLog(mainWindow, 'info', `Sent SET_MODE customMode=${customMode} (DO_SET_MODE + legacy)`);
       return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       sendLog(mainWindow, 'error', 'Failed to set mode', message);
+      return false;
+    }
+  });
+
+  // MAV_CMD_NAV_VTOL_TAKEOFF (command 84) — vertical takeoff for VTOL /
+  // tailsitter / quadplane. Vehicle hovers up to `altitude` and holds
+  // position.
+  //
+  // CRITICAL: must be sent via COMMAND_INT (msg 75), NOT COMMAND_LONG
+  // (msg 76). NAV_VTOL_TAKEOFF carries an altitude in z; ArduPilot reads the
+  // surrounding frame to know whether that's MSL or home-relative. With
+  // COMMAND_LONG there is no frame field — ArduPilot defaults to absolute
+  // MSL on this command, so `z=10m` means "fly to 10m AMSL". Home is
+  // typically at >10m MSL → target is "below current alt" → FCU declares
+  // takeoff complete instantly, motors spin briefly then drop to 0%, vehicle
+  // sits there armed in the post-takeoff state. Using COMMAND_INT with
+  // MAV_FRAME_GLOBAL_RELATIVE_ALT_INT (frame=6) makes the altitude relative
+  // to home, which is what every GCS expects.
+  // Sending plain NAV_TAKEOFF (22) to a tail-standing aircraft pitches it
+  // forward into the ground — separate IPC keeps the call sites unambiguous
+  // about which one they want.
+  ipcMain.handle(IPC_CHANNELS.MAVLINK_COMMAND_VTOL_TAKEOFF, async (_, altitude: number): Promise<boolean> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return false;
+    }
+    try {
+      const payload = serializeCommandInt({
+        targetSystem: connectionState.systemId ?? 1,
+        targetComponent: 1,
+        frame: 6,         // MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
+        command: 84,      // MAV_CMD_NAV_VTOL_TAKEOFF
+        current: 0,
+        autocontinue: 0,
+        // param1 (transition heading): 0 = use vehicle's current heading
+        param1: 0,
+        param2: 0,
+        param3: 0,
+        param4: 0,
+        x: 0,             // lat unused for VTOL takeoff (climbs in place)
+        y: 0,             // lon unused for VTOL takeoff
+        z: altitude,      // home-relative metres
+      });
+      const packet = await sendMavlinkPacket(COMMAND_INT_ID, payload, COMMAND_INT_CRC_EXTRA);
+      await currentTransport.write(packet);
+      connectionState.packetsSent++;
+      sendLog(mainWindow, 'info', `Sent VTOL_TAKEOFF (COMMAND_INT, rel-alt=${altitude}m)`);
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      sendLog(mainWindow, 'error', 'Failed to send VTOL takeoff command', message);
       return false;
     }
   });
@@ -7199,6 +7277,13 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   ardupilotSitlProcess.setMainWindow(mainWindow);
   ardupilotSitlDownloader.setMainWindow(mainWindow);
 
+  // Sweep stale macOS SITL caches: legacy per-track layout (pre tag-keyed
+  // paths) + old tag-keyed dirs that aren't the current SITL_RELEASE_TAG.
+  // Best-effort; doesn't block IPC handler registration.
+  void ardupilotSitlDownloader.cleanupLegacyMacBinaries().catch(err => {
+    console.warn('[SITL] legacy mac cache cleanup failed:', err);
+  });
+
   // Start ArduPilot SITL process
   ipcMain.handle(IPC_CHANNELS.ARDUPILOT_SITL_START, async (_event, config: ArduPilotSitlConfig): Promise<{ success: boolean; command?: string; error?: string }> => {
     const result = await ardupilotSitlProcess.start(config);
@@ -7273,6 +7358,18 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle(IPC_CHANNELS.ARDUPILOT_SITL_RC_STOP, async (): Promise<{ success: boolean }> => {
     ardupilotRcSender.stop();
     return { success: true };
+  });
+
+  // List frame catalog (cached upstream vehicleinfo.py)
+  ipcMain.handle(IPC_CHANNELS.ARDUPILOT_SITL_LIST_FRAMES, async () => {
+    const { listFrames } = await import('./sitl/frame-config.js');
+    return listFrames();
+  });
+
+  // Force-refresh the frame catalog from upstream
+  ipcMain.handle(IPC_CHANNELS.ARDUPILOT_SITL_REFRESH_FRAMES, async () => {
+    const { listFrames } = await import('./sitl/frame-config.js');
+    return listFrames({ force: true });
   });
 
   // =============================================================================

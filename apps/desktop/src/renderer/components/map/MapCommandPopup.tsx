@@ -1,7 +1,13 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import {
+  RotateCw, Tornado, Eye, Film, MoveHorizontal, ArrowUpFromLine,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { MapCommand } from './map-command-types';
 import { useScriptHealth } from '../script-installer/useScriptHealth';
 import { useSettingsStore } from '../../stores/settings-store';
+import { useConnectionStore } from '../../stores/connection-store';
+import { mavTypeToTacticalClass, type TacticalVehicleClass } from './tactical-icon-pool';
 import { ScriptInstallModal } from '../script-installer/ScriptInstallModal';
 
 interface MapCommandPopupProps {
@@ -40,6 +46,7 @@ const TABS: TabMeta[] = [
 /** Lua-tab sub-commands. Adding one: extend SUB_CMD in map-command-types and
  *  the dispatch table in ardudeck_commands.lua, then add an entry here. */
 type LuaCommandId = 'orbit' | 'spiral' | 'watchtower' | 'climbRtl' | 'reveal' | 'strafe';
+type LuaCategory = 'hold' | 'cinematic' | 'return';
 interface LuaCommandMeta {
   id: LuaCommandId;
   label: string;
@@ -47,15 +54,32 @@ interface LuaCommandMeta {
   confirmLabel: string;
   /** True if the command needs a clicked map location (most do; CLIMB_RTL doesn't). */
   needsLatLon: boolean;
+  category: LuaCategory;
+  icon: LucideIcon;
+  /** Vehicle classes this command is meaningful for. Hover-based commands
+   *  (watchtower/reveal/strafe/climbRtl) need hover-capable platforms. */
+  supportedClasses: ReadonlyArray<TacticalVehicleClass>;
 }
 const LUA_COMMANDS: LuaCommandMeta[] = [
-  { id: 'orbit',      label: 'Orbit',      hint: 'Loiter around this point at fixed altitude',                   confirmLabel: 'Confirm Orbit',      needsLatLon: true  },
-  { id: 'spiral',     label: 'Spiral',     hint: 'Orbit while climbing/descending to a target altitude',          confirmLabel: 'Confirm Spiral',     needsLatLon: true  },
-  { id: 'watchtower', label: 'Watchtower', hint: 'Hover at this point and slowly rotate yaw for a panoramic',     confirmLabel: 'Confirm Watchtower', needsLatLon: true  },
-  { id: 'reveal',     label: 'Reveal',     hint: 'Pull back + climb, camera locked on this target (cinematic)',   confirmLabel: 'Confirm Reveal',     needsLatLon: true  },
-  { id: 'strafe',     label: 'Strafe',     hint: 'Dolly past this target at perpendicular offset, looking at it', confirmLabel: 'Confirm Strafe',     needsLatLon: true  },
-  { id: 'climbRtl',   label: 'Climb+RTL',  hint: 'Climb in place to a safe altitude, then return home',           confirmLabel: 'Climb & RTL',        needsLatLon: false },
+  { id: 'orbit',      label: 'Orbit',      hint: 'Loiter around this point at fixed altitude',                   confirmLabel: 'Confirm Orbit',      needsLatLon: true,  category: 'hold',      icon: RotateCw,         supportedClasses: ['copter', 'vtol', 'plane'] },
+  { id: 'spiral',     label: 'Spiral',     hint: 'Orbit while climbing/descending to a target altitude',          confirmLabel: 'Confirm Spiral',     needsLatLon: true,  category: 'hold',      icon: Tornado,          supportedClasses: ['copter', 'vtol', 'plane'] },
+  { id: 'watchtower', label: 'Watchtower', hint: 'Hover at this point and slowly rotate yaw for a panoramic',     confirmLabel: 'Confirm Watchtower', needsLatLon: true,  category: 'hold',      icon: Eye,              supportedClasses: ['copter', 'vtol'] },
+  { id: 'reveal',     label: 'Reveal',     hint: 'Pull back + climb, camera locked on this target (cinematic)',   confirmLabel: 'Confirm Reveal',     needsLatLon: true,  category: 'cinematic', icon: Film,             supportedClasses: ['copter', 'vtol'] },
+  { id: 'strafe',     label: 'Strafe',     hint: 'Dolly past this target at perpendicular offset, looking at it', confirmLabel: 'Confirm Strafe',     needsLatLon: true,  category: 'cinematic', icon: MoveHorizontal,   supportedClasses: ['copter', 'vtol'] },
+  { id: 'climbRtl',   label: 'Climb+RTL',  hint: 'Climb in place to a safe altitude, then return home',           confirmLabel: 'Climb & RTL',        needsLatLon: false, category: 'return',    icon: ArrowUpFromLine,  supportedClasses: ['copter', 'vtol'] },
 ];
+
+const CATEGORY_LABELS: Record<LuaCategory, string> = {
+  hold:      'Hold',
+  cinematic: 'Cinematic',
+  return:    'Return',
+};
+const CATEGORY_ORDER: LuaCategory[] = ['hold', 'cinematic', 'return'];
+
+/** Vehicle classes for which the entire Lua tab is meaningless (no air craft). */
+const LUA_TAB_HIDDEN_CLASSES: ReadonlySet<TacticalVehicleClass> = new Set([
+  'rover', 'boat', 'sub', 'antenna',
+]);
 
 export const MapCommandPopup: React.FC<MapCommandPopupProps> = ({
   lat,
@@ -99,16 +123,55 @@ export const MapCommandPopup: React.FC<MapCommandPopupProps> = ({
   const advancedCommandsUnlocked = useSettingsStore(s => s.advancedCommandsUnlocked);
   const scriptHealthy = scriptHealth.status === 'present';
 
-  // Available top-level tabs - hide Lua + Land unless flag on
+  // Vehicle-class gating. When mavType is unknown (early connect / no link),
+  // default to copter behavior so power users on flaky links don't lose access.
+  const mavType = useConnectionStore(s => s.connectionState.mavType);
+  const vehicleClass = useMemo<TacticalVehicleClass>(
+    () => mavType === undefined ? 'copter' : mavTypeToTacticalClass(mavType),
+    [mavType],
+  );
+  const luaTabHidden = LUA_TAB_HIDDEN_CLASSES.has(vehicleClass);
+
+  // Commands the current vehicle can actually perform.
+  const supportedLuaCommands = useMemo(
+    () => LUA_COMMANDS.filter(c => c.supportedClasses.includes(vehicleClass)),
+    [vehicleClass],
+  );
+
+  // Group supported commands by category, preserving CATEGORY_ORDER.
+  const commandsByCategory = useMemo(() => {
+    const groups: Array<{ category: LuaCategory; commands: LuaCommandMeta[] }> = [];
+    for (const cat of CATEGORY_ORDER) {
+      const commands = supportedLuaCommands.filter(c => c.category === cat);
+      if (commands.length > 0) groups.push({ category: cat, commands });
+    }
+    return groups;
+  }, [supportedLuaCommands]);
+
+  // Available top-level tabs - hide Lua + Land unless flag on; also hide Lua
+  // entirely on ground/water vehicles where every command is nonsensical.
   const visibleTabs = useMemo(
-    () => advancedCommandsUnlocked ? TABS : TABS.filter(t => t.id === 'move'),
-    [advancedCommandsUnlocked],
+    () => {
+      if (!advancedCommandsUnlocked) return TABS.filter(t => t.id === 'move');
+      return luaTabHidden ? TABS.filter(t => t.id !== 'lua') : TABS;
+    },
+    [advancedCommandsUnlocked, luaTabHidden],
   );
 
   // Snap back if a now-hidden tab was active
   useEffect(() => {
     if (!visibleTabs.some(t => t.id === tabId)) setTabId('move');
   }, [visibleTabs, tabId]);
+
+  // Snap back if the active Lua command is no longer supported on this vehicle
+  // (e.g. user reconnects to a plane while watchtower was selected).
+  useEffect(() => {
+    if (tabId !== 'lua') return;
+    if (supportedLuaCommands.length === 0) return;
+    if (!supportedLuaCommands.some(c => c.id === luaCmd)) {
+      setLuaCmd(supportedLuaCommands[0]!.id);
+    }
+  }, [tabId, luaCmd, supportedLuaCommands]);
 
   const luaCmdMeta = useMemo(
     () => LUA_COMMANDS.find(c => c.id === luaCmd) ?? LUA_COMMANDS[0]!,
@@ -226,21 +289,37 @@ export const MapCommandPopup: React.FC<MapCommandPopupProps> = ({
         </div>
       )}
 
-      {/* Lua sub-command picker */}
-      {tabId === 'lua' && (
-        <div className="flex rounded overflow-hidden border border-violet-700/50 mb-2">
-          {LUA_COMMANDS.map(c => (
-            <button
-              key={c.id}
-              onClick={() => setLuaCmd(c.id)}
-              className={`flex-1 px-2 py-1 text-[10px] font-medium transition-colors ${
-                luaCmd === c.id
-                  ? 'bg-violet-700/70 text-white'
-                  : 'bg-gray-800/70 text-gray-400 hover:text-white'
-              }`}
-            >
-              {c.label}
-            </button>
+      {/* Lua sub-command picker — grouped by category so the list scales as
+          new commands are added without truncating labels. */}
+      {tabId === 'lua' && commandsByCategory.length > 0 && (
+        <div className="mb-2 space-y-1.5">
+          {commandsByCategory.map(({ category, commands }) => (
+            <div key={category} className="flex items-center gap-2">
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-violet-300/70 w-14 shrink-0">
+                {CATEGORY_LABELS[category]}
+              </span>
+              <div className="flex flex-wrap gap-1 flex-1">
+                {commands.map(c => {
+                  const Icon = c.icon;
+                  const active = luaCmd === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => setLuaCmd(c.id)}
+                      title={c.hint}
+                      className={`inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded border transition-colors ${
+                        active
+                          ? 'bg-violet-700/70 text-white border-violet-500'
+                          : 'bg-gray-800/70 text-gray-400 border-gray-700 hover:text-white hover:border-violet-700/60'
+                      }`}
+                    >
+                      <Icon className="w-3 h-3" />
+                      {c.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -248,12 +327,14 @@ export const MapCommandPopup: React.FC<MapCommandPopupProps> = ({
       {/* Hint */}
       <div className="text-[10px] text-gray-400 mb-2 leading-tight">{tabHint}</div>
 
-      {/* Coordinates + distance */}
-      <div className="font-mono text-gray-300 mb-1">
-        {lat.toFixed(6)}, {lon.toFixed(6)}
-      </div>
-      <div className="text-gray-400 mb-2">
-        Distance: <span className="text-white font-mono">{formatDistance(distanceMeters)}</span>
+      {/* Coordinates + distance — inline to save vertical space */}
+      <div className="flex items-baseline justify-between gap-2 mb-2">
+        <span className="font-mono text-[11px] text-gray-300 truncate">
+          {lat.toFixed(6)}, {lon.toFixed(6)}
+        </span>
+        <span className="text-[10px] text-gray-500 shrink-0">
+          <span className="font-mono text-gray-300">{formatDistance(distanceMeters)}</span> away
+        </span>
       </div>
 
       {/* === MOVE / ORBIT / WATCHTOWER / REVEAL / STRAFE shared: altitude === */}
@@ -387,21 +468,16 @@ export const MapCommandPopup: React.FC<MapCommandPopupProps> = ({
             )}
           </div>
           {scriptHealth.status === 'missing' && (
-            <div className="mb-2 px-2 py-1.5 rounded bg-purple-900/40 border border-purple-600/40 text-[10px] text-purple-200">
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="font-semibold text-purple-300">ArduDeck Lua script not installed</span>
-                <span className="px-1 py-0 text-[9px] font-bold tracking-wider rounded bg-rose-600/30 text-rose-300 border border-rose-600/40">
-                  EXPERIMENTAL
-                </span>
-              </div>
-              <p className="leading-tight mb-1.5">
-                Install to unlock link-resilient Orbit, Spiral, Watchtower, Climb+RTL, Reveal, and Strafe.
-              </p>
+            <div className="mb-2 px-2 py-1 rounded bg-purple-900/40 border border-purple-600/40 text-[10px] text-purple-200 flex items-center justify-between gap-2">
+              <span className="leading-tight truncate">
+                <span className="font-semibold text-purple-300">Script not installed</span>
+                <span className="text-purple-300/70"> — link-resilient mode</span>
+              </span>
               <button
                 onClick={() => setInstallModalOpen(true)}
-                className="text-[10px] underline text-purple-200 hover:text-white"
+                className="text-[10px] font-medium underline text-purple-200 hover:text-white shrink-0"
               >
-                Open installer →
+                Install →
               </button>
             </div>
           )}
@@ -435,6 +511,13 @@ export const MapCommandPopup: React.FC<MapCommandPopupProps> = ({
         >
           Cancel
         </button>
+      </div>
+
+      {/* Keyboard hint footer */}
+      <div className="mt-1.5 text-[9px] text-gray-500 text-center tracking-wide">
+        <kbd className="font-mono text-gray-400">Enter</kbd> to confirm
+        <span className="mx-1.5">·</span>
+        <kbd className="font-mono text-gray-400">Esc</kbd> to cancel
       </div>
 
       <ScriptInstallModal open={installModalOpen} onClose={() => setInstallModalOpen(false)} />

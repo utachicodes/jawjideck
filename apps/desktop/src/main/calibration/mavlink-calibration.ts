@@ -19,6 +19,7 @@ import type {
 
 const MAV_CMD_PREFLIGHT_CALIBRATION = 241;
 const MAV_CMD_ACCELCAL_VEHICLE_POS = 42429;
+const MAV_CMD_FIXED_MAG_CAL_YAW = 42006;
 
 // ACCELCAL_VEHICLE_POS enum values (ArduPilot)
 const ACCELCAL_POS = {
@@ -101,6 +102,14 @@ let sixPointFallbackTimerId: ReturnType<typeof setTimeout> | null = null;
 let oneShotTimeoutId: ReturnType<typeof setTimeout> | null = null;
 const ONE_SHOT_TIMEOUT_MS = 15000;
 
+// Pending ACK resolver for FIXED_MAG_CAL_YAW (42006). This command is fully
+// synchronous on the FC: AP samples the current mag readings using the
+// supplied yaw + GPS-derived earth-field vector, writes COMPASS_OFS_*, and
+// returns COMMAND_ACK with ACCEPTED on success or FAILED if no GPS lock.
+let pendingFixedMagCalYawResolver: ((result: { success: boolean; error?: string }) => void) | null = null;
+let pendingFixedMagCalYawTimeoutId: ReturnType<typeof setTimeout> | null = null;
+const FIXED_MAG_CAL_YAW_TIMEOUT_MS = 10000;
+
 // =============================================================================
 // Init
 // =============================================================================
@@ -120,6 +129,52 @@ export function cleanupMavlinkCalibration(): void {
 
 export function isMavlinkCalibrationActive(): boolean {
   return activeCalType !== null;
+}
+
+/**
+ * Large Vehicle MagCal — sends MAV_CMD_FIXED_MAG_CAL_YAW (42006).
+ *
+ * For aircraft too large to rotate through all axes for a normal compass
+ * calibration. The user supplies the current true heading (degrees) and
+ * GPS lock provides the local earth-field vector. AP solves for the offsets
+ * in a single shot and writes COMPASS_OFS_*. Reboot recommended afterward.
+ */
+export async function sendFixedMagCalYaw(headingDeg: number): Promise<{ success: boolean; error?: string }> {
+  if (!deps) return { success: false, error: 'MAVLink calibration not initialized' };
+  if (pendingFixedMagCalYawResolver) {
+    return { success: false, error: 'Large Vehicle MagCal already in progress' };
+  }
+
+  // Normalize heading to [0, 360)
+  let yaw = headingDeg % 360;
+  if (yaw < 0) yaw += 360;
+
+  deps.sendLog('info', `Starting Large Vehicle MagCal (FIXED_MAG_CAL_YAW yaw=${yaw}°)`);
+
+  const sent = await deps.sendCommandLong(MAV_CMD_FIXED_MAG_CAL_YAW, {
+    param1: yaw,    // yaw in degrees (true, not magnetic)
+    param2: 0,      // compassmask (0 = all compasses)
+    param3: 0,      // latitude (0 = use GPS)
+    param4: 0,      // longitude (0 = use GPS)
+    param5: 0, param6: 0, param7: 0,
+  });
+
+  if (!sent) {
+    return { success: false, error: 'Failed to send command - ensure FC is connected' };
+  }
+
+  return new Promise((resolve) => {
+    pendingFixedMagCalYawResolver = resolve;
+    pendingFixedMagCalYawTimeoutId = setTimeout(() => {
+      const r = pendingFixedMagCalYawResolver;
+      pendingFixedMagCalYawResolver = null;
+      pendingFixedMagCalYawTimeoutId = null;
+      if (r) {
+        deps?.sendLog('error', 'Large Vehicle MagCal timed out — no COMMAND_ACK from FC');
+        r({ success: false, error: 'Flight controller did not respond. Check the connection and try again.' });
+      }
+    }, FIXED_MAG_CAL_YAW_TIMEOUT_MS);
+  });
 }
 
 export async function startMavlinkCalibration(type: CalibrationTypeId): Promise<{ success: boolean; error?: string }> {
@@ -363,7 +418,33 @@ export function handleCalibrationStatusText(text: string, severity: number): voi
 // =============================================================================
 
 export function handleCalibrationCommandAck(command: number, result: number): void {
-  if (!deps || !activeCalType) return;
+  if (!deps) return;
+
+  // FIXED_MAG_CAL_YAW runs independently of the activeCalType state machine,
+  // so handle it before the activeCalType guard.
+  if (command === MAV_CMD_FIXED_MAG_CAL_YAW && pendingFixedMagCalYawResolver) {
+    const resolver = pendingFixedMagCalYawResolver;
+    pendingFixedMagCalYawResolver = null;
+    if (pendingFixedMagCalYawTimeoutId) {
+      clearTimeout(pendingFixedMagCalYawTimeoutId);
+      pendingFixedMagCalYawTimeoutId = null;
+    }
+    if (result === 0) {
+      deps.sendLog('info', 'Large Vehicle MagCal accepted — compass offsets written. Reboot recommended.');
+      resolver({ success: true });
+    } else {
+      const names = ['ACCEPTED', 'TEMPORARILY_REJECTED', 'DENIED', 'UNSUPPORTED', 'FAILED', 'IN_PROGRESS'];
+      const name = names[result] ?? `UNKNOWN(${result})`;
+      const userError = result === 4
+        ? 'Calibration failed. Ensure GPS has 3D lock and the heading is correct, then try again.'
+        : `Flight controller rejected command: ${name}`;
+      deps.sendLog('error', `Large Vehicle MagCal rejected: ${name}`);
+      resolver({ success: false, error: userError });
+    }
+    return;
+  }
+
+  if (!activeCalType) return;
 
   if (command === MAV_CMD_PREFLIGHT_CALIBRATION) {
     if (result === 0) {

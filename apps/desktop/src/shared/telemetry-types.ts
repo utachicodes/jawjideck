@@ -219,19 +219,69 @@ export const GPS_FIX_TYPES: Record<number, string> = {
   6: 'RTK Fixed',
 };
 
-// ArduPilot vehicle class derived from MAV_TYPE
-export type ArduPilotVehicleClass = 'copter' | 'plane' | 'rover' | 'sub';
+// ArduPilot vehicle class derived from MAV_TYPE. VTOL is split from plane
+// because the destructive commands (takeoff, land, RTL) take a different
+// path: plane uses TAKEOFF mode + ground roll, VTOL must use Q-modes /
+// NAV_VTOL_TAKEOFF or it will physically crash a tail-standing aircraft.
+export type ArduPilotVehicleClass = 'copter' | 'plane' | 'vtol' | 'rover' | 'sub';
 
-export function getVehicleClass(mavType: number | undefined): ArduPilotVehicleClass {
+/**
+ * Optional hints used to upgrade the inferred class beyond what raw MAV_TYPE
+ * reports. ArduPlane reports MAV_TYPE=1 (FIXED_WING) on first heartbeat after
+ * a wipe even when Q_ENABLE is set; the FCU only re-evaluates type after a
+ * reboot. So MAV_TYPE alone is unsafe for gating the takeoff command — a
+ * tailsitter pilot would get the fixed-wing TAKEOFF path and tumble.
+ */
+export interface VehicleClassHints {
+  /** Current value of `Q_ENABLE` from the parameter cache, when known. */
+  qEnable?: number;
+  /** Running SITL frame string when an ArduPilot SITL session is active. */
+  sitlFrame?: string;
+}
+
+/** Frame strings that imply the vehicle takes off/lands as a VTOL/quadplane. */
+const VTOL_SITL_FRAMES: ReadonlySet<string> = new Set([
+  'plane-tailsitter',
+  'quadplane',
+  'quadplane-tilt',
+  'quadplane-tilthvec',
+  'quadplane-tilttri',
+  'quadplane-tilttrivec',
+  'quadplane-tri',
+  'quadplane-cl84',
+  'quadplane-ice',
+  'quadplane-can',
+  'quadplane-copter_tailsitter',
+  'firefly',
+]);
+
+export function getVehicleClass(
+  mavType: number | undefined,
+  hints: VehicleClassHints = {},
+): ArduPilotVehicleClass {
+  // Strongest VTOL signal: a running SITL frame we know is VTOL. We picked
+  // it ourselves so it cannot be wrong.
+  if (hints.sitlFrame && VTOL_SITL_FRAMES.has(hints.sitlFrame)) return 'vtol';
+  // Q_ENABLE > 0 means the FCU is actively running quadplane code paths,
+  // regardless of whether MAV_TYPE has caught up. Trust it over MAV_TYPE.
+  if (hints.qEnable !== undefined && hints.qEnable > 0) return 'vtol';
   if (mavType === undefined) return 'copter';
-  // Fixed wing and VTOL
-  if (mavType === 1 || (mavType >= 19 && mavType <= 25)) return 'plane';
+  // VTOL family: dual-rotor, quadrotor, tiltrotor, fixedrotor, tailsitter,
+  // tiltwing, reserved. These run ArduPlane firmware but with quad lift.
+  if (mavType >= 19 && mavType <= 25) return 'vtol';
+  // Pure fixed wing
+  if (mavType === 1) return 'plane';
   // Ground rover and boat
   if (mavType === 10 || mavType === 11) return 'rover';
   // Submarine
   if (mavType === 12) return 'sub';
   // Quad, hex, octa, tri, heli, etc.
   return 'copter';
+}
+
+/** Convenience: true when the running vehicle uses VTOL/Q-modes for takeoff/land. */
+export function isVtolClass(c: ArduPilotVehicleClass): boolean {
+  return c === 'vtol';
 }
 
 // Per-vehicle capability matrix. Single source of truth for what UI actions
@@ -250,8 +300,13 @@ export interface VehicleCapabilities {
   rtlAutoLands: boolean;
   takeoff: {
     supported: boolean;
-    /** 'command' = arm+guided+NAV_TAKEOFF (copter). 'mode' = switch to dedicated mode (plane). */
+    /** 'command' = arm+guided+NAV_TAKEOFF (copter / VTOL). 'mode' = switch
+     *  to dedicated TAKEOFF mode (plane). */
     method: 'command' | 'mode';
+    /** For 'command' method: which MAV_CMD to send.
+     *  22 = NAV_TAKEOFF (copter), 84 = NAV_VTOL_TAKEOFF (VTOL/tailsitter).
+     *  Defaults to 22 when omitted. */
+    commandId?: number;
     /** For 'mode' method: which mode to switch to. */
     modeNum?: number;
     /** For 'mode' method: which param to set with target altitude. */
@@ -291,6 +346,24 @@ export const VEHICLE_CAPABILITIES: Record<ArduPilotVehicleClass, VehicleCapabili
       modeNum: null,
       label: 'Land',
       disabledReason: 'Fixed-wing landing requires a mission with NAV_LAND waypoint (or AUTOLAND mode + DO_LAND_START)',
+    },
+  },
+  vtol: {
+    // VTOL/quadplane/tailsitter: ArduPlane firmware, but takeoff/land happen
+    // in Q-modes. Sending plain plane TAKEOFF (mode 13) to a tail-standing
+    // aircraft pitches it forward into the ground.
+    stabilizeModeNum: 17, // QSTABILIZE
+    manualModeNum: 0,     // MANUAL still works for forward-flight tuning
+    guidedModeNum: 15,    // shared with plane; the FCU routes to Q-Guided when in VTOL mode
+    rtlModeNum: 21,       // QRTL — flies back, lands vertically at home
+    rtlAutoLands: true,
+    // GUIDED + MAV_CMD_NAV_VTOL_TAKEOFF: vehicle hovers up to alt, holds
+    // position. Subsequent forward transition is the pilot's call.
+    takeoff: { supported: true, method: 'command', commandId: 84 },
+    land: {
+      supported: true,
+      modeNum: 20, // QLAND — vertical descent, auto-disarm at touchdown
+      label: 'QLand',
     },
   },
   rover: {
@@ -342,6 +415,22 @@ export const ARDUPILOT_COMMON_MODES: Record<ArduPilotVehicleClass, { name: strin
     { name: 'Guided', modeNum: 15 },
     { name: 'RTL', modeNum: 11 },
     { name: 'Circle', modeNum: 1 },
+  ],
+  // VTOL: lead with Q-modes (priority for hover/takeoff/land), keep MANUAL +
+  // FBWA + AUTO/GUIDED for forward-flight, and surface RTL/QRTL last. MANUAL
+  // is the always-works escape hatch — without it, a tailsitter pilot has no
+  // way out of a Q-mode the FCU is rejecting (e.g. when Q_ENABLE didn't
+  // apply yet or pre-arm is blocking everything).
+  vtol: [
+    { name: 'QStabilize', modeNum: 17 },
+    { name: 'QHover',     modeNum: 18 },
+    { name: 'QLoiter',    modeNum: 19 },
+    { name: 'QLand',      modeNum: 20 },
+    { name: 'QRTL',       modeNum: 21 },
+    { name: 'Manual',     modeNum: 0  },
+    { name: 'FBWA',       modeNum: 5  },
+    { name: 'Auto',       modeNum: 10 },
+    { name: 'Guided',     modeNum: 15 },
   ],
   rover: [
     { name: 'Manual', modeNum: 0 },

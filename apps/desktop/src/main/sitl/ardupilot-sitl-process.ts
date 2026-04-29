@@ -173,6 +173,13 @@ function generateDefaultParams(vehicleType: ArduPilotVehicleType, model: string)
     lines.push('TKOFF_THR_MAX   100');
     lines.push('TKOFF_THR_MINACC 0');
     lines.push('TKOFF_THR_MINSPD 0');
+
+    // VTOL/quadplane/tailsitter only: enable Q-mode operations inside GUIDED.
+    // Without this, NAV_VTOL_TAKEOFF in GUIDED is silently ignored — vehicle
+    // stays armed at 0% throttle and never lifts. The param is harmless on
+    // pure-plane builds where Q_ENABLE=0 (FCU just doesn't register it).
+    //   https://ardupilot.org/plane/docs/parameters.html#q-guided-mode
+    lines.push('Q_GUIDED_MODE   1');
   }
 
   // Sim-calmness for every vehicle (no wind / plausible battery).
@@ -306,13 +313,34 @@ class ArduPilotSitlProcessManager {
         }
       }
 
-      // Generate defaults file with essential params (FRAME_CLASS etc.)
+      // Build the --defaults stack: upstream autotest params first (so
+      // frame-specific defaults like Q_ENABLE / Q_FRAME_CLASS land), then
+      // our ArduDeck overlay on top so user tweaks (sim wind, batt, terrain)
+      // win on conflicts. ArduPilot loads `--defaults a,b,c` left-to-right
+      // with later files overriding earlier — same semantics Mission Planner
+      // relies on for its identity.parm overlay.
       const model = config.model || DEFAULT_MODELS[config.vehicleType];
-      const defaultParams = generateDefaultParams(config.vehicleType, model);
-      if (defaultParams && !config.defaultsFile) {
-        const defaultsPath = path.join(path.dirname(binaryPath), 'ardudeck-defaults.parm');
-        await writeFile(defaultsPath, defaultParams, 'utf-8');
-        config = { ...config, defaultsFile: defaultsPath };
+      const defaultsStack: string[] = [];
+
+      if (!config.defaultsFile) {
+        try {
+          const { resolveDefaultsFile } = await import('./frame-config.js');
+          const upstream = await resolveDefaultsFile(config.vehicleType, model);
+          if (upstream) defaultsStack.push(upstream);
+        } catch (err) {
+          console.warn('[SITL] upstream defaults resolve failed, falling back to overlay only:', err);
+        }
+      }
+
+      const overlay = generateDefaultParams(config.vehicleType, model);
+      if (overlay && !config.defaultsFile) {
+        const overlayPath = path.join(path.dirname(binaryPath), 'ardudeck-defaults.parm');
+        await writeFile(overlayPath, overlay, 'utf-8');
+        defaultsStack.push(overlayPath);
+      }
+
+      if (defaultsStack.length > 0 && !config.defaultsFile) {
+        config = { ...config, defaultsFile: defaultsStack.join(',') };
       }
 
       this._currentConfig = config;
@@ -337,6 +365,13 @@ class ArduPilotSitlProcessManager {
         shell: process.platform === 'win32',
       });
       this._isRunning = true;
+      const launchedAt = Date.now();
+      // Snapshot the active config now so the exit handler can attribute the
+      // crash to the (vehicle, model, track) tuple even after _currentConfig
+      // has been cleared.
+      const launchedVehicleType = config.vehicleType;
+      const launchedModel = config.model || DEFAULT_MODELS[config.vehicleType];
+      const launchedTrack = config.releaseTrack;
 
       this.process.stdout?.on('data', (data: Buffer) => {
         this.sendToRenderer(IPC_CHANNELS.ARDUPILOT_SITL_STDOUT, data.toString());
@@ -356,7 +391,30 @@ class ArduPilotSitlProcessManager {
         this._isRunning = false;
         this.process = null;
         this._currentConfig = null;
-        this.sendToRenderer(IPC_CHANNELS.ARDUPILOT_SITL_EXIT, { code, signal });
+        // Early-crash detection: an exit within the first few seconds with
+        // a fatal signal (or a non-zero code, since some crashes don't
+        // surface a signal on Windows) almost always means the binary can't
+        // run this physics frame on this platform. Surface that to the
+        // renderer along with the (vehicle, model, track) tuple so the UI
+        // can offer a one-click switch to the dev track binary, which is
+        // rebuilt nightly and ships the platform-specific fixes that haven't
+        // landed in `stable` yet.
+        const uptimeMs = Date.now() - launchedAt;
+        const fatalSignals = new Set(['SIGILL', 'SIGSEGV', 'SIGBUS', 'SIGABRT', 'SIGFPE']);
+        const wasEarlyCrash =
+          uptimeMs < 5000 &&
+          (signal !== null
+            ? fatalSignals.has(signal)
+            : code !== null && code !== 0);
+        this.sendToRenderer(IPC_CHANNELS.ARDUPILOT_SITL_EXIT, {
+          code,
+          signal,
+          uptimeMs,
+          wasEarlyCrash,
+          vehicleType: launchedVehicleType,
+          model: launchedModel,
+          releaseTrack: launchedTrack,
+        });
       });
 
       return { success: true, command: commandString };

@@ -16,6 +16,8 @@ import type {
   ArduPilotReleaseTrack,
   ArduPilotSimulatorType,
   VirtualRCState,
+  ArduPilotFrameCatalog,
+  ArduPilotFrameInfo,
 } from '../../shared/ipc-channels.js';
 
 // =============================================================================
@@ -66,12 +68,60 @@ export interface ArduPilotSitlStore {
   // Errors
   lastError: string | null;
 
+  // Frame catalog (fetched from upstream vehicleinfo.py via IPC)
+  framesLoading: boolean;
+  framesCatalog: ArduPilotFrameCatalog | null;
+
+  // Crash recovery surfaces in two stages:
+  //   1. First-strike: stable crashed during init → offer auto-switch to dev.
+  //   2. Second-strike: the upgraded track ALSO crashed → not a track issue,
+  //      this frame is broken on this platform regardless. Offer to switch
+  //      to a known-good alternative frame for the same vehicle type.
+  // We never silently swallow an early crash, even after auto-upgrade.
+  crashRecovery:
+    | {
+        kind: 'switch-track';
+        vehicleType: ArduPilotVehicleType;
+        model: string;
+        failedTrack: ArduPilotReleaseTrack;
+        suggestedTrack: ArduPilotReleaseTrack;
+        uptimeMs: number;
+        signal: string | null;
+      }
+    | {
+        kind: 'switch-frame';
+        vehicleType: ArduPilotVehicleType;
+        failedModel: string;
+        failedTrack: ArduPilotReleaseTrack;
+        suggestedModel: string;
+        uptimeMs: number;
+        signal: string | null;
+      }
+    | null;
+  /** Frames we've already auto-upgraded so we don't loop on repeat failures. */
+  autoUpgradedFrames: Record<string, ArduPilotReleaseTrack>;
+  /**
+   * Per-frame list of tracks that early-crashed. Lets the recovery flow tell
+   * "we haven't tried dev yet" apart from "every track we have crashes" so
+   * the banner suggests a track switch only when one might actually help,
+   * and falls back to suggesting a different frame once all tracks are
+   * exhausted. Persists across sessions.
+   * Key: `${vehicleType}:${model}` — value: tracks that have early-crashed.
+   */
+  crashedFrameTracks: Record<string, ArduPilotReleaseTrack[]>;
+
   // Actions
   start: () => Promise<boolean>;
   stop: () => Promise<boolean>;
   download: () => Promise<boolean>;
   checkBinary: () => Promise<void>;
   checkPlatform: () => Promise<void>;
+  loadFrames: () => Promise<void>;
+  refreshFrames: () => Promise<void>;
+  /** Accept the suggested track switch + auto-restart SITL with same frame. */
+  acceptCrashRecovery: () => Promise<void>;
+  /** Dismiss the recovery prompt without acting on it. */
+  dismissCrashRecovery: () => void;
   appendOutput: (text: string, isError?: boolean) => void;
   clearOutput: () => void;
 
@@ -199,6 +249,13 @@ export const useArduPilotSitlStore = create<ArduPilotSitlStore>()(
 
       lastError: null,
 
+      framesLoading: false,
+      framesCatalog: null,
+
+      crashRecovery: null,
+      autoUpgradedFrames: {},
+      crashedFrameTracks: {},
+
       // Start SITL
       start: async () => {
         const {
@@ -206,14 +263,57 @@ export const useArduPilotSitlStore = create<ArduPilotSitlStore>()(
           isStarting,
           vehicleType,
           model,
-          releaseTrack,
           homeLocation,
           speedup,
           wipeOnStart,
           simulator,
           simAddress,
           appendOutput,
+          autoUpgradedFrames,
+          crashedFrameTracks,
         } = get();
+        // Honor any persisted auto-upgrade for this (vehicle, frame). If the
+        // last run on `stable` early-crashed and the user accepted the
+        // upgrade, we silently use `dev` from now on — no crash flow this
+        // session.
+        const frameKey = `${vehicleType}:${model}`;
+        const upgraded = autoUpgradedFrames[frameKey];
+        const releaseTrack = upgraded ?? get().releaseTrack;
+        if (upgraded && upgraded !== get().releaseTrack) {
+          appendOutput(`Using ${upgraded} track for "${model}" (auto-upgraded after a previous crash on ${get().releaseTrack}).\n`);
+          set({ releaseTrack: upgraded });
+        }
+
+        // Pre-flight: if every track for this frame is already in the
+        // crashed-ledger, don't bother launching — surface the second-strike
+        // banner immediately so the user sees a frame fallback, not another
+        // SIGILL log.
+        const ALL_TRACKS_PRE: ArduPilotReleaseTrack[] = ['stable', 'dev'];
+        const tried = crashedFrameTracks[frameKey] ?? [];
+        if (tried.length > 0 && ALL_TRACKS_PRE.every(t => tried.includes(t))) {
+          const safeFallback: Record<ArduPilotVehicleType, string> = {
+            copter: 'quad',
+            plane:  'plane',
+            rover:  'rover',
+            sub:    'vectored',
+          };
+          const suggested = safeFallback[vehicleType];
+          if (suggested && suggested !== model) {
+            appendOutput(`\n"${model}" has crashed on every available track for this platform — skipping launch.\n`);
+            set({
+              crashRecovery: {
+                kind: 'switch-frame',
+                vehicleType,
+                failedModel: model,
+                failedTrack: releaseTrack,
+                suggestedModel: suggested,
+                uptimeMs: 0,
+                signal: null,
+              },
+            });
+            return false;
+          }
+        }
 
         if (isRunning || isStarting) {
           return false;
@@ -339,6 +439,87 @@ export const useArduPilotSitlStore = create<ArduPilotSitlStore>()(
         }
       },
 
+      // Load the SITL frame catalog from the main process. Cheap when
+      // already cached upstream — prefer this over `refreshFrames` for
+      // mount-time fetches so users on metered connections aren't hammered.
+      loadFrames: async () => {
+        if (get().framesLoading) return;
+        set({ framesLoading: true });
+        try {
+          const result = await window.electronAPI.ardupilotSitlListFrames();
+          set({ framesCatalog: result, framesLoading: false });
+        } catch (err) {
+          // Don't surface an error toast — the dropdown will fall back to
+          // the small hardcoded list and keep working offline.
+          console.warn('[SITL] frames load failed:', err);
+          set({ framesLoading: false });
+        }
+      },
+
+      // Force-refresh from upstream. Used by the Refresh button.
+      refreshFrames: async () => {
+        if (get().framesLoading) return;
+        set({ framesLoading: true });
+        try {
+          const result = await window.electronAPI.ardupilotSitlRefreshFrames();
+          set({ framesCatalog: result, framesLoading: false });
+        } catch (err) {
+          console.warn('[SITL] frames refresh failed:', err);
+          set({ framesLoading: false });
+        }
+      },
+
+      // Crash recovery dispatcher. Two distinct flows depending on whether
+      // we're switching tracks (first strike) or switching frames (second
+      // strike — the upgraded track also failed so the frame itself is
+      // broken on this platform).
+      acceptCrashRecovery: async () => {
+        const recovery = get().crashRecovery;
+        if (!recovery) return;
+
+        if (recovery.kind === 'switch-track') {
+          const frameKey = `${recovery.vehicleType}:${recovery.model}`;
+          set({
+            releaseTrack: recovery.suggestedTrack,
+            autoUpgradedFrames: { ...get().autoUpgradedFrames, [frameKey]: recovery.suggestedTrack },
+            crashRecovery: null,
+            lastError: null,
+          });
+          get().appendOutput(
+            `\n--- Auto-switching to ${recovery.suggestedTrack} track for "${recovery.model}" (last run on ${recovery.failedTrack} crashed in ${recovery.uptimeMs}ms${recovery.signal ? `, ${recovery.signal}` : ''}) ---\n`,
+          );
+          const info = await window.electronAPI.ardupilotSitlCheckBinary(recovery.vehicleType, recovery.suggestedTrack);
+          set({ binaryInfo: info });
+          if (!info.exists) {
+            get().appendOutput(`Downloading ${recovery.suggestedTrack} ${recovery.vehicleType}…\n`);
+            set({ isDownloading: true });
+            await window.electronAPI.ardupilotSitlDownload(recovery.vehicleType, recovery.suggestedTrack);
+            const after = await window.electronAPI.ardupilotSitlCheckBinary(recovery.vehicleType, recovery.suggestedTrack);
+            set({ binaryInfo: after, isDownloading: false });
+            if (!after.exists) {
+              set({ lastError: `Failed to download ${recovery.suggestedTrack} binary` });
+              return;
+            }
+          }
+          await get().start();
+        } else {
+          // Second strike — switch to the safe fallback frame instead.
+          set({
+            model: recovery.suggestedModel,
+            crashRecovery: null,
+            lastError: null,
+          });
+          get().appendOutput(
+            `\n--- Falling back to "${recovery.suggestedModel}" — "${recovery.failedModel}" crashed on both stable and dev tracks for this platform ---\n`,
+          );
+          await get().start();
+        }
+      },
+
+      dismissCrashRecovery: () => {
+        set({ crashRecovery: null });
+      },
+
       // Append to output log
       appendOutput: (text: string, _isError = false) => {
         set((state) => {
@@ -374,7 +555,15 @@ export const useArduPilotSitlStore = create<ArduPilotSitlStore>()(
       },
       setModel: (model) => set({ model }),
       setReleaseTrack: (track) => {
-        set({ releaseTrack: track, binaryInfo: null });
+        // Explicit user choice overrides any prior auto-upgrade. Without
+        // this, clicking "Stable" while a frame had been auto-bumped to
+        // "dev" silently snaps back to dev on the next Start — which is
+        // exactly the bug that surfaced in production.
+        const { vehicleType, model, autoUpgradedFrames } = get();
+        const frameKey = `${vehicleType}:${model}`;
+        const next = { ...autoUpgradedFrames };
+        delete next[frameKey];
+        set({ releaseTrack: track, binaryInfo: null, autoUpgradedFrames: next });
         get().checkBinary();
       },
       setHomeLocation: (loc) => set({ homeLocation: loc }),
@@ -444,6 +633,65 @@ export const useArduPilotSitlStore = create<ArduPilotSitlStore>()(
           } else if (data.signal) {
             appendOutput(`\nSITL killed by signal ${data.signal}\n`);
           }
+          // Early-crash recovery — record the (frame, track) crash, then
+          // decide what to suggest based on the per-frame ledger:
+          //  • untried track exists  → 'switch-track' banner, offer it
+          //  • all tracks exhausted  → 'switch-frame' banner, offer the
+          //    safe-default frame for this vehicle (frame is genuinely
+          //    broken on this platform — likely upstream physics bug).
+          if (
+            data.wasEarlyCrash &&
+            data.vehicleType !== undefined &&
+            data.model !== undefined &&
+            data.releaseTrack !== undefined
+          ) {
+            const frameKey = `${data.vehicleType}:${data.model}`;
+            const prior = get().crashedFrameTracks[frameKey] ?? [];
+            const tracks = prior.includes(data.releaseTrack)
+              ? prior
+              : [...prior, data.releaseTrack];
+            set({
+              crashedFrameTracks: { ...get().crashedFrameTracks, [frameKey]: tracks },
+            });
+
+            const ALL_TRACKS: ArduPilotReleaseTrack[] = ['stable', 'dev'];
+            const untried = ALL_TRACKS.find(t => !tracks.includes(t));
+
+            if (untried) {
+              set({
+                crashRecovery: {
+                  kind: 'switch-track',
+                  vehicleType: data.vehicleType,
+                  model: data.model,
+                  failedTrack: data.releaseTrack,
+                  suggestedTrack: untried,
+                  uptimeMs: data.uptimeMs ?? 0,
+                  signal: data.signal,
+                },
+              });
+            } else {
+              const safeFallback: Record<typeof data.vehicleType, string> = {
+                copter: 'quad',
+                plane:  'plane',
+                rover:  'rover',
+                sub:    'vectored',
+              };
+              const suggested = safeFallback[data.vehicleType];
+              if (suggested && suggested !== data.model) {
+                set({
+                  crashRecovery: {
+                    kind: 'switch-frame',
+                    vehicleType: data.vehicleType,
+                    failedModel: data.model,
+                    failedTrack: data.releaseTrack,
+                    suggestedModel: suggested,
+                    uptimeMs: data.uptimeMs ?? 0,
+                    signal: data.signal,
+                  },
+                });
+              }
+            }
+          }
         });
 
         // Listen for download progress
@@ -508,6 +756,13 @@ export const useArduPilotSitlStore = create<ArduPilotSitlStore>()(
         wipeOnStart: state.wipeOnStart,
         simulator: state.simulator,
         simAddress: state.simAddress,
+        // Remember auto-upgrades so a frame that crashes on stable goes
+        // straight to dev on subsequent runs without the user seeing it.
+        autoUpgradedFrames: state.autoUpgradedFrames,
+        // Persist the per-frame crash ledger too — without it, restarting
+        // the app would re-offer a track we already know crashes for the
+        // selected frame.
+        crashedFrameTracks: state.crashedFrameTracks,
       }),
     }
   )

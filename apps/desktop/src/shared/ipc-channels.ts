@@ -21,6 +21,7 @@ export const IPC_CHANNELS = {
   MAVLINK_ARM_DISARM: 'mavlink:arm-disarm',
   MAVLINK_SET_MODE: 'mavlink:set-mode',
   MAVLINK_COMMAND_TAKEOFF: 'mavlink:command-takeoff',
+  MAVLINK_COMMAND_VTOL_TAKEOFF: 'mavlink:command-vtol-takeoff',
   MAVLINK_GOTO: 'mavlink:goto',
   MAVLINK_ORBIT: 'mavlink:orbit',
   MAVLINK_ORBIT_STOP: 'mavlink:orbit-stop',
@@ -363,6 +364,8 @@ export const IPC_CHANNELS = {
   ARDUPILOT_SITL_RC_SEND: 'ardupilot-sitl:rc-send',
   ARDUPILOT_SITL_RC_START: 'ardupilot-sitl:rc-start',
   ARDUPILOT_SITL_RC_STOP: 'ardupilot-sitl:rc-stop',
+  ARDUPILOT_SITL_LIST_FRAMES: 'ardupilot-sitl:list-frames',
+  ARDUPILOT_SITL_REFRESH_FRAMES: 'ardupilot-sitl:refresh-frames',
 
   // Visual Simulators (FlightGear, X-Plane)
   SIMULATOR_DETECT: 'simulator:detect',
@@ -401,6 +404,7 @@ export const IPC_CHANNELS = {
   CALIBRATION_CONFIRM_POSITION: 'calibration:confirm-position',
   CALIBRATION_CANCEL: 'calibration:cancel',
   CALIBRATION_SAVE_PERSISTENT: 'calibration:save-persistent', // Save to bootloader persistent storage (INAV only)
+  CALIBRATION_LARGE_VEHICLE_MAGCAL: 'calibration:large-vehicle-magcal', // ArduPilot MAV_CMD_FIXED_MAG_CAL_YAW (42006)
   CALIBRATION_PROGRESS: 'calibration:progress', // Event from main
   CALIBRATION_COMPLETE: 'calibration:complete', // Event from main
 
@@ -1089,11 +1093,19 @@ export interface ArduPilotSitlStatus {
 }
 
 /**
- * ArduPilot SITL exit data
+ * ArduPilot SITL exit data. `wasEarlyCrash` lets the renderer offer a
+ * one-click "switch to dev track and retry" recovery without re-running
+ * heuristics — main process knows when the process died unnaturally
+ * during init.
  */
 export interface ArduPilotSitlExitData {
   code: number | null;
   signal: string | null;
+  uptimeMs?: number;
+  wasEarlyCrash?: boolean;
+  vehicleType?: ArduPilotVehicleType;
+  model?: string;
+  releaseTrack?: ArduPilotReleaseTrack;
 }
 
 /**
@@ -1119,6 +1131,40 @@ export interface ArduPilotSitlBinaryInfo {
   path?: string;
   version?: string;
   downloadedAt?: string;
+}
+
+/**
+ * UI grouping for the SITL frame picker. Mirrors the categories the main
+ * process derives from frame names — kept as a string union so adding new
+ * groupings doesn't require a coordinated renderer change.
+ */
+export type ArduPilotFrameCategory =
+  | 'Multirotor' | 'Helicopter' | 'Plane' | 'Quadplane'
+  | 'Tailsitter' | 'Rover' | 'Boat' | 'Sub' | 'Other';
+
+/**
+ * One frame entry returned by the main process. `defaultParamFiles` lists
+ * the upstream `Tools/autotest/`-relative paths that will be stacked into
+ * the binary's `--defaults` arg at launch time.
+ */
+export interface ArduPilotFrameInfo {
+  value: string;
+  label: string;
+  vehicleType: ArduPilotVehicleType;
+  category: ArduPilotFrameCategory;
+  defaultParamFiles: string[];
+}
+
+/**
+ * Result of listing frames. `source` tells the UI whether the data is fresh
+ * from upstream, served from disk cache, or a hardcoded fallback when the
+ * network is unreachable on first run.
+ */
+export interface ArduPilotFrameCatalog {
+  frames: ArduPilotFrameInfo[];
+  source: 'fresh' | 'cached' | 'fallback';
+  fetchedAt?: string;
+  error?: string;
 }
 
 // =============================================================================

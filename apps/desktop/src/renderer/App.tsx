@@ -37,6 +37,9 @@ import { useCompanionStore } from './stores/companion-store';
 import { useMessagesStore } from './stores/messages-store';
 import { useSigningStore } from './stores/signing-store';
 import { useBoardProfileAssociation } from './hooks/useBoardProfileAssociation';
+import { SitlAutoApplyWatcher } from './components/settings/vehicle-profile/SitlAutoApplyWatcher';
+import { ProfileApplyOverlay } from './components/settings/vehicle-profile/ProfileApplyOverlay';
+import { ParameterCompareModalRoot } from './components/parameters/ParameterCompareModalRoot';
 import type { ElectronAPI } from '../main/preload';
 import logoImage from './assets/logo.png';
 
@@ -743,6 +746,9 @@ function App() {
     <ModuleRuntime>
     <AppTourProvider>
     <AppShell>
+      <SitlAutoApplyWatcher />
+      <ProfileApplyOverlay />
+      <ParameterCompareModalRoot />
       <div className="flex h-full">
         {/* Navigation Rail */}
         <NavigationRail onViewChange={handleViewChange} />

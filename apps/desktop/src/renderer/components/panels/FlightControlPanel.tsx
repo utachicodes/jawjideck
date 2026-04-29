@@ -13,10 +13,13 @@ import { useFlightControlStore } from '../../stores/flight-control-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useMessagesStore } from '../../stores/messages-store';
 import { useMissionStore } from '../../stores/mission-store';
+import { useParameterStore } from '../../stores/parameter-store';
+import { useArduPilotSitlStore } from '../../stores/ardupilot-sitl-store';
 import { isPreArmMessage, extractPreArmReason, matchPreArmError } from '../../../shared/prearm-checks';
 import { PreArmParamFix } from '../prearm/PreArmParamFix';
 import { PanelContainer, SectionTitle } from './panel-utils';
 import { getVehicleClass, ARDUPILOT_COMMON_MODES, VEHICLE_CAPABILITIES, type ArduPilotVehicleClass } from '../../../shared/telemetry-types';
+import { executeTakeoff, presentTakeoff } from './takeoff-strategies';
 
 // =============================================================================
 // Visual Components
@@ -448,6 +451,10 @@ const COMMON_MODES = [
 const MISSION_MODES: Record<ArduPilotVehicleClass, { auto: number; pause: number; pauseLabel: string }> = {
   copter: { auto: 3,  pause: 17, pauseLabel: 'Brake'   },
   plane:  { auto: 10, pause: 12, pauseLabel: 'Loiter'  },
+  // VTOL pause = QLOITER (19): vertical position hold without giving up the
+  // mission. Q-modes auto-disarm-tolerant in a way fixed-wing LOITER isn't
+  // for tailsitters.
+  vtol:   { auto: 10, pause: 19, pauseLabel: 'QLoiter' },
   rover:  { auto: 10, pause: 4,  pauseLabel: 'Hold'    },
   sub:    { auto: 3,  pause: 16, pauseLabel: 'PosHold' },
 };
@@ -456,7 +463,16 @@ function MavlinkFlightControl() {
   const flight = useTelemetryStore((s) => s.flight);
   const messages = useMessagesStore((s) => s.messages);
   const connectionState = useConnectionStore((s) => s.connectionState);
-  const vehicleClass = getVehicleClass(connectionState.mavType);
+  // Multi-signal VTOL detection: MAV_TYPE alone is unreliable on first
+  // connect (FCU reports FIXED_WING until reboot picks up Q_ENABLE). Pulling
+  // the live Q_ENABLE param + the running SITL frame closes both gaps.
+  const qEnable = useParameterStore((s) => s.parameters.get('Q_ENABLE')?.value);
+  const sitlIsRunning = useArduPilotSitlStore((s) => s.isRunning);
+  const sitlFrame = useArduPilotSitlStore((s) => s.model);
+  const vehicleClass = getVehicleClass(connectionState.mavType, {
+    qEnable: typeof qEnable === 'number' ? qEnable : undefined,
+    sitlFrame: sitlIsRunning ? sitlFrame : undefined,
+  });
   const availableModes = ARDUPILOT_COMMON_MODES[vehicleClass];
   const capabilities = VEHICLE_CAPABILITIES[vehicleClass];
   const missionItems = useMissionStore((s) => s.missionItems);
@@ -546,7 +562,12 @@ function MavlinkFlightControl() {
     setStatusMsg(null);
     try {
       const wantArm = !flight.armed;
-      const ok = await window.electronAPI.mavlinkArmDisarm(wantArm, wantArm && forceArm);
+      // Force flag applies to BOTH arm and disarm. ArduPilot rejects normal
+      // DISARM while the FCU thinks the vehicle is airborne — even if a
+      // VTOL takeoff aborted with motors back at 0% the FCU stays in the
+      // takeoff state for a short window. Forwarding the user's Force
+      // toggle to the disarm path is the unstick.
+      const ok = await window.electronAPI.mavlinkArmDisarm(wantArm, forceArm);
       if (!ok) {
         setIsLoading(false);
         setStatusMsg({ text: 'Not connected', type: 'error' });
@@ -616,152 +637,49 @@ function MavlinkFlightControl() {
     return check(); // one last check
   }, []);
 
-  // Takeoff sequence: wait for GPS/EKF, ensure STABILIZE, arm, switch to
-  // GUIDED, takeoff. Forcing STABILIZE before arming is the canonical
-  // ArduCopter pattern - it works regardless of what mode the vehicle is
-  // sitting in (e.g. GUIDED left over from an aborted attempt would otherwise
-  // refuse to arm if EKF isn't fully happy). After arming we flip to GUIDED
-  // and fire the takeoff back-to-back to beat the ~10 s auto-disarm timer.
+  // Takeoff dispatch: each vehicle class has its own self-contained procedure
+  // in ./takeoff-strategies.ts (copter NAV_TAKEOFF, plane TAKEOFF mode, VTOL
+  // NAV_VTOL_TAKEOFF + Q_GUIDED_MODE on real hw, QHover+RC ramp on SITL).
+  // Keep this function thin — it only wires up state + IPC + UI feedback
+  // for the chosen strategy.
   const handleTakeoff = async () => {
     setShowTakeoffDialog(false);
-    if (!capabilities.takeoff.supported) {
-      setStatusMsg({ text: `${vehicleClass} does not support takeoff`, type: 'error' });
-      setTimeout(() => setStatusMsg(null), 3000);
-      return;
-    }
-    const guidedMode = capabilities.guidedModeNum;
-    const stabilizeMode = vehicleClass === 'copter' ? capabilities.stabilizeModeNum : null;
     const store = useTelemetryStore.getState;
-
-    // Step 1: Wait for GPS/EKF readiness BEFORE arming (avoid auto-disarm).
-    if (vehicleClass !== 'plane') {
-      const gpsReady = () => {
-        const g = store().gps;
-        return g.fixType >= 3 && g.hdop < 2.5;
-      };
-      if (!gpsReady()) {
-        const GPS_TIMEOUT_MS = 25000;
-        const gpsStart = Date.now();
-        let lastShown = -1;
-        const tick = setInterval(() => {
-          const waited = Math.round((Date.now() - gpsStart) / 1000);
-          if (waited !== lastShown) {
-            lastShown = waited;
-            const g = store().gps;
-            setStatusMsg({
-              text: `Waiting for GPS/EKF (${waited}s) — fix=${g.fixType} sats=${g.satellites} hdop=${g.hdop.toFixed(1)}`,
-              type: 'info',
-            });
-          }
-        }, 500);
-        const ready = await waitForState(gpsReady, GPS_TIMEOUT_MS, 250);
-        clearInterval(tick);
-        if (!ready) {
-          setStatusMsg({ text: 'GPS/EKF not ready - check sats/HDOP', type: 'error' });
-          setTimeout(() => setStatusMsg(null), 5000);
-          return;
-        }
-      }
-    }
-
-    // Step 2: Force STABILIZE before arming (Copter only). Arming in GUIDED or
-    // similar advanced modes can be rejected on the first try; STABILIZE is
-    // permissive and always lets arm through once pre-arm checks pass.
-    if (stabilizeMode !== null && store().flight.modeNum !== stabilizeMode && !store().flight.armed) {
-      setStatusMsg({ text: 'Switching to Stabilize...', type: 'info' });
-      await window.electronAPI.mavlinkSetMode(stabilizeMode);
-      const inStab = await waitForState(() => store().flight.modeNum === stabilizeMode, 2500);
-      if (!inStab) {
-        // Retry once
-        await window.electronAPI.mavlinkSetMode(stabilizeMode);
-        const retry = await waitForState(() => store().flight.modeNum === stabilizeMode, 2500);
-        if (!retry) {
-          setStatusMsg({ text: 'Failed to switch to Stabilize', type: 'error' });
-          setTimeout(() => setStatusMsg(null), 3000);
-          return;
-        }
-      }
-    }
-
-    // Step 3: Arm if not armed
-    if (!store().flight.armed) {
-      setStatusMsg({ text: 'Arming...', type: 'info' });
-      const armOk = await window.electronAPI.mavlinkArmDisarm(true, forceArm);
-      if (!armOk) {
-        setStatusMsg({ text: 'Arm failed - not connected', type: 'error' });
-        setTimeout(() => setStatusMsg(null), 3000);
-        return;
-      }
-      const armed = await waitForState(() => store().flight.armed, 5000);
-      if (!armed) {
-        setStatusMsg({ text: 'Arm timed out - check pre-arm', type: 'error' });
-        setTimeout(() => setStatusMsg(null), 3000);
-        return;
-      }
-    }
-
-    // ArduPlane does NOT support MAV_CMD_NAV_TAKEOFF in GUIDED mode — the FC
-    // replies COMMAND_ACK: FAILED. Use dedicated TAKEOFF mode (13) instead:
-    // set TKOFF_ALT to target, switch mode, plane auto-launches and climbs.
-    // Refs:
-    //   https://discuss.ardupilot.org/t/got-command-ack-nav-takeoff-failed/142133
-    //   https://github.com/ArduPilot/ardupilot/issues/6279
-    if (capabilities.takeoff.method === 'mode' && capabilities.takeoff.modeNum !== undefined) {
-      const takeoffModeNum = capabilities.takeoff.modeNum;
-      if (capabilities.takeoff.altParam) {
-        setStatusMsg({ text: `Setting ${capabilities.takeoff.altParam}=${takeoffAlt}m...`, type: 'info' });
-        try {
-          // MAV_PARAM_TYPE_REAL32 = 9
-          await window.electronAPI.setParameter(capabilities.takeoff.altParam, takeoffAlt, 9);
-        } catch {
-          // non-fatal — TAKEOFF mode will still fly using existing value
-        }
-      }
-      setStatusMsg({ text: `Switching to TAKEOFF mode...`, type: 'info' });
-      await window.electronAPI.mavlinkSetMode(takeoffModeNum);
-      const inTakeoff = await waitForState(() => store().flight.modeNum === takeoffModeNum, 2500);
-      if (!inTakeoff) {
-        setStatusMsg({ text: 'Failed to switch to TAKEOFF mode', type: 'error' });
-        setTimeout(() => setStatusMsg(null), 3000);
-        return;
-      }
+    const result = await executeTakeoff({
+      altitudeM:    takeoffAlt,
+      forceArm,
+      vehicleClass,
+      capabilities,
+      isSitl: connectionState.isSitl ?? sitlIsRunning,
+      getFlight:   () => store().flight,
+      getGps:      () => store().gps,
+      getPosition: () => store().position,
+      getParam: (id) => {
+        const p = useParameterStore.getState().parameters.get(id);
+        return p ? { value: p.value, type: p.type } : undefined;
+      },
+      api: {
+        mavlinkSetMode:     window.electronAPI.mavlinkSetMode,
+        mavlinkArmDisarm:   window.electronAPI.mavlinkArmDisarm,
+        mavlinkTakeoff:     window.electronAPI.mavlinkTakeoff,
+        mavlinkVtolTakeoff: window.electronAPI.mavlinkVtolTakeoff,
+        setParameter:       window.electronAPI.setParameter,
+        sitlRcStart:        window.electronAPI.ardupilotSitlRcStart,
+        sitlRcSend:         window.electronAPI.ardupilotSitlRcSend,
+      },
+      setStatus: setStatusMsg,
+      waitForState,
+    });
+    if (result.ok) {
       setStatusMsg({ text: `Taking off to ${takeoffAlt}m...`, type: 'success' });
-      setTimeout(() => setStatusMsg(null), 3000);
-      return;
-    }
-
-    // Step 4: Switch to Guided. EKF is ready by now so this should be quick.
-    setStatusMsg({ text: 'Switching to Guided...', type: 'info' });
-    let inGuided = store().flight.modeNum === guidedMode;
-    if (!inGuided) {
-      await window.electronAPI.mavlinkSetMode(guidedMode);
-      inGuided = await waitForState(() => store().flight.modeNum === guidedMode, 2500);
-      if (!inGuided) {
-        await window.electronAPI.mavlinkSetMode(guidedMode);
-        inGuided = await waitForState(() => store().flight.modeNum === guidedMode, 2500);
-      }
-    }
-    if (!inGuided) {
-      setStatusMsg({ text: 'Failed to switch to Guided', type: 'error' });
-      setTimeout(() => setStatusMsg(null), 3000);
-      return;
-    }
-
-    // Step 5: Verify still armed (auto-disarm window is tight but possible)
-    if (!store().flight.armed) {
-      setStatusMsg({ text: 'Auto-disarmed before takeoff - retry', type: 'error' });
-      setTimeout(() => setStatusMsg(null), 3000);
-      return;
-    }
-
-    // Step 6: Send takeoff command (copter path)
-    setStatusMsg({ text: `Taking off to ${takeoffAlt}m...`, type: 'info' });
-    const ok = await window.electronAPI.mavlinkTakeoff(takeoffAlt);
-    if (!ok) {
-      setStatusMsg({ text: 'Takeoff command failed', type: 'error' });
+    } else {
+      setStatusMsg({ text: result.reason, type: 'error' });
     }
     setTimeout(() => setStatusMsg(null), 3000);
   };
+
+  // Per-vehicle button + dialog copy comes from the strategy module.
+  const takeoffPresentation = useMemo(() => presentTakeoff(vehicleClass), [vehicleClass]);
 
   // RTL/Land sourced from the per-vehicle capability matrix.
   const rtlModeNum = capabilities.rtlModeNum;
@@ -960,16 +878,17 @@ function MavlinkFlightControl() {
               })}
             </div>
 
-            {/* Takeoff (only vehicle classes that can take off). RTL/Land are
-                already reachable through the mode grid above. */}
-            {vehicleClass !== 'rover' && vehicleClass !== 'sub' && (
+            {/* Takeoff. Label, hint and dialog copy come from the per-vehicle
+                strategy in ./takeoff-strategies.ts so the UI never describes
+                a procedure that doesn't match the dispatch path below it. */}
+            {capabilities.takeoff.supported && (
               <button
                 onClick={() => setShowTakeoffDialog(true)}
                 disabled={flight.armed}
                 className="w-full px-2 py-1.5 mb-2 text-xs font-medium rounded-lg bg-surface border border-subtle hover:bg-surface-raised hover:border-default disabled:opacity-40 disabled:cursor-not-allowed text-content transition-all"
-                title={flight.armed ? 'Already armed — click disarm first' : 'Arm, switch to GUIDED, takeoff'}
+                title={flight.armed ? 'Already armed — click disarm first' : takeoffPresentation.buttonHint}
               >
-                Takeoff…
+                {takeoffPresentation.buttonLabel}
               </button>
             )}
 
@@ -1032,29 +951,38 @@ function MavlinkFlightControl() {
                 previous `flex-1` input hogged the row and pushed Cancel off
                 the panel. */}
             {showTakeoffDialog && (
-              <div className="mb-2 p-1.5 bg-surface-raised rounded-lg border border-default flex items-center gap-1.5">
-                <span className="text-[11px] text-content-secondary shrink-0">Takeoff to</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={takeoffAlt}
-                  onChange={(e) => setTakeoffAlt(Math.max(1, Math.min(100, Number(e.target.value))))}
-                  className="w-14 px-1.5 py-1 text-sm font-mono bg-surface-input border border-subtle rounded text-content"
-                />
-                <span className="text-[11px] text-content-secondary shrink-0">m</span>
-                <button
-                  onClick={handleTakeoff}
-                  className="ml-auto px-2.5 py-1 text-[11px] font-medium bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
-                >
-                  Go
-                </button>
-                <button
-                  onClick={() => setShowTakeoffDialog(false)}
-                  className="px-1.5 py-1 text-content-secondary hover:text-content transition-colors text-sm leading-none"
-                  title="Cancel"
-                  aria-label="Cancel takeoff"
-                >✕</button>
+              <div className="mb-2 p-1.5 bg-surface-raised rounded-lg border border-default">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-content-secondary shrink-0">
+                    {takeoffPresentation.dialogPrompt}
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={takeoffAlt}
+                    onChange={(e) => setTakeoffAlt(Math.max(1, Math.min(100, Number(e.target.value))))}
+                    className="w-14 px-1.5 py-1 text-sm font-mono bg-surface-input border border-subtle rounded text-content"
+                  />
+                  <span className="text-[11px] text-content-secondary shrink-0">m</span>
+                  <button
+                    onClick={handleTakeoff}
+                    className="ml-auto px-2.5 py-1 text-[11px] font-medium bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
+                  >
+                    Go
+                  </button>
+                  <button
+                    onClick={() => setShowTakeoffDialog(false)}
+                    className="px-1.5 py-1 text-content-secondary hover:text-content transition-colors text-sm leading-none"
+                    title="Cancel"
+                    aria-label="Cancel takeoff"
+                  >✕</button>
+                </div>
+                {takeoffPresentation.dialogNote && (
+                  <p className="mt-1 text-[10px] text-content-tertiary leading-tight">
+                    {takeoffPresentation.dialogNote}
+                  </p>
+                )}
               </div>
             )}
 

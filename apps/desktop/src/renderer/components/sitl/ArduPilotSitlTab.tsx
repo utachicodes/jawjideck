@@ -4,11 +4,11 @@
  * Configuration and control panel for ArduPilot SITL simulator.
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useMemo, useRef, useCallback, useState } from 'react';
 import { useArduPilotSitlStore, ARDUPILOT_MODELS } from '../../stores/ardupilot-sitl-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useSettingsStore } from '../../stores/settings-store';
-import type { VirtualRCState, ArduPilotVehicleType, ArduPilotReleaseTrack } from '../../../shared/ipc-channels';
+import type { VirtualRCState, ArduPilotVehicleType, ArduPilotReleaseTrack, ArduPilotFrameInfo } from '../../../shared/ipc-channels';
 import { getIpLocation } from '../../utils/ip-geolocation';
 import SitlEnvironmentPanel from './SitlEnvironmentPanel';
 import SitlFailurePanel from './SitlFailurePanel';
@@ -48,6 +48,9 @@ export default function ArduPilotSitlTab() {
     lastError,
     isRcSending,
     rcState,
+    framesLoading,
+    framesCatalog,
+    crashRecovery,
     start,
     stop,
     download,
@@ -65,6 +68,10 @@ export default function ArduPilotSitlTab() {
     resetRcState,
     initListeners,
     checkStatus,
+    loadFrames,
+    refreshFrames,
+    acceptCrashRecovery,
+    dismissCrashRecovery,
   } = useArduPilotSitlStore();
 
   const { connectionState } = useConnectionStore();
@@ -109,6 +116,12 @@ export default function ArduPilotSitlTab() {
     return cleanup;
   }, [initListeners, checkStatus]);
 
+  // Fetch the upstream frame catalog once on mount. Stays cached after first
+  // load — refreshFrames is the explicit user action behind the refresh icon.
+  useEffect(() => {
+    if (!framesCatalog) loadFrames();
+  }, [framesCatalog, loadFrames]);
+
   // Check binary when vehicle type or release track changes
   useEffect(() => {
     checkBinary();
@@ -138,7 +151,64 @@ export default function ArduPilotSitlTab() {
     await setRcState({ [key]: value });
   }, [setRcState]);
 
-  const modelOptions = ARDUPILOT_MODELS[vehicleType] ?? [];
+  // Build the frame picker data. Prefer upstream-fetched frames, fall back to
+  // the small hardcoded list so the dropdown is never empty pre-fetch.
+  const upstreamForVehicle: ArduPilotFrameInfo[] = useMemo(
+    () => (framesCatalog?.frames ?? []).filter(f => f.vehicleType === vehicleType),
+    [framesCatalog, vehicleType],
+  );
+  const fallbackForVehicle = useMemo(
+    () => (ARDUPILOT_MODELS[vehicleType] ?? []).map<ArduPilotFrameInfo>(opt => ({
+      value: opt.value,
+      label: opt.label,
+      vehicleType,
+      category: 'Other',
+      defaultParamFiles: [],
+    })),
+    [vehicleType],
+  );
+  const framesForVehicle = upstreamForVehicle.length > 0 ? upstreamForVehicle : fallbackForVehicle;
+
+  // Group by category for <optgroup>; sort categories deterministically with
+  // the most "default-y" group first to match user expectations.
+  const groupedFrames = useMemo(() => {
+    const order = ['Multirotor', 'Helicopter', 'Plane', 'Quadplane', 'Tailsitter', 'Rover', 'Boat', 'Sub', 'Other'] as const;
+    const map = new Map<string, ArduPilotFrameInfo[]>();
+    for (const frame of framesForVehicle) {
+      const arr = map.get(frame.category) ?? [];
+      arr.push(frame);
+      map.set(frame.category, arr);
+    }
+    const sorted: Array<[string, ArduPilotFrameInfo[]]> = [];
+    for (const cat of order) {
+      const list = map.get(cat);
+      if (list && list.length > 0) sorted.push([cat, list]);
+    }
+    // Surface unexpected categories last so we don't silently drop them.
+    for (const [cat, list] of map) {
+      if (!order.includes(cat as typeof order[number])) sorted.push([cat, list]);
+    }
+    return sorted;
+  }, [framesForVehicle]);
+
+  const selectedFrame = useMemo(
+    () => framesForVehicle.find(f => f.value === model) ?? null,
+    [framesForVehicle, model],
+  );
+
+  // Snap-back: if the saved model isn't valid for the current vehicle, pick
+  // the first frame in its list. CRITICAL: only do this after the upstream
+  // catalog has actually loaded — otherwise the bootstrap render (when
+  // framesCatalog is still null and we're on the small hardcoded fallback)
+  // would clobber persisted choices like "plane-tailsitter" that aren't in
+  // the fallback but DO exist upstream.
+  useEffect(() => {
+    if (!framesCatalog) return;
+    if (framesForVehicle.length === 0) return;
+    if (!framesForVehicle.some(f => f.value === model)) {
+      setModel(framesForVehicle[0]!.value);
+    }
+  }, [framesCatalog, framesForVehicle, model, setModel]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -154,6 +224,75 @@ export default function ArduPilotSitlTab() {
             <div>
               <h3 className="text-sm font-medium text-red-400">Platform Error</h3>
               <p className="text-xs text-red-300/80 mt-1">{platformError}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Crash recovery — content varies by strike count. First strike
+          (stable crashed) offers a track upgrade; second strike (upgraded
+          track also crashed) offers a frame fallback. */}
+      {crashRecovery && (
+        <div className="bg-amber-500/10 border border-amber-500/40 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+            </svg>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-medium text-amber-400">
+                SITL crashed during init ({crashRecovery.uptimeMs}ms{crashRecovery.signal ? ` · ${crashRecovery.signal}` : ''})
+              </h3>
+              {crashRecovery.kind === 'switch-track' ? (
+                <>
+                  <p className="text-xs text-content-secondary mt-1 leading-snug">
+                    The <span className="font-mono text-content">{crashRecovery.failedTrack}</span> binary
+                    doesn't run <span className="font-mono text-content">{crashRecovery.model}</span> on
+                    this platform. The <span className="font-mono text-content">{crashRecovery.suggestedTrack}</span> track
+                    is rebuilt nightly and ships fixes that haven't landed yet —
+                    same SITL, just a newer build.
+                  </p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      onClick={() => { void acceptCrashRecovery(); }}
+                      disabled={isStarting || isDownloading}
+                      className="px-3 py-1.5 text-xs font-medium text-white bg-amber-600 hover:bg-amber-500 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Switch to {crashRecovery.suggestedTrack} & retry
+                    </button>
+                    <button
+                      onClick={dismissCrashRecovery}
+                      className="px-3 py-1.5 text-xs font-medium text-content-secondary hover:text-content rounded-lg transition-colors"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-content-secondary mt-1 leading-snug">
+                    Both stable and dev binaries crash on{' '}
+                    <span className="font-mono text-content">{crashRecovery.failedModel}</span> for this platform —
+                    looks like an upstream physics bug specific to that frame.
+                    Try <span className="font-mono text-content">{crashRecovery.suggestedModel}</span> instead;
+                    it's the safe-default frame for this vehicle and is well-tested across builds.
+                  </p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      onClick={() => { void acceptCrashRecovery(); }}
+                      disabled={isStarting || isDownloading}
+                      className="px-3 py-1.5 text-xs font-medium text-white bg-amber-600 hover:bg-amber-500 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Switch to {crashRecovery.suggestedModel} & retry
+                    </button>
+                    <button
+                      onClick={dismissCrashRecovery}
+                      className="px-3 py-1.5 text-xs font-medium text-content-secondary hover:text-content rounded-lg transition-colors"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -190,17 +329,37 @@ export default function ArduPilotSitlTab() {
           <h3 className="text-sm font-medium text-content mb-3">Configuration</h3>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs text-content-secondary mb-1">Frame/Model</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs text-content-secondary">Frame/Model</label>
+                <FrameCatalogStatus
+                  source={framesCatalog?.source}
+                  fetchedAt={framesCatalog?.fetchedAt}
+                  loading={framesLoading}
+                  error={framesCatalog?.error}
+                  onRefresh={refreshFrames}
+                />
+              </div>
               <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
                 disabled={isRunning || isStarting}
                 className="w-full px-3 py-1.5 text-sm bg-surface-raised text-content border border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50"
               >
-                {modelOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+                {groupedFrames.length === 1
+                  // Single-category vehicle (e.g. Sub) — flat list reads cleaner.
+                  ? groupedFrames[0]![1].map((f) => (
+                      <option key={f.value} value={f.value}>{f.label}</option>
+                    ))
+                  : groupedFrames.map(([category, frames]) => (
+                      <optgroup key={category} label={category}>
+                        {frames.map((f) => (
+                          <option key={f.value} value={f.value}>{f.label}</option>
+                        ))}
+                      </optgroup>
+                    ))
+                }
               </select>
+              <FrameDefaultsHint frame={selectedFrame} />
             </div>
 
             <div>
@@ -620,4 +779,103 @@ export default function ArduPilotSitlTab() {
       </div>
     </div>
   );
+}
+
+// =============================================================================
+// Frame catalog UI helpers
+// =============================================================================
+
+/**
+ * Tiny status pill + refresh button shown next to the Frame/Model label.
+ * Tells the user where the dropdown contents came from (upstream / cache /
+ * fallback) and lets them force-refresh.
+ */
+function FrameCatalogStatus({
+  source,
+  fetchedAt,
+  loading,
+  error,
+  onRefresh,
+}: {
+  source: 'fresh' | 'cached' | 'fallback' | undefined;
+  fetchedAt: string | undefined;
+  loading: boolean;
+  error: string | undefined;
+  onRefresh: () => void;
+}) {
+  const ageLabel = useMemo(() => relativeAge(fetchedAt), [fetchedAt]);
+
+  const variant =
+    loading              ? { dot: 'bg-blue-400 animate-pulse',   text: 'text-content-tertiary', label: 'syncing…' } :
+    source === 'fresh'   ? { dot: 'bg-emerald-400',              text: 'text-content-tertiary', label: ageLabel ? `synced ${ageLabel}` : 'synced' } :
+    source === 'cached'  ? { dot: 'bg-amber-400',                text: 'text-amber-400',        label: ageLabel ? `cached · ${ageLabel}` : 'cached' } :
+    source === 'fallback'? { dot: 'bg-rose-400',                 text: 'text-rose-400',         label: 'offline · default list' } :
+                           { dot: 'bg-content-tertiary',         text: 'text-content-tertiary', label: 'pending' };
+
+  const tooltip = error
+    ? `Couldn't reach upstream: ${error}\nClick to retry.`
+    : 'Frame list mirrors ArduPilot upstream `vehicleinfo.py`. Click to refresh.';
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className={`inline-flex items-center gap-1 text-[10px] ${variant.text}`}>
+        <span className={`w-1.5 h-1.5 rounded-full ${variant.dot}`} />
+        {variant.label}
+      </span>
+      <button
+        type="button"
+        onClick={onRefresh}
+        disabled={loading}
+        title={tooltip}
+        className="inline-flex items-center justify-center w-5 h-5 rounded text-content-tertiary hover:text-content hover:bg-surface-raised transition-colors disabled:opacity-50"
+      >
+        <svg
+          className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0114-3.5M20 15a8 8 0 01-14 3.5" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+/**
+ * One-line summary under the dropdown showing which upstream `.parm` file(s)
+ * will be stacked behind the ArduDeck overlay at launch. Builds confidence
+ * that the frame's defaults are real (esp. for tailsitter / VTOL).
+ */
+function FrameDefaultsHint({ frame }: { frame: ArduPilotFrameInfo | null }) {
+  if (!frame) return null;
+  if (frame.defaultParamFiles.length === 0) {
+    return (
+      <p className="mt-1.5 text-[10px] text-content-tertiary leading-tight">
+        No upstream defaults — ArduDeck baseline only.
+      </p>
+    );
+  }
+  // Strip "default_params/" prefix for readability.
+  const names = frame.defaultParamFiles.map(f => f.replace(/^default_params\//, ''));
+  const list = names.length === 1
+    ? names[0]
+    : `${names.length} files (${names.join(' + ')})`;
+  return (
+    <p className="mt-1.5 text-[10px] text-content-tertiary leading-tight" title={frame.defaultParamFiles.join('\n')}>
+      Loads <span className="font-mono text-content-secondary">{list}</span> on start.
+    </p>
+  );
+}
+
+/** Format a relative age like "2h ago", "3d ago" — for the catalog status pill. */
+function relativeAge(iso: string | undefined): string | null {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso).getTime();
+  if (Number.isNaN(ms) || ms < 0) return null;
+  if (ms < 60_000) return 'just now';
+  const mins = Math.round(ms / 60_000);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  return `${days}d ago`;
 }
