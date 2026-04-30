@@ -15,15 +15,10 @@ import type {
   ArduPilotSitlConfig,
   ArduPilotSitlStatus,
   ArduPilotVehicleType,
+  ArduPilotReleaseTrack,
 } from '../../shared/ipc-channels.js';
 import { IPC_CHANNELS } from '../../shared/ipc-channels.js';
-
-const VEHICLE_BINARY_MAP: Record<ArduPilotVehicleType, { native: string; windows: string }> = {
-  copter: { native: 'arducopter', windows: 'ArduCopter' },
-  plane: { native: 'arduplane', windows: 'ArduPlane' },
-  rover: { native: 'ardurover', windows: 'ArduRover' },
-  sub: { native: 'ardusub', windows: 'ArduSub' },
-};
+import { ardupilotSitlDownloader } from './ardupilot-sitl-downloader.js';
 
 const DEFAULT_MODELS: Record<ArduPilotVehicleType, string> = {
   copter: 'quad',
@@ -230,16 +225,8 @@ class ArduPilotSitlProcessManager {
     };
   }
 
-  getBinaryPath(vehicleType: ArduPilotVehicleType, releaseTrack: string): string {
-    const userDataPath = app.getPath('userData');
-    const vehicle = VEHICLE_BINARY_MAP[vehicleType];
-    const basePath = path.join(userDataPath, 'ardupilot-sitl', releaseTrack, vehicleType);
-
-    if (process.platform === 'win32') {
-      return path.join(basePath, `${vehicle.windows}.exe`);
-    }
-    // macOS and Linux: native binary, no extension
-    return path.join(basePath, vehicle.native);
+  getBinaryPath(vehicleType: ArduPilotVehicleType, releaseTrack: ArduPilotReleaseTrack): string {
+    return ardupilotSitlDownloader.getBinaryPath(vehicleType, releaseTrack);
   }
 
   private getCygwinDllPath(): string {
