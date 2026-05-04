@@ -87,7 +87,11 @@ export const FilesTab: React.FC = () => {
 
   const handleEntryClick = useCallback((entry: DirEntry) => {
     if (entry.kind !== 'dir') return;
-    setPath(fcPathFor(entry));
+    // Always navigate into directories with a trailing slash. ArduPilot's
+    // SITL POSIX backend prefix-matches its virtual mounts ("/APM/", "/@SYS/"…)
+    // and NAKs the bare "/APM" form; ChibiOS accepts either, so the slash
+    // form is the safe common denominator.
+    setPath(`${fcPathFor(entry)}/`);
   }, [fcPathFor]);
 
   const handleDownload = useCallback(async (entry: DirEntry) => {
@@ -343,7 +347,7 @@ function PathBar({ path, loading, uploading, onNavigate, onRefresh, onUpload }: 
         <Home className="w-3.5 h-3.5" />
       </button>
       {parts.map((part, i) => {
-        const targetPath = '/' + parts.slice(0, i + 1).join('/');
+        const targetPath = '/' + parts.slice(0, i + 1).join('/') + '/';
         const isLast = i === parts.length - 1;
         return (
           <React.Fragment key={`${i}-${part}`}>
