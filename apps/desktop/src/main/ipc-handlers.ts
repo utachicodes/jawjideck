@@ -3197,6 +3197,14 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
           mavlinkBatchTimer = null;
           mavlinkTelemetryBatch = {};
         }
+        // Stop the GCS heartbeat sender. The route-punch path (#86, #88)
+        // can start this BEFORE we receive the FC's first heartbeat, so
+        // it must be cleared even on early-close to avoid a leaked
+        // interval ticking forever against a null transport.
+        if (gcsHeartbeatInterval) {
+          clearInterval(gcsHeartbeatInterval);
+          gcsHeartbeatInterval = null;
+        }
         currentTransport = null;
         mavlinkParser = null;
         resetMavlinkDiagCache();
@@ -3342,6 +3350,48 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       }
 
       sendLog(mainWindow, 'info', `Port opened, waiting for MAVLink heartbeat...`);
+
+      // ── UDP-client route-punch (#86, #88) ────────────────────────────────
+      // UDP is connectionless: until the GCS sends *something*, the FC /
+      // mavp2p / mavlink-router / SIYI HM30 telemetry endpoint has no idea
+      // where to route its heartbeat back to. The ticket reporters saw
+      // "waiting for MAVLink heartbeat (forced)" hang forever — Mission
+      // Planner works in the same setup because it spams GCS heartbeats
+      // from the moment the connection opens. Mirror that behaviour here.
+      //
+      // Scope: UDP client only. TCP/serial don't need this (the transport
+      // itself establishes a return path), and UDP server mode auto-learns
+      // the remote endpoint from the first incoming packet so the punch is
+      // unnecessary there. We start at 1Hz immediately; when the FC's first
+      // heartbeat arrives, the handler at sendGcsHeartbeat clears
+      // gcsHeartbeatInterval and reinstalls its own (with sysid/compid
+      // captured from the FC) — same variable, seamless handover.
+      if (options.type === 'udp' && options.udpMode === 'client') {
+        const sendEarlyGcsHeartbeat = () => {
+          if (!currentTransport?.isOpen) return;
+          try {
+            const hbPayload = serializeHeartbeat({
+              type: 6, // MAV_TYPE_GCS
+              autopilot: 8, // MAV_AUTOPILOT_INVALID
+              baseMode: 0,
+              customMode: 0,
+              systemStatus: 4, // MAV_STATE_ACTIVE
+              mavlinkVersion: 3,
+            });
+            // sendMavlinkPacket defaults sysid=255 compid=190 (standard GCS),
+            // so we don't need a discovered FC sysid to send this.
+            sendMavlinkPacket(HEARTBEAT_ID, hbPayload, HEARTBEAT_CRC_EXTRA)
+              .then(pkt => currentTransport?.write(pkt))
+              .catch(() => { /* UDP write failures are non-fatal — next tick will retry */ });
+          } catch {
+            // Non-critical: serialize failure on a single tick is harmless,
+            // the interval keeps trying.
+          }
+        };
+        sendEarlyGcsHeartbeat();
+        if (gcsHeartbeatInterval) clearInterval(gcsHeartbeatInterval);
+        gcsHeartbeatInterval = setInterval(sendEarlyGcsHeartbeat, 1000);
+      }
 
       // Set state to waiting for heartbeat (NOT connected yet)
       connectionState = {
@@ -5211,6 +5261,21 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     });
   }
 
+  // ArduPilot's AP_Filesystem multiplexes several virtual filesystems behind
+  // well-known prefixes ("/APM/", "/@SYS/", "/@PARAM/", "/@MISSION/",
+  // "/@ROMFS/"). On SITL the POSIX backend doesn't surface these as entries
+  // when listing "/", and on real hardware some FCs only show the SD card
+  // root (e.g. "APM"). To give users a consistent landing page we synthesize
+  // the known mount points at "/" and merge them with whatever the FC
+  // returned. Directly listing any of them by prefix works fine.
+  const VIRTUAL_ROOTS: ReadonlyArray<{ kind: 'dir'; name: string }> = [
+    { kind: 'dir', name: 'APM' },
+    { kind: 'dir', name: '@SYS' },
+    { kind: 'dir', name: '@PARAM' },
+    { kind: 'dir', name: '@MISSION' },
+    { kind: 'dir', name: '@ROMFS' },
+  ];
+
   ipcMain.handle(IPC_CHANNELS.MAVLINK_FTP_LIST, async (_, path: string): Promise<{
     success: boolean;
     entries?: Array<{ kind: 'dir' | 'file'; name: string; size?: number }>;
@@ -5227,8 +5292,21 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     ftpClient = client;
     try {
       const entries = await client.listDirectory(path);
+      const isRoot = path === '/' || path === '';
+
       if (entries === null) {
+        if (isRoot) {
+          // The FC rejected listing "/" (typical on SITL POSIX). Fall back to
+          // the synthesized virtual mount points so the user has somewhere to go.
+          return { success: true, entries: [...VIRTUAL_ROOTS] };
+        }
         return { success: false, error: `Could not list ${path} - directory may not exist or FC FTP rejected the request` };
+      }
+
+      if (isRoot) {
+        const seen = new Set(entries.map(e => e.name));
+        const merged = [...entries, ...VIRTUAL_ROOTS.filter(v => !seen.has(v.name))];
+        return { success: true, entries: merged };
       }
       return { success: true, entries };
     } catch (err) {
