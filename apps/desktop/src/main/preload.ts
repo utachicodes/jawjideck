@@ -313,6 +313,12 @@ const api = {
     return () => ipcRenderer.removeListener(IPC_CHANNELS.PARAM_PROGRESS, handler);
   },
 
+  onParamSetBatchProgress: (callback: (progress: { sent: number; confirmed: number; total: number }) => void) => {
+    const handler = (_: unknown, progress: { sent: number; confirmed: number; total: number }) => callback(progress);
+    ipcRenderer.on(IPC_CHANNELS.PARAM_SET_BATCH_PROGRESS, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.PARAM_SET_BATCH_PROGRESS, handler);
+  },
+
   onParamComplete: (callback: () => void) => {
     const handler = () => callback();
     ipcRenderer.on(IPC_CHANNELS.PARAM_COMPLETE, handler);
@@ -592,6 +598,12 @@ const api = {
 
   logRecentAdd: (entry: { path: string; name: string; size: number }): Promise<void> =>
     ipcRenderer.invoke(IPC_CHANNELS.LOG_RECENT_ADD, entry),
+
+  logRecentRemove: (filePath: string): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LOG_RECENT_REMOVE, filePath),
+
+  logRecentClear: (): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LOG_RECENT_CLEAR),
 
   onLogDownloadProgress: (callback: (progress: { logId: number; received: number; total: number }) => void) => {
     const handler = (_: unknown, progress: { logId: number; received: number; total: number }) => callback(progress);

@@ -21,7 +21,51 @@ import {
   MAVLINK_CALIBRATION_PARAMS,
   CALIBRATION_DIFF_EPSILON,
 } from '../../shared/calibration-types';
+import {
+  categorizeCalibrationParam,
+  getLockFlagsForCategories,
+  type CalibrationCategory,
+  type CalibrationParamInfo,
+} from '../../shared/calibration-param-groups';
 import { useParameterStore } from './parameter-store';
+
+// ============================================================================
+// Types — Force-accept calibration from file
+// ============================================================================
+
+/** A single calibration param parsed from the user's .param file. */
+export interface LoadedCalParam {
+  paramId: string;
+  fileValue: number;
+  /** Current value on the FC (undefined if not present in the live param cache). */
+  currentValue: number | undefined;
+  info: CalibrationParamInfo;
+}
+
+export interface LoadedCalibration {
+  filePath: string;
+  vehicleType: string | null;
+  /** All calibration params from the file, regardless of category. */
+  params: LoadedCalParam[];
+  /** Total params in the source file (calibration + non-calibration). */
+  fileTotalCount: number;
+}
+
+export interface LoadedCalibrationResult {
+  applied: number;
+  failed: number;
+  /** IDs of lock-in flags written (e.g. `INS_GYR_CAL`, `COMPASS_LEARN`). */
+  lockFlagsApplied: string[];
+  /** True if the change requires a reboot to fully take effect. */
+  rebootRecommended: boolean;
+}
+
+export interface ApplyLoadedCalibrationOptions {
+  categories: ReadonlySet<CalibrationCategory>;
+  /** Include hardware-identity params (DEV_IDs / INS_*_ID). Only safe if the
+   *  source FC and target FC share the same physical sensor chips. */
+  includeDevIds: boolean;
+}
 
 // ============================================================================
 // Types
@@ -88,6 +132,16 @@ export interface CalibrationState {
   // for MAVLink calibrations only. See CalibrationVerification in calibration-types.ts.
   verification: CalibrationVerification | null;
 
+  // Force-accept calibration-from-file flow (#16). Independent of the live-cal
+  // state above — the user can have a loaded file pending while the calibrating
+  // step is doing nothing.
+  loadedCalibration: LoadedCalibration | null;
+  isApplyingLoadedCalibration: boolean;
+  /** Streamed during the apply batch — confirmed = how many PARAM_VALUE echoes
+   *  have come back from the FC; total includes lock-flag writes too. */
+  loadedCalibrationApplyProgress: { applied: number; total: number } | null;
+  loadedCalibrationResult: LoadedCalibrationResult | null;
+
   // Actions
   open: () => void;
   close: () => void;
@@ -108,6 +162,12 @@ export interface CalibrationState {
   // Progress updates (called from IPC events)
   handleProgressUpdate: (progress: number, statusText: string, position?: AccelPosition, positionStatus?: boolean[], countdown?: number, compassProgress?: number[]) => void;
   handleCalibrationComplete: (success: boolean, data?: CalibrationData, error?: string) => void;
+
+  // Force-accept calibration-from-file actions (#16)
+  loadCalibrationFromFile: () => Promise<{ ok: boolean; error?: string; calCount?: number }>;
+  applyLoadedCalibration: (opts: ApplyLoadedCalibrationOptions) => Promise<void>;
+  clearLoadedCalibration: () => void;
+  dismissLoadedCalibrationResult: () => void;
 
   // Reset
   reset: () => void;
@@ -171,6 +231,11 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
 
   paramSnapshot: null,
   verification: null,
+
+  loadedCalibration: null,
+  isApplyingLoadedCalibration: false,
+  loadedCalibrationApplyProgress: null,
+  loadedCalibrationResult: null,
 
   // ============================================================================
   // View Actions
@@ -620,6 +685,181 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
   },
 
   // ============================================================================
+  // Force-accept calibration from file (#16)
+  // ============================================================================
+
+  loadCalibrationFromFile: async () => {
+    const result = await window.electronAPI?.loadParamsFromFile();
+    if (!result?.success || !result.params) {
+      return { ok: false, error: result?.error ?? 'Failed to load file' };
+    }
+
+    // Filter to only calibration params and join with the live param cache
+    // so the UI can show file→FC diffs. Params not present in the cache
+    // (e.g. INS_ACC3* on a single-IMU board) are kept with currentValue=undefined.
+    const livecache = useParameterStore.getState().parameters;
+    const filtered: LoadedCalParam[] = [];
+    for (const p of result.params) {
+      const info = categorizeCalibrationParam(p.id);
+      if (!info) continue;
+      const existing = livecache.get(p.id);
+      filtered.push({
+        paramId: p.id,
+        fileValue: p.value,
+        currentValue: existing?.value,
+        info,
+      });
+    }
+
+    // Sort: by category (accel→gyro→mag), then by paramId — stable order
+    // makes the per-category preview easy to scan.
+    const categoryOrder: Record<CalibrationCategory, number> = { accel: 0, gyro: 1, mag: 2 };
+    filtered.sort((a, b) => {
+      const co = categoryOrder[a.info.category] - categoryOrder[b.info.category];
+      if (co !== 0) return co;
+      return a.paramId.localeCompare(b.paramId);
+    });
+
+    set({
+      loadedCalibration: {
+        filePath: result.filePath ?? '',
+        vehicleType: result.vehicleType ?? null,
+        params: filtered,
+        fileTotalCount: result.params.length,
+      },
+      loadedCalibrationResult: null,
+      loadedCalibrationApplyProgress: null,
+    });
+
+    return { ok: true, calCount: filtered.length };
+  },
+
+  applyLoadedCalibration: async (opts) => {
+    const loaded = get().loadedCalibration;
+    if (!loaded) return;
+
+    // Build the write list from the user's selection. Hardware-identity
+    // params (DEV_IDs) gated by the includeDevIds toggle; everything else
+    // gated by the per-category checkboxes.
+    const toWrite: Array<{ paramId: string; value: number; type: number }> = [];
+    const livecache = useParameterStore.getState().parameters;
+
+    for (const p of loaded.params) {
+      if (!opts.categories.has(p.info.category)) continue;
+      if (p.info.kind === 'devid' && !opts.includeDevIds) continue;
+      // Skip params that don't exist on the FC at all — PARAM_SET on a
+      // missing param wastes a slot in the batch and the FC won't echo
+      // PARAM_VALUE back, so it would hit the timeout.
+      if (p.currentValue === undefined) continue;
+      // Use the FC's current type if known; default to REAL32 (9) for cal data
+      const type = livecache.get(p.paramId)?.type ?? 9;
+      toWrite.push({ paramId: p.paramId, value: p.fileValue, type });
+    }
+
+    // Append the lock-in flags so loaded values aren't re-overwritten on
+    // boot or in flight. Only applied for the categories the user opted in.
+    const lockFlags = getLockFlagsForCategories([...opts.categories]);
+    const lockFlagIdsApplied: string[] = [];
+    for (const flag of lockFlags) {
+      const existing = livecache.get(flag.paramId);
+      // Don't write if the FC doesn't have the param (legacy firmware) or
+      // if it's already at the target value (avoid an unnecessary EEPROM
+      // write that flags the param as modified in our cache).
+      if (!existing) continue;
+      if (existing.value === flag.value) continue;
+      toWrite.push({ paramId: flag.paramId, value: flag.value, type: existing.type });
+      lockFlagIdsApplied.push(flag.paramId);
+    }
+
+    if (toWrite.length === 0) {
+      set({
+        loadedCalibrationResult: {
+          applied: 0,
+          failed: 0,
+          lockFlagsApplied: [],
+          rebootRecommended: false,
+        },
+      });
+      return;
+    }
+
+    set({
+      isApplyingLoadedCalibration: true,
+      loadedCalibrationApplyProgress: { applied: 0, total: toWrite.length },
+    });
+
+    // Subscribe to streaming progress (guarded against stale preload — same
+    // pattern as parameter-store.applySelectedFileParams).
+    let unsubscribe: (() => void) | undefined;
+    if (typeof window.electronAPI?.onParamSetBatchProgress === 'function') {
+      unsubscribe = window.electronAPI.onParamSetBatchProgress(({ confirmed, total }) => {
+        if (total !== toWrite.length) return;
+        set({ loadedCalibrationApplyProgress: { applied: confirmed, total } });
+      });
+    }
+
+    let result: Awaited<ReturnType<NonNullable<typeof window.electronAPI>['setParameterBatch']>> | undefined;
+    try {
+      result = await window.electronAPI?.setParameterBatch(toWrite);
+    } finally {
+      unsubscribe?.();
+    }
+
+    const applied = result?.confirmed ?? 0;
+    const failed = toWrite.length - applied;
+
+    // Flush to flash so the values survive a power cycle. Cal params are
+    // already auto-saved on PARAM_SET in modern AP, but PREFLIGHT_STORAGE
+    // is the documented "make sure" path and matches what Mission Planner
+    // does after a manual cal accept.
+    if (applied > 0) {
+      await window.electronAPI?.writeParamsToFlash();
+    }
+
+    // Mirror the writes into the parameter-store cache so the Parameters
+    // screen reflects them without a refresh.
+    if (applied > 0) {
+      const failedSet = new Set(result?.failed ?? []);
+      const paramStore = useParameterStore.getState();
+      const totalParams = paramStore.parameters.size;
+      for (const w of toWrite) {
+        if (failedSet.has(w.paramId)) continue;
+        paramStore.updateParameter({
+          paramId: w.paramId,
+          paramValue: w.value,
+          paramType: w.type,
+          paramIndex: -1,
+          paramCount: totalParams,
+        });
+      }
+    }
+
+    set({
+      isApplyingLoadedCalibration: false,
+      loadedCalibrationApplyProgress: null,
+      loadedCalibrationResult: {
+        applied,
+        failed,
+        lockFlagsApplied: lockFlagIdsApplied,
+        rebootRecommended: applied > 0,
+      },
+    });
+  },
+
+  clearLoadedCalibration: () => {
+    set({
+      loadedCalibration: null,
+      loadedCalibrationResult: null,
+      loadedCalibrationApplyProgress: null,
+      isApplyingLoadedCalibration: false,
+    });
+  },
+
+  dismissLoadedCalibrationResult: () => {
+    set({ loadedCalibrationResult: null });
+  },
+
+  // ============================================================================
   // Reset
   // ============================================================================
 
@@ -653,6 +893,10 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
       completedCalibrations: new Set(),
       paramSnapshot: null,
       verification: null,
+      loadedCalibration: null,
+      isApplyingLoadedCalibration: false,
+      loadedCalibrationApplyProgress: null,
+      loadedCalibrationResult: null,
     });
   },
 }));

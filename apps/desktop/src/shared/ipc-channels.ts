@@ -93,6 +93,7 @@ export const IPC_CHANNELS = {
   PARAM_REQUEST_ALL: 'param:request-all',
   PARAM_SET: 'param:set',
   PARAM_SET_BATCH: 'param:set-batch',
+  PARAM_SET_BATCH_PROGRESS: 'param:set-batch-progress',
   PARAM_READ_BATCH: 'param:read-batch',
   PARAM_VALUE: 'param:value',
   PARAM_BULK_LOAD: 'param:bulk-load', // FTP fast path: all params in one event
@@ -538,6 +539,8 @@ export const IPC_CHANNELS = {
   LOG_CHAT_LOAD: 'log:chat-load',
   LOG_RECENT_GET: 'log:recent-get',
   LOG_RECENT_ADD: 'log:recent-add',
+  LOG_RECENT_REMOVE: 'log:recent-remove',
+  LOG_RECENT_CLEAR: 'log:recent-clear',
 } as const;
 
 export type IpcChannels = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];
@@ -1076,6 +1079,19 @@ export interface ArduPilotSitlConfig {
   simAddress?: string;
   /** Default parameter file path */
   defaultsFile?: string;
+  /**
+   * Simulated battery resting voltage (V). Written to SIM_BATT_VOLTAGE in
+   * the defaults overlay so the SITL battery model initializes correctly
+   * at boot. Required because runtime PARAM_SET alone does not re-init the
+   * simulated SOC. Omit to leave at firmware default (12.6V / 3S LiPo).
+   */
+  simBattVoltage?: number;
+  /**
+   * Simulated battery capacity (Ah). Written to SIM_BATT_CAP_AH alongside
+   * voltage. Set 0 for unlimited (voltage never sags from drain), positive
+   * for realistic decay. Omit to leave at firmware default.
+   */
+  simBattCapAh?: number;
 }
 
 /**

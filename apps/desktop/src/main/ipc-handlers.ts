@@ -4060,6 +4060,27 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     const pendingConfirms = new Set<string>();
     const failed: string[] = [];
     let sent = 0;
+    let confirmedCount = 0;
+    // Guards the polling resolve from firing on an empty pendingConfirms
+    // BEFORE the send loop has had a chance to enqueue everything. Without
+    // this, the interval can resolve at the first tick where size === 0
+    // (either at startup, or transiently between sends if the FC echoes
+    // PARAM_VALUE faster than we can queue the next PARAM_SET) and the
+    // remaining params are silently abandoned and counted as failed.
+    let allSent = false;
+
+    // Stream progress to the renderer so the compare modal's progress bar
+    // can advance during the batch instead of jumping 0 → 100% at the end.
+    // sent  = how many PARAM_SET messages we've put on the wire (write-side)
+    // confirmed = how many got a PARAM_VALUE echo back from the FC (read-side)
+    const emitProgress = () => {
+      safeSend(mainWindow, IPC_CHANNELS.PARAM_SET_BATCH_PROGRESS, {
+        sent,
+        confirmed: confirmedCount,
+        total: params.length,
+      });
+    };
+    emitProgress();
 
     // Track confirmations via PARAM_VALUE responses echoed by the FC.
     // The main message loop already updates receivedParams on each PARAM_VALUE.
@@ -4069,15 +4090,22 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       const deadline = Date.now() + timeoutMs;
 
       const intervalCheck = setInterval(() => {
+        let confirmedThisTick = 0;
         for (const id of [...pendingConfirms]) {
           const p = params.find(pp => pp.paramId === id);
           if (!p) continue;
           const received = receivedParams.get(id);
           if (received && Math.fround(received.paramValue) === Math.fround(p.value)) {
             pendingConfirms.delete(id);
+            confirmedCount++;
+            confirmedThisTick++;
           }
         }
-        if (pendingConfirms.size === 0 || Date.now() >= deadline) {
+        if (confirmedThisTick > 0) emitProgress();
+        // Only resolve on size===0 once the send loop has finished enqueuing.
+        // Otherwise the deadline is the only exit, which keeps the polling
+        // alive for the rest of the batch.
+        if ((allSent && pendingConfirms.size === 0) || Date.now() >= deadline) {
           clearInterval(intervalCheck);
           for (const id of pendingConfirms) {
             failed.push(id);
@@ -4088,35 +4116,40 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     });
 
     // Fire all PARAM_SET messages with small inter-message delays
-    for (const p of params) {
-      // Skip params that don't exist on FC
-      if (receivedParams.size > 0 && !receivedParams.has(p.paramId)) {
-        failed.push(p.paramId);
-        continue;
-      }
-
-      try {
-        const payload = serializeParamSet({
-          targetSystem: connectionState.systemId ?? 1,
-          targetComponent: 1,
-          paramId: p.paramId,
-          paramValue: p.value,
-          paramType: p.type,
-        });
-
-        const packet = await sendMavlinkPacket(PARAM_SET_ID, payload, PARAM_SET_CRC_EXTRA);
-        await currentTransport.write(packet);
-        connectionState.packetsSent++;
-        pendingConfirms.add(p.paramId);
-        sent++;
-
-        // Small delay between messages to avoid overwhelming the FC serial buffer
-        if (sent < params.length) {
-          await new Promise(r => setTimeout(r, 20));
+    try {
+      for (const p of params) {
+        // Skip params that don't exist on FC
+        if (receivedParams.size > 0 && !receivedParams.has(p.paramId)) {
+          failed.push(p.paramId);
+          continue;
         }
-      } catch {
-        failed.push(p.paramId);
+
+        try {
+          const payload = serializeParamSet({
+            targetSystem: connectionState.systemId ?? 1,
+            targetComponent: 1,
+            paramId: p.paramId,
+            paramValue: p.value,
+            paramType: p.type,
+          });
+
+          const packet = await sendMavlinkPacket(PARAM_SET_ID, payload, PARAM_SET_CRC_EXTRA);
+          await currentTransport.write(packet);
+          connectionState.packetsSent++;
+          pendingConfirms.add(p.paramId);
+          sent++;
+          emitProgress();
+
+          // Small delay between messages to avoid overwhelming the FC serial buffer
+          if (sent < params.length) {
+            await new Promise(r => setTimeout(r, 20));
+          }
+        } catch {
+          failed.push(p.paramId);
+        }
       }
+    } finally {
+      allSent = true;
     }
 
     // Wait for confirmations (or timeout)
@@ -4324,13 +4357,40 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   });
 
   // Reboot the flight controller via MAVLink
-  // Sends MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN (246) with param1=1 (normal reboot)
+  // Sends MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN (246) with param1=1 (normal reboot).
+  // SITL caveat: ArduPilot SITL handles this command by calling exit() — it
+  // does NOT respawn itself. So for SITL we skip the MAVLink command entirely
+  // and just restart the child process; the new SITL boots from the just-saved
+  // eeprom.bin so any prior PARAM_SET / PREFLIGHT_STORAGE work persists.
   ipcMain.handle(IPC_CHANNELS.MAVLINK_REBOOT, async (): Promise<boolean> => {
     if (!currentTransport?.isOpen || !connectionState.isConnected) {
       return false;
     }
 
+    const isArdupilotSitl = !!connectionState.isSitl && ardupilotSitlProcess.isRunning;
+
     try {
+      // Schedule auto-reconnect FIRST so the transport-close handler treats
+      // the impending disconnect as expected rather than tearing down state
+      // we still need (matches the pattern in ftpUpload's SITL path above).
+      scheduleReconnect({
+        reason: isArdupilotSitl ? 'Restarting SITL to apply changes' : 'Rebooting flight controller',
+        delayMs: isArdupilotSitl ? 6000 : 3000,
+        timeoutMs: 60000,
+        maxAttempts: isArdupilotSitl ? 40 : 30,
+      });
+
+      if (isArdupilotSitl) {
+        sendLog(mainWindow, 'info', 'Restarting SITL process (MAVLink reboot kills SITL without respawn)');
+        const restartResult = await ardupilotSitlProcess.restart();
+        if (!restartResult.success) {
+          cancelReconnect(`SITL restart failed: ${restartResult.error ?? 'unknown error'}`);
+          sendLog(mainWindow, 'error', 'SITL restart failed', restartResult.error ?? 'unknown error');
+          return false;
+        }
+        return true;
+      }
+
       const payload = serializeCommandLong({
         targetSystem: connectionState.systemId ?? 1,
         targetComponent: 1,
@@ -4350,14 +4410,6 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       connectionState.packetsSent++;
 
       sendLog(mainWindow, 'info', 'Sent reboot command to flight controller');
-
-      // Schedule auto-reconnect
-      scheduleReconnect({
-        reason: 'Rebooting flight controller',
-        delayMs: 3000,
-        timeoutMs: 60000,
-        maxAttempts: 30,
-      });
 
       return true;
     } catch (error) {
@@ -8018,6 +8070,19 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     const logs = recentLogsStore.get('logs').filter((l) => l.path !== entry.path);
     logs.unshift({ ...entry, openedAt: Date.now() });
     recentLogsStore.set('logs', logs.slice(0, 20));
+  });
+
+  // Remove a single entry from the recent-logs list. Does NOT touch the .bin
+  // on disk — the user can always re-open the file via "Open .bin File".
+  ipcMain.handle(IPC_CHANNELS.LOG_RECENT_REMOVE, (_, filePath: string) => {
+    const logs = recentLogsStore.get('logs').filter((l) => l.path !== filePath);
+    recentLogsStore.set('logs', logs);
+  });
+
+  // Wipe the entire recent-logs list. Same scope as the per-row remove —
+  // .bin files on disk are untouched.
+  ipcMain.handle(IPC_CHANNELS.LOG_RECENT_CLEAR, () => {
+    recentLogsStore.set('logs', []);
   });
 
 }

@@ -10,6 +10,7 @@ import { useCalibrationStore, getAvailableCalibrationTypes, isCalibrationTypeAva
 import { useTelemetryStore } from '../../../stores/telemetry-store';
 import { type CalibrationTypeId } from '../../../../shared/calibration-types';
 import { LargeVehicleMagCalDialog } from '../LargeVehicleMagCalDialog';
+import { LoadCalibrationFromFileDialog } from '../LoadCalibrationFromFileDialog';
 
 // Map calibration type IDs to arming flag names that indicate calibration is needed
 // iNav flags: 'Accelerometer', 'Compass', 'No Gyro'
@@ -203,6 +204,7 @@ export function SelectCalibrationStep() {
   const { protocol, sensors, isSensorsLoading, selectCalibrationType, error, completedCalibrations } = useCalibrationStore();
   const flight = useTelemetryStore((s) => s.flight);
   const [showLargeVehicleMagCal, setShowLargeVehicleMagCal] = useState(false);
+  const [showLoadCalFromFile, setShowLoadCalFromFile] = useState(false);
 
   // Get arming disabled reasons from telemetry
   const armingDisabledReasons = flight.armingDisabledReasons || [];
@@ -340,7 +342,7 @@ export function SelectCalibrationStep() {
 
       {/* Large Vehicle MagCal (ArduPilot only) */}
       {protocol === 'mavlink' && !isSensorsLoading && (
-        <div className="mt-2">
+        <div className="mt-2 space-y-2">
           <div className="flex items-center gap-3 p-4 rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 via-transparent to-orange-500/5">
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 text-amber-400 flex items-center justify-center shrink-0">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -361,6 +363,27 @@ export function SelectCalibrationStep() {
               Run
             </button>
           </div>
+
+          {/* Load calibration from file (#16) */}
+          <div className="flex items-center gap-3 p-4 rounded-xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/5 via-transparent to-blue-500/5">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m-7 5h14a2 2 0 002-2V8a2 2 0 00-2-2h-5l-2-2H5a2 2 0 00-2 2v11a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-sm font-semibold text-content">Load calibration from file</h4>
+              <p className="text-xs text-content-secondary mt-0.5 leading-relaxed">
+                Force-accept ACC / GYRO / MAG calibration values from a .param file and lock them in so ArduPilot doesn't auto-recalibrate over them.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowLoadCalFromFile(true)}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 hover:border-cyan-400/60 transition-colors shrink-0"
+            >
+              Open
+            </button>
+          </div>
         </div>
       )}
 
@@ -374,6 +397,10 @@ export function SelectCalibrationStep() {
 
       {showLargeVehicleMagCal && (
         <LargeVehicleMagCalDialog onClose={() => setShowLargeVehicleMagCal(false)} />
+      )}
+
+      {showLoadCalFromFile && (
+        <LoadCalibrationFromFileDialog onClose={() => setShowLoadCalFromFile(false)} />
       )}
     </div>
   );

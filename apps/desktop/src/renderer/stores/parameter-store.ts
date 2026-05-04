@@ -843,9 +843,34 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
       userModifiedParams.add(diff.paramId);
     }
 
+    // Subscribe to streaming progress from main so the modal's progress bar
+    // advances as PARAM_VALUE echoes arrive, instead of jumping 0→100% at the
+    // end of the batch. Display "confirmed" rather than "sent": user wants to
+    // know how many the FC has acknowledged, not how many we've put on the wire.
+    //
+    // Method-level guard: in dev mode the preload script is NOT hot-reloaded
+    // when only the renderer changes. If the renderer has the new subscribe
+    // call but the running preload bundle pre-dates this method, calling it
+    // would throw `is not a function` and leave isApplyingFileParams stuck
+    // true → modal hangs forever. The if-guard plus a try/finally below
+    // make this path resilient to a stale preload.
+    let unsubscribeProgress: (() => void) | undefined;
+    if (typeof window.electronAPI?.onParamSetBatchProgress === 'function') {
+      unsubscribeProgress = window.electronAPI.onParamSetBatchProgress(({ confirmed, total }) => {
+        // Ignore stale events from a previous batch (e.g. canceled then restarted)
+        if (total !== selected.length) return;
+        set({ applyProgress: { applied: confirmed, total } });
+      });
+    }
+
     // Use batch endpoint - sends all PARAM_SET messages rapidly instead of one-by-one
     const batchParams = selected.map(d => ({ paramId: d.paramId, value: d.fileValue, type: d.type }));
-    const result = await window.electronAPI?.setParameterBatch(batchParams);
+    let result: Awaited<ReturnType<NonNullable<typeof window.electronAPI>['setParameterBatch']>> | undefined;
+    try {
+      result = await window.electronAPI?.setParameterBatch(batchParams);
+    } finally {
+      unsubscribeProgress?.();
+    }
 
     const failedSet = new Set(result?.failed ?? []);
     const applied = result?.confirmed ?? 0;

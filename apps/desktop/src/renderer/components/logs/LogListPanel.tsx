@@ -177,6 +177,17 @@ export function LogListPanel() {
     }
   };
 
+  // Remove from recent list only — never touches the .bin on disk.
+  const handleRemoveRecent = async (log: RecentLog) => {
+    await window.electronAPI.logRecentRemove(log.path);
+    setRecentLogs(prev => prev.filter(l => l.path !== log.path));
+  };
+
+  const handleClearRecents = async () => {
+    await window.electronAPI.logRecentClear();
+    setRecentLogs([]);
+  };
+
   const handleCancel = () => {
     window.electronAPI.logDownloadCancel();
     useLogStore.getState().setDownloadingLogId(null);
@@ -230,7 +241,17 @@ export function LogListPanel() {
       {/* Recent logs */}
       {recentLogs.length > 0 && (
         <div>
-          <div className="text-xs text-content-secondary uppercase tracking-wider mb-2">Recent Logs</div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-content-secondary uppercase tracking-wider">Recent Logs</div>
+            <button
+              onClick={handleClearRecents}
+              disabled={openingRecent !== null}
+              title="Clear list (files stay on disk)"
+              className="text-xs text-content-tertiary hover:text-red-400 disabled:opacity-50 transition-colors"
+            >
+              Clear all
+            </button>
+          </div>
           <div className="bg-surface rounded-xl border border-subtle overflow-hidden">
             <table className="w-full text-sm">
               <thead>
@@ -255,13 +276,26 @@ export function LogListPanel() {
                       {new Date(log.openedAt).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-2.5 text-right">
-                      <button
-                        onClick={() => handleOpenRecent(log)}
-                        disabled={isParsingLog || openingRecent !== null}
-                        className="text-xs px-3 py-1 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 disabled:opacity-50 rounded-md transition-colors"
-                      >
-                        {openingRecent === log.path ? 'Opening...' : 'Open'}
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => handleOpenRecent(log)}
+                          disabled={isParsingLog || openingRecent !== null}
+                          className="text-xs px-3 py-1 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 disabled:opacity-50 rounded-md transition-colors"
+                        >
+                          {openingRecent === log.path ? 'Opening...' : 'Open'}
+                        </button>
+                        <button
+                          onClick={() => handleRemoveRecent(log)}
+                          disabled={openingRecent !== null}
+                          title="Remove from recent list (file stays on disk)"
+                          aria-label={`Remove ${log.name} from recent list`}
+                          className="text-xs w-7 h-7 inline-flex items-center justify-center text-content-tertiary hover:text-red-400 hover:bg-red-500/10 disabled:opacity-50 rounded-md transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
