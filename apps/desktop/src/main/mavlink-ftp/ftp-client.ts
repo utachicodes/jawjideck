@@ -158,7 +158,7 @@ export class MavlinkFtpClient {
    * Returns null on transport failure / NAK other than EOF; returns [] for an
    * empty (but reachable) directory.
    */
-  async listDirectory(path: string): Promise<DirectoryEntry[] | null> {
+  async listDirectory(path: string): Promise<{ entries: DirectoryEntry[] } | { error: string }> {
     const pathBytes = new TextEncoder().encode(path);
     const data = new Uint8Array(pathBytes.length + 1); // null-terminated
     data.set(pathBytes);
@@ -174,30 +174,36 @@ export class MavlinkFtpClient {
           session: 0,
           // 'offset' here is "first entry index to return", not byte offset.
           offset: entries.length,
-          size: 0,
+          // Per the MAVLink-FTP spec, `size` is the count of valid bytes in
+          // the data field. ArduPilot's server writes `payload[12 + size] = 0`
+          // to null-terminate before reading the path, so `size: 0` corrupts
+          // the path to an empty string. Mission Planner sets size = path
+          // byte count - we match that.
+          size: pathBytes.length,
           data,
         });
         if (resp) break;
       }
       if (!resp) {
         this.log('warn', `FTP: ListDirectory ${path} timed out`);
-        return null;
+        return { error: 'no response from FC (timed out)' };
       }
 
       if (resp.opcode === FtpOpcode.Nak) {
         const errCode = resp.data[0] ?? 0;
         if (errCode === FtpError.EOF) {
-          return entries; // normal end-of-listing
+          return { entries }; // normal end-of-listing
         }
         if (errCode === FtpError.FileNotFound) {
-          return entries.length > 0 ? entries : null;
+          return entries.length > 0 ? { entries } : { error: 'FileNotFound' };
         }
-        this.log('warn', `FTP: ListDirectory NAK: ${FTP_ERROR_NAMES[errCode] ?? 'unknown'}`);
-        return null;
+        const name = FTP_ERROR_NAMES[errCode] ?? `code=${errCode}`;
+        this.log('warn', `FTP: ListDirectory ${path} NAK: ${name}`);
+        return { error: name };
       }
 
       if (resp.opcode !== FtpOpcode.Ack) {
-        return null;
+        return { error: `unexpected opcode ${resp.opcode}` };
       }
 
       // Parse the packed entries. The Ack payload uses `size` as the number
@@ -237,10 +243,10 @@ export class MavlinkFtpClient {
 
       // If the response carried zero parseable entries, abort the loop or
       // we'd spin forever requesting the same offset.
-      if (parsed === 0) return entries;
+      if (parsed === 0) return { entries };
     }
 
-    return entries;
+    return { entries };
   }
 
   /**

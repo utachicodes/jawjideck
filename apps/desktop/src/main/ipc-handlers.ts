@@ -5291,24 +5291,24 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     const previous = ftpClient;
     ftpClient = client;
     try {
-      const entries = await client.listDirectory(path);
+      const result = await client.listDirectory(path);
       const isRoot = path === '/' || path === '';
 
-      if (entries === null) {
+      if ('error' in result) {
         if (isRoot) {
           // The FC rejected listing "/" (typical on SITL POSIX). Fall back to
           // the synthesized virtual mount points so the user has somewhere to go.
           return { success: true, entries: [...VIRTUAL_ROOTS] };
         }
-        return { success: false, error: `Could not list ${path} - directory may not exist or FC FTP rejected the request` };
+        return { success: false, error: `Could not list ${path}: ${result.error}` };
       }
 
       if (isRoot) {
-        const seen = new Set(entries.map(e => e.name));
-        const merged = [...entries, ...VIRTUAL_ROOTS.filter(v => !seen.has(v.name))];
+        const seen = new Set(result.entries.map(e => e.name));
+        const merged = [...result.entries, ...VIRTUAL_ROOTS.filter(v => !seen.has(v.name))];
         return { success: true, entries: merged };
       }
-      return { success: true, entries };
+      return { success: true, entries: result.entries };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       return { success: false, error: msg };
@@ -7619,6 +7619,37 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle(IPC_CHANNELS.ARDUPILOT_SITL_REFRESH_FRAMES, async () => {
     const { listFrames } = await import('./sitl/frame-config.js');
     return listFrames({ force: true });
+  });
+
+  // SITL custom frames (user-authored JSON physics models) ----------------
+  ipcMain.handle(IPC_CHANNELS.ARDUPILOT_SITL_CUSTOM_FRAME_LIST, async () => {
+    const { listCustomFrames } = await import('./sitl/custom-frame-storage.js');
+    return listCustomFrames();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.ARDUPILOT_SITL_CUSTOM_FRAME_LOAD, async (_e, id: string) => {
+    const { loadCustomFrame } = await import('./sitl/custom-frame-storage.js');
+    return loadCustomFrame(id);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.ARDUPILOT_SITL_CUSTOM_FRAME_SAVE, async (_e, payload: { name: string; frame: import('../shared/sitl-custom-frame.js').SitlCustomFrame; existingId?: string }) => {
+    const { saveCustomFrame } = await import('./sitl/custom-frame-storage.js');
+    return saveCustomFrame(payload.name, payload.frame, payload.existingId);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.ARDUPILOT_SITL_CUSTOM_FRAME_DELETE, async (_e, id: string) => {
+    const { deleteCustomFrame } = await import('./sitl/custom-frame-storage.js');
+    return deleteCustomFrame(id);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.ARDUPILOT_SITL_CUSTOM_FRAME_IMPORT, async () => {
+    const { importCustomFrame } = await import('./sitl/custom-frame-storage.js');
+    return importCustomFrame();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.ARDUPILOT_SITL_CUSTOM_FRAME_EXPORT, async (_e, id: string) => {
+    const { exportCustomFrame } = await import('./sitl/custom-frame-storage.js');
+    return exportCustomFrame(id);
   });
 
   // =============================================================================
