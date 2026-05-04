@@ -51,11 +51,17 @@ export const IPC_CHANNELS = {
   /** Save the bundled Lua source to a user-chosen path (manual install fallback) */
   SCRIPT_INSTALLER_SAVE_TO_DISK: 'script-installer:save-to-disk',
 
-  // MAVLink-FTP file browser (read-only ops; write ops live in script installer)
+  // MAVLink-FTP file browser
   /** List a directory on the FC. Returns DirectoryEntry[] or null on failure. */
   MAVLINK_FTP_LIST: 'mavlink-ftp:list',
   /** Download a file from the FC to a user-chosen save path. */
   MAVLINK_FTP_DOWNLOAD: 'mavlink-ftp:download',
+  /** Pick a local file via dialog and upload it into a target FC directory. */
+  MAVLINK_FTP_UPLOAD: 'mavlink-ftp:upload',
+  /** Delete a file or empty directory on the FC. */
+  MAVLINK_FTP_DELETE: 'mavlink-ftp:delete',
+  /** Rename/move a file or directory on the FC. */
+  MAVLINK_FTP_RENAME: 'mavlink-ftp:rename',
 
   // MAVLink Signing
   MAVLINK_SIGNING_SET_KEY: 'mavlink:signing-set-key',

@@ -421,11 +421,12 @@ export class MavlinkFtpClient {
   }
 
   /**
-   * Remove a file. Used as a pre-step before CreateFile to ensure clean
-   * state. Returns ok if file removed OR didn't exist; not-ok only on real
-   * errors (permission, busy, etc).
+   * Remove a file at `path`. Returns ok on ACK or FileNotFound (idempotent),
+   * not-ok on real errors (permission, busy, etc). Public so the file
+   * browser can offer delete; also used internally as a pre-step before
+   * CreateFile to ensure clean state.
    */
-  private async removeFile(path: string): Promise<{ ok: boolean; error?: string }> {
+  async removeFile(path: string): Promise<{ ok: boolean; error?: string }> {
     const pathBytes = new TextEncoder().encode(path);
     const data = new Uint8Array(pathBytes.length + 1);
     data.set(pathBytes);
@@ -433,6 +434,65 @@ export class MavlinkFtpClient {
       opcode: FtpOpcode.RemoveFile,
       session: 0,
       size: pathBytes.length,
+      offset: 0,
+      data,
+    });
+    if (!resp) return { ok: false, error: 'no response (timed out)' };
+    if (resp.opcode === FtpOpcode.Ack) return { ok: true };
+    if (resp.opcode === FtpOpcode.Nak) {
+      const errCode = resp.data[0];
+      if (errCode === FtpError.FileNotFound) return { ok: true };
+      return { ok: false, error: FTP_ERROR_NAMES[errCode ?? 0] ?? `code=${errCode}` };
+    }
+    return { ok: false, error: `unexpected opcode ${resp.opcode}` };
+  }
+
+  /**
+   * Remove an empty directory at `path`. Returns ok on ACK or FileNotFound;
+   * NAK with Fail/FailErrno typically means the directory is non-empty (the
+   * MAVLink-FTP spec does not define a dedicated "not empty" error code,
+   * so the caller should surface the raw error to the user).
+   */
+  async removeDirectory(path: string): Promise<{ ok: boolean; error?: string }> {
+    const pathBytes = new TextEncoder().encode(path);
+    const data = new Uint8Array(pathBytes.length + 1);
+    data.set(pathBytes);
+    const resp = await this.sendRequest({
+      opcode: FtpOpcode.RemoveDirectory,
+      session: 0,
+      size: pathBytes.length,
+      offset: 0,
+      data,
+    });
+    if (!resp) return { ok: false, error: 'no response (timed out)' };
+    if (resp.opcode === FtpOpcode.Ack) return { ok: true };
+    if (resp.opcode === FtpOpcode.Nak) {
+      const errCode = resp.data[0];
+      if (errCode === FtpError.FileNotFound) return { ok: true };
+      return { ok: false, error: FTP_ERROR_NAMES[errCode ?? 0] ?? `code=${errCode}` };
+    }
+    return { ok: false, error: `unexpected opcode ${resp.opcode}` };
+  }
+
+  /**
+   * Rename or move a file/directory from `oldPath` to `newPath`. Per the
+   * MAVLink-FTP spec the data field is `<old>\0<new>\0` and `size` is the
+   * total payload byte count. ArduPilot supports rename across directories
+   * on the same filesystem; cross-filesystem moves return Fail.
+   */
+  async rename(oldPath: string, newPath: string): Promise<{ ok: boolean; error?: string }> {
+    const enc = new TextEncoder();
+    const oldBytes = enc.encode(oldPath);
+    const newBytes = enc.encode(newPath);
+    const data = new Uint8Array(oldBytes.length + 1 + newBytes.length + 1);
+    data.set(oldBytes, 0);
+    data[oldBytes.length] = 0;
+    data.set(newBytes, oldBytes.length + 1);
+    data[oldBytes.length + 1 + newBytes.length] = 0;
+    const resp = await this.sendRequest({
+      opcode: FtpOpcode.Rename,
+      session: 0,
+      size: data.length,
       offset: 0,
       data,
     });

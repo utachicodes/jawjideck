@@ -143,7 +143,7 @@ const api = {
   scriptInstallerSaveToDisk: (): Promise<{ success: boolean; filePath?: string; error?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_INSTALLER_SAVE_TO_DISK),
 
-  // ─── MAVLink-FTP file browser (read-only) ──────────────────────────
+  // ─── MAVLink-FTP file browser ──────────────────────────────────────
   mavlinkFtpList: (path: string): Promise<{
     success: boolean;
     entries?: Array<{ kind: 'dir' | 'file'; name: string; size?: number }>;
@@ -155,6 +155,25 @@ const api = {
     bytes?: number;
     error?: string;
   }> => ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_FTP_DOWNLOAD, fcPath),
+  mavlinkFtpUpload: (targetDir: string): Promise<{
+    success: boolean;
+    /** FC-side path the file was written to (when success). */
+    fcPath?: string;
+    /** Local source path (when success). */
+    sourcePath?: string;
+    bytes?: number;
+    error?: string;
+    /** True when the user dismissed the file picker - caller should treat as a no-op. */
+    cancelled?: boolean;
+  }> => ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_FTP_UPLOAD, targetDir),
+  mavlinkFtpDelete: (fcPath: string, kind: 'file' | 'dir'): Promise<{
+    success: boolean;
+    error?: string;
+  }> => ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_FTP_DELETE, fcPath, kind),
+  mavlinkFtpRename: (oldPath: string, newPath: string): Promise<{
+    success: boolean;
+    error?: string;
+  }> => ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_FTP_RENAME, oldPath, newPath),
   /** Subscribe to install state push events. Returns an unsubscribe function. */
   onScriptInstallerState: (callback: (phase: unknown) => void): (() => void) => {
     const handler = (_: unknown, phase: unknown) => callback(phase);

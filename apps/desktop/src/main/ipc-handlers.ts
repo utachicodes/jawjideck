@@ -5280,6 +5280,125 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     }
   });
 
+  ipcMain.handle(IPC_CHANNELS.MAVLINK_FTP_UPLOAD, async (_, targetDir: string): Promise<{
+    success: boolean;
+    fcPath?: string;
+    sourcePath?: string;
+    bytes?: number;
+    error?: string;
+    cancelled?: boolean;
+  }> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return { success: false, error: 'Not connected' };
+    }
+    if (connectionState.protocol !== 'mavlink') {
+      return { success: false, error: 'MAVLink-FTP requires a MAVLink connection' };
+    }
+    const dlg = await dialog.showOpenDialog(mainWindow, {
+      title: `Upload to ${targetDir}`,
+      properties: ['openFile'],
+    });
+    if (dlg.canceled || dlg.filePaths.length === 0) {
+      return { success: false, cancelled: true };
+    }
+    const sourcePath = dlg.filePaths[0]!;
+    const fs = await import('fs/promises');
+    const path = await import('path');
+    const filename = path.basename(sourcePath);
+    const fcPath = targetDir.endsWith('/') ? `${targetDir}${filename}` : `${targetDir}/${filename}`;
+
+    let bytes: Uint8Array;
+    try {
+      const buf = await fs.readFile(sourcePath);
+      bytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+    } catch (err) {
+      return { success: false, error: `Could not read ${sourcePath}: ${err instanceof Error ? err.message : String(err)}` };
+    }
+
+    const client = buildBrowserFtpClient();
+    const previous = ftpClient;
+    ftpClient = client;
+    try {
+      // Best-effort pre-clean so we don't leave trailing bytes from a larger
+      // existing file behind (OpenFileWO does not truncate). Errors here are
+      // expected when the file doesn't exist - removeFile already maps
+      // FileNotFound to ok.
+      const rm = await client.removeFile(fcPath);
+      if (!rm.ok) {
+        sendLog(mainWindow, 'debug', `FTP pre-upload removeFile ${fcPath} -> ${rm.error ?? 'unknown'} (continuing)`);
+      }
+      const result = await client.uploadFile(fcPath, bytes);
+      if (!result.ok) {
+        return { success: false, error: result.error ?? `Upload of ${fcPath} failed` };
+      }
+      sendLog(mainWindow, 'info', `FTP uploaded ${sourcePath} → ${fcPath} (${bytes.length} B)`);
+      return { success: true, fcPath, sourcePath, bytes: bytes.length };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg };
+    } finally {
+      ftpClient = previous;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.MAVLINK_FTP_DELETE, async (_, fcPath: string, kind: 'file' | 'dir'): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return { success: false, error: 'Not connected' };
+    }
+    if (connectionState.protocol !== 'mavlink') {
+      return { success: false, error: 'MAVLink-FTP requires a MAVLink connection' };
+    }
+    const client = buildBrowserFtpClient();
+    const previous = ftpClient;
+    ftpClient = client;
+    try {
+      const result = kind === 'dir'
+        ? await client.removeDirectory(fcPath)
+        : await client.removeFile(fcPath);
+      if (!result.ok) {
+        return { success: false, error: result.error ?? `Delete of ${fcPath} failed` };
+      }
+      sendLog(mainWindow, 'info', `FTP deleted ${kind} ${fcPath}`);
+      return { success: true };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg };
+    } finally {
+      ftpClient = previous;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.MAVLINK_FTP_RENAME, async (_, oldPath: string, newPath: string): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return { success: false, error: 'Not connected' };
+    }
+    if (connectionState.protocol !== 'mavlink') {
+      return { success: false, error: 'MAVLink-FTP requires a MAVLink connection' };
+    }
+    const client = buildBrowserFtpClient();
+    const previous = ftpClient;
+    ftpClient = client;
+    try {
+      const result = await client.rename(oldPath, newPath);
+      if (!result.ok) {
+        return { success: false, error: result.error ?? `Rename ${oldPath} → ${newPath} failed` };
+      }
+      sendLog(mainWindow, 'info', `FTP renamed ${oldPath} → ${newPath}`);
+      return { success: true };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg };
+    } finally {
+      ftpClient = previous;
+    }
+  });
+
   ipcMain.handle(IPC_CHANNELS.SCRIPT_INSTALLER_UNINSTALL, async () => {
     const adapter = buildFcAdapter();
     const uid = adapter.getAutopilotUid();
