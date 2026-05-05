@@ -49,8 +49,8 @@ describe('createTakeoffWaypoint', () => {
     expect(takeoff.seq).toBe(5);
   });
 
-  it('sets yaw to NaN (keep current heading)', () => {
+  it('sets yaw to 0 (keep current heading)', () => {
     const takeoff = createTakeoffWaypoint(0, 0, 0, 50, 15);
-    expect(takeoff.param4).toBeNaN();
+    expect(takeoff.param4).toBe(0);
   });
 });

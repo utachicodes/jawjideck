@@ -430,26 +430,30 @@ describe('issue #74: survey mission builder produces correct item structure', ()
     expect(items).toEqual([]);
   });
 
-  it('produces DO_CHANGE_SPEED + cam on + waypoints + cam off', () => {
+  it('produces takeoff + DO_CHANGE_SPEED + cam on + waypoints + cam off + rtl', () => {
     const config = makeConfig({ speed: 8, altitude: 100 });
     const result = makeSurveyResult(3);
     const items = surveyToMissionItems(result, config);
 
-    // Expected: 1 speed + 1 cam on + 3 waypoints + 1 cam off = 6
-    expect(items).toHaveLength(6);
+    // Expected: 1 takeoff + 1 speed + 1 cam on + 3 waypoints + 1 cam off + 1 rtl = 8
+    expect(items).toHaveLength(8);
 
-    expect(items[0]!.command).toBe(MAV_CMD.DO_CHANGE_SPEED);
-    expect(items[0]!.param2).toBe(8); // speed
+    expect(items[0]!.command).toBe(MAV_CMD.NAV_TAKEOFF);
 
-    expect(items[1]!.command).toBe(MAV_CMD.DO_SET_CAM_TRIGG_DIST);
-    expect(items[1]!.param1).toBeGreaterThan(0); // trigger distance
+    expect(items[1]!.command).toBe(MAV_CMD.DO_CHANGE_SPEED);
+    expect(items[1]!.param2).toBe(8); // speed
 
-    expect(items[2]!.command).toBe(MAV_CMD.NAV_WAYPOINT);
+    expect(items[2]!.command).toBe(MAV_CMD.DO_SET_CAM_TRIGG_DIST);
+    expect(items[2]!.param1).toBeGreaterThan(0); // trigger distance
+
     expect(items[3]!.command).toBe(MAV_CMD.NAV_WAYPOINT);
     expect(items[4]!.command).toBe(MAV_CMD.NAV_WAYPOINT);
+    expect(items[5]!.command).toBe(MAV_CMD.NAV_WAYPOINT);
 
-    expect(items[5]!.command).toBe(MAV_CMD.DO_SET_CAM_TRIGG_DIST);
-    expect(items[5]!.param1).toBe(0); // camera off
+    expect(items[6]!.command).toBe(MAV_CMD.DO_SET_CAM_TRIGG_DIST);
+    expect(items[6]!.param1).toBe(0); // camera off
+
+    expect(items[7]!.command).toBe(MAV_CMD.NAV_RETURN_TO_LAUNCH);
   });
 
   it('sequences are monotonically increasing from 0', () => {

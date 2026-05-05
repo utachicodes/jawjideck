@@ -103,17 +103,19 @@ describe('surveyToMissionItems', () => {
     }
   });
 
-  it('generates correct structure: speed, cam-on, waypoints, cam-off', () => {
+  it('generates correct structure: takeoff, speed, cam-on, waypoints, cam-off, rtl', () => {
     const items = surveyToMissionItems(makeSurveyResult(), makeConfig('relative'));
-    // 1 speed + 1 cam-on + 2 waypoints + 1 cam-off = 5
-    expect(items).toHaveLength(5);
-    expect(items[0]!.command).toBe(MAV_CMD.DO_CHANGE_SPEED);
-    expect(items[1]!.command).toBe(MAV_CMD.DO_SET_CAM_TRIGG_DIST);
-    expect(items[2]!.command).toBe(MAV_CMD.NAV_WAYPOINT);
+    // 1 takeoff + 1 speed + 1 cam-on + 2 waypoints + 1 cam-off + 1 rtl = 7
+    expect(items).toHaveLength(7);
+    expect(items[0]!.command).toBe(MAV_CMD.NAV_TAKEOFF);
+    expect(items[1]!.command).toBe(MAV_CMD.DO_CHANGE_SPEED);
+    expect(items[2]!.command).toBe(MAV_CMD.DO_SET_CAM_TRIGG_DIST);
     expect(items[3]!.command).toBe(MAV_CMD.NAV_WAYPOINT);
-    expect(items[4]!.command).toBe(MAV_CMD.DO_SET_CAM_TRIGG_DIST);
+    expect(items[4]!.command).toBe(MAV_CMD.NAV_WAYPOINT);
+    expect(items[5]!.command).toBe(MAV_CMD.DO_SET_CAM_TRIGG_DIST);
     // Last cam trigger should disable (distance = 0)
-    expect(items[4]!.param1).toBe(0);
+    expect(items[5]!.param1).toBe(0);
+    expect(items[6]!.command).toBe(MAV_CMD.NAV_RETURN_TO_LAUNCH);
   });
 
   it('assigns sequential seq numbers starting from 0', () => {
