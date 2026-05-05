@@ -22,7 +22,7 @@ const LOG_TIMEOUT_MS = 5000;
  * 5 s of pure waiting at the end of every burst. The previous behaviour was
  * the dominant cost of a multi-MB log download.
  */
-const LOG_BURST_INACTIVITY_MS = 300;
+const LOG_BURST_INACTIVITY_MS = 80;
 const LOG_MAX_RETRIES = 10;
 const LOG_CHUNK_SIZE = 90;
 const MSG_LOG_ENTRY = 118;
@@ -191,7 +191,7 @@ export class LogDownloadManager {
 
       // Request from the gap to end - FC will stream data back
       const remaining = logSize - requestOffset;
-      const burstCount = Math.min(remaining, LOG_CHUNK_SIZE * 200); // request up to ~18KB at a time
+      const burstCount = Math.min(remaining, LOG_CHUNK_SIZE * 1000); // request up to ~90KB at a time
 
       this.log('debug', `Requesting log data: offset=${requestOffset} count=${burstCount} (attempt ${attempt + 1})`);
 

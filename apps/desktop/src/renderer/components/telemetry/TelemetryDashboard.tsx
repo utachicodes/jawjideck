@@ -505,32 +505,34 @@ function LayoutToolbar({
 
       <div className="flex-1" />
 
-      {/* 2D/3D Map Toggle */}
-      <div className="flex items-center rounded-lg overflow-hidden border border-subtle shrink-0">
-        <button
-          onClick={() => setMapMode('2d')}
-          className={`px-2.5 py-1 text-xs font-medium transition-colors ${
-            mapMode === '2d'
-              ? 'bg-surface-raised text-content'
-              : 'text-content-secondary hover:bg-surface-raised'
-          }`}
-          title="2D Map"
-        >
-          2D
-        </button>
-        <div className="w-px h-4 bg-subtle" />
-        <button
-          onClick={() => setMapMode('3d')}
-          className={`px-2.5 py-1 text-xs font-medium transition-colors ${
-            mapMode === '3d'
-              ? 'bg-indigo-600 text-white'
-              : 'text-content-secondary hover:bg-surface-raised'
-          }`}
-          title="3D Terrain View"
-        >
-          3D
-        </button>
-      </div>
+      {/* 2D/3D Map Toggle - dev-only until 3D is reworked */}
+      {import.meta.env.DEV && (
+        <div className="flex items-center rounded-lg overflow-hidden border border-subtle shrink-0">
+          <button
+            onClick={() => setMapMode('2d')}
+            className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+              mapMode === '2d'
+                ? 'bg-surface-raised text-content'
+                : 'text-content-secondary hover:bg-surface-raised'
+            }`}
+            title="2D Map"
+          >
+            2D
+          </button>
+          <div className="w-px h-4 bg-subtle" />
+          <button
+            onClick={() => setMapMode('3d')}
+            className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+              mapMode === '3d'
+                ? 'bg-indigo-600 text-white'
+                : 'text-content-secondary hover:bg-surface-raised'
+            }`}
+            title="3D Terrain View"
+          >
+            3D
+          </button>
+        </div>
+      )}
 
       {/* Add panel dropdown */}
       <AddPanelDropdown onAddPanel={onAddPanel} supportsMissionPlanning={supportsMissionPlanning} isMavlink={isMavlink} isSitlRunning={isSitlRunning} />

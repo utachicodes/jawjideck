@@ -60,6 +60,16 @@ export interface ArduPilotSitlStore {
   wipeOnStart: boolean;
   simulator: ArduPilotSimulatorType;
   simAddress: string;
+  /** Simulated battery resting voltage (V). 0 = use firmware default (12.6V) */
+  simBattVoltage: number;
+  /** Simulated battery capacity (Ah). 0 = unlimited / firmware default */
+  simBattCapAh: number;
+  /** Absolute path to user-authored physics frame JSON. undefined = built-in. */
+  customFramePath?: string;
+  /** Motor count of active custom frame. Drives SITL --model type prefix. */
+  customFrameMotors?: number;
+  /** Setter (single call to preserve atomicity of the pair). */
+  setCustomFrame: (path: string | undefined, motors: number | undefined) => void;
 
   // RC State
   isRcSending: boolean;
@@ -242,6 +252,11 @@ export const useArduPilotSitlStore = create<ArduPilotSitlStore>()(
       speedup: 1,
       wipeOnStart: false,
       simulator: 'none',
+      simBattVoltage: 0,
+      simBattCapAh: 0,
+      customFramePath: undefined,
+      customFrameMotors: undefined,
+      setCustomFrame: (path, motors) => set({ customFramePath: path, customFrameMotors: motors }),
       simAddress: '127.0.0.1',
 
       isRcSending: false,
@@ -268,6 +283,10 @@ export const useArduPilotSitlStore = create<ArduPilotSitlStore>()(
           wipeOnStart,
           simulator,
           simAddress,
+          simBattVoltage,
+          simBattCapAh,
+          customFramePath,
+          customFrameMotors,
           appendOutput,
           autoUpgradedFrames,
           crashedFrameTracks,
@@ -332,6 +351,10 @@ export const useArduPilotSitlStore = create<ArduPilotSitlStore>()(
             wipeOnStart,
             simulator: simulator === 'none' ? undefined : simulator,
             simAddress: simulator !== 'none' ? simAddress : undefined,
+            simBattVoltage: simBattVoltage > 0 ? simBattVoltage : undefined,
+            simBattCapAh: simBattCapAh > 0 ? simBattCapAh : undefined,
+            customFramePath,
+            customFrameMotors,
           };
 
           const result = await window.electronAPI.ardupilotSitlStart(config);
@@ -756,6 +779,14 @@ export const useArduPilotSitlStore = create<ArduPilotSitlStore>()(
         wipeOnStart: state.wipeOnStart,
         simulator: state.simulator,
         simAddress: state.simAddress,
+        // Sim battery overrides (so user-tuned battery profiles survive restart).
+        simBattVoltage: state.simBattVoltage,
+        simBattCapAh: state.simBattCapAh,
+        // Active custom frame selection. The frame definitions themselves live
+        // on disk under userData/sitl-frames/; we only persist the path/motors
+        // pair so the next launch knows which one to stage.
+        customFramePath: state.customFramePath,
+        customFrameMotors: state.customFrameMotors,
         // Remember auto-upgrades so a frame that crashes on stable goes
         // straight to dev on subsequent runs without the user seeing it.
         autoUpgradedFrames: state.autoUpgradedFrames,

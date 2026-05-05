@@ -545,6 +545,12 @@ select,
    ============================================================ */
 
 /* Blue */
+.light .text-blue-50,
+.light .hover\:text-blue-50:hover { color: #1e3a8a; }
+.light .text-blue-100,
+.light .hover\:text-blue-100:hover { color: #1e40af; }
+.light .text-blue-200,
+.light .hover\:text-blue-200:hover { color: #2563eb; }
 .light .text-blue-300,
 .light .group:hover .group-hover\:text-blue-300,
 .light .hover\:text-blue-300:hover { color: #3b82f6; }
@@ -553,18 +559,36 @@ select,
 .light .hover\:text-blue-400:hover { color: #2563eb; }
 
 /* Green */
+.light .text-green-50,
+.light .hover\:text-green-50:hover { color: #14532d; }
+.light .text-green-100,
+.light .hover\:text-green-100:hover { color: #166534; }
+.light .text-green-200,
+.light .hover\:text-green-200:hover { color: #16a34a; }
 .light .text-green-300,
 .light .hover\:text-green-300:hover { color: #22c55e; }
 .light .text-green-400,
 .light .hover\:text-green-400:hover { color: #16a34a; }
 
 /* Emerald */
+.light .text-emerald-50,
+.light .hover\:text-emerald-50:hover { color: #064e3b; }
+.light .text-emerald-100,
+.light .hover\:text-emerald-100:hover { color: #047857; }
+.light .text-emerald-200,
+.light .hover\:text-emerald-200:hover { color: #059669; }
 .light .text-emerald-300,
 .light .hover\:text-emerald-300:hover { color: #10b981; }
 .light .text-emerald-400,
 .light .hover\:text-emerald-400:hover { color: #059669; }
 
 /* Red */
+.light .text-red-50,
+.light .hover\:text-red-50:hover { color: #7f1d1d; }
+.light .text-red-100,
+.light .hover\:text-red-100:hover { color: #991b1b; }
+.light .text-red-200,
+.light .hover\:text-red-200:hover { color: #dc2626; }
 .light .text-red-300,
 .light .group:hover .group-hover\:text-red-300,
 .light .hover\:text-red-300:hover { color: #ef4444; }
@@ -573,10 +597,64 @@ select,
 .light .hover\:text-red-400:hover { color: #dc2626; }
 
 /* Amber */
+.light .text-amber-50,
+.light .hover\:text-amber-50:hover { color: #78350f; }
+.light .text-amber-100,
+.light .hover\:text-amber-100:hover { color: #92400e; }
+.light .text-amber-200,
+.light .hover\:text-amber-200:hover { color: #d97706; }
 .light .text-amber-300,
 .light .hover\:text-amber-300:hover { color: #f59e0b; }
 .light .text-amber-400,
 .light .hover\:text-amber-400:hover { color: #d97706; }
+
+/* Cyan */
+.light .text-cyan-50,
+.light .hover\:text-cyan-50:hover { color: #164e63; }
+.light .text-cyan-200,
+.light .hover\:text-cyan-200:hover { color: #0891b2; }
+
+/* Indigo */
+.light .text-indigo-200,
+.light .hover\:text-indigo-200:hover { color: #4f46e5; }
+
+/* Orange */
+.light .text-orange-50,
+.light .hover\:text-orange-50:hover { color: #7c2d12; }
+.light .text-orange-100,
+.light .hover\:text-orange-100:hover { color: #9a3412; }
+.light .text-orange-200,
+.light .hover\:text-orange-200:hover { color: #ea580c; }
+
+/* Pink */
+.light .text-pink-200,
+.light .hover\:text-pink-200:hover { color: #db2777; }
+
+/* Purple */
+.light .text-purple-50,
+.light .hover\:text-purple-50:hover { color: #581c87; }
+.light .text-purple-200,
+.light .hover\:text-purple-200:hover { color: #9333ea; }
+
+/* Rose */
+.light .text-rose-200,
+.light .hover\:text-rose-200:hover { color: #e11d48; }
+
+/* Teal */
+.light .text-teal-200,
+.light .hover\:text-teal-200:hover { color: #0d9488; }
+
+/* Violet */
+.light .text-violet-50,
+.light .hover\:text-violet-50:hover { color: #4c1d95; }
+.light .text-violet-200,
+.light .hover\:text-violet-200:hover { color: #7c3aed; }
+
+/* Yellow */
+.light .text-yellow-50,
+.light .hover\:text-yellow-50:hover { color: #713f12; }
+.light .text-yellow-200,
+.light .hover\:text-yellow-200:hover { color: #ca8a04; }
 
 /* Yellow */
 .light .text-yellow-300,

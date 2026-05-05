@@ -109,13 +109,15 @@ export type CalibrationStep =
 /**
  * 6-point calibration position names
  */
+// Order matches ArduPilot's ACCELCAL_VEHICLE_POS enum so the position number
+// shown to the user lines up with the order AP actually requests them.
 export const ACCEL_6POINT_POSITIONS = [
   'Level (Top Up)',
-  'Inverted (Top Down)',
   'Left Side Down',
   'Right Side Down',
   'Nose Down',
   'Nose Up',
+  'Inverted (Top Down)',
 ] as const;
 
 export type AccelPosition = 0 | 1 | 2 | 3 | 4 | 5;

@@ -3,7 +3,7 @@ export type OverlayId = 'radar' | 'openaip' | 'airspace' | 'dipul';
 // ─── RainViewer ──────────────────────────────────────────────────────────────
 
 export interface RainViewerMeta {
-  /** Tile URL path (e.g. /v2/radar/1609402200) */
+  /** Tile URL path returned by the API, e.g. /v2/radar/8f4387a21ffe — last segment is an opaque id, not the timestamp. */
   path: string;
   /** Timestamp of the radar snapshot */
   time: number;

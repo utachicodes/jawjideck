@@ -33,35 +33,36 @@ const ACCELCAL_POS = {
   FAILED: 16777216,
 } as const;
 
-// Map ArduPilot position enum to our 0-5 index
-// ArduPilot order: Level(1), Left(2), Right(3), NoseDown(4), NoseUp(5), Back/Inverted(6)
-// Our order:       Level(0), Inverted(1), LeftSide(2), RightSide(3), NoseDown(4), NoseUp(5)
+// Map ArduPilot position enum to our 0-5 index. Index order MATCHES AP's
+// request order so the user-facing step number ("position N/6") corresponds
+// to the order AP actually walks through the poses. AP order:
+// Level(1), Left(2), Right(3), NoseDown(4), NoseUp(5), Back/Inverted(6)
 const ARDU_POS_TO_INDEX: Record<number, number> = {
   [ACCELCAL_POS.LEVEL]: 0,
-  [ACCELCAL_POS.BACK]: 1,
-  [ACCELCAL_POS.LEFT]: 2,
-  [ACCELCAL_POS.RIGHT]: 3,
-  [ACCELCAL_POS.NOSEDOWN]: 4,
-  [ACCELCAL_POS.NOSEUP]: 5,
+  [ACCELCAL_POS.LEFT]: 1,
+  [ACCELCAL_POS.RIGHT]: 2,
+  [ACCELCAL_POS.NOSEDOWN]: 3,
+  [ACCELCAL_POS.NOSEUP]: 4,
+  [ACCELCAL_POS.BACK]: 5,
 };
 
 // Reverse: our index to ArduPilot position enum
 const INDEX_TO_ARDU_POS: Record<number, number> = {
   0: ACCELCAL_POS.LEVEL,
-  1: ACCELCAL_POS.BACK,
-  2: ACCELCAL_POS.LEFT,
-  3: ACCELCAL_POS.RIGHT,
-  4: ACCELCAL_POS.NOSEDOWN,
-  5: ACCELCAL_POS.NOSEUP,
+  1: ACCELCAL_POS.LEFT,
+  2: ACCELCAL_POS.RIGHT,
+  3: ACCELCAL_POS.NOSEDOWN,
+  4: ACCELCAL_POS.NOSEUP,
+  5: ACCELCAL_POS.BACK,
 };
 
 const POSITION_NAMES = [
   'Level (Top Up)',
-  'Inverted (Top Down)',
   'Left Side Down',
   'Right Side Down',
   'Nose Down',
   'Nose Up',
+  'Inverted (Top Down)',
 ];
 
 // =============================================================================
@@ -236,11 +237,14 @@ export async function confirmMavlinkPosition(position: number): Promise<{ succes
   positionStatus[position] = true;
   expectedPosition = -1;
 
-  // After the LAST position is confirmed, arm a fallback timer in case the
+  // After ALL 6 positions are confirmed, arm a fallback timer in case the
   // FC's "Calibration successful" STATUSTEXT is dropped or never sent.
   // AP processes the 6 samples synchronously and saves to params; this
-  // typically takes <2s. We give it 8s of grace before assuming success.
-  if (position === 5) {
+  // typically takes <2s. We give it 8s of grace before checking via the
+  // diff guard. Driving this off positionStatus.every (instead of a
+  // hardcoded `position === 5`) is correct regardless of which index the
+  // last AP-requested pose maps to.
+  if (positionStatus.every(Boolean)) {
     if (sixPointFallbackTimerId) clearTimeout(sixPointFallbackTimerId);
     sixPointFallbackTimerId = setTimeout(() => {
       sixPointFallbackTimerId = null;

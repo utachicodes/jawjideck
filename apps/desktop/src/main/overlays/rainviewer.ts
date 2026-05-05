@@ -36,10 +36,3 @@ export async function getRainViewerMeta(): Promise<RainViewerMeta | null> {
     return cachedMeta; // Return stale cache on error
   }
 }
-
-/**
- * Resolve a radar tile URL for the tile-cache protocol.
- */
-export function resolveRadarTileUrl(z: number, x: number, y: number, path: string): string {
-  return `https://tilecache.rainviewer.com${path}/256/${z}/${x}/${y}/2/1_1.png`;
-}

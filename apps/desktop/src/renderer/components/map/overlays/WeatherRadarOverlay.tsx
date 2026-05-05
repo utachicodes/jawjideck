@@ -14,9 +14,13 @@ export function WeatherRadarOverlay({ baseLayer }: { baseLayer: string }) {
 
   if (!radarMeta) return null;
 
+  // RainViewer's path is /v2/radar/<id> — id is opaque (no longer the timestamp),
+  // so it must be passed through to the tile-cache protocol handler verbatim.
+  const pathId = radarMeta.path.split('/').pop();
+  if (!pathId) return null;
+
   const colorScheme = getRadarColorScheme(baseLayer);
-  // Encode timestamp + color scheme so different schemes cache separately
-  const layerName = `radar-${radarMeta.time}-c${colorScheme}`;
+  const layerName = `radar-${pathId}-c${colorScheme}`;
 
   return (
     <TileLayer

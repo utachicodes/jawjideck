@@ -12,7 +12,7 @@
  * - Number input for precise values
  */
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useMemo } from 'react';
 
 export interface DraggableSliderProps {
   /** Current value */
@@ -67,16 +67,33 @@ export function DraggableSlider({
   // Muted color for disabled state
   const effectiveColor = disabled ? '#52525b' : color;
 
+  // Round to step precision so 48 + 0.01 doesn't yield 48.00999983...
+  // The number of decimals comes from the step itself: step=0.01 → 2 decimals.
+  const stepDecimals = useMemo(() => {
+    const s = String(step);
+    const dot = s.indexOf('.');
+    return dot >= 0 ? s.length - dot - 1 : 0;
+  }, [step]);
+
+  const roundToStep = useCallback(
+    (v: number) => {
+      const factor = Math.pow(10, stepDecimals);
+      return Math.round(v * factor) / factor;
+    },
+    [stepDecimals]
+  );
+
   const calculateValue = useCallback(
     (clientX: number): number => {
       if (!trackRef.current) return value;
       const rect = trackRef.current.getBoundingClientRect();
       const x = clientX - rect.left;
       const ratio = Math.max(0, Math.min(1, x / rect.width));
-      const newValue = Math.round((ratio * (max - min) + min) / step) * step;
+      const raw = Math.round((ratio * (max - min) + min) / step) * step;
+      const newValue = roundToStep(raw);
       return Math.max(min, Math.min(max, newValue));
     },
-    [min, max, step, value]
+    [min, max, step, value, roundToStep]
   );
 
   const handlePointerDown = useCallback(
@@ -111,18 +128,21 @@ export function DraggableSlider({
 
   const handleIncrement = useCallback(() => {
     if (disabled) return;
-    onChange(Math.min(max, value + step));
-  }, [max, onChange, step, value, disabled]);
+    onChange(Math.min(max, roundToStep(value + step)));
+  }, [max, onChange, step, value, disabled, roundToStep]);
 
   const handleDecrement = useCallback(() => {
     if (disabled) return;
-    onChange(Math.max(min, value - step));
-  }, [min, onChange, step, value, disabled]);
+    onChange(Math.max(min, roundToStep(value - step)));
+  }, [min, onChange, step, value, disabled, roundToStep]);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (disabled) return;
-      const newValue = parseInt(e.target.value) || min;
+      // Accept both '.' and ',' as decimal separators (locale-tolerant).
+      const raw = e.target.value.replace(',', '.');
+      const parsed = parseFloat(raw);
+      const newValue = Number.isFinite(parsed) ? parsed : min;
       onChange(Math.max(min, Math.min(max, newValue)));
     },
     [max, min, onChange, disabled]
@@ -153,17 +173,17 @@ export function DraggableSlider({
                 -
               </button>
               <input
-                type="number"
-                min={min}
-                max={max}
-                value={value}
+                type="text"
+                inputMode="decimal"
+                value={roundToStep(value).toFixed(stepDecimals)}
                 onChange={handleInputChange}
                 disabled={disabled}
-                className={`w-14 px-2 py-1 text-center text-sm border rounded ${
+                className={`min-w-[5rem] w-auto px-2 py-1 text-center text-sm border rounded tabular-nums ${
                   disabled
                     ? 'bg-surface-input border-subtle text-content-secondary cursor-not-allowed'
                     : 'bg-surface-input border-border text-content'
                 }`}
+                style={{ width: `${Math.max(5, roundToStep(value).toFixed(stepDecimals).length + 2)}ch` }}
               />
               <button
                 onClick={handleIncrement}
@@ -295,7 +315,8 @@ export function CompactSlider({
               max={max}
               value={value}
               onChange={(e) => onChange(Math.max(min, Math.min(max, parseInt(e.target.value) || min)))}
-              className="w-16 px-2 py-0.5 text-center text-sm bg-surface-input border border-border rounded text-content"
+              className="min-w-[5rem] w-auto px-2 py-0.5 text-center text-sm bg-surface-input border border-border rounded text-content tabular-nums"
+              style={{ width: `${Math.max(5, String(value).length + 2)}ch` }}
             />
             <button
               onClick={() => onChange(Math.min(max, value + step))}

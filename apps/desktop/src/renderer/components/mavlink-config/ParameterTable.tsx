@@ -5,13 +5,15 @@
  * Provides search, filter, edit, and file operations.
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { History, AlertTriangle, RotateCw, Loader2, Star, CheckCircle, XCircle, Info, ExternalLink } from 'lucide-react';
+import { History, AlertTriangle, RotateCw, Loader2, Star, CheckCircle, XCircle, Info, ExternalLink, Cpu, Pencil } from 'lucide-react';
 import { useParameterStore, type SortColumn } from '../../stores/parameter-store';
 import { PARAMETER_GROUPS } from '../../../shared/parameter-groups';
 import { useConnectionStore } from '../../stores/connection-store';
 import { getParameterDocsUrl, mavTypeToVehicleType } from '../../../shared/parameter-metadata';
+import { formatParamValue } from '../../../shared/parameter-types';
+import { classifySitlUnsafeParam } from '../../../shared/sitl-unsafe-params';
 import BitmaskEditor from './BitmaskEditor';
 import ParamHistoryModal from './ParamHistoryModal';
 import { Tooltip } from '../ui/Tooltip';
@@ -23,20 +25,8 @@ interface Toast {
   type: ToastType;
 }
 
-/**
- * Format a parameter value for display.
- * Strips IEEE 754 float32 representation noise (precision beyond ~7 sig digits)
- * but preserves all meaningful precision. Edit field always uses raw value.
- */
-function formatParamValue(value: number): string {
-  if (Number.isInteger(value)) return String(value);
-  // float32 has ~7 significant digits. Anything beyond that is IEEE noise.
-  // toPrecision(7) then parseFloat strips trailing zeros.
-  return String(parseFloat(value.toPrecision(7)));
-}
-
 // Column widths kept in one place so header and rows stay aligned.
-const PARAM_GRID_COLUMNS = 'minmax(220px, 260px) minmax(180px, 240px) minmax(0, 1fr) 140px';
+const PARAM_GRID_COLUMNS = 'minmax(220px, 260px) minmax(140px, 200px) minmax(220px, 320px) minmax(0, 1fr) 140px';
 
 // Group colors now come from PARAMETER_GROUPS[].color
 
@@ -152,6 +142,35 @@ const ParameterTable: React.FC = () => {
     totalReboots: number;
     stillPending: Array<{ id: string; value: number }>;
   } | null>(null);
+
+  // SITL-safe mode for the compare modal: hides hardware-identity / hardware-
+  // bus params that would crash a simulated FC on reboot. Defaults ON when
+  // the active connection targets SITL.
+  const [sitlSafeMode, setSitlSafeMode] = useState(!!connectionState.isSitl);
+  useEffect(() => { setSitlSafeMode(!!connectionState.isSitl); }, [connectionState.isSitl]);
+
+  const sitlUnsafeMap = useMemo(() => {
+    const m = new Map<string, string>();
+    if (!connectionState.isSitl) return m;
+    for (const d of fileParamDiffs) {
+      const verdict = classifySitlUnsafeParam(d.paramId, d.fileValue);
+      if (verdict) m.set(d.paramId, verdict.reason);
+    }
+    return m;
+  }, [fileParamDiffs, connectionState.isSitl]);
+
+  // When SITL-safe mode is on, force any selected unsafe diffs back to
+  // deselected. Runs whenever the diff set, the unsafe map, or the safeMode
+  // flips. Without this the user could click "Select all" and accidentally
+  // queue hardware-identity params for apply, crashing SITL on reboot.
+  useEffect(() => {
+    if (!sitlSafeMode) return;
+    for (const d of fileParamDiffs) {
+      if (d.selected && sitlUnsafeMap.has(d.paramId)) {
+        toggleDiffSelection(d.paramId);
+      }
+    }
+  }, [sitlSafeMode, fileParamDiffs, sitlUnsafeMap, toggleDiffSelection]);
 
   // Close save dropdown on outside click
   useEffect(() => {
@@ -690,16 +709,16 @@ const ParameterTable: React.FC = () => {
 
       {/* Reboot Required Banner */}
       {rebootRequiredParams.length > 0 && (
-        <div className={`shrink-0 px-4 py-2.5 border-b flex items-center justify-between ${
+        <div className={`shrink-0 px-4 py-2.5 border-b flex items-start justify-between gap-3 ${
           rebooting
             ? 'bg-blue-500/10 border-blue-500/30'
             : 'bg-amber-500/10 border-amber-500/30'
         }`}>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-start gap-2.5 min-w-0 flex-1">
             {rebooting ? (
-              <Loader2 className="w-4 h-4 text-blue-400 animate-spin shrink-0" />
+              <Loader2 className="w-4 h-4 text-blue-400 animate-spin shrink-0 mt-0.5" />
             ) : (
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             )}
             {rebooting ? (
               <span className="text-sm text-blue-300">
@@ -713,10 +732,16 @@ const ParameterTable: React.FC = () => {
                 )}
               </span>
             ) : (
-              <span className="text-sm text-amber-300">
-                Reboot required for {rebootRequiredParams.length} parameter{rebootRequiredParams.length !== 1 ? 's' : ''} to take effect:
-                {' '}<span className="font-mono text-xs text-amber-400/70">{rebootRequiredParams.join(', ')}</span>
-              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm text-amber-300">
+                  Reboot required for {rebootRequiredParams.length} parameter{rebootRequiredParams.length !== 1 ? 's' : ''} to take effect.
+                </div>
+                <div className="mt-1 max-h-16 overflow-y-auto pr-1">
+                  <span className="font-mono text-xs text-amber-400/70 break-words">
+                    {rebootRequiredParams.join(', ')}
+                  </span>
+                </div>
+              </div>
             )}
           </div>
           {!rebooting && (
@@ -785,6 +810,7 @@ const ParameterTable: React.FC = () => {
                 </button>
               </div>
               <div className="px-4 py-3 font-medium">Value</div>
+              <div className="px-4 py-3 font-medium">Options</div>
               <div className="px-4 py-3 font-medium">Description</div>
               <div className="px-4 py-3 font-medium text-right">
                 <button
@@ -869,18 +895,27 @@ const ParameterTable: React.FC = () => {
                       return (
                         <div className="relative flex items-center gap-1.5 min-w-0">
                           {hasEnumValues ? (
-                            <select
-                              value={Math.round(param.value)}
-                              onChange={(e) => setParameter(param.id, Number(e.target.value))}
-                              className="w-full h-7 px-2 bg-surface-input border rounded-md text-sm leading-none text-content focus:outline-none focus:border-blue-500 truncate"
-                            >
-                              {Object.entries(meta!.values!).map(([code, label]) => (
-                                <option key={code} value={code}>{code}: {label}</option>
-                              ))}
-                              {!(String(Math.round(param.value)) in meta!.values!) && (
-                                <option value={Math.round(param.value)}>{Math.round(param.value)}: Custom</option>
-                              )}
-                            </select>
+                            <div className="flex items-center gap-1 w-full">
+                              <select
+                                value={Math.round(param.value)}
+                                onChange={(e) => setParameter(param.id, Number(e.target.value))}
+                                className="flex-1 min-w-0 h-7 px-2 bg-surface-input border rounded-md text-sm leading-none text-content focus:outline-none focus:border-blue-500 truncate"
+                              >
+                                {Object.entries(meta!.values!).map(([code, label]) => (
+                                  <option key={code} value={code}>{code}: {label}</option>
+                                ))}
+                                {!(String(Math.round(param.value)) in meta!.values!) && (
+                                  <option value={Math.round(param.value)}>{Math.round(param.value)}: Custom</option>
+                                )}
+                              </select>
+                              <button
+                                onClick={() => startEdit(param.id, param.value)}
+                                className="shrink-0 p-1 rounded hover:bg-surface-input text-content-secondary hover:text-blue-400 transition-colors"
+                                title="Type a custom value"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           ) : (
                             <>
                               <button
@@ -889,7 +924,6 @@ const ParameterTable: React.FC = () => {
                                 title={(() => {
                                   const hints: string[] = [];
                                   if (meta?.range) hints.push(`Range: ${meta.range.min} - ${meta.range.max}`);
-                                  if (meta?.values) hints.push(`Values: ${Object.entries(meta.values).map(([k,v]) => `${k}=${v}`).join(', ')}`);
                                   return hints.join('\n') || `Click to edit`;
                                 })()}
                               >
@@ -918,6 +952,38 @@ const ParameterTable: React.FC = () => {
                               onCancel={() => setBitmaskParam(null)}
                             />
                           )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  {/* Options column: discrete value labels for params with meta.values */}
+                  <div className="px-4 py-2.5 min-w-0 overflow-hidden">
+                    {(() => {
+                      const meta = getParameterMetadata(param.id);
+                      const hasVals = !meta?.bitmask && meta?.values && Object.keys(meta.values).length > 0;
+                      if (!hasVals) return null;
+                      const isInt = Number.isInteger(param.value);
+                      const currentCode = String(isInt ? Math.round(param.value) : param.value);
+                      return (
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] leading-snug max-h-[34px] overflow-hidden">
+                          {Object.entries(meta!.values!).map(([code, label]) => {
+                            const selected = code === currentCode;
+                            return (
+                              <button
+                                key={code}
+                                onClick={() => setParameter(param.id, Number(code))}
+                                className={`shrink-0 transition-colors ${
+                                  selected
+                                    ? 'text-blue-400 font-medium'
+                                    : 'text-content-tertiary hover:text-content-secondary'
+                                }`}
+                                title={`Set ${param.id} = ${code} (${label})`}
+                              >
+                                <span className="font-mono">{code}</span>
+                                <span className="ml-1">{label}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       );
                     })()}
@@ -1036,7 +1102,7 @@ const ParameterTable: React.FC = () => {
               )}
             </div>
 
-            <div className="flex-1 overflow-auto px-6 py-4">
+            <div className="flex-1 min-h-0 overflow-auto px-6 py-4">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs text-content-secondary uppercase">
@@ -1097,7 +1163,7 @@ const ParameterTable: React.FC = () => {
       {/* File Compare Modal — shows compare view OR post-apply summary */}
       {showCompareModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-surface border rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
+          <div className="bg-surface border rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[640px] h-[640px] flex flex-col overflow-hidden">
 
             {fileApplyResult ? (
               /* Post-apply summary view */
@@ -1106,7 +1172,7 @@ const ParameterTable: React.FC = () => {
                   <h3 className="text-lg font-semibold text-content">Apply Results</h3>
                 </div>
 
-                <div className="flex-1 overflow-auto px-6 py-5 space-y-4">
+                <div className="flex-1 min-h-0 overflow-auto px-6 py-5 space-y-4">
                   {/* Applied count */}
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-400 shrink-0" />
@@ -1133,7 +1199,7 @@ const ParameterTable: React.FC = () => {
                         <span className="text-sm text-amber-300">
                           {fileApplyResult.rebootRequired.length} require reboot to take effect:
                         </span>
-                        <p className="font-mono text-xs text-amber-400/70 mt-1">
+                        <p className="font-mono text-xs text-amber-400/70 mt-1 break-words">
                           {fileApplyResult.rebootRequired.join(', ')}
                         </p>
                       </div>
@@ -1148,7 +1214,7 @@ const ParameterTable: React.FC = () => {
                         <span className="text-sm text-blue-300">
                           {fileApplyResult.skippedParams.length} not found on this firmware:
                         </span>
-                        <p className="font-mono text-xs text-blue-400/70 mt-1">
+                        <p className="font-mono text-xs text-blue-400/70 mt-1 break-words">
                           {fileApplyResult.skippedParams.map(p => p.id).join(', ')}
                         </p>
                         <p className="text-xs text-content-secondary mt-1">
@@ -1204,9 +1270,33 @@ const ParameterTable: React.FC = () => {
                       {fileTotalCount} params in file: {fileTotalCount - fileSkippedCount} matched vehicle, {fileSkippedCount} skipped (not found on this firmware)
                     </p>
                   )}
+                  {connectionState.isSitl && sitlUnsafeMap.size > 0 && (
+                    <div className="mt-3 flex items-start gap-2 px-3 py-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                      <Cpu className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                      <div className="flex-1 text-xs">
+                        <div className="text-blue-300">
+                          {sitlSafeMode
+                            ? `SITL-safe mode hides ${sitlUnsafeMap.size} hardware-identity param${sitlUnsafeMap.size !== 1 ? 's' : ''} that can crash the simulator.`
+                            : `${sitlUnsafeMap.size} param${sitlUnsafeMap.size !== 1 ? 's' : ''} below are flagged as hardware-only and may crash SITL on reboot.`}
+                        </div>
+                        <button
+                          onClick={() => setSitlSafeMode(v => !v)}
+                          className="mt-1 text-blue-400 hover:text-blue-300 underline transition-colors"
+                        >
+                          {sitlSafeMode ? 'Show all (override)' : 'Re-enable SITL-safe mode'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {fileParamDiffs.length > 0 && (
+                {fileParamDiffs.length > 0 && (() => {
+                  const visibleDiffs = sitlSafeMode
+                    ? fileParamDiffs.filter(d => !sitlUnsafeMap.has(d.paramId))
+                    : fileParamDiffs;
+                  const hiddenUnsafeCount = fileParamDiffs.length - visibleDiffs.length;
+                  const visibleSelectedCount = visibleDiffs.filter(d => d.selected).length;
+                  return (
                   <>
                     {/* Select all / Deselect all */}
                     <div className="px-6 py-2 border-b border-subtle flex items-center gap-3">
@@ -1224,11 +1314,11 @@ const ParameterTable: React.FC = () => {
                         Deselect all
                       </button>
                       <span className="ml-auto text-xs text-content-secondary">
-                        {fileParamDiffs.filter(d => d.selected).length} of {fileParamDiffs.length} selected
+                        {visibleSelectedCount} of {visibleDiffs.length} selected{hiddenUnsafeCount > 0 ? ` (${hiddenUnsafeCount} hw-only hidden)` : ''}
                       </span>
                     </div>
 
-                    <div className="flex-1 overflow-auto px-6 py-2">
+                    <div className="flex-1 min-h-0 overflow-auto px-6 py-2">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="text-left text-xs text-content-secondary uppercase">
@@ -1240,40 +1330,54 @@ const ParameterTable: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-subtle">
-                          {fileParamDiffs.map(diff => (
-                            <tr
-                              key={diff.paramId}
-                              className={`cursor-pointer transition-colors ${diff.selected ? 'hover:bg-surface' : 'opacity-50 hover:opacity-75'}`}
-                              onClick={() => toggleDiffSelection(diff.paramId)}
-                            >
-                              <td className="py-2 pr-2">
-                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                                  diff.selected
-                                    ? 'bg-blue-500/30 border-blue-500/50'
-                                    : 'border bg-surface'
-                                }`}>
-                                  {diff.selected && (
-                                    <svg className="w-3 h-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                    </svg>
+                          {visibleDiffs.map(diff => {
+                            const unsafeReason = sitlUnsafeMap.get(diff.paramId);
+                            return (
+                              <tr
+                                key={diff.paramId}
+                                className={`cursor-pointer transition-colors ${diff.selected ? 'hover:bg-surface' : 'opacity-50 hover:opacity-75'}`}
+                                onClick={() => toggleDiffSelection(diff.paramId)}
+                              >
+                                <td className="py-2 pr-2">
+                                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                                    diff.selected
+                                      ? 'bg-blue-500/30 border-blue-500/50'
+                                      : 'border bg-surface'
+                                  }`}>
+                                    {diff.selected && (
+                                      <svg className="w-3 h-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-2 font-mono text-content">
+                                  {diff.paramId}
+                                  {unsafeReason && (
+                                    <span
+                                      className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wide font-medium bg-red-500/15 text-red-400 border border-red-500/30"
+                                      title={`SITL-unsafe: ${unsafeReason}. Applying may crash the simulator.`}
+                                    >
+                                      hw-only
+                                    </span>
                                   )}
-                                </div>
-                              </td>
-                              <td className="py-2 font-mono text-content">{diff.paramId}</td>
-                              <td className="py-2 text-right font-mono text-content-secondary">{formatParamValue(diff.currentValue)}</td>
-                              <td className="py-2 text-center text-content-tertiary">
-                                <svg className="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                </svg>
-                              </td>
-                              <td className="py-2 font-mono text-amber-400">{formatParamValue(diff.fileValue)}</td>
-                            </tr>
-                          ))}
+                                </td>
+                                <td className="py-2 text-right font-mono text-content-secondary">{formatParamValue(diff.currentValue)}</td>
+                                <td className="py-2 text-center text-content-tertiary">
+                                  <svg className="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                  </svg>
+                                </td>
+                                <td className="py-2 font-mono text-amber-400">{formatParamValue(diff.fileValue)}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
                   </>
-                )}
+                  );
+                })()}
 
                 {/* Progress bar while applying */}
                 {isApplyingFileParams && applyProgress && (
@@ -1348,7 +1452,7 @@ const ParameterTable: React.FC = () => {
                     <span className="text-sm text-amber-300">
                       {cycleResult.stillPending.length} parameter{cycleResult.stillPending.length !== 1 ? 's' : ''} could not be set:
                     </span>
-                    <p className="font-mono text-xs text-amber-400/70 mt-1">
+                    <p className="font-mono text-xs text-amber-400/70 mt-1 break-words">
                       {cycleResult.stillPending.map(p => p.id).join(', ')}
                     </p>
                     <p className="text-xs text-content-secondary mt-1">

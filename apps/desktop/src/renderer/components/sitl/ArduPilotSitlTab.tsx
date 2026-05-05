@@ -12,6 +12,7 @@ import type { VirtualRCState, ArduPilotVehicleType, ArduPilotReleaseTrack, ArduP
 import { getIpLocation } from '../../utils/ip-geolocation';
 import SitlEnvironmentPanel from './SitlEnvironmentPanel';
 import SitlFailurePanel from './SitlFailurePanel';
+import { CustomFramePanel } from './CustomFramePanel';
 
 const VEHICLE_TYPE_OPTIONS: Array<{ value: ArduPilotVehicleType; label: string; icon: string }> = [
   { value: 'copter', label: 'Copter', icon: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
@@ -361,6 +362,8 @@ export default function ArduPilotSitlTab() {
               </select>
               <FrameDefaultsHint frame={selectedFrame} />
             </div>
+
+            <CustomFramePanel />
 
             <div>
               <label className="block text-xs text-content-secondary mb-1">Release Track</label>

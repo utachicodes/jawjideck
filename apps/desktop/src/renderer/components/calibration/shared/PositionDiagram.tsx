@@ -43,7 +43,63 @@ export function PositionDiagram({ position, isActive = false, compact = false }:
           </g>
         );
 
-      case 1: // Inverted (Top Down)
+      case 1: // Left Side Down
+        return (
+          <g className={baseClass}>
+            {/* Side view - left wing down */}
+            <rect x="60" y="70" width="80" height="60" rx="4" className={fillClass} stroke="currentColor" strokeWidth={strokeWidth} transform="rotate(90 100 100)" />
+            {/* Arrow indicating left */}
+            <path d="M35 100 L50 90 L50 95 L70 95 L70 105 L50 105 L50 110 Z" fill="currentColor" />
+            {/* Surface line */}
+            <line x1="30" y1="160" x2="30" y2="40" stroke="currentColor" strokeWidth={1} strokeDasharray="4" />
+            <text x="15" y="100" textAnchor="middle" className="text-xs" fill="currentColor" transform="rotate(-90 15 100)">Surface</text>
+          </g>
+        );
+
+      case 2: // Right Side Down
+        return (
+          <g className={baseClass}>
+            {/* Side view - right wing down */}
+            <rect x="60" y="70" width="80" height="60" rx="4" className={fillClass} stroke="currentColor" strokeWidth={strokeWidth} transform="rotate(-90 100 100)" />
+            {/* Arrow indicating right */}
+            <path d="M165 100 L150 90 L150 95 L130 95 L130 105 L150 105 L150 110 Z" fill="currentColor" />
+            {/* Surface line */}
+            <line x1="170" y1="160" x2="170" y2="40" stroke="currentColor" strokeWidth={1} strokeDasharray="4" />
+            <text x="185" y="100" textAnchor="middle" className="text-xs" fill="currentColor" transform="rotate(90 185 100)">Surface</text>
+          </g>
+        );
+
+      case 3: // Nose Down
+        return (
+          <g className={baseClass}>
+            {/* Side view - nose down */}
+            <rect x="70" y="50" width="60" height="80" rx="4" className={fillClass} stroke="currentColor" strokeWidth={strokeWidth} />
+            {/* Nose indicator */}
+            <polygon points="100,50 80,70 120,70" fill="currentColor" opacity="0.5" />
+            {/* Arrow indicating down */}
+            <path d="M100 170 L90 155 L95 155 L95 140 L105 140 L105 155 L110 155 Z" fill="currentColor" />
+            {/* Surface line */}
+            <line x1="30" y1="175" x2="170" y2="175" stroke="currentColor" strokeWidth={1} strokeDasharray="4" />
+            <text x="100" y="190" textAnchor="middle" className="text-xs" fill="currentColor">Surface</text>
+          </g>
+        );
+
+      case 4: // Nose Up
+        return (
+          <g className={baseClass}>
+            {/* Side view - nose up */}
+            <rect x="70" y="70" width="60" height="80" rx="4" className={fillClass} stroke="currentColor" strokeWidth={strokeWidth} />
+            {/* Nose indicator */}
+            <polygon points="100,70 80,90 120,90" fill="currentColor" opacity="0.5" />
+            {/* Arrow indicating up */}
+            <path d="M100 30 L90 45 L95 45 L95 60 L105 60 L105 45 L110 45 Z" fill="currentColor" />
+            {/* Surface line */}
+            <line x1="30" y1="175" x2="170" y2="175" stroke="currentColor" strokeWidth={1} strokeDasharray="4" />
+            <text x="100" y="190" textAnchor="middle" className="text-xs" fill="currentColor">Surface</text>
+          </g>
+        );
+
+      case 5: // Inverted (Top Down)
         return (
           <g className={baseClass}>
             {/* Drone body - inverted */}
@@ -63,62 +119,6 @@ export function PositionDiagram({ position, isActive = false, compact = false }:
             {/* Level surface line */}
             <line x1="30" y1="40" x2="170" y2="40" stroke="currentColor" strokeWidth={1} strokeDasharray="4" />
             <text x="100" y="30" textAnchor="middle" className="text-xs" fill="currentColor">Supporting Surface</text>
-          </g>
-        );
-
-      case 2: // Left Side Down
-        return (
-          <g className={baseClass}>
-            {/* Side view - left wing down */}
-            <rect x="60" y="70" width="80" height="60" rx="4" className={fillClass} stroke="currentColor" strokeWidth={strokeWidth} transform="rotate(90 100 100)" />
-            {/* Arrow indicating left */}
-            <path d="M35 100 L50 90 L50 95 L70 95 L70 105 L50 105 L50 110 Z" fill="currentColor" />
-            {/* Surface line */}
-            <line x1="30" y1="160" x2="30" y2="40" stroke="currentColor" strokeWidth={1} strokeDasharray="4" />
-            <text x="15" y="100" textAnchor="middle" className="text-xs" fill="currentColor" transform="rotate(-90 15 100)">Surface</text>
-          </g>
-        );
-
-      case 3: // Right Side Down
-        return (
-          <g className={baseClass}>
-            {/* Side view - right wing down */}
-            <rect x="60" y="70" width="80" height="60" rx="4" className={fillClass} stroke="currentColor" strokeWidth={strokeWidth} transform="rotate(-90 100 100)" />
-            {/* Arrow indicating right */}
-            <path d="M165 100 L150 90 L150 95 L130 95 L130 105 L150 105 L150 110 Z" fill="currentColor" />
-            {/* Surface line */}
-            <line x1="170" y1="160" x2="170" y2="40" stroke="currentColor" strokeWidth={1} strokeDasharray="4" />
-            <text x="185" y="100" textAnchor="middle" className="text-xs" fill="currentColor" transform="rotate(90 185 100)">Surface</text>
-          </g>
-        );
-
-      case 4: // Nose Down
-        return (
-          <g className={baseClass}>
-            {/* Side view - nose down */}
-            <rect x="70" y="50" width="60" height="80" rx="4" className={fillClass} stroke="currentColor" strokeWidth={strokeWidth} />
-            {/* Nose indicator */}
-            <polygon points="100,50 80,70 120,70" fill="currentColor" opacity="0.5" />
-            {/* Arrow indicating down */}
-            <path d="M100 170 L90 155 L95 155 L95 140 L105 140 L105 155 L110 155 Z" fill="currentColor" />
-            {/* Surface line */}
-            <line x1="30" y1="175" x2="170" y2="175" stroke="currentColor" strokeWidth={1} strokeDasharray="4" />
-            <text x="100" y="190" textAnchor="middle" className="text-xs" fill="currentColor">Surface</text>
-          </g>
-        );
-
-      case 5: // Nose Up
-        return (
-          <g className={baseClass}>
-            {/* Side view - nose up */}
-            <rect x="70" y="70" width="60" height="80" rx="4" className={fillClass} stroke="currentColor" strokeWidth={strokeWidth} />
-            {/* Nose indicator */}
-            <polygon points="100,70 80,90 120,90" fill="currentColor" opacity="0.5" />
-            {/* Arrow indicating up */}
-            <path d="M100 30 L90 45 L95 45 L95 60 L105 60 L105 45 L110 45 Z" fill="currentColor" />
-            {/* Surface line */}
-            <line x1="30" y1="175" x2="170" y2="175" stroke="currentColor" strokeWidth={1} strokeDasharray="4" />
-            <text x="100" y="190" textAnchor="middle" className="text-xs" fill="currentColor">Surface</text>
           </g>
         );
 
