@@ -47,7 +47,12 @@ const COPTER_FRAME_CLASS: Record<string, number> = {
  * This ensures essential parameters (like FRAME_CLASS) are set on first boot
  * or after EEPROM wipe, avoiding the "Check frame class" arming error.
  */
-function generateDefaultParams(vehicleType: ArduPilotVehicleType, model: string): string {
+function generateDefaultParams(
+  vehicleType: ArduPilotVehicleType,
+  model: string,
+  simBattVoltage?: number,
+  simBattCapAh?: number,
+): string {
   const lines: string[] = [];
 
   if (vehicleType === 'copter') {
@@ -177,11 +182,20 @@ function generateDefaultParams(vehicleType: ArduPilotVehicleType, model: string)
     lines.push('Q_GUIDED_MODE   1');
   }
 
-  // Sim-calmness for every vehicle (no wind / plausible battery).
+  // Sim-calmness for every vehicle (no wind).
   lines.push('SIM_WIND_SPD 0');
   lines.push('SIM_WIND_DIR 0');
   lines.push('SIM_WIND_T 0');
-  lines.push('SIM_BATT_VOLTAGE 12.6');
+  // Simulated battery: must be set in defaults so SITL initializes the SOC
+  // model on every boot. Runtime PARAM_SET on SIM_BATT_VOLTAGE alone does
+  // NOT re-initialize the simulated battery; only SIM_BATT_CAP_AH change
+  // resets state of charge. Writing both here forces a fresh init at boot.
+  // Default to a realistic 14S Li-Ion (heavy industrial multirotor). Override via
+  // simBattVoltage/simBattCapAh in the SITL config when we add UI fields.
+  const battV = typeof simBattVoltage === 'number' && simBattVoltage > 0 ? simBattVoltage : 60.9;
+  const battAh = typeof simBattCapAh === 'number' && simBattCapAh > 0 ? simBattCapAh : 56;
+  lines.push(`SIM_BATT_VOLTAGE ${battV}`);
+  lines.push(`SIM_BATT_CAP_AH ${battAh}`);
   // Disable SITL terrain model. If user picks a home location at a real-world
   // spot with high terrain (mountains), spawning at alt=0 AMSL puts the
   // vehicle below ground and AGL goes negative ("flying underground"). With
@@ -237,8 +251,19 @@ class ArduPilotSitlProcessManager {
   private buildArgs(config: ArduPilotSitlConfig): string[] {
     const args: string[] = [];
 
-    const model = config.model || DEFAULT_MODELS[config.vehicleType];
-    args.push(`-M${model}`);
+    // Custom frame JSON overrides the built-in -M model when provided. SITL
+    // expects `<type>:<absolute path>` where type is the physics class
+    // (quad/hexa/octa) — derived from the frame's motor count.
+    if (config.customFramePath && config.customFrameMotors) {
+      const typePrefix =
+        config.customFrameMotors === 8 ? 'octa' :
+        config.customFrameMotors === 6 ? 'hexa' :
+        'quad';
+      args.push(`-M${typePrefix}:${config.customFramePath}`);
+    } else {
+      const model = config.model || DEFAULT_MODELS[config.vehicleType];
+      args.push(`-M${model}`);
+    }
 
     const { lat, lng, alt, heading } = config.homeLocation;
     args.push(`-O${lat},${lng},${alt},${heading}`);
@@ -319,7 +344,12 @@ class ArduPilotSitlProcessManager {
         }
       }
 
-      const overlay = generateDefaultParams(config.vehicleType, model);
+      const overlay = generateDefaultParams(
+        config.vehicleType,
+        model,
+        config.simBattVoltage,
+        config.simBattCapAh,
+      );
       if (overlay && !config.defaultsFile) {
         const overlayPath = path.join(path.dirname(binaryPath), 'ardudeck-defaults.parm');
         await writeFile(overlayPath, overlay, 'utf-8');
@@ -328,6 +358,33 @@ class ArduPilotSitlProcessManager {
 
       if (defaultsStack.length > 0 && !config.defaultsFile) {
         config = { ...config, defaultsFile: defaultsStack.join(',') };
+      }
+
+      // Stage the active custom frame so ArduPilot SITL can actually open it.
+      // SITL's AP::FS().stat() runs paths through map_filename() which strips
+      // the leading `/` on SITL builds, turning any absolute path into a
+      // relative one resolved against SITL's cwd. The only reliable solution
+      // is to write the file INSIDE SITL's cwd (the binary's directory) and
+      // pass a bare filename to `-Mtype:<filename>`.
+      if (config.customFramePath) {
+        try {
+          const { stageFramePathForLaunch } = await import('./custom-frame-storage.js');
+          const sitlCwd = path.dirname(binaryPath);
+          const stagedFilename = await stageFramePathForLaunch(config.customFramePath, sitlCwd);
+          if (stagedFilename) {
+            config = { ...config, customFramePath: stagedFilename };
+          } else {
+            // Staging failed (file missing, unreadable, or invalid JSON).
+            // Clear the active frame entirely so SITL launches with the
+            // built-in `-M{model}` instead of getting the original (broken)
+            // path passed in and panicking with "failed to load".
+            console.warn('[SITL] custom frame staging failed; the active frame file is missing or unreadable. Falling back to built-in physics.');
+            config = { ...config, customFramePath: undefined, customFrameMotors: undefined };
+          }
+        } catch (err) {
+          console.warn('[SITL] custom frame staging threw; falling back to built-in physics:', err);
+          config = { ...config, customFramePath: undefined, customFrameMotors: undefined };
+        }
       }
 
       this._currentConfig = config;

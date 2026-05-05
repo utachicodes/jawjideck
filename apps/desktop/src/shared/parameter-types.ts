@@ -1269,3 +1269,17 @@ export function generateFallbackDescription(paramId: string): string {
   const formatted = parts.map(p => p.toLowerCase()).join(' ');
   return `${formatted} (check ArduPilot docs for details)`;
 }
+
+/**
+ * Format a parameter value for display.
+ *
+ * float32 storage gives ~7 significant digits; anything beyond that is IEEE
+ * noise (e.g. 60.79999923706055 instead of 60.8). toPrecision(7) + parseFloat
+ * strips that noise without losing meaningful precision and trims trailing
+ * zeros. Used by every UI that shows a numeric param to keep formatting
+ * consistent.
+ */
+export function formatParamValue(value: number): string {
+  if (Number.isInteger(value)) return String(value);
+  return String(parseFloat(value.toPrecision(7)));
+}

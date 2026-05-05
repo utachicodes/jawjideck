@@ -5262,17 +5262,20 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   }
 
   // ArduPilot's AP_Filesystem multiplexes several virtual filesystems behind
-  // well-known prefixes ("/APM/", "/@SYS/", "/@PARAM/", "/@MISSION/",
-  // "/@ROMFS/"). On SITL the POSIX backend doesn't surface these as entries
-  // when listing "/", and on real hardware some FCs only show the SD card
-  // root (e.g. "APM"). To give users a consistent landing page we synthesize
-  // the known mount points at "/" and merge them with whatever the FC
-  // returned. Directly listing any of them by prefix works fine.
+  // well-known prefixes. Only some of them implement opendir, so only some
+  // are browsable:
+  //   - "APM"     - SD card root (FATFS on real hw; on SITL POSIX maps to
+  //                 cwd, may return FileNotFound depending on the build)
+  //   - "@SYS"    - opendir at root only (threads.txt, etc.)
+  //   - "@ROMFS"  - embedded firmware filesystem, opendir works
+  // "@PARAM" and "@MISSION" deliberately omitted: they expose virtual files
+  // (param.pck, mission.dat) for direct OpenFileRO access but their
+  // backends do not implement opendir, so listing them returns FailErrno
+  // with a meaningless stale errno. Users access those via the Parameters
+  // and Mission views instead.
   const VIRTUAL_ROOTS: ReadonlyArray<{ kind: 'dir'; name: string }> = [
     { kind: 'dir', name: 'APM' },
     { kind: 'dir', name: '@SYS' },
-    { kind: 'dir', name: '@PARAM' },
-    { kind: 'dir', name: '@MISSION' },
     { kind: 'dir', name: '@ROMFS' },
   ];
 

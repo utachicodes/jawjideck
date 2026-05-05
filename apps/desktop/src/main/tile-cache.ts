@@ -139,11 +139,12 @@ export function setupTileCacheProtocol(): void {
       try {
         let realUrl: string;
         if (isRadarLayer) {
-          // Layer name is radar-{timestamp}-c{colorScheme}, e.g. radar-1609402200-c6
+          // Layer name is radar-{pathId}-c{colorScheme}, e.g. radar-8f4387a21ffe-c6
+          // pathId is the last segment of RainViewer's radar.past[].path — opaque, not derivable from timestamp.
           const parts = layer.substring(6).split('-c');
-          const timestamp = parts[0];
+          const pathId = parts[0];
           const colorScheme = parts[1] ?? '6';
-          realUrl = `https://tilecache.rainviewer.com/v2/radar/${timestamp}/256/${fetchZ}/${fetchX}/${fetchY}/${colorScheme}/1_1.png`;
+          realUrl = `https://tilecache.rainviewer.com/v2/radar/${pathId}/256/${fetchZ}/${fetchX}/${fetchY}/${colorScheme}/1_1.png`;
         } else {
           realUrl = resolveTileUrl(layerKey as LayerKey, fetchZ, fetchX, fetchY);
         }

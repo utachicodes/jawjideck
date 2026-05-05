@@ -159,11 +159,42 @@ export class MavlinkFtpClient {
    * empty (but reachable) directory.
    */
   async listDirectory(path: string): Promise<{ entries: DirectoryEntry[] } | { error: string }> {
+    // Fast path: try without a session reset. LIST is stateless on the FC
+    // side per ArduPilot's GCS_FTP::list_dir, so most calls don't need it.
+    // If anything fails - even FileNotFound - we reset and retry once.
+    // The retry isn't really for "find the missing dir on second attempt",
+    // it's because ArduPilot's FTP server leaves residual state after a
+    // NAK that wedges the *next* unrelated call too. Resetting now means
+    // the user's next navigation gets a clean server. Cost on a genuine
+    // miss is ~1 extra round-trip (negligible on localhost/USB serial).
+    const first = await this.listDirectoryOnce(path);
+    if ('entries' in first) return first;
+
+    this.log('debug', `FTP: listDirectory ${path} first attempt failed (${first.error}); resetting sessions and retrying`);
+    await this.resetSessions();
+    return this.listDirectoryOnce(path);
+  }
+
+  private async listDirectoryOnce(path: string): Promise<{ entries: DirectoryEntry[] } | { error: string }> {
     const pathBytes = new TextEncoder().encode(path);
     const data = new Uint8Array(pathBytes.length + 1); // null-terminated
     data.set(pathBytes);
 
     const entries: DirectoryEntry[] = [];
+    // Names we've already added, used to dedupe across pages. ArduPilot's
+    // iterator can re-emit the same entry on consecutive batches when its
+    // internal cursor and our requested offset drift (different batch sizes
+    // per call, virtual mount injection, etc.) - especially on SITL POSIX.
+    // A real directory can't legitimately contain two entries with the same
+    // name, so any duplicate is glitch noise we drop.
+    const seenNames = new Set<string>();
+    // Tracks the total entry index ArduPilot has returned to us across pages,
+    // including ones we filtered (".", "..") or that came back as 'S' (skip)
+    // tags. This is what 'offset' on the next request must match - using
+    // entries.length here would re-request entries we already filtered,
+    // producing duplicates. ArduPilot's view of "where we are" is parsed-count,
+    // not visible-count.
+    let totalParsed = 0;
     const MAX_ENTRIES = 1000; // safety cap so a misbehaving FC can't loop us forever
 
     while (entries.length < MAX_ENTRIES) {
@@ -173,7 +204,7 @@ export class MavlinkFtpClient {
           opcode: FtpOpcode.ListDirectory,
           session: 0,
           // 'offset' here is "first entry index to return", not byte offset.
-          offset: entries.length,
+          offset: totalParsed,
           // Per the MAVLink-FTP spec, `size` is the count of valid bytes in
           // the data field. ArduPilot's server writes `payload[12 + size] = 0`
           // to null-terminate before reading the path, so `size: 0` corrupts
@@ -228,10 +259,19 @@ export class MavlinkFtpClient {
           const name = tabIdx >= 0 ? body.slice(0, tabIdx) : body;
           const sizeStr = tabIdx >= 0 ? body.slice(tabIdx + 1) : '0';
           const size = parseInt(sizeStr, 10);
-          entries.push({ kind: 'file', name, size: Number.isFinite(size) ? size : 0 });
+          if (!seenNames.has(name)) {
+            seenNames.add(name);
+            entries.push({ kind: 'file', name, size: Number.isFinite(size) ? size : 0 });
+          }
           parsed++;
         } else if (tag === 'D') {
-          entries.push({ kind: 'dir', name: body });
+          // POSIX-style "." and ".." are protocol noise from the SITL
+          // backend - they aren't useful in a flat browser UI. Count them
+          // toward `parsed` so the offset advances, but don't surface them.
+          if (body !== '.' && body !== '..' && !seenNames.has(body)) {
+            seenNames.add(body);
+            entries.push({ kind: 'dir', name: body });
+          }
           parsed++;
         } else if (tag === 'S') {
           // Skipped entry - count it toward offset so we advance, but don't
@@ -244,6 +284,7 @@ export class MavlinkFtpClient {
       // If the response carried zero parseable entries, abort the loop or
       // we'd spin forever requesting the same offset.
       if (parsed === 0) return { entries };
+      totalParsed += parsed;
     }
 
     return { entries };

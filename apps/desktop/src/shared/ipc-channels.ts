@@ -374,6 +374,14 @@ export const IPC_CHANNELS = {
   ARDUPILOT_SITL_LIST_FRAMES: 'ardupilot-sitl:list-frames',
   ARDUPILOT_SITL_REFRESH_FRAMES: 'ardupilot-sitl:refresh-frames',
 
+  // SITL custom frames (user-authored JSON physics models)
+  ARDUPILOT_SITL_CUSTOM_FRAME_LIST: 'ardupilot-sitl:custom-frame-list',
+  ARDUPILOT_SITL_CUSTOM_FRAME_LOAD: 'ardupilot-sitl:custom-frame-load',
+  ARDUPILOT_SITL_CUSTOM_FRAME_SAVE: 'ardupilot-sitl:custom-frame-save',
+  ARDUPILOT_SITL_CUSTOM_FRAME_DELETE: 'ardupilot-sitl:custom-frame-delete',
+  ARDUPILOT_SITL_CUSTOM_FRAME_IMPORT: 'ardupilot-sitl:custom-frame-import',
+  ARDUPILOT_SITL_CUSTOM_FRAME_EXPORT: 'ardupilot-sitl:custom-frame-export',
+
   // Visual Simulators (FlightGear, X-Plane)
   SIMULATOR_DETECT: 'simulator:detect',
   SIMULATOR_BROWSE_FG: 'simulator:browse-fg',
@@ -1098,6 +1106,17 @@ export interface ArduPilotSitlConfig {
    * for realistic decay. Omit to leave at firmware default.
    */
   simBattCapAh?: number;
+  /**
+   * Path to a user-authored JSON physics frame file. When set, SITL launches
+   * with `--model <type>:<path>` overriding the built-in frame physics. The
+   * type prefix (quad/hexa/octa) is derived from customFrameMotors.
+   */
+  customFramePath?: string;
+  /**
+   * Motor count of the custom frame. Used to pick the SITL --model type
+   * prefix (4=quad, 6=hexa, 8=octa). Required when customFramePath is set.
+   */
+  customFrameMotors?: number;
 }
 
 /**

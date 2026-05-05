@@ -42,15 +42,19 @@ const BatteryTab: React.FC = () => {
     battVoltMult: parameters.get('BATT_VOLT_MULT')?.value ?? 10.1,
     battAmpPervlt: parameters.get('BATT_AMP_PERVLT')?.value ?? 17,
     battAmpOffset: parameters.get('BATT_AMP_OFFSET')?.value ?? 0,
+    // Pin assignments
+    battVoltPin: parameters.get('BATT_VOLT_PIN')?.value ?? -1,
+    battCurrPin: parameters.get('BATT_CURR_PIN')?.value ?? -1,
   }), [parameters]);
 
   // Battery chemistry state
   const [chemistry, setChemistry] = useState<BatteryChemistry>('lipo');
   const chemInfo = BATTERY_CHEMISTRIES[chemistry];
 
-  // Cell counts: 2S-6S compact row, 7S-12S second row for larger setups
+  // Cell counts: hobby (2-6S), prosumer (7-12S), industrial / heavy-lift (14S+)
   const cellCountsLow = [2, 3, 4, 5, 6];
   const cellCountsHigh = [7, 8, 10, 12];
+  const cellCountsIndustrial = [14, 16, 18, 20, 24];
 
   // Get recommended voltages for selected cell count + chemistry
   const getRecommendedVoltages = (cells: number) => {
@@ -76,8 +80,9 @@ const BatteryTab: React.FC = () => {
     return Math.round(batteryValues.battArmVolt / chemInfo.cellNominal);
   }, [batteryValues.battArmVolt, chemInfo.cellNominal]);
 
-  // Max voltage for sliders - based on 12S full charge of current chemistry + margin
-  const maxVoltageSlider = Math.ceil(12 * chemInfo.cellFull * 10) + 10;
+  // Max voltage for sliders - based on 24S full charge of current chemistry + margin.
+  // 24S covers heavy-lift industrial multirotors up to ~108V (24S Li-Ion HV).
+  const maxVoltageSlider = Math.ceil(24 * chemInfo.cellFull * 10) + 10;
 
   const modified = modifiedCount();
 
@@ -147,27 +152,50 @@ const BatteryTab: React.FC = () => {
             value={batteryValues.battCapacity}
             onChange={(v) => setParameter('BATT_CAPACITY', v)}
             min={0}
-            max={30000}
+            max={200000}
             step={100}
             color="#22C55E"
-            hint="Match your battery pack capacity"
+            hint="Match your battery pack capacity. Heavy-lift industrial multirotors typically 20–100 Ah."
           />
 
-          {/* Common capacity presets */}
-          <div className="flex flex-wrap gap-2">
-            {[1300, 2200, 3000, 5000, 8000, 10000, 16000].map((cap) => (
-              <button
-                key={cap}
-                onClick={() => setParameter('BATT_CAPACITY', cap)}
-                className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
-                  batteryValues.battCapacity === cap
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-surface-raised text-content-secondary hover:bg-surface-raised'
-                }`}
-              >
-                {cap} mAh
-              </button>
-            ))}
+          {/* Hobby / racing / cinema capacity presets */}
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-content-tertiary mb-1.5">Hobby / cinema</div>
+            <div className="flex flex-wrap gap-2">
+              {[1300, 2200, 3000, 5000, 8000, 10000, 16000].map((cap) => (
+                <button
+                  key={cap}
+                  onClick={() => setParameter('BATT_CAPACITY', cap)}
+                  className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                    batteryValues.battCapacity === cap
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-surface-raised text-content-secondary hover:bg-surface-raised'
+                  }`}
+                >
+                  {cap >= 1000 ? `${(cap / 1000).toFixed(cap % 1000 ? 1 : 0)} Ah` : `${cap} mAh`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Heavy-lift / industrial capacity presets */}
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-content-tertiary mb-1.5">Heavy lift / industrial</div>
+            <div className="flex flex-wrap gap-2">
+              {[22000, 30000, 44000, 56000, 80000, 100000].map((cap) => (
+                <button
+                  key={cap}
+                  onClick={() => setParameter('BATT_CAPACITY', cap)}
+                  className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                    batteryValues.battCapacity === cap
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-surface-raised text-content-secondary hover:bg-surface-raised'
+                  }`}
+                >
+                  {(cap / 1000).toFixed(0)} Ah
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -243,6 +271,30 @@ const BatteryTab: React.FC = () => {
         {/* Cell Count - High range */}
         <div className="flex gap-2">
           {cellCountsHigh.map((cells) => {
+            const voltages = getCellVoltages(cells, chemistry);
+            const isActive = estimatedCells === cells;
+            return (
+              <button
+                key={cells}
+                onClick={() => applyCellPreset(cells)}
+                className={`flex-1 p-3 rounded-lg border text-center transition-all ${
+                  isActive
+                    ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+                    : 'bg-surface border text-content hover:border'
+                }`}
+              >
+                <div className="text-lg font-bold">{cells}S</div>
+                <div className="text-[10px] text-content-secondary mt-1">
+                  {voltages.nominal.toFixed(1)}V
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Cell Count - Industrial / heavy-lift (14S+) */}
+        <div className="flex gap-2">
+          {cellCountsIndustrial.map((cells) => {
             const voltages = getCellVoltages(cells, chemistry);
             const isActive = estimatedCells === cells;
             return (
@@ -380,36 +432,76 @@ const BatteryTab: React.FC = () => {
         <div className="space-y-4">
           <DraggableSlider
             label="Voltage Multiplier"
-            value={Math.round(batteryValues.battVoltMult * 100)}
-            onChange={(v) => setParameter('BATT_VOLT_MULT', v / 100)}
-            min={500}
-            max={2000}
-            step={1}
+            value={batteryValues.battVoltMult}
+            onChange={(v) => setParameter('BATT_VOLT_MULT', v)}
+            min={0}
+            max={200}
+            step={0.01}
             color="#8B5CF6"
-            hint="Adjusts voltage reading accuracy"
+            hint="Adjusts voltage reading accuracy. Range covers high-voltage industrial setups (up to 200)."
           />
 
           <DraggableSlider
             label="Amps Per Volt"
-            value={Math.round(batteryValues.battAmpPervlt * 10)}
-            onChange={(v) => setParameter('BATT_AMP_PERVLT', v / 10)}
+            value={batteryValues.battAmpPervlt}
+            onChange={(v) => setParameter('BATT_AMP_PERVLT', v)}
             min={0}
             max={500}
-            step={1}
+            step={0.1}
             color="#8B5CF6"
-            hint="Current sensor calibration"
+            hint="Current sensor calibration. Range covers high-current industrial setups (up to 500 A/V)."
           />
 
           <DraggableSlider
             label="Current Offset"
-            value={Math.round(batteryValues.battAmpOffset * 100)}
-            onChange={(v) => setParameter('BATT_AMP_OFFSET', v / 100)}
-            min={-100}
-            max={100}
-            step={1}
+            value={batteryValues.battAmpOffset}
+            onChange={(v) => setParameter('BATT_AMP_OFFSET', v)}
+            min={-1}
+            max={1}
+            step={0.01}
             color="#8B5CF6"
             hint="Zero-point adjustment"
           />
+        </div>
+
+        {/* Pin assignments — board-specific analog input pins */}
+        <div className="border-t border-subtle pt-4 space-y-3">
+          <div>
+            <h4 className="text-xs font-medium text-content uppercase tracking-wide">Analog Pin Assignments</h4>
+            <p className="text-[11px] text-content-secondary mt-0.5">
+              Required for analog monitor types. Pin numbers are board-specific (Cube Orange, SITL, Pixhawk variants all differ). Set -1 to disable.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-content-secondary mb-1">Voltage Pin (BATT_VOLT_PIN)</label>
+              <input
+                type="number"
+                value={batteryValues.battVoltPin}
+                onChange={(e) => setParameter('BATT_VOLT_PIN', Number(e.target.value))}
+                className="w-full px-2 py-1.5 bg-surface-input border border-subtle rounded text-sm font-mono text-content focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-content-secondary mb-1">Current Pin (BATT_CURR_PIN)</label>
+              <input
+                type="number"
+                value={batteryValues.battCurrPin}
+                onChange={(e) => setParameter('BATT_CURR_PIN', Number(e.target.value))}
+                className="w-full px-2 py-1.5 bg-surface-input border border-subtle rounded text-sm font-mono text-content focus:outline-none focus:border-blue-500"
+              />
+            </div>
+          </div>
+          <div className="bg-surface-raised rounded-lg p-2.5 space-y-1">
+            <p className="text-[11px] text-content-secondary"><span className="text-blue-400 font-medium">Common values:</span></p>
+            <ul className="text-[11px] text-content-secondary pl-3 space-y-0.5 list-disc">
+              <li>SITL: VOLT 13, CURR 12</li>
+              <li>Cube Orange (default carrier): VOLT 14, CURR 15</li>
+              <li>Pixhawk 1/2.1: VOLT 2, CURR 3</li>
+              <li>Pixhawk 4/5/6: VOLT 16, CURR 17</li>
+              <li>Disabled: -1</li>
+            </ul>
+          </div>
         </div>
 
         <div className="bg-surface-raised rounded-lg p-3">

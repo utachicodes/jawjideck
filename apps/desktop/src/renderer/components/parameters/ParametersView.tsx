@@ -10,20 +10,11 @@ import { AlertTriangle, RotateCw, Loader2, Star } from 'lucide-react';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useParameterStore, type SortColumn, type FileParamDiff } from '../../stores/parameter-store';
 import { useQuickSetupStore } from '../../stores/quick-setup-store';
-import { getParamTypeName } from '../../../shared/parameter-types';
+import { getParamTypeName, formatParamValue } from '../../../shared/parameter-types';
 import { PARAMETER_GROUPS } from '../../../shared/parameter-groups';
 import { MspConfigView } from './MspConfigView';
 import MavlinkConfigView from '../mavlink-config/MavlinkConfigView';
 import { LegacyConfigView } from '../legacy-config';
-
-/**
- * Format a parameter value for display, stripping float32→float64 noise.
- * float32 has ~7 significant digits; anything beyond is IEEE representation noise.
- */
-function formatParamValue(value: number): string {
-  if (Number.isInteger(value)) return String(value);
-  return String(parseFloat(value.toPrecision(7)));
-}
 
 // Simple toast notification state
 type ToastType = 'success' | 'error' | 'info';

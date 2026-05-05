@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { useParameterStore } from '../../stores/parameter-store';
 import { useConnectionStore } from '../../stores/connection-store';
+import { formatParamValue } from '../../../shared/parameter-types';
 import PidTuningTab from './PidTuningTab';
 import RatesTab from './RatesTab';
 import FlightModesTab from './FlightModesTab';
@@ -690,9 +691,9 @@ export const MavlinkConfigView: React.FC = () => {
                           </span>
                         )}
                       </td>
-                      <td className="py-2 text-right font-mono text-content-secondary">{param.originalValue}</td>
+                      <td className="py-2 text-right font-mono text-content-secondary">{formatParamValue(param.originalValue ?? param.value)}</td>
                       <td className="py-2 text-center text-content-tertiary">→</td>
-                      <td className="py-2 font-mono text-amber-400">{param.value}</td>
+                      <td className="py-2 font-mono text-amber-400">{formatParamValue(param.value)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -1260,6 +1260,20 @@ const api = {
   ardupilotSitlRefreshFrames: (): Promise<ArduPilotFrameCatalog> =>
     ipcRenderer.invoke(IPC_CHANNELS.ARDUPILOT_SITL_REFRESH_FRAMES),
 
+  // SITL custom frames
+  ardupilotSitlCustomFrameList: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.ARDUPILOT_SITL_CUSTOM_FRAME_LIST),
+  ardupilotSitlCustomFrameLoad: (id: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.ARDUPILOT_SITL_CUSTOM_FRAME_LOAD, id),
+  ardupilotSitlCustomFrameSave: (payload: { name: string; frame: import('../shared/sitl-custom-frame').SitlCustomFrame; existingId?: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.ARDUPILOT_SITL_CUSTOM_FRAME_SAVE, payload),
+  ardupilotSitlCustomFrameDelete: (id: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.ARDUPILOT_SITL_CUSTOM_FRAME_DELETE, id),
+  ardupilotSitlCustomFrameImport: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.ARDUPILOT_SITL_CUSTOM_FRAME_IMPORT),
+  ardupilotSitlCustomFrameExport: (id: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.ARDUPILOT_SITL_CUSTOM_FRAME_EXPORT, id),
+
   onArdupilotSitlStdout: (callback: (data: string) => void) => {
     const handler = (_: unknown, data: string) => callback(data);
     ipcRenderer.on(IPC_CHANNELS.ARDUPILOT_SITL_STDOUT, handler);
