@@ -170,8 +170,25 @@ function ChartPanel({ chartId }: { chartId: string }) {
 
   const chartRef = useRef<HTMLDivElement>(null);
   const plotRef = useRef<uPlot | null>(null);
-  const [isZoomed, setIsZoomed] = useState(false);
-  const [xRange, setXRange] = useState<{ min: number; max: number } | null>(null);
+  // Local zoom state used when sync is disabled. When sync is enabled the
+  // effective xRange comes from the store (`syncedXRange`) so all charts
+  // share one time window — drag-zoom on chart 1 also zooms chart 2.
+  const [localXRange, setLocalXRange] = useState<{ min: number; max: number } | null>(null);
+  const syncedXRange = useLogStore((s) => s.syncedXRange);
+  const syncZoomEnabled = useLogStore((s) => s.syncZoomEnabled);
+  const setSyncedXRange = useLogStore((s) => s.setSyncedXRange);
+  const setSyncZoomEnabled = useLogStore((s) => s.setSyncZoomEnabled);
+  const xRange = syncZoomEnabled ? syncedXRange : localXRange;
+  const isZoomed = xRange !== null;
+  // Stable broadcaster used inside uPlot hooks; avoids re-creating the chart
+  // every time the store-derived flag flips.
+  const applyZoom = useCallback((range: { min: number; max: number } | null) => {
+    if (useLogStore.getState().syncZoomEnabled) {
+      useLogStore.getState().setSyncedXRange(range);
+    } else {
+      setLocalXRange(range);
+    }
+  }, []);
   // Legend defaults to collapsed once it would exceed the inline-summary
   // threshold; user can pin it open per-chart.
   const [legendExpanded, setLegendExpanded] = useState(false);
@@ -376,8 +393,7 @@ function ChartPanel({ chartId }: { chartId: string }) {
             const minX = u.posToVal(u.select.left, 'x');
             const maxX = u.posToVal(u.select.left + u.select.width, 'x');
             u.setScale('x', { min: minX, max: maxX });
-            setIsZoomed(true);
-            setXRange({ min: minX, max: maxX });
+            applyZoom({ min: minX, max: maxX });
           }
           u.setSelect({ left: 0, top: 0, width: 0, height: 0 }, false);
         }],
@@ -484,15 +500,13 @@ function ChartPanel({ chartId }: { chartId: string }) {
       const newMin = xMin + (range - newRange) * pctLeft;
       const newMax = newMin + newRange;
       plot.setScale('x', { min: newMin, max: newMax });
-      setIsZoomed(true);
-      setXRange({ min: newMin, max: newMax });
+      applyZoom({ min: newMin, max: newMax });
     };
 
     const handleDblClick = () => {
       const xData = chartData.data[0] as Float64Array;
       plot.setScale('x', { min: xData[0]!, max: xData[xData.length - 1]! });
-      setIsZoomed(false);
-      setXRange(null);
+      applyZoom(null);
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
@@ -503,7 +517,27 @@ function ChartPanel({ chartId }: { chartId: string }) {
       container.removeEventListener('dblclick', handleDblClick);
       if (plotRef.current) { plotRef.current.destroy(); plotRef.current = null; }
     };
-  }, [chartData, isLight, modeTimeline]);
+  }, [chartData, isLight, modeTimeline, applyZoom]);
+
+  // Apply the synchronized zoom range to this chart's plot whenever the
+  // store value changes (i.e. another chart drove the zoom). Local zoom is
+  // already applied imperatively in the user-gesture handlers above, so this
+  // only fires for *external* updates and during initial render.
+  //
+  // When sync is enabled but no explicit range is set, we use the full *log*
+  // time range rather than each chart's own data extent — otherwise a chart
+  // showing ESC RPM (data only at 290-340s) and one showing RCOU (data at
+  // 0-340s) start out visually misaligned even though sync is "on".
+  useEffect(() => {
+    if (!syncZoomEnabled || !plotRef.current || !chartData) return;
+    if (syncedXRange) {
+      plotRef.current.setScale('x', { min: syncedXRange.min, max: syncedXRange.max });
+    } else if (currentLog) {
+      const min = currentLog.timeRange.startUs / 1_000_000;
+      const max = currentLog.timeRange.endUs / 1_000_000;
+      if (max > min) plotRef.current.setScale('x', { min, max });
+    }
+  }, [syncedXRange, syncZoomEnabled, chartData, currentLog]);
 
   useEffect(() => {
     const el = chartRef.current;
@@ -521,10 +555,9 @@ function ChartPanel({ chartId }: { chartId: string }) {
     if (plotRef.current && chartData) {
       const xData = chartData.data[0] as Float64Array;
       plotRef.current.setScale('x', { min: xData[0]!, max: xData[xData.length - 1]! });
-      setIsZoomed(false);
-      setXRange(null);
+      applyZoom(null);
     }
-  }, [chartData]);
+  }, [chartData, applyZoom]);
 
   const applyPreset = useCallback((preset: typeof QUICK_PRESETS[number]) => {
     const validTypes = preset.types.filter((t) => messageTypes.includes(t));
@@ -730,14 +763,36 @@ function ChartPanel({ chartId }: { chartId: string }) {
       {/* Chart */}
       <div ref={chartRef} className="flex-1 min-h-0" />
 
-      {isZoomed && (
-        <button
-          onClick={resetZoom}
-          className="absolute top-1 right-2 z-10 text-[10px] px-2 py-1 bg-surface-overlay hover:bg-surface-raised text-content hover:text-content rounded border border-subtle transition-colors backdrop-blur-sm"
-        >
-          Reset Zoom
-        </button>
-      )}
+      <div className="absolute top-1 right-2 z-10 flex items-center gap-1.5">
+        {chartIds.length > 1 && (
+          <button
+            onClick={() => setSyncZoomEnabled(!syncZoomEnabled)}
+            className={`text-[10px] px-2 py-1 rounded border transition-colors backdrop-blur-sm flex items-center gap-1 ${
+              syncZoomEnabled
+                ? 'bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border-blue-500/40'
+                : 'bg-surface-overlay hover:bg-surface-raised text-content-secondary hover:text-content border-subtle'
+            }`}
+            title={syncZoomEnabled ? 'Sync zoom across all charts (on)' : 'Sync zoom across all charts (off)'}
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              {syncZoomEnabled ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M3 3l18 18" />
+              )}
+            </svg>
+            <span>{syncZoomEnabled ? 'Synced' : 'Unsynced'}</span>
+          </button>
+        )}
+        {isZoomed && (
+          <button
+            onClick={resetZoom}
+            className="text-[10px] px-2 py-1 bg-surface-overlay hover:bg-surface-raised text-content hover:text-content rounded border border-subtle transition-colors backdrop-blur-sm"
+          >
+            Reset Zoom
+          </button>
+        )}
+      </div>
     </div>
   );
 }

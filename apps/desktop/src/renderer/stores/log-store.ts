@@ -62,6 +62,13 @@ interface LogStore {
   selectedTypesByChart: Record<string, string[]>;
   selectedFieldsByChart: Record<string, Map<string, string[]>>;
 
+  // Synchronized X-axis zoom across chart panels. When `syncZoomEnabled` is
+  // true, every chart applies `syncedXRange` to its X scale so they share a
+  // common time window — drag-select, wheel-zoom, or reset on any chart
+  // propagates to the others. `null` means "show full range".
+  syncedXRange: { min: number; max: number } | null;
+  syncZoomEnabled: boolean;
+
   // Tab
   activeTab: 'list' | 'report' | 'explorer' | 'ai';
 
@@ -86,6 +93,8 @@ interface LogStore {
   setActiveChartId: (id: string) => void;
   addChart: () => string;
   removeChart: (id: string) => void;
+  setSyncedXRange: (range: { min: number; max: number } | null) => void;
+  setSyncZoomEnabled: (enabled: boolean) => void;
   setActiveTab: (tab: 'list' | 'report' | 'explorer' | 'ai') => void;
   reset: () => void;
 }
@@ -112,13 +121,17 @@ export const useLogStore = create<LogStore>()(subscribeWithSelector((set) => ({
   activeChartId: 'chart',
   selectedTypesByChart: { chart: [] },
   selectedFieldsByChart: { chart: new Map() },
+  syncedXRange: null,
+  syncZoomEnabled: true,
   activeTab: 'list',
 
   setAvailableLogs: (logs) => set({ availableLogs: logs }),
   setIsListLoading: (loading) => set({ isListLoading: loading }),
   setCurrentLog: (log, path) => {
     chatLoadInProgress = true;
-    set({ currentLog: log, currentLogPath: path, aiMessages: [], aiInsightCards: [] });
+    // Reset sync zoom: a previous log's time window doesn't apply to the new
+    // log and would either show empty space or look identical to no-zoom.
+    set({ currentLog: log, currentLogPath: path, aiMessages: [], aiInsightCards: [], syncedXRange: null });
     // Load saved conversation for this log
     if (path) {
       window.electronAPI?.logChatLoad(path).then((saved) => {
@@ -158,6 +171,13 @@ export const useLogStore = create<LogStore>()(subscribeWithSelector((set) => ({
     };
   }),
   setActiveChartId: (id) => set({ activeChartId: id }),
+  setSyncedXRange: (range) => set({ syncedXRange: range }),
+  setSyncZoomEnabled: (enabled) => set((state) => ({
+    syncZoomEnabled: enabled,
+    // Disabling sync clears the shared range so each chart falls back to its
+    // own data extent. Re-enabling starts fresh until a user gesture seeds it.
+    syncedXRange: enabled ? state.syncedXRange : null,
+  })),
   addChart: () => {
     // Generate a unique id; we keep them sortable/short so dockview ids are
     // friendly for debugging.
@@ -205,6 +225,8 @@ export const useLogStore = create<LogStore>()(subscribeWithSelector((set) => ({
     activeChartId: 'chart',
     selectedTypesByChart: { chart: [] },
     selectedFieldsByChart: { chart: new Map() },
+    syncedXRange: null,
+    syncZoomEnabled: true,
     activeTab: 'list',
   }),
 })));
