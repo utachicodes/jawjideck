@@ -30,14 +30,35 @@ function SuccessToast({ message, onDismiss }: { message: string; onDismiss: () =
   );
 }
 
+/** Self-dismissing error toast pinned to the bottom of the panel. */
+function ErrorToast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDismiss, 6000);
+    return () => clearTimeout(t);
+  }, [onDismiss]);
+  return (
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[2000] bg-red-600 text-white text-sm px-4 py-2.5 rounded-lg shadow-2xl border border-red-500/40 flex items-center gap-2 max-w-[640px]">
+      <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      </svg>
+      <span className="truncate">{message}</span>
+      <button onClick={onDismiss} className="ml-2 text-red-100/80 hover:text-white text-base leading-none shrink-0" aria-label="Dismiss">×</button>
+    </div>
+  );
+}
+
 /**
  * Read + parse a .bin file by PATH on the main process. We deliberately do
  * NOT marshal file bytes through IPC — a 100MB log used to take minutes to
  * round-trip as `number[]` (one JS Number per byte) and froze the UI the
  * whole time. Now the renderer just sends a string and gets streamed
  * progress via onLogParseProgress.
+ *
+ * Returns the error message on failure so the caller can surface it - the
+ * main-process handler also auto-removes missing files from the recent list,
+ * so a silent failure here looks like "Open just deleted the row".
  */
-async function parseAndAnalyze(path: string) {
+async function parseAndAnalyze(path: string): Promise<string | null> {
   const store = useLogStore.getState();
   // Flip parsing state on BEFORE the await so the progress UI renders
   // immediately — without this the user saw a frozen window for the read.
@@ -49,8 +70,10 @@ async function parseAndAnalyze(path: string) {
     store.setCurrentLog(result.log as ReturnType<typeof useLogStore.getState>['currentLog'], path);
     store.setHealthResults(result.healthResults as ReturnType<typeof useLogStore.getState>['healthResults']);
     store.setActiveTab('report');
+    return null;
   } catch (error) {
     console.error('[Logs] Parse failed:', error);
+    return error instanceof Error ? error.message : String(error);
   } finally {
     store.setIsParsingLog(false);
   }
@@ -72,6 +95,7 @@ export function LogListPanel() {
   const [recentLogs, setRecentLogs] = useState<RecentLog[]>([]);
   const [openingRecent, setOpeningRecent] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [errorToast, setErrorToast] = useState<string | null>(null);
 
   /**
    * Map of FC log ID -> recent file path for that log, derived from the
@@ -160,7 +184,8 @@ export function LogListPanel() {
   const handleOpenFile = async () => {
     const picked = await window.electronAPI.logOpenDialog();
     if (!picked) return;
-    await parseAndAnalyze(picked.path);
+    const err = await parseAndAnalyze(picked.path);
+    if (err) setErrorToast(err);
     window.electronAPI.logRecentGet().then(setRecentLogs);
   };
 
@@ -168,9 +193,11 @@ export function LogListPanel() {
     setOpeningRecent(log.path);
     try {
       // Main-process LOG_PARSE_FILE handles both the file read + recents
-      // refresh + parse. If the file is gone it throws; we catch and refresh
-      // the recent list so the stale entry disappears.
-      await parseAndAnalyze(log.path);
+      // refresh + parse. If the file is gone it throws AND removes the entry
+      // from recents - surface the error so the user knows why the row
+      // disappeared instead of thinking "Open" deleted it.
+      const err = await parseAndAnalyze(log.path);
+      if (err) setErrorToast(err);
     } finally {
       window.electronAPI.logRecentGet().then(setRecentLogs);
       setOpeningRecent(null);
@@ -307,6 +334,9 @@ export function LogListPanel() {
 
       {/* Success toast (download complete) */}
       {toast && <SuccessToast message={toast} onDismiss={() => setToast(null)} />}
+
+      {/* Error toast (parse failed - usually missing file) */}
+      {errorToast && <ErrorToast message={errorToast} onDismiss={() => setErrorToast(null)} />}
 
       {/* No logs found after request */}
       {listRequested && !isListLoading && availableLogs.length === 0 && (
