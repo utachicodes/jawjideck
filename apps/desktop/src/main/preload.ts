@@ -192,6 +192,19 @@ const api = {
   motorTestStop: (motorCount: number): Promise<MotorTestResponse> =>
     ipcRenderer.invoke(IPC_CHANNELS.MOTOR_TEST_STOP, motorCount),
 
+  // Servo Test — pulse a single channel to a specific PWM via MAV_CMD_DO_SET_SERVO
+  servoTestPulse: (channel: number, pwm: number): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.SERVO_TEST_PULSE, { channel, pwm }),
+  servoTestRelease: (channel: number): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.SERVO_TEST_RELEASE, { channel }),
+
+  // RC override stick test — drives RC1..RC4 (Roll/Pitch/Throttle/Yaw) so
+  // the ArduPlane mixer translates them to whatever outputs they're mapped to.
+  rcOverrideSet: (roll: number, pitch: number, throttle: number, yaw: number, modeChannel?: number, modePwm?: number): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.RC_OVERRIDE_SET, { roll, pitch, throttle, yaw, modeChannel, modePwm }),
+  rcOverrideRelease: (): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.RC_OVERRIDE_RELEASE),
+
   // MAVLink Signing
   signingSetKey: (passphrase: string): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.MAVLINK_SIGNING_SET_KEY, passphrase),

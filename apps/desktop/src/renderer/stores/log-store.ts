@@ -17,11 +17,15 @@ export interface LogListEntry {
 
 /** Serialized DataFlashLog from the worker (Maps serialized to plain objects) */
 export interface ParsedLog {
-  formats: Record<number, { id: number; name: string; length: number; format: string; fields: string[] }>;
+  formats: Record<number, { id: number; name: string; length: number; format: string; fields: string[]; unitChars?: string[]; multChars?: string[] }>;
   messages: Record<string, { type: string; timeUs: number; fields: Record<string, number | string> }[]>;
   metadata: { vehicleType: string; firmwareVersion: string; firmwareString: string; boardType: string; gitHash: string };
   timeRange: { startUs: number; endUs: number };
   messageTypes: string[];
+  /** Unit char (e.g. 'm', 'd') → human label (e.g. "m", "deg"). Empty when log has no UNIT records. */
+  unitLabels: Record<string, string>;
+  /** Multiplier char → numeric multiplier. Empty when log has no MULT records. */
+  multValues: Record<string, number>;
 }
 
 interface LogStore {

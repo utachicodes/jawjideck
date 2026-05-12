@@ -3127,12 +3127,18 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         case 'udp':
           if (options.udpMode === 'client') {
             if (!options.udpRemoteHost || !options.udpRemotePort) throw new Error('Remote host and port required for UDP client mode');
+            // Bind to a fixed local port (default 14550). ArduPilot UDPIN
+            // latches the source IP+port of the first packet it receives and
+            // replies there for the lifetime of the link; using an ephemeral
+            // port (0) breaks reconnects because the new source port doesn't
+            // match the one the FC cached. See issue #86.
+            const clientLocalPort = options.udpClientLocalPort ?? 14550;
             currentTransport = new UdpTransport({
-              localPort: 0,
+              localPort: clientLocalPort,
               remoteHost: options.udpRemoteHost,
               remotePort: options.udpRemotePort,
             });
-            transportName = `UDP client ${options.udpRemoteHost}:${options.udpRemotePort}`;
+            transportName = `UDP client ${options.udpRemoteHost}:${options.udpRemotePort} (local :${clientLocalPort})`;
           } else {
             currentTransport = new UdpTransport({
               localPort: options.udpPort ?? 14550,
@@ -5534,6 +5540,146 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       sendLog(mainWindow, 'error', 'Failed to send motor test command', message);
+      return { success: false, error: message };
+    }
+  });
+
+  // Servo Test via MAV_CMD_DO_SET_SERVO (command 183)
+  // Drives a single output channel to a specific PWM. Used by the Servo Output
+  // tab's per-row test buttons. ArduPilot accepts this even when armed for
+  // ground testing; user is responsible for safety (props off, etc.).
+  ipcMain.handle(IPC_CHANNELS.SERVO_TEST_PULSE, async (_, request: { channel: number; pwm: number }) => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return { success: false, error: 'Not connected' };
+    }
+    if (connectionState.protocol !== 'mavlink') {
+      return { success: false, error: 'Servo test requires MAVLink connection' };
+    }
+    try {
+      const payload = serializeCommandLong({
+        targetSystem: connectionState.systemId ?? 1,
+        targetComponent: 1,
+        command: 183, // MAV_CMD_DO_SET_SERVO
+        confirmation: 0,
+        param1: request.channel,
+        param2: request.pwm,
+        param3: 0, param4: 0, param5: 0, param6: 0, param7: 0,
+      });
+      const packet = await sendMavlinkPacket(COMMAND_LONG_ID, payload, COMMAND_LONG_CRC_EXTRA);
+      await currentTransport.write(packet);
+      connectionState.packetsSent++;
+      sendLog(mainWindow, 'info', `Servo test: ch ${request.channel} -> ${request.pwm}us`);
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      sendLog(mainWindow, 'error', 'Failed to send servo test', message);
+      return { success: false, error: message };
+    }
+  });
+
+  // RC Override stick test — drives RC1..RC4 with synthetic stick positions.
+  // Unlike DO_SET_SERVO, this goes through the autopilot's mixer so it works
+  // for outputs assigned to mixer functions (Aileron/Elevator/Throttle/etc).
+  // Assumes default RCMAP (Roll=RC1, Pitch=RC2, Throttle=RC3, Yaw=RC4).
+  ipcMain.handle(IPC_CHANNELS.RC_OVERRIDE_SET, async (_, request: { roll: number; pitch: number; throttle: number; yaw: number; modeChannel?: number; modePwm?: number }) => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return { success: false, error: 'Not connected' };
+    }
+    if (connectionState.protocol !== 'mavlink') {
+      return { success: false, error: 'RC override requires MAVLink connection' };
+    }
+    try {
+      // Aux channels default to UINT16_MAX = "ignore" per MAVLink spec, so we
+      // don't accidentally hijack FLTMODE_CH or other RCx_OPTION-driven aux
+      // functions with stale values. If the caller asks us to pin a specific
+      // channel (typically FLTMODE_CH so the test stays in MANUAL while RX is
+      // detached) we override that single aux slot.
+      const IGNORE = 65535;
+      const aux: number[] = new Array(14).fill(IGNORE); // chan5-18
+      if (request.modeChannel && request.modePwm && request.modeChannel >= 5 && request.modeChannel <= 18) {
+        aux[request.modeChannel - 5] = request.modePwm;
+      }
+      const payload = serializeRcChannelsOverride({
+        targetSystem: connectionState.systemId ?? 1,
+        targetComponent: 1,
+        chan1Raw: request.roll,
+        chan2Raw: request.pitch,
+        chan3Raw: request.throttle,
+        chan4Raw: request.yaw,
+        chan5Raw: aux[0]!, chan6Raw: aux[1]!, chan7Raw: aux[2]!, chan8Raw: aux[3]!,
+        chan9Raw: aux[4]!, chan10Raw: aux[5]!, chan11Raw: aux[6]!, chan12Raw: aux[7]!,
+        chan13Raw: aux[8]!, chan14Raw: aux[9]!, chan15Raw: aux[10]!, chan16Raw: aux[11]!,
+        chan17Raw: aux[12]!, chan18Raw: aux[13]!,
+      });
+      const packet = await sendMavlinkPacket(RC_CHANNELS_OVERRIDE_ID, payload, RC_CHANNELS_OVERRIDE_CRC_EXTRA);
+      await currentTransport.write(packet);
+      connectionState.packetsSent++;
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, error: message };
+    }
+  });
+
+  // Release RC override by sending UINT16_MAX on every channel - ArduPilot's
+  // documented signal that the GCS is no longer overriding RC.
+  ipcMain.handle(IPC_CHANNELS.RC_OVERRIDE_RELEASE, async () => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return { success: false, error: 'Not connected' };
+    }
+    if (connectionState.protocol !== 'mavlink') {
+      return { success: false, error: 'RC override requires MAVLink connection' };
+    }
+    try {
+      const RELEASE = 65535; // UINT16_MAX = "ignore this channel"
+      const payload = serializeRcChannelsOverride({
+        targetSystem: connectionState.systemId ?? 1,
+        targetComponent: 1,
+        chan1Raw: RELEASE, chan2Raw: RELEASE, chan3Raw: RELEASE, chan4Raw: RELEASE,
+        chan5Raw: RELEASE, chan6Raw: RELEASE, chan7Raw: RELEASE, chan8Raw: RELEASE,
+        chan9Raw: RELEASE, chan10Raw: RELEASE, chan11Raw: RELEASE, chan12Raw: RELEASE,
+        chan13Raw: RELEASE, chan14Raw: RELEASE, chan15Raw: RELEASE, chan16Raw: RELEASE,
+        chan17Raw: RELEASE, chan18Raw: RELEASE,
+      });
+      const packet = await sendMavlinkPacket(RC_CHANNELS_OVERRIDE_ID, payload, RC_CHANNELS_OVERRIDE_CRC_EXTRA);
+      await currentTransport.write(packet);
+      connectionState.packetsSent++;
+      sendLog(mainWindow, 'info', 'RC override released');
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, error: message };
+    }
+  });
+
+  // Releases an override set by SERVO_TEST_PULSE. ArduPilot interprets PWM=0
+  // on DO_SET_SERVO as "stop overriding this channel" and returns it to the
+  // autopilot's normal control.
+  ipcMain.handle(IPC_CHANNELS.SERVO_TEST_RELEASE, async (_, request: { channel: number }) => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return { success: false, error: 'Not connected' };
+    }
+    if (connectionState.protocol !== 'mavlink') {
+      return { success: false, error: 'Servo test requires MAVLink connection' };
+    }
+    try {
+      const payload = serializeCommandLong({
+        targetSystem: connectionState.systemId ?? 1,
+        targetComponent: 1,
+        command: 183,
+        confirmation: 0,
+        param1: request.channel,
+        param2: 0,
+        param3: 0, param4: 0, param5: 0, param6: 0, param7: 0,
+      });
+      const packet = await sendMavlinkPacket(COMMAND_LONG_ID, payload, COMMAND_LONG_CRC_EXTRA);
+      await currentTransport.write(packet);
+      connectionState.packetsSent++;
+      sendLog(mainWindow, 'info', `Servo test release: ch ${request.channel}`);
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      sendLog(mainWindow, 'error', 'Failed to send servo release', message);
       return { success: false, error: message };
     }
   });
@@ -8239,6 +8385,17 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     for (const [k, v] of log.formats) formats[k] = v;
     const messages: Record<string, unknown> = {};
     for (const [k, v] of log.messages) messages[k] = v;
+    // unitLabels / multValues were added to DataFlashLog after the package's
+    // dist was last built. Guard so a stale dist doesn't crash the IPC handler
+    // (and so older logs that simply have no UNIT/FMTU records also work).
+    const unitLabels: Record<string, string> = {};
+    if (log.unitLabels instanceof Map) {
+      for (const [k, v] of log.unitLabels) unitLabels[k] = v;
+    }
+    const multValues: Record<string, number> = {};
+    if (log.multValues instanceof Map) {
+      for (const [k, v] of log.multValues) multValues[k] = v;
+    }
 
     return {
       log: {
@@ -8247,6 +8404,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         metadata: log.metadata,
         timeRange: log.timeRange,
         messageTypes: log.messageTypes,
+        unitLabels,
+        multValues,
       },
       healthResults,
       path: filePath,

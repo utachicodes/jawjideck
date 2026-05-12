@@ -207,6 +207,7 @@ interface MissionStore {
   insertWaypoint: (afterSeq: number, lat: number, lon: number, alt?: number) => void;
   updateWaypoint: (seq: number, updates: Partial<MissionItem>) => void;
   removeWaypoint: (seq: number) => void;
+  removeWaypoints: (seqs: number[]) => void;
   reorderWaypoints: (fromSeq: number, toSeq: number) => void;
   insertMissionItems: (items: MissionItem[]) => void;
   applyTerrainPlan: (plan: {
@@ -495,6 +496,23 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
         newSelectedSeq = selectedSeq - 1;
       }
     }
+
+    set({
+      missionItems: newItems,
+      isDirty: true,
+      selectedSeq: newSelectedSeq,
+    });
+  },
+
+  removeWaypoints: (seqs: number[]) => {
+    if (seqs.length === 0) return;
+    const { missionItems, selectedSeq } = get();
+    const toRemove = new Set(seqs);
+    const newItems = missionItems
+      .filter(item => !toRemove.has(item.seq))
+      .map((item, index) => ({ ...item, seq: index }));
+
+    const newSelectedSeq = selectedSeq !== null && toRemove.has(selectedSeq) ? null : selectedSeq;
 
     set({
       missionItems: newItems,

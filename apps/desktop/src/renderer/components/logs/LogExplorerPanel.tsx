@@ -201,6 +201,31 @@ function ChartPanel({ chartId }: { chartId: string }) {
   const chartData = useMemo(() => {
     if (!currentLog) return null;
 
+    // Build a (type, field) → unit string lookup from the parsed log's UNIT/FMTU
+    // metadata. Falls back gracefully when the log has no unit records (older
+    // firmware) — the helper just returns undefined and labels render unitless.
+    const unitLabels = currentLog.unitLabels ?? {};
+    const formatList = Object.values(currentLog.formats);
+    const lookupUnit = (type: string, field: string): string | undefined => {
+      if (Object.keys(unitLabels).length === 0) return undefined;
+      for (const fmt of formatList) {
+        if (fmt.name !== type) continue;
+        if (!fmt.unitChars) return undefined;
+        const idx = fmt.fields.indexOf(field);
+        if (idx === -1) return undefined;
+        const ch = fmt.unitChars[idx];
+        if (!ch || ch === '-') return undefined;
+        const label = unitLabels[ch];
+        if (!label || label === '-' || label === '') return undefined;
+        return label;
+      }
+      return undefined;
+    };
+    const labelWithUnit = (base: string, type: string, field: string): string => {
+      const u = lookupUnit(type, field);
+      return u ? `${base} (${u})` : base;
+    };
+
     // Derive active types from selectedFields (don't depend on selectedTypes)
     const activeTypes: string[] = [];
     selectedFields.forEach((fields, type) => {
@@ -280,7 +305,7 @@ function ChartPanel({ chartId }: { chartId: string }) {
             const v = m.fields[baseField];
             vi.push(typeof v === 'number' ? v : NaN);
           }
-          typeSeries.push({ time: ti, label: `${type}[${targetInst}].${baseField}`, values: vi });
+          typeSeries.push({ time: ti, label: labelWithUnit(`${type}[${targetInst}].${baseField}`, type, baseField), values: vi });
         } else if (splitByInstance) {
           // Bucket messages by instance value, preserving per-instance time
           // axes (different sample rates per sensor are common).
@@ -297,7 +322,7 @@ function ChartPanel({ chartId }: { chartId: string }) {
           for (const [inst, bucket] of [...byInst.entries()].sort((a, b) => a[0] - b[0])) {
             typeSeries.push({
               time: bucket.time,
-              label: `${type}[${inst}].${baseField}`,
+              label: labelWithUnit(`${type}[${inst}].${baseField}`, type, baseField),
               values: bucket.values,
             });
           }
@@ -306,7 +331,7 @@ function ChartPanel({ chartId }: { chartId: string }) {
             const v = m.fields[baseField];
             return typeof v === 'number' ? v : NaN;
           });
-          typeSeries.push({ time, label: `${type}.${baseField}`, values });
+          typeSeries.push({ time, label: labelWithUnit(`${type}.${baseField}`, type, baseField), values });
         }
       }
       if (typeSeries.length > 0) perType.push(typeSeries);

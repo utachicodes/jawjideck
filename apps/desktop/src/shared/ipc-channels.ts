@@ -427,6 +427,14 @@ export const IPC_CHANNELS = {
   MOTOR_TEST_START: 'motor-test:start',
   MOTOR_TEST_STOP: 'motor-test:stop',
 
+  // Servo Test (per-channel pulse via MAV_CMD_DO_SET_SERVO)
+  SERVO_TEST_PULSE: 'servo-test:pulse',
+  SERVO_TEST_RELEASE: 'servo-test:release',
+
+  // RC Override (synthetic stick input via RC_CHANNELS_OVERRIDE for bench testing)
+  RC_OVERRIDE_SET: 'rc-override:set',
+  RC_OVERRIDE_RELEASE: 'rc-override:release',
+
   // Mission Library (offline storage)
   MISSION_LIBRARY_LIST: 'mission-library:list',
   MISSION_LIBRARY_GET: 'mission-library:get',
@@ -573,6 +581,13 @@ export interface ConnectOptions {
   udpMode?: 'listen' | 'client';
   udpRemoteHost?: string;
   udpRemotePort?: number;
+  /**
+   * Local port to bind for UDP client mode. Defaults to 14550. Must be
+   * stable across reconnects — ArduPilot's UDPIN driver caches the source
+   * IP+port of the first packet it sees and replies there forever, so
+   * letting the OS pick an ephemeral port (0) breaks reconnect.
+   */
+  udpClientLocalPort?: number;
   /** Force a specific protocol, skipping auto-detection */
   protocol?: 'mavlink' | 'msp';
 }
@@ -817,6 +832,21 @@ export interface UiVisibilitySettings {
 }
 
 /**
+ * A user-saved survey planner preset. Shape is duplicated loosely here to keep
+ * the shared module from importing renderer-only survey types. The renderer is
+ * the source of truth for the strict type (see survey-presets.ts).
+ */
+export interface PersistedSurveyPreset {
+  id: string;
+  name: string;
+  description: string;
+  tag: string;
+  isUserDefined: true;
+  config: Record<string, unknown>;
+  camera?: Record<string, unknown>;
+}
+
+/**
  * Settings store schema (persisted to disk)
  */
 export interface SettingsStoreSchema {
@@ -832,6 +862,17 @@ export interface SettingsStoreSchema {
   experimentalLogs?: boolean;
   showDebugLogs?: boolean;
   aiProvider?: 'claude' | 'openai' | 'gemini' | null;
+  /** User-saved survey planner presets. Built-in presets ship in code. */
+  surveyPresets?: PersistedSurveyPreset[];
+  /** Last-used survey preset id (built-in or user-defined). Restored on app start. */
+  lastSurveyPresetId?: string;
+  /**
+   * Last-used survey config (camera, altitude, overlaps, pattern, etc.) so
+   * planner state survives app restart. Polygon and result are NOT persisted
+   * (scene-specific). Loose Record shape to keep this module free of
+   * renderer-only survey types.
+   */
+  surveySavedConfig?: Record<string, unknown>;
 }
 
 // =============================================================================
