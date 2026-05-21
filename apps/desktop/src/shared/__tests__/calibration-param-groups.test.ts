@@ -2,9 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   categorizeCalibrationParam,
   isCalibrationParam,
-  getLockFlagsForCategories,
-  CALIBRATION_LOCK_FLAGS,
-  type CalibrationCategory,
 } from '../calibration-param-groups.js';
 
 describe('categorizeCalibrationParam', () => {
@@ -32,37 +29,6 @@ describe('categorizeCalibrationParam', () => {
       const r = categorizeCalibrationParam(id);
       expect(r).not.toBeNull();
       expect(r?.category).toBe('accel');
-      expect(r?.kind).toBe(kind);
-      expect(r?.instance).toBe(instance);
-    });
-  });
-
-  describe('gyro', () => {
-    it.each([
-      ['INS_GYROFFS_X', 'offset', 1],
-      ['INS_GYROFFS_Y', 'offset', 1],
-      ['INS_GYROFFS_Z', 'offset', 1],
-      ['INS_GYR2OFFS_X', 'offset', 2],
-      ['INS_GYR2OFFS_Y', 'offset', 2],
-      ['INS_GYR2OFFS_Z', 'offset', 2],
-      ['INS_GYR3OFFS_X', 'offset', 3],
-      ['INS_GYR3OFFS_Y', 'offset', 3],
-      ['INS_GYR3OFFS_Z', 'offset', 3],
-      ['INS_GYR_ID', 'devid', 1],
-      ['INS_GYR2_ID', 'devid', 2],
-      ['INS_GYR3_ID', 'devid', 3],
-      ['INS_GYR_CALTEMP', 'caltemp', 1],
-      ['INS_GYR1_CALTEMP', 'caltemp', 1],
-      ['INS_GYR2_CALTEMP', 'caltemp', 2],
-      ['INS_GYR3_CALTEMP', 'caltemp', 3],
-      ['INS_TCAL1_ENABLE', 'tcal', 1],
-      ['INS_TCAL1_TMIN', 'tcal', 1],
-      ['INS_TCAL2_TMAX', 'tcal', 2],
-      ['INS_TCAL3_TMIN', 'tcal', 3],
-    ])('%s → gyro/%s instance %d', (id, kind, instance) => {
-      const r = categorizeCalibrationParam(id);
-      expect(r).not.toBeNull();
-      expect(r?.category).toBe('gyro');
       expect(r?.kind).toBe(kind);
       expect(r?.instance).toBe(instance);
     });
@@ -101,6 +67,33 @@ describe('categorizeCalibrationParam', () => {
     });
   });
 
+  describe('gyro params are intentionally rejected', () => {
+    // Gyro auto-cals at boot in ArduPilot, so the force-accept flow ignores
+    // INS_GYR* entirely. If gyro support is ever added back, these tests
+    // will fail loudly and force a deliberate decision.
+    it.each([
+      'INS_GYROFFS_X',
+      'INS_GYROFFS_Y',
+      'INS_GYROFFS_Z',
+      'INS_GYR2OFFS_X',
+      'INS_GYR3OFFS_Z',
+      'INS_GYR_ID',
+      'INS_GYR2_ID',
+      'INS_GYR3_ID',
+      'INS_GYR_CALTEMP',
+      'INS_GYR1_CALTEMP',
+      'INS_GYR2_CALTEMP',
+      'INS_GYR3_CALTEMP',
+      'INS_TCAL1_ENABLE',
+      'INS_TCAL1_TMIN',
+      'INS_TCAL2_TMAX',
+      'INS_TCAL3_TMIN',
+      'INS_GYR_CAL',
+    ])('rejects gyro param %s', (id) => {
+      expect(categorizeCalibrationParam(id)).toBeNull();
+    });
+  });
+
   describe('rejections — non-cal params must return null', () => {
     // Sentinel values: things that LOOK like cal params but aren't.
     // Especially important — the regexes must not silently match these.
@@ -116,7 +109,7 @@ describe('categorizeCalibrationParam', () => {
       'INS_ACCEL_FILTER',        // filter Hz — config not cal
       'INS_GYRO_FILTER',
       'COMPASS_ENABLE',          // master enable, not per-instance
-      'COMPASS_LEARN',           // lock-in flag, written separately
+      'COMPASS_LEARN',           // not part of cal data (and intentionally never auto-written)
       'COMPASS_AUTODEC',
       'COMPASS_DEC',             // declination — vehicle config, not chip cal
       'COMPASS_ORIENT',
@@ -139,11 +132,6 @@ describe('categorizeCalibrationParam', () => {
       'COMPASS',
       'COMPASS_',
       // Common typos / partial matches that must be rejected
-      'INS_GYRO',                // missing FFS_X suffix
-      'INS_GYR',
-      'INS_GYR2',
-      'INS_GYR2OFFS',            // missing _X/_Y/_Z
-      'INS_GYROFFS',
       'INS_ACCOFFS',
       'INS_ACCOFFS_',
       'INS_ACCOFFS_W',           // not X/Y/Z
@@ -159,25 +147,16 @@ describe('categorizeCalibrationParam', () => {
     it('returns true for cal params', () => {
       expect(isCalibrationParam('INS_ACCOFFS_X')).toBe(true);
       expect(isCalibrationParam('COMPASS_OFS3_Z')).toBe(true);
-      expect(isCalibrationParam('INS_GYR2OFFS_Y')).toBe(true);
     });
 
     it('returns false for non-cal params', () => {
       expect(isCalibrationParam('BATT_MONITOR')).toBe(false);
       expect(isCalibrationParam('INS_GYRO_RATE')).toBe(false);
+      expect(isCalibrationParam('INS_GYROFFS_X')).toBe(false);
     });
   });
 
   describe('instance parsing edge cases', () => {
-    it('treats INS_GYR_CALTEMP (no digit) as instance 1', () => {
-      // Older ArduPilot used the digit-less form for IMU 1; modern uses INS_GYR1_CALTEMP.
-      // Both must resolve to instance 1 so a file with the old form still classifies correctly.
-      const r1 = categorizeCalibrationParam('INS_GYR_CALTEMP');
-      const r2 = categorizeCalibrationParam('INS_GYR1_CALTEMP');
-      expect(r1?.instance).toBe(1);
-      expect(r2?.instance).toBe(1);
-    });
-
     it('treats COMPASS_OFS_X (no digit) as instance 1, COMPASS_OFS2_X as instance 2', () => {
       expect(categorizeCalibrationParam('COMPASS_OFS_X')?.instance).toBe(1);
       expect(categorizeCalibrationParam('COMPASS_OFS2_X')?.instance).toBe(2);
@@ -189,58 +168,6 @@ describe('categorizeCalibrationParam', () => {
       // build with INS_ACC4OFFS_X must not silently land in any bucket.
       expect(categorizeCalibrationParam('INS_ACC4OFFS_X')).toBeNull();
       expect(categorizeCalibrationParam('COMPASS_OFS4_X')).toBeNull();
-      expect(categorizeCalibrationParam('INS_GYR4_CALTEMP')).toBeNull();
     });
-  });
-});
-
-describe('getLockFlagsForCategories', () => {
-  it('returns no flags when no categories given', () => {
-    expect(getLockFlagsForCategories([])).toEqual([]);
-  });
-
-  it('returns INS_GYR_CAL only when applying gyro-only', () => {
-    const flags = getLockFlagsForCategories(['gyro']);
-    const ids = flags.map(f => f.paramId);
-    expect(ids).toEqual(['INS_GYR_CAL']);
-    expect(flags[0]?.value).toBe(0);
-  });
-
-  it('returns COMPASS_LEARN only when applying mag-only', () => {
-    const flags = getLockFlagsForCategories(['mag']);
-    const ids = flags.map(f => f.paramId);
-    expect(ids).toEqual(['COMPASS_LEARN']);
-    expect(flags[0]?.value).toBe(0);
-  });
-
-  it('returns no lock flags for accel-only', () => {
-    // Accel cal doesn't have an auto-recal mechanism in modern AP; nothing
-    // to lock down. If this ever changes, add to CALIBRATION_LOCK_FLAGS and
-    // this test will fail loudly.
-    const flags = getLockFlagsForCategories(['accel']);
-    expect(flags).toEqual([]);
-  });
-
-  it('returns both flags when applying gyro + mag', () => {
-    const flags = getLockFlagsForCategories(['gyro', 'mag']);
-    const ids = flags.map(f => f.paramId).sort();
-    expect(ids).toEqual(['COMPASS_LEARN', 'INS_GYR_CAL']);
-  });
-
-  it('returns both flags when applying all three categories', () => {
-    const flags = getLockFlagsForCategories(['accel', 'gyro', 'mag']);
-    const ids = flags.map(f => f.paramId).sort();
-    expect(ids).toEqual(['COMPASS_LEARN', 'INS_GYR_CAL']);
-  });
-
-  it('every lock flag declared in the constant is reachable from at least one category', () => {
-    // Catch dead lock-flag entries: if a flag's appliesTo is empty or all
-    // categories are missing from the union, it can never fire — better
-    // to remove it than ship a no-op.
-    const allCategories: CalibrationCategory[] = ['accel', 'gyro', 'mag'];
-    const reachable = new Set(getLockFlagsForCategories(allCategories).map(f => f.paramId));
-    for (const flag of CALIBRATION_LOCK_FLAGS) {
-      expect(reachable.has(flag.paramId)).toBe(true);
-    }
   });
 });

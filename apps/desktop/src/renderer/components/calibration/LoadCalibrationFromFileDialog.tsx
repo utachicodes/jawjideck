@@ -1,27 +1,31 @@
 /**
  * LoadCalibrationFromFileDialog (#16) — force-accept calibration from a .param file.
  *
- * ArduPilot accepts PARAM_SET on calibration values, but on the next boot
- * `INS_GYR_CAL` recalibrates the gyro and `COMPASS_LEARN` drifts the compass
- * offsets — silently un-doing whatever values the user just loaded. This
- * dialog wraps `applyLoadedCalibration()` which writes the cal params AND
- * the lock-in flags atomically, so a loaded calibration actually sticks.
+ * ArduPilot accepts PARAM_SET on calibration values, but the prearm path
+ * still validates them against the live sensor identity — loading cal from
+ * a different physical board (or a file with no real cal in it) leads to
+ * the "3D calibration needed" prearm and silent rejection of the offsets.
+ *
+ * This dialog filters a .param file down to accel+mag cal params, validates
+ * the file against the live FC (sensor IDs match? offsets are non-zero?),
+ * and only enables Apply for categories that pass. Gyro and lock-flag
+ * automation were removed per operator feedback — gyros auto-cal at boot
+ * reliably and silently mutating INS_GYR_CAL / COMPASS_LEARN was unwelcome.
  *
  * Flow:
  *   1. user clicks Open → file picker (uses existing PARAM_LOAD_FILE handler)
- *   2. dialog filters to cal params only, groups by Accel / Gyro / Mag
- *   3. user toggles per-category check + optional "include hardware IDs"
- *   4. Apply → store batches PARAM_SET + lock flags + flash, streams progress
+ *   2. dialog filters to cal params, groups by Accel / Mag, runs validation
+ *   3. user toggles per-category check; categories that failed validation are
+ *      forced off with an inline reason
+ *   4. Apply → store batches PARAM_SET + flash, streams progress
  *   5. result screen: counts + reboot recommendation
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle, Cpu, FileText, RotateCw, XCircle } from 'lucide-react';
-import { useCalibrationStore, type LoadedCalParam } from '../../stores/calibration-store';
-import { useConnectionStore } from '../../stores/connection-store';
+import { AlertTriangle, CheckCircle, FileText, RotateCw, ShieldCheck, ShieldAlert, XCircle } from 'lucide-react';
+import { useCalibrationStore, type LoadedCalParam, type CategoryValidation } from '../../stores/calibration-store';
 import {
   type CalibrationCategory,
-  CALIBRATION_LOCK_FLAGS,
 } from '../../../shared/calibration-param-groups';
 
 interface Props {
@@ -30,13 +34,11 @@ interface Props {
 
 const CATEGORY_LABEL: Record<CalibrationCategory, string> = {
   accel: 'Accelerometer',
-  gyro: 'Gyroscope',
   mag: 'Magnetometer',
 };
 
 const CATEGORY_ACCENT: Record<CalibrationCategory, { ring: string; text: string; bg: string }> = {
   accel: { ring: 'border-blue-500/30', text: 'text-blue-300', bg: 'bg-blue-500/10' },
-  gyro: { ring: 'border-violet-500/30', text: 'text-violet-300', bg: 'bg-violet-500/10' },
   mag: { ring: 'border-amber-500/30', text: 'text-amber-300', bg: 'bg-amber-500/10' },
 };
 
@@ -44,6 +46,14 @@ function formatValue(v: number | undefined): string {
   if (v === undefined) return '—';
   if (Number.isInteger(v)) return String(v);
   return String(parseFloat(v.toPrecision(7)));
+}
+
+/** Human-readable reason a category can't be applied. Returns null if it can. */
+function getBlockedReason(v: CategoryValidation): string | null {
+  if (!v.hasCalData) return 'No calibration data — all offsets in the file are zero';
+  if (v.idStatus === 'mismatch') return 'Sensor IDs do not match this flight controller';
+  if (v.idStatus === 'missing') return 'File contains no sensor IDs — cannot verify the source board';
+  return null;
 }
 
 export function LoadCalibrationFromFileDialog({ onClose }: Props) {
@@ -55,16 +65,13 @@ export function LoadCalibrationFromFileDialog({ onClose }: Props) {
   const isApplying = useCalibrationStore(s => s.isApplyingLoadedCalibration);
   const progress = useCalibrationStore(s => s.loadedCalibrationApplyProgress);
   const result = useCalibrationStore(s => s.loadedCalibrationResult);
-  const isSitl = useConnectionStore(s => !!s.connectionState.isSitl);
 
-  // Per-category opt-in. Default to all-on; disabled categories with zero
-  // params are forced off in the render so the user can't apply a no-op.
+  // Per-category opt-in. Default to all-on; categories that failed validation
+  // (no cal data, mismatched IDs, missing IDs) are forced off in the render
+  // so the user can't apply a no-op or a wrong-board cal.
   const [enabled, setEnabled] = useState<Record<CalibrationCategory, boolean>>({
-    accel: true, gyro: true, mag: true,
+    accel: true, mag: true,
   });
-  // DEV_IDs are off by default — cloning hardware identity from a different
-  // physical board is a known footgun (see sitl-unsafe-params.ts: same family).
-  const [includeDevIds, setIncludeDevIds] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
 
@@ -84,7 +91,7 @@ export function LoadCalibrationFromFileDialog({ onClose }: Props) {
       if (!r.ok) {
         setLoadError(r.error ?? 'Failed to load file');
       } else if ((r.calCount ?? 0) === 0) {
-        setLoadError('No calibration parameters found in the selected file. The file is valid but contains no INS/COMPASS calibration values.');
+        setLoadError('No accel or mag calibration parameters found in the selected file.');
       }
     })();
     return () => { cancelled = true; };
@@ -93,7 +100,7 @@ export function LoadCalibrationFromFileDialog({ onClose }: Props) {
 
   // Group params by category so each section shows its own count + diffs.
   const grouped = useMemo<Record<CalibrationCategory, LoadedCalParam[]>>(() => {
-    const buckets: Record<CalibrationCategory, LoadedCalParam[]> = { accel: [], gyro: [], mag: [] };
+    const buckets: Record<CalibrationCategory, LoadedCalParam[]> = { accel: [], mag: [] };
     if (!loadedCalibration) return buckets;
     for (const p of loadedCalibration.params) {
       buckets[p.info.category].push(p);
@@ -102,12 +109,16 @@ export function LoadCalibrationFromFileDialog({ onClose }: Props) {
   }, [loadedCalibration]);
 
   const handleApply = async () => {
+    if (!loadedCalibration) return;
     const categories = new Set<CalibrationCategory>();
-    for (const c of ['accel', 'gyro', 'mag'] as const) {
-      if (enabled[c] && grouped[c].length > 0) categories.add(c);
+    for (const c of ['accel', 'mag'] as const) {
+      if (!enabled[c]) continue;
+      if (grouped[c].length === 0) continue;
+      if (getBlockedReason(loadedCalibration.validation[c]) !== null) continue;
+      categories.add(c);
     }
     if (categories.size === 0) return;
-    await applyLoadedCalibration({ categories, includeDevIds });
+    await applyLoadedCalibration({ categories });
   };
 
   const handleClose = () => {
@@ -125,12 +136,15 @@ export function LoadCalibrationFromFileDialog({ onClose }: Props) {
     let n = 0;
     for (const p of loadedCalibration.params) {
       if (!enabled[p.info.category]) continue;
-      if (p.info.kind === 'devid' && !includeDevIds) continue;
+      const v = loadedCalibration.validation[p.info.category];
+      if (getBlockedReason(v) !== null) continue;
+      // dev-id params are never written (validation-only)
+      if (p.info.kind === 'devid') continue;
       if (p.currentValue === undefined) continue;
       n++;
     }
     return n;
-  }, [loadedCalibration, enabled, includeDevIds]);
+  }, [loadedCalibration, enabled]);
 
   return (
     <div className="fixed inset-0 bg-surface-overlay flex items-center justify-center z-[120] p-4">
@@ -144,10 +158,11 @@ export function LoadCalibrationFromFileDialog({ onClose }: Props) {
           <>
             {/* Header */}
             <div className="px-6 py-4 border-b border-subtle">
-              <h3 className="text-lg font-semibold text-content">Force-accept calibration from file</h3>
+              <h3 className="text-lg font-semibold text-content">Load calibration from file</h3>
               <p className="text-sm text-content-secondary mt-1">
-                Load ACC / GYRO / MAG calibration values from a .param file and lock them in
-                so ArduPilot doesn't auto-recalibrate over them on next boot.
+                Restore ACC / MAG calibration from a .param file. The file is
+                verified against this flight controller's sensor IDs before any
+                values are written.
               </p>
               {loadedCalibration?.filePath && (
                 <div className="mt-2 flex items-center gap-2 text-xs text-content-tertiary">
@@ -169,81 +184,30 @@ export function LoadCalibrationFromFileDialog({ onClose }: Props) {
                 </div>
               )}
 
-              {isSitl && loadedCalibration && loadedCalibration.params.length > 0 && (
-                <div className="mb-4 flex items-start gap-2 px-3 py-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                  <Cpu className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                  <div className="text-xs text-content-secondary">
-                    <span className="font-medium text-blue-400">SITL connected.</span>{' '}
-                    Loaded calibration is real-vehicle data. Applying the offset/scale
-                    values is harmless but won't change simulator flight behaviour
-                    (SITL's IMU/compass uses an ideal model). Leave{' '}
-                    <span className="font-medium">Apply hardware sensor IDs</span> off —
-                    cloning real-chip DEV_IDs onto SITL can panic HAL_SITL on driver init.
-                  </div>
-                </div>
-              )}
-
               {loadedCalibration && loadedCalibration.params.length > 0 && (
                 <div className="space-y-3">
-                  {(['accel', 'gyro', 'mag'] as const).map((cat) => {
+                  {(['accel', 'mag'] as const).map((cat) => {
                     const items = grouped[cat];
                     const accent = CATEGORY_ACCENT[cat];
                     const hasAny = items.length > 0;
-                    const visibleItems = items.filter(p => includeDevIds || p.info.kind !== 'devid');
-                    const devIdCount = items.filter(p => p.info.kind === 'devid').length;
+                    const validation = loadedCalibration.validation[cat];
+                    const blockedReason = getBlockedReason(validation);
+                    const canApply = hasAny && blockedReason === null;
                     return (
                       <CategoryCard
                         key={cat}
                         title={CATEGORY_LABEL[cat]}
                         accent={accent}
-                        enabled={enabled[cat] && hasAny}
-                        canToggle={hasAny && !isApplying}
+                        enabled={enabled[cat] && canApply}
+                        canToggle={canApply && !isApplying}
                         onToggle={() => setEnabled(prev => ({ ...prev, [cat]: !prev[cat] }))}
                         totalCount={items.length}
-                        visibleCount={visibleItems.length}
-                        devIdHidden={devIdCount > 0 && !includeDevIds}
-                        items={visibleItems}
+                        validation={validation}
+                        blockedReason={blockedReason}
+                        items={items}
                       />
                     );
                   })}
-
-                  {/* DEV_ID toggle — surfaced separately because it's a global
-                      hazard, not per-category. */}
-                  <div className="flex items-start gap-3 px-3 py-2.5 rounded-lg border border-subtle bg-surface-overlay-subtle">
-                    <input
-                      id="include-dev-ids"
-                      type="checkbox"
-                      checked={includeDevIds}
-                      onChange={e => setIncludeDevIds(e.target.checked)}
-                      disabled={isApplying}
-                      className="mt-0.5"
-                    />
-                    <label htmlFor="include-dev-ids" className="text-xs text-content-secondary leading-snug cursor-pointer flex-1">
-                      <span className="text-content font-medium">Apply hardware sensor IDs</span>
-                      <span className="block mt-0.5">
-                        Includes <code className="text-content-tertiary">INS_*_ID</code> /{' '}
-                        <code className="text-content-tertiary">COMPASS_DEV_ID*</code>. Only enable
-                        if the source FC has the same physical sensor chips as this one — otherwise
-                        the cal values won't be trusted by ArduPilot's per-chip validation.
-                      </span>
-                    </label>
-                  </div>
-
-                  {/* Lock-in flags notice */}
-                  <div className="flex items-start gap-3 px-3 py-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5">
-                    <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <div className="text-xs text-content-secondary leading-snug">
-                      <span className="text-content font-medium">Lock-in flags will be set:</span>
-                      <ul className="mt-1 space-y-0.5 font-mono text-[11px]">
-                        {CALIBRATION_LOCK_FLAGS.map(f => (
-                          <li key={f.paramId}>
-                            <span className="text-emerald-300">{f.paramId} = {f.value}</span>
-                            <span className="text-content-tertiary"> — {f.reason.toLowerCase()}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -296,8 +260,8 @@ interface CategoryCardProps {
   canToggle: boolean;
   onToggle: () => void;
   totalCount: number;
-  visibleCount: number;
-  devIdHidden: boolean;
+  validation: CategoryValidation;
+  blockedReason: string | null;
   items: Array<{
     paramId: string;
     fileValue: number;
@@ -307,9 +271,10 @@ interface CategoryCardProps {
 }
 
 function CategoryCard({
-  title, accent, enabled, canToggle, onToggle, totalCount, visibleCount, devIdHidden, items,
+  title, accent, enabled, canToggle, onToggle, totalCount, validation, blockedReason, items,
 }: CategoryCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const writableCount = items.filter(p => p.info.kind !== 'devid').length;
   return (
     <div className={`rounded-lg border ${accent.ring} ${enabled ? accent.bg : 'bg-surface-overlay-subtle opacity-60'}`}>
       <div className="flex items-center gap-3 px-4 py-3">
@@ -324,12 +289,10 @@ function CategoryCard({
           <div className="text-xs text-content-tertiary">
             {totalCount === 0
               ? 'no calibration values in file'
-              : `${visibleCount} param${visibleCount !== 1 ? 's' : ''} from file${
-                  devIdHidden ? ` (${totalCount - visibleCount} hardware ID${totalCount - visibleCount !== 1 ? 's' : ''} hidden)` : ''
-                }`}
+              : `${writableCount} param${writableCount !== 1 ? 's' : ''} from file`}
           </div>
         </div>
-        {visibleCount > 0 && (
+        {totalCount > 0 && (
           <button
             onClick={() => setExpanded(v => !v)}
             className="text-xs text-content-secondary hover:text-content transition-colors"
@@ -338,7 +301,14 @@ function CategoryCard({
           </button>
         )}
       </div>
-      {expanded && visibleCount > 0 && (
+
+      {/* Validation status row — always shown, source of truth for whether
+          this category can be applied. */}
+      {totalCount > 0 && (
+        <ValidationBadge validation={validation} blockedReason={blockedReason} />
+      )}
+
+      {expanded && totalCount > 0 && (
         <div className="px-4 pb-3">
           <table className="w-full text-xs font-mono">
             <thead>
@@ -352,7 +322,12 @@ function CategoryCard({
             <tbody>
               {items.map((p) => (
                 <tr key={p.paramId} className="border-t border-subtle">
-                  <td className="py-1 text-content">{p.paramId}</td>
+                  <td className="py-1 text-content">
+                    {p.paramId}
+                    {p.info.kind === 'devid' && (
+                      <span className="text-content-tertiary"> (verified, not written)</span>
+                    )}
+                  </td>
                   <td className="py-1 text-right text-content-secondary">{formatValue(p.currentValue)}</td>
                   <td className="text-center text-content-tertiary">→</td>
                   <td className="py-1 text-right text-amber-400">{formatValue(p.fileValue)}</td>
@@ -366,13 +341,48 @@ function CategoryCard({
   );
 }
 
+function ValidationBadge({ validation, blockedReason }: { validation: CategoryValidation; blockedReason: string | null }) {
+  if (blockedReason === null) {
+    return (
+      <div className="px-4 pb-3">
+        <div className="flex items-start gap-2 px-3 py-2 rounded-md border border-emerald-500/20 bg-emerald-500/5 text-xs text-emerald-300">
+          <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-medium">Verified.</span> Sensor IDs match this
+            flight controller and the file contains non-zero calibration data.
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="px-4 pb-3">
+      <div className="flex items-start gap-2 px-3 py-2 rounded-md border border-red-500/30 bg-red-500/10 text-xs text-red-300">
+        <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <span className="font-medium">Cannot apply.</span> {blockedReason}.
+          {validation.idMismatches.length > 0 && (
+            <ul className="mt-1 font-mono text-[11px] text-red-300/80 space-y-0.5">
+              {validation.idMismatches.map(m => (
+                <li key={m.paramId}>
+                  {m.paramId}: file {formatValue(m.fileValue)} ≠ FC {formatValue(m.liveValue)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface ResultViewProps {
-  result: { applied: number; failed: number; lockFlagsApplied: string[]; rebootRecommended: boolean };
+  result: { applied: number; failed: number; rebootRecommended: boolean };
   onDone: () => void;
 }
 
 function ResultView({ result, onDone }: ResultViewProps) {
-  const { applied, failed, lockFlagsApplied, rebootRecommended } = result;
+  const { applied, failed, rebootRecommended } = result;
   const [isRebooting, setIsRebooting] = useState(false);
   const [rebootError, setRebootError] = useState<string | null>(null);
 
@@ -419,20 +429,6 @@ function ResultView({ result, onDone }: ResultViewProps) {
             <span className="text-sm text-red-300">
               {failed} param{failed !== 1 ? 's' : ''} failed (no PARAM_VALUE confirmation from FC)
             </span>
-          </div>
-        )}
-        {lockFlagsApplied.length > 0 && (
-          <div className="flex items-start gap-3">
-            <RotateCw className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-300">
-              Lock-in flags written:
-              <span className="font-mono text-xs text-blue-400/80 block mt-1">
-                {lockFlagsApplied.join(', ')}
-              </span>
-              <span className="text-xs text-content-secondary block mt-0.5">
-                ArduPilot will no longer auto-recalibrate over the loaded values.
-              </span>
-            </div>
           </div>
         )}
         {applied === 0 && failed === 0 && (

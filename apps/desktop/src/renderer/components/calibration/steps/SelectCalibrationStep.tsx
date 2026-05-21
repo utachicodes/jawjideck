@@ -374,7 +374,7 @@ export function SelectCalibrationStep() {
             <div className="flex-1 min-w-0">
               <h4 className="text-sm font-semibold text-content">Load calibration from file</h4>
               <p className="text-xs text-content-secondary mt-0.5 leading-relaxed">
-                Force-accept ACC / GYRO / MAG calibration values from a .param file and lock them in so ArduPilot doesn't auto-recalibrate over them.
+                Restore ACC / MAG calibration from a .param file. The source board's sensor IDs are verified against this FC before writing.
               </p>
             </div>
             <button
