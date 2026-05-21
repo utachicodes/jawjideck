@@ -23,7 +23,6 @@ import {
 } from '../../shared/calibration-types';
 import {
   categorizeCalibrationParam,
-  getLockFlagsForCategories,
   type CalibrationCategory,
   type CalibrationParamInfo,
 } from '../../shared/calibration-param-groups';
@@ -42,29 +41,48 @@ export interface LoadedCalParam {
   info: CalibrationParamInfo;
 }
 
+/** Per-category validation outcome populated when the file is loaded. */
+export interface CategoryValidation {
+  /** True if the file contains any non-zero offset for this category. A
+   *  file full of zero offsets means no actual calibration was captured —
+   *  applying it would wipe the FC's existing cal and trigger the very
+   *  "3D calibration needed" prearm we're trying to avoid. */
+  hasCalData: boolean;
+  /** Outcome of comparing the file's sensor-ID params (INS_ACC*_ID /
+   *  COMPASS_DEV_ID*) against the live FC values:
+   *   - 'verified' → at least one ID present in both file and live, all match
+   *   - 'mismatch' → at least one ID present in both, values disagree
+   *                  (file is from a different physical board)
+   *   - 'missing'  → file contains no IDs for this category; we cannot
+   *                  verify the source board so the apply is refused
+   */
+  idStatus: 'verified' | 'mismatch' | 'missing';
+  /** IDs that disagreed (only populated when idStatus === 'mismatch'). */
+  idMismatches: ReadonlyArray<{ paramId: string; fileValue: number; liveValue: number }>;
+}
+
 export interface LoadedCalibration {
   filePath: string;
   vehicleType: string | null;
-  /** All calibration params from the file, regardless of category. */
+  /** All calibration params from the file (accel + mag only). */
   params: LoadedCalParam[];
   /** Total params in the source file (calibration + non-calibration). */
   fileTotalCount: number;
+  /** Per-category validation. Used by the UI to disable category checkboxes
+   *  and the Apply button when the file has no real cal data or comes from
+   *  a different physical board. */
+  validation: Record<CalibrationCategory, CategoryValidation>;
 }
 
 export interface LoadedCalibrationResult {
   applied: number;
   failed: number;
-  /** IDs of lock-in flags written (e.g. `INS_GYR_CAL`, `COMPASS_LEARN`). */
-  lockFlagsApplied: string[];
   /** True if the change requires a reboot to fully take effect. */
   rebootRecommended: boolean;
 }
 
 export interface ApplyLoadedCalibrationOptions {
   categories: ReadonlySet<CalibrationCategory>;
-  /** Include hardware-identity params (DEV_IDs / INS_*_ID). Only safe if the
-   *  source FC and target FC share the same physical sensor chips. */
-  includeDevIds: boolean;
 }
 
 // ============================================================================
@@ -694,9 +712,11 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
       return { ok: false, error: result?.error ?? 'Failed to load file' };
     }
 
-    // Filter to only calibration params and join with the live param cache
-    // so the UI can show file→FC diffs. Params not present in the cache
-    // (e.g. INS_ACC3* on a single-IMU board) are kept with currentValue=undefined.
+    // Filter to only calibration params (accel + mag; gyro is intentionally
+    // excluded — see calibration-param-groups.ts header) and join with the
+    // live param cache so the UI can show file→FC diffs. Params not present
+    // in the cache (e.g. INS_ACC3* on a single-IMU board) are kept with
+    // currentValue=undefined.
     const livecache = useParameterStore.getState().parameters;
     const filtered: LoadedCalParam[] = [];
     for (const p of result.params) {
@@ -711,14 +731,19 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
       });
     }
 
-    // Sort: by category (accel→gyro→mag), then by paramId — stable order
-    // makes the per-category preview easy to scan.
-    const categoryOrder: Record<CalibrationCategory, number> = { accel: 0, gyro: 1, mag: 2 };
+    // Sort: by category (accel→mag), then by paramId — stable order makes
+    // the per-category preview easy to scan.
+    const categoryOrder: Record<CalibrationCategory, number> = { accel: 0, mag: 1 };
     filtered.sort((a, b) => {
       const co = categoryOrder[a.info.category] - categoryOrder[b.info.category];
       if (co !== 0) return co;
       return a.paramId.localeCompare(b.paramId);
     });
+
+    const validation: Record<CalibrationCategory, CategoryValidation> = {
+      accel: validateCategory('accel', filtered),
+      mag: validateCategory('mag', filtered),
+    };
 
     set({
       loadedCalibration: {
@@ -726,6 +751,7 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
         vehicleType: result.vehicleType ?? null,
         params: filtered,
         fileTotalCount: result.params.length,
+        validation,
       },
       loadedCalibrationResult: null,
       loadedCalibrationApplyProgress: null,
@@ -738,15 +764,26 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
     const loaded = get().loadedCalibration;
     if (!loaded) return;
 
-    // Build the write list from the user's selection. Hardware-identity
-    // params (DEV_IDs) gated by the includeDevIds toggle; everything else
-    // gated by the per-category checkboxes.
+    // Build the write list from the user's selection. Sensor-identity params
+    // (DEV_IDs / INS_*_ID) are validated at load time and never written —
+    // if the IDs already match the live FC there's nothing to do; if they
+    // don't, the user shouldn't be applying this file anyway (the dialog
+    // blocks Apply when validation fails).
+    //
+    // No lock-in flags (INS_GYR_CAL, COMPASS_LEARN) are touched — those are
+    // vehicle-config decisions, not cal data, and the previous auto-write
+    // surprised operators by silently disabling unrelated subsystems (#16).
     const toWrite: Array<{ paramId: string; value: number; type: number }> = [];
     const livecache = useParameterStore.getState().parameters;
 
     for (const p of loaded.params) {
       if (!opts.categories.has(p.info.category)) continue;
-      if (p.info.kind === 'devid' && !opts.includeDevIds) continue;
+      // Validation must have passed for this category. The UI blocks Apply
+      // when it hasn't, but defend in depth — caller could bypass via store API.
+      const v = loaded.validation[p.info.category];
+      if (!v.hasCalData || v.idStatus !== 'verified') continue;
+      // Skip dev-id params — they already match (validation enforced it).
+      if (p.info.kind === 'devid') continue;
       // Skip params that don't exist on the FC at all — PARAM_SET on a
       // missing param wastes a slot in the batch and the FC won't echo
       // PARAM_VALUE back, so it would hit the timeout.
@@ -756,27 +793,11 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
       toWrite.push({ paramId: p.paramId, value: p.fileValue, type });
     }
 
-    // Append the lock-in flags so loaded values aren't re-overwritten on
-    // boot or in flight. Only applied for the categories the user opted in.
-    const lockFlags = getLockFlagsForCategories([...opts.categories]);
-    const lockFlagIdsApplied: string[] = [];
-    for (const flag of lockFlags) {
-      const existing = livecache.get(flag.paramId);
-      // Don't write if the FC doesn't have the param (legacy firmware) or
-      // if it's already at the target value (avoid an unnecessary EEPROM
-      // write that flags the param as modified in our cache).
-      if (!existing) continue;
-      if (existing.value === flag.value) continue;
-      toWrite.push({ paramId: flag.paramId, value: flag.value, type: existing.type });
-      lockFlagIdsApplied.push(flag.paramId);
-    }
-
     if (toWrite.length === 0) {
       set({
         loadedCalibrationResult: {
           applied: 0,
           failed: 0,
-          lockFlagsApplied: [],
           rebootRecommended: false,
         },
       });
@@ -840,7 +861,6 @@ export const useCalibrationStore = create<CalibrationState>((set, get) => ({
       loadedCalibrationResult: {
         applied,
         failed,
-        lockFlagsApplied: lockFlagIdsApplied,
         rebootRecommended: applied > 0,
       },
     });
@@ -972,6 +992,69 @@ async function verifyCalibrationParams(
 // ============================================================================
 // Helpers
 // ============================================================================
+
+/**
+ * Build a CategoryValidation entry for one calibration category from the
+ * filtered list of loaded params. Two checks run independently:
+ *
+ *   1. hasCalData — is there any non-zero offset for this category? A file
+ *      with all-zero INS_ACCOFFS_* / COMPASS_OFS_* values has no real cal
+ *      data (the user probably saved before calibrating, or the file came
+ *      from a freshly-flashed FC). Applying it would clobber the live cal
+ *      and trip the "3D calibration needed" prearm. We use the OFFSET kind
+ *      as the discriminator because SCALE/ELLIPSOID/MOT have unit-valued
+ *      defaults (1.0) that aren't useful as a "no data" signal, while
+ *      OFFSETs default to 0 and only become non-zero after a real cal run.
+ *
+ *   2. idStatus — does this file come from the same physical board as the
+ *      live FC? We require at least one ID param (INS_ACC*_ID for accel,
+ *      COMPASS_DEV_ID* for mag) to be present in BOTH the file and the
+ *      live param cache, and require all such overlapping IDs to match.
+ *      If no ID overlap exists, we can't verify the source — refuse rather
+ *      than silently write potentially wrong cal values.
+ */
+function validateCategory(
+  category: CalibrationCategory,
+  params: ReadonlyArray<LoadedCalParam>,
+): CategoryValidation {
+  let hasNonZeroOffset = false;
+  const idMismatches: Array<{ paramId: string; fileValue: number; liveValue: number }> = [];
+  let idsCompared = 0;
+
+  for (const p of params) {
+    if (p.info.category !== category) continue;
+
+    if (p.info.kind === 'offset' && p.fileValue !== 0) {
+      hasNonZeroOffset = true;
+    }
+
+    if (p.info.kind === 'devid' && p.currentValue !== undefined) {
+      idsCompared++;
+      if (p.fileValue !== p.currentValue) {
+        idMismatches.push({
+          paramId: p.paramId,
+          fileValue: p.fileValue,
+          liveValue: p.currentValue,
+        });
+      }
+    }
+  }
+
+  let idStatus: CategoryValidation['idStatus'];
+  if (idsCompared === 0) {
+    idStatus = 'missing';
+  } else if (idMismatches.length > 0) {
+    idStatus = 'mismatch';
+  } else {
+    idStatus = 'verified';
+  }
+
+  return {
+    hasCalData: hasNonZeroOffset,
+    idStatus,
+    idMismatches,
+  };
+}
 
 function getInitialStatusText(type: CalibrationTypeId): string {
   switch (type) {
