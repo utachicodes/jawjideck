@@ -37,6 +37,7 @@ ArduDeck is a next-generation ground control station built with Electron, React,
 - [Bug Reporting](#bug-reporting)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
+- [Sponsors](#sponsors)
 - [Acknowledgments](#acknowledgments)
 
 ---
@@ -646,6 +647,14 @@ Contributions are welcome! If you'd like to help improve ArduDeck, see the [Deve
 6. Open a Pull Request
 
 > **Just want to use ArduDeck?** You don't need to fork or clone anything. [Download the latest release](#download--install) instead.
+
+---
+
+## Sponsors
+
+ArduDeck is supported by companies that contribute hardware, time, or resources to the project.
+
+- [Adlerblix](https://adlerblix.de) - Optical aerial surveying - photogrammetry, RTK precision, large-area mapping. (Germany)
 
 ---
 
