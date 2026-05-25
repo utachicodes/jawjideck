@@ -18,6 +18,11 @@
   <strong>A modern, cross-platform ground control station for ArduPilot, Betaflight, and iNav.</strong>
 </p>
 
+<p align="center">
+  <sub>Supported by</sub><br />
+  <a href="https://adlerblix.de" target="_blank" rel="noopener noreferrer"><img src="docs/sponsors/adlerblix.svg" alt="Adlerblix - optical aerial surveying" height="40" /></a>
+</p>
+
 > **ALPHA SOFTWARE** - ArduDeck is under active development. Features may be incomplete, unstable, or change without notice. **Use at your own risk** and always have a backup configuration tool available. We appreciate early testers - [join our Discord](https://discord.gg/JX2JdVXPPC) for support and updates, or [report bugs](#bug-reporting) to help improve the project!
 
 ArduDeck is a next-generation ground control station built with Electron, React, and TypeScript. It provides real-time telemetry, parameter management, PID tuning, and mission planning for drones and vehicles running ArduPilot, Betaflight, or iNav firmware.
