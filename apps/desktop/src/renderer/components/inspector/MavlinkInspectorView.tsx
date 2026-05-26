@@ -96,6 +96,7 @@ function GraphHeaderActions(props: IDockviewHeaderActionsProps): JSX.Element | n
 
   return (
     <button
+      data-tour="inspector-popout"
       onClick={handleClick}
       className="h-7 px-2 mx-0.5 rounded-md inline-flex items-center gap-1.5 text-xs transition-colors text-content-secondary hover:text-content hover:bg-surface-raised"
       title={`Open all ${props.group.panels.length} tab${props.group.panels.length === 1 ? '' : 's'} in a new window`}
@@ -253,7 +254,7 @@ export function MavlinkInspectorView(): JSX.Element {
                 d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
           </div>
-          <div className="flex-1">
+          <div className="flex-1" data-tour="inspector-stats">
             <h2 className="text-base font-semibold text-content">MAVLink Inspector</h2>
             <div className="text-xs text-content-secondary tabular-nums">
               {isConnected ? (
@@ -293,7 +294,7 @@ export function MavlinkInspectorView(): JSX.Element {
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" data-tour="inspector-filters">
           <div className="relative flex-1">
             <svg className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-content-tertiary pointer-events-none"
               fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -337,7 +338,7 @@ export function MavlinkInspectorView(): JSX.Element {
 
       {/* Body: tree (left) | graph workspace (right) */}
       <div className="flex-1 min-h-0 flex">
-        <div className="w-[520px] shrink-0 border-r border-subtle overflow-auto px-2 py-2">
+        <div className="w-[520px] shrink-0 border-r border-subtle overflow-auto px-2 py-2" data-tour="inspector-tree">
           {filteredMessages.length === 0 ? (
             <EmptyState isConnected={isConnected} hasFilter={!!filterText} />
           ) : (
@@ -364,7 +365,7 @@ export function MavlinkInspectorView(): JSX.Element {
           )}
         </div>
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0" data-tour="inspector-graph-workspace">
           <DockviewReact
             components={inspectorDockviewComponents}
             onReady={onDockviewReady}

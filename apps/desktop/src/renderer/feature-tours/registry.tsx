@@ -1,6 +1,7 @@
 import type { FeatureTour } from './types';
 import { useOverlayStore } from '../stores/overlay-store';
 import { useConnectionStore } from '../stores/connection-store';
+import { useInspectorStore } from '../stores/inspector-store';
 
 export const FEATURE_TOURS: FeatureTour[] = [
   {
@@ -153,8 +154,139 @@ export const FEATURE_TOURS: FeatureTour[] = [
               Both are FC-side persistent state, both are escape-hatch / power-user surfaces.
             </p>
             <p className="text-xs leading-relaxed opacity-90">
-              Files lets you browse <code className="font-mono text-[11px]">/APM/</code>, see what scripts
-              and logs are present, and download anything to your machine.
+              Open <strong>Files</strong> now and the next few tour steps will walk you through
+              upload, download, rename, and delete.
+            </p>
+          </div>
+        ),
+      },
+      // The next three steps only render if the user has actually opened the
+      // Files tab. If they skip it, the tour ends after Storage above.
+      {
+        selector: '[data-tour="ftp-path-bar"]',
+        predicate: () => !!document.querySelector('[data-tour="ftp-path-bar"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Breadcrumb navigation</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Click any segment to jump back up the tree. SITL exposes virtual mounts at the root
+              ({' '}<code className="font-mono text-[11px]">/APM/</code>,
+              {' '}<code className="font-mono text-[11px]">/@SYS/</code>,
+              {' '}<code className="font-mono text-[11px]">/logs/</code>,
+              {' '}<code className="font-mono text-[11px]">/scripts/</code>)
+              {' '}so the tree matches real-hardware behaviour.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="ftp-upload-button"]',
+        predicate: () => !!document.querySelector('[data-tour="ftp-upload-button"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Upload a file to the FC</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Push any local file straight into the current FC directory — Lua scripts into
+              {' '}<code className="font-mono text-[11px]">/APM/scripts/</code>, parameter dumps
+              into <code className="font-mono text-[11px]">/APM/</code>, whatever you need.
+              No SD-card swap.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="ftp-row-actions"]',
+        predicate: () => !!document.querySelector('[data-tour="ftp-row-actions"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Per-file actions</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Every row gives you <strong>Download</strong>, <strong>Rename</strong>, and
+              {' '}<strong>Delete</strong>. Great for grabbing the latest
+              {' '}<code className="font-mono text-[11px]">.bin</code> log without unplugging
+              the SD, or swapping out a Lua script in place.
+            </p>
+          </div>
+        ),
+      },
+    ],
+  },
+  {
+    id: 'mavlink-inspector-v0.0.31',
+    view: 'inspector',
+    version: '0.0.31',
+    title: 'MAVLink Inspector + pop-out windows',
+    blurb: 'Live tree of every message the FC sends, with one-click field graphs that can be popped out to their own native window.',
+    requires: { connection: true },
+    demo: { sitl: 'ardupilot', vehicleType: 'copter' },
+    steps: [
+      {
+        selector: '[data-tour="inspector-stats"]',
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Live message catalog</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Total message types, aggregate rate, and total throughput from the connected FC.
+              Numbers update at 4 Hz regardless of packet rate, so a 100 Hz IMU stream stays cheap.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="inspector-filters"]',
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Search and filter</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Search-as-you-type by message name. Separate dropdowns filter by
+              {' '}<strong>sysid</strong> and <strong>compid</strong>, so multi-vehicle and
+              multi-component setups stay readable. The tree groups by
+              {' '}<code className="font-mono text-[11px]">Vehicle X · Component Y</code>.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="inspector-tree"]',
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Click to expand, hover to graph</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Click any message to see its decoded fields with current values. Hover any
+              {' '}<em>numeric</em> field and a small graph icon appears on the right — click it
+              to plot that field in real time.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="inspector-graph-workspace"]',
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Graph workspace</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Every field you graph lands here as a tab. Drag tabs to split into multiple
+              columns, close them with the X, or just stack them. The layout persists across
+              view switches and app restarts.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="inspector-popout"]',
+        predicate: () => useInspectorStore.getState().graphs.length > 0,
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Pop the workspace to its own window</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              One click pops the entire graph workspace out to a native window. Drag it to a
+              second monitor, leave it open through the whole flight, size and position are
+              remembered. The detached window shares live data with the main app — same rate,
+              no re-subscribe.
+            </p>
+            <p className="text-[11px] leading-relaxed opacity-70">
+              The same pop-out treatment works for every panel in ArduDeck: Telemetry Dashboard,
+              Attitude, Battery, GPS, Map, and so on.
             </p>
           </div>
         ),

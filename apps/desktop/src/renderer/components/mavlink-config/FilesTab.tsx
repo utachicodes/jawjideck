@@ -338,7 +338,7 @@ interface PathBarProps {
 function PathBar({ path, loading, uploading, onNavigate, onRefresh, onUpload }: PathBarProps) {
   const parts = path.split('/').filter(Boolean);
   return (
-    <div className="flex items-center gap-1 flex-wrap text-xs">
+    <div className="flex items-center gap-1 flex-wrap text-xs" data-tour="ftp-path-bar">
       <button
         onClick={() => onNavigate('/')}
         className="flex items-center gap-1 px-2 py-1 rounded hover:bg-surface-raised text-content-secondary hover:text-content"
@@ -368,6 +368,7 @@ function PathBar({ path, loading, uploading, onNavigate, onRefresh, onUpload }: 
       })}
       <div className="flex-1" />
       <button
+        data-tour="ftp-upload-button"
         onClick={onUpload}
         disabled={uploading}
         className="flex items-center gap-1 px-2 py-1 rounded text-content hover:bg-surface-raised disabled:opacity-50"
@@ -437,7 +438,7 @@ function RowActions({
     );
   }
   return (
-    <div className="flex items-center justify-end gap-2">
+    <div className="flex items-center justify-end gap-2" data-tour="ftp-row-actions">
       <IconAction title="Rename" onClick={onRename}><Pencil className="w-3 h-3" /></IconAction>
       <IconAction title="Delete" onClick={onDelete} variant="danger"><Trash2 className="w-3 h-3" /></IconAction>
       {entry.kind === 'file' && (
