@@ -257,12 +257,8 @@ interface SettingsStore {
   setPendingSitlSwitch: (value: boolean) => void;
 
   // Experimental features
-  surveyUnlocked: boolean;
-  setSurveyUnlocked: (enabled: boolean) => void;
   companionUnlocked: boolean;
   setCompanionUnlocked: (enabled: boolean) => void;
-  experimentalLogs: boolean;
-  setExperimentalLogs: (enabled: boolean) => void;
   /**
    * Advanced map commands - one experimental umbrella covering:
    *  - Orbit and Land tabs in the map command popup (mode-changing ops)
@@ -692,17 +688,9 @@ export const useSettingsStore = create<SettingsStore>()(
   setPendingSitlSwitch: (value: boolean) => set({ pendingSitlSwitch: value }),
 
   // Experimental features
-  surveyUnlocked: false,
-  setSurveyUnlocked: (enabled: boolean) => {
-    set({ surveyUnlocked: enabled });
-  },
   companionUnlocked: false,
   setCompanionUnlocked: (enabled: boolean) => {
     set({ companionUnlocked: enabled });
-  },
-  experimentalLogs: false,
-  setExperimentalLogs: (enabled: boolean) => {
-    set({ experimentalLogs: enabled });
   },
   advancedCommandsUnlocked: false,
   setAdvancedCommandsUnlocked: (enabled: boolean) => {
@@ -833,9 +821,7 @@ export const useSettingsStore = create<SettingsStore>()(
             ...BEGINNER_UI_VISIBILITY,
             ...((settings as unknown as Record<string, unknown>).uiVisibility as Partial<UiVisibility> | undefined),
           },
-          surveyUnlocked: !!((settings as unknown as Record<string, unknown>).surveyUnlocked),
           companionUnlocked: !!((settings as unknown as Record<string, unknown>).companionUnlocked),
-          experimentalLogs: !!((settings as unknown as Record<string, unknown>).experimentalLogs),
           advancedCommandsUnlocked: !!((settings as unknown as Record<string, unknown>).advancedCommandsUnlocked),
           showDebugLogs: !!((settings as unknown as Record<string, unknown>).showDebugLogs),
           aiProvider: ((settings as unknown as Record<string, unknown>).aiProvider as 'claude' | 'openai' | 'gemini' | null) ?? null,
@@ -874,9 +860,7 @@ export const useSettingsStore = create<SettingsStore>()(
         ...(state.experienceLevel ? { experienceLevel: state.experienceLevel } : {}),
         ...(state.experienceLevelVersion ? { experienceLevelVersion: state.experienceLevelVersion } : {}),
         uiVisibility: state.uiVisibility,
-        surveyUnlocked: state.surveyUnlocked,
         companionUnlocked: state.companionUnlocked,
-        experimentalLogs: state.experimentalLogs,
         advancedCommandsUnlocked: state.advancedCommandsUnlocked,
         showDebugLogs: state.showDebugLogs,
         aiProvider: state.aiProvider,
@@ -1179,9 +1163,7 @@ useSettingsStore.subscribe(
     experienceLevel: state.experienceLevel,
     experienceLevelVersion: state.experienceLevelVersion,
     uiVisibility: state.uiVisibility,
-    surveyUnlocked: state.surveyUnlocked,
     companionUnlocked: state.companionUnlocked,
-    experimentalLogs: state.experimentalLogs,
     advancedCommandsUnlocked: state.advancedCommandsUnlocked,
     showDebugLogs: state.showDebugLogs,
     aiProvider: state.aiProvider,
@@ -1208,9 +1190,7 @@ useSettingsStore.subscribe(
         curr.experienceLevel !== prev.experienceLevel ||
         curr.experienceLevelVersion !== prev.experienceLevelVersion ||
         curr.uiVisibility !== prev.uiVisibility ||
-        curr.surveyUnlocked !== prev.surveyUnlocked ||
         curr.companionUnlocked !== prev.companionUnlocked ||
-        curr.experimentalLogs !== prev.experimentalLogs ||
         curr.advancedCommandsUnlocked !== prev.advancedCommandsUnlocked ||
         curr.showDebugLogs !== prev.showDebugLogs ||
         curr.aiProvider !== prev.aiProvider ||

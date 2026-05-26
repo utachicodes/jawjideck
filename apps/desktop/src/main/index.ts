@@ -10,6 +10,7 @@ import { setupIpcHandlers, cleanupOnShutdown } from './ipc-handlers.js';
 import { setupModuleIpc } from './modules/module-ipc.js';
 import { registerTileCacheScheme, setupTileCacheProtocol, setupTileCacheHandlers } from './tile-cache.js';
 import { registerModuleSchemePrivileges, setupModuleProtocol } from './modules/module-protocol.js';
+import { initWindowManager, restoreDetachedWindows, setupWindowManagerIpc } from './window-manager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -131,10 +132,22 @@ app.whenReady().then(() => {
 
   const mainWindow = createWindow();
 
+  // Register the main window with the detachable-windows manager BEFORE any
+  // IPC handlers wire up, so safeSend's broadcast() helper can see it.
+  initWindowManager(mainWindow);
+  setupWindowManagerIpc();
+
   // Setup IPC handlers
   setupIpcHandlers(mainWindow);
   setupModuleIpc(mainWindow);
   setupTileCacheHandlers(mainWindow);
+
+  // Restore any detached windows the user had open last time.
+  // Defer until after the main window is ready so the renderer has subscribed
+  // to the push channels by the time pop-outs spawn (they share the broadcast).
+  mainWindow.webContents.once('did-finish-load', () => {
+    restoreDetachedWindows();
+  });
 
   // Dev-only: start test driver MCP server
   if (isDev) {

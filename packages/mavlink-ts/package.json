@@ -9,6 +9,10 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./registry": {
+      "import": "./dist/generated/message-registry.js",
+      "types": "./dist/generated/message-registry.d.ts"
     }
   },
   "scripts": {

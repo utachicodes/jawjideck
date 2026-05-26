@@ -529,6 +529,32 @@ export const IPC_CHANNELS = {
   COMPANION_EXTENSION_INSTALL: 'companion:extension-install',
   COMPANION_EXTENSION_REMOVE: 'companion:extension-remove',
 
+  // Detachable Windows (pop-out)
+  /** Open a detached BrowserWindow rendering one of the registered components. */
+  WINDOW_OPEN_DETACHED: 'window:open-detached',
+  /** Close a previously-opened detached window by id. */
+  WINDOW_CLOSE_DETACHED: 'window:close-detached',
+  /** Get current snapshot of all detached windows (id, componentId, bounds, title). */
+  WINDOW_GET_DETACHED: 'window:get-detached',
+  /** Focus the main window (used when the user wants to re-dock from a detached window). */
+  WINDOW_FOCUS_MAIN: 'window:focus-main',
+  /** Push event: detached window opened (so the main window can update its UI badge). */
+  WINDOW_DETACHED_OPENED: 'window:detached-opened',
+  /** Push event: detached window closed. */
+  WINDOW_DETACHED_CLOSED: 'window:detached-closed',
+  /** Toggle "always on top" for the calling window (uses event.sender). */
+  WINDOW_SET_ALWAYS_ON_TOP_SELF: 'window:set-always-on-top-self',
+  /** Query current "always on top" state for the calling window. */
+  WINDOW_GET_ALWAYS_ON_TOP_SELF: 'window:get-always-on-top-self',
+
+  /**
+   * Cross-window inspector state sync. Each Electron window has its own
+   * renderer / Zustand store, so user toggles (pause, clear) have to round-
+   * trip through main to reach every window. The renderer invokes with a
+   * payload, main re-broadcasts to every window on the same channel.
+   */
+  INSPECTOR_BROADCAST: 'inspector:broadcast',
+
   // Map overlays
   OVERLAY_GET_RADAR_META: 'overlay:get-radar-meta',
   OVERLAY_GET_AIRSPACE: 'overlay:get-airspace',
@@ -859,7 +885,6 @@ export interface SettingsStoreSchema {
   experienceLevel?: 'beginner' | 'advanced';
   experienceLevelVersion?: string;
   uiVisibility?: UiVisibilitySettings;
-  experimentalLogs?: boolean;
   showDebugLogs?: boolean;
   aiProvider?: 'claude' | 'openai' | 'gemini' | null;
   /** User-saved survey planner presets. Built-in presets ship in code. */

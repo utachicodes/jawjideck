@@ -5,6 +5,7 @@
 
 import { contextBridge, ipcRenderer } from 'electron';
 import { IPC_CHANNELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type SettingsStoreSchema, type MSPConnectOptions, type MSPConnectionState, type MSPTelemetryData, type SitlConfig, type SitlStatus, type SitlExitData, type VirtualRCState, type ArduPilotSitlConfig, type ArduPilotSitlStatus, type ArduPilotSitlExitData, type ArduPilotSitlDownloadProgress, type ArduPilotSitlBinaryInfo, type ArduPilotFrameCatalog, type ArduPilotVehicleType, type ArduPilotReleaseTrack, type AppUpdateInfo, type SigningStatus, type TelemetrySpeed, type StatusMessage, type TileCacheStats, type TileCacheDownloadProgress, type TileCacheSettings, type TileCacheDownloadRegion, type CompanionConnectOptions, type CompanionConnectionIpcState, type CompanionDiscoveryResult } from '../shared/ipc-channels.js';
+import type { DetachedWindowInfo, OpenDetachedRequest } from '../shared/window-types.js';
 import type { SystemInfo, NetworkInfo, MetricsData, ProcessInfo, LogEntry, FileEntry, ServiceInfo, ServiceAction, ContainerInfo, ContainerAction, ExtensionInfo } from '@ardudeck/companion-types';
 import type { InstalledModule, ModuleProgress, UpdateAvailable } from '../shared/module-types.js';
 import type { ParamChange, ParamCheckpoint } from '../shared/param-history-types.js';
@@ -230,9 +231,30 @@ const api = {
     return () => ipcRenderer.removeListener(IPC_CHANNELS.MAVLINK_SIGNING_STATUS, handler);
   },
 
-  // Event listeners
-  onPacket: (callback: (packet: { msgid: number; sysid: number; compid: number; seq: number; payload: number[] }) => void) => {
-    const handler = (_: unknown, packet: { msgid: number; sysid: number; compid: number; seq: number; payload: number[] }) => callback(packet);
+  // Raw MAVLink frame stream — feeds the MAVLink Inspector and FieldGraph
+  // pop-outs. Every successfully-parsed packet from the FC is emitted here.
+  onPacket: (
+    callback: (packet: {
+      msgid: number;
+      sysid: number;
+      compid: number;
+      seq: number;
+      payload: number[];
+      rxtime: number;
+      isMavlink2: boolean;
+      isSigned: boolean;
+    }) => void,
+  ) => {
+    const handler = (_: unknown, packet: {
+      msgid: number;
+      sysid: number;
+      compid: number;
+      seq: number;
+      payload: number[];
+      rxtime: number;
+      isMavlink2: boolean;
+      isSigned: boolean;
+    }) => callback(packet);
     ipcRenderer.on(IPC_CHANNELS.MAVLINK_PACKET, handler);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.MAVLINK_PACKET, handler);
   },
@@ -1816,6 +1838,47 @@ const api = {
     const handler = (_: unknown, data: { severity: number; text: string }) => callback(data);
     ipcRenderer.on(IPC_CHANNELS.COMPANION_STATUSTEXT, handler);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.COMPANION_STATUSTEXT, handler);
+  },
+
+  // Detachable Windows (pop-out)
+  openDetachedWindow: (req: OpenDetachedRequest): Promise<string> =>
+    ipcRenderer.invoke(IPC_CHANNELS.WINDOW_OPEN_DETACHED, req),
+  closeDetachedWindow: (id: string): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.WINDOW_CLOSE_DETACHED, id),
+  getDetachedWindows: (): Promise<DetachedWindowInfo[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.WINDOW_GET_DETACHED),
+  focusMainWindow: (): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.WINDOW_FOCUS_MAIN),
+  onDetachedWindowOpened: (callback: (info: DetachedWindowInfo) => void): (() => void) => {
+    const handler = (_: unknown, info: DetachedWindowInfo) => callback(info);
+    ipcRenderer.on(IPC_CHANNELS.WINDOW_DETACHED_OPENED, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.WINDOW_DETACHED_OPENED, handler);
+  },
+  onDetachedWindowClosed: (callback: (id: string) => void): (() => void) => {
+    const handler = (_: unknown, id: string) => callback(id);
+    ipcRenderer.on(IPC_CHANNELS.WINDOW_DETACHED_CLOSED, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.WINDOW_DETACHED_CLOSED, handler);
+  },
+  /** Toggle "always on top" for the *caller* window. Returns the new state. */
+  setSelfAlwaysOnTop: (on: boolean): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.WINDOW_SET_ALWAYS_ON_TOP_SELF, on),
+  getSelfAlwaysOnTop: (): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.WINDOW_GET_ALWAYS_ON_TOP_SELF),
+
+  /**
+   * Broadcast an inspector state change (pause / clear) so every open window
+   * stays in sync. Main re-emits on the same channel — the originator gets
+   * its own echo, which is idempotent.
+   */
+  broadcastInspector: (event: { type: 'paused' | 'reset'; paused?: boolean }): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.INSPECTOR_BROADCAST, event),
+  onInspectorBroadcast: (
+    callback: (event: { type: 'paused' | 'reset'; paused?: boolean }) => void,
+  ): (() => void) => {
+    const handler = (_: unknown, event: { type: 'paused' | 'reset'; paused?: boolean }) =>
+      callback(event);
+    ipcRenderer.on(IPC_CHANNELS.INSPECTOR_BROADCAST, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.INSPECTOR_BROADCAST, handler);
   },
 
   // Map overlays

@@ -1916,12 +1916,8 @@ function AiAnalysisSection() {
 }
 
 function ExperimentalFeaturesSection() {
-  const surveyUnlocked = useSettingsStore((s) => s.surveyUnlocked);
-  const setSurveyUnlocked = useSettingsStore((s) => s.setSurveyUnlocked);
   const companionUnlocked = useSettingsStore((s) => s.companionUnlocked);
   const setCompanionUnlocked = useSettingsStore((s) => s.setCompanionUnlocked);
-  const experimentalLogs = useSettingsStore((s) => s.experimentalLogs);
-  const setExperimentalLogs = useSettingsStore((s) => s.setExperimentalLogs);
   const advancedCommandsUnlocked = useSettingsStore((s) => s.advancedCommandsUnlocked);
   const setAdvancedCommandsUnlocked = useSettingsStore((s) => s.setAdvancedCommandsUnlocked);
 
@@ -1944,26 +1940,6 @@ function ExperimentalFeaturesSection() {
         </p>
 
         <div className="space-y-3">
-          {/* Survey Grid Planner */}
-          <div className="flex items-center justify-between bg-surface-input rounded-lg p-3">
-            <div className="flex-1 mr-3">
-              <div className="text-sm text-content font-medium">Survey Grid Planner</div>
-              <div className="text-xs text-content-secondary mt-0.5">
-                Photogrammetry survey grid planning with camera presets, overlap control, and auto-waypoint generation
-              </div>
-            </div>
-            <button
-              onClick={() => setSurveyUnlocked(!surveyUnlocked)}
-              className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${
-                surveyUnlocked ? 'bg-purple-600' : 'bg-surface-raised'
-              }`}
-            >
-              <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${
-                surveyUnlocked ? 'left-[18px]' : 'left-0.5'
-              }`} />
-            </button>
-          </div>
-
           {/* Companion Computer */}
           <div className="flex items-center justify-between bg-surface-input rounded-lg p-3">
             <div className="flex-1 mr-3">
@@ -1980,26 +1956,6 @@ function ExperimentalFeaturesSection() {
             >
               <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${
                 companionUnlocked ? 'left-[18px]' : 'left-0.5'
-              }`} />
-            </button>
-          </div>
-
-          {/* Flight Log Diagnostics */}
-          <div className="flex items-center justify-between bg-surface-input rounded-lg p-3">
-            <div className="flex-1 mr-3">
-              <div className="text-sm text-content font-medium">Flight Log Diagnostics</div>
-              <div className="text-xs text-content-secondary mt-0.5">
-                Download and analyze flight logs with automated health reports and interactive data explorer
-              </div>
-            </div>
-            <button
-              onClick={() => setExperimentalLogs(!experimentalLogs)}
-              className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${
-                experimentalLogs ? 'bg-purple-600' : 'bg-surface-raised'
-              }`}
-            >
-              <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${
-                experimentalLogs ? 'left-[18px]' : 'left-0.5'
               }`} />
             </button>
           </div>

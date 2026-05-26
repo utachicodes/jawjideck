@@ -19,6 +19,9 @@ import { ModuleRuntime } from './modules/ModuleRuntime';
 import { MountPoint } from './modules/MountPoint';
 import { CompanionDashboard } from './components/companion/CompanionDashboard';
 import { LogsView } from './components/logs/LogsView';
+import { MavlinkInspectorView } from './components/inspector/MavlinkInspectorView';
+import { setupWorkspaceSync } from './stores/workspace-store';
+import { startInspector } from './stores/inspector-store';
 import { useConnectionStore } from './stores/connection-store';
 import { useCalibrationStore } from './stores/calibration-store';
 import { useTelemetryStore } from './stores/telemetry-store';
@@ -333,6 +336,15 @@ function App() {
     initializeSettings();
   }, []);
 
+  // Start the MAVLink Inspector pipeline (packet listener + 4Hz tick) and
+  // hydrate the workspace store with any detached windows already open. Both
+  // are idempotent — safe across hot-reloads.
+  useEffect(() => {
+    startInspector();
+    const cleanup = setupWorkspaceSync();
+    return cleanup;
+  }, []);
+
   // Show experience level dialog on first launch or version change
   useEffect(() => {
     if (!useSettingsStore.getState()._isInitialized) return;
@@ -639,6 +651,9 @@ function App() {
       if (currentView === 'logs') {
         return <LogsView />;
       }
+      if (currentView === 'inspector') {
+        return <MavlinkInspectorView />;
+      }
       if (currentView === 'settings') {
         return <SettingsView />;
       }
@@ -736,6 +751,8 @@ function App() {
         return <CompanionDashboard />;
       case 'logs':
         return <LogsView />;
+      case 'inspector':
+        return <MavlinkInspectorView />;
       case 'telemetry':
       default:
         return <TelemetryDashboard />;

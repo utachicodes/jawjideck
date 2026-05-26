@@ -880,7 +880,6 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
   const setRallyAddMode = useRallyStore((state) => state.setAddMode);
 
   // Survey state
-  const surveyUnlocked = useSettingsStore((s) => s.surveyUnlocked);
   const surveyIsActive = useSurveyStore((s) => s.isActive);
   const surveyDrawMode = useSurveyStore((s) => s.drawMode);
   const surveyPolygon = useSurveyStore((s) => s.polygon);
@@ -1435,7 +1434,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
             )}
 
             {/* Survey button */}
-            {!readOnly && surveyUnlocked && (
+            {!readOnly && (
               <>
                 <div className="w-px h-5 bg-subtle" />
                 {!surveyIsActive ? (

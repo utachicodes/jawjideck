@@ -44,11 +44,71 @@ import {
   PANEL_COMPONENTS,
 } from '../panels';
 import { useArduPilotSitlStore } from '../../stores/ardupilot-sitl-store';
+import type { IDockviewHeaderActionsProps } from 'dockview-react';
 
-// Panel component wrapper for dockview
+// Panel component wrapper for dockview. Plain — no decoration. The pop-out
+// affordance lives in dockview's header action slot (see PanelPopoutAction
+// below), where it's actually discoverable.
 function PanelWrapper({ component }: { component: React.ComponentType }) {
   const Component = component;
   return <Component />;
+}
+
+/**
+ * dockview panel id (camelCase, e.g. "flightControl") → detached
+ * component-registry id (kebab, e.g. "flight-control").
+ */
+const PANEL_ID_TO_DETACHED: Record<string, { componentId: string; defaultBounds?: { width: number; height: number } }> = {
+  attitude: { componentId: 'attitude' },
+  altitude: { componentId: 'altitude' },
+  speed: { componentId: 'speed' },
+  battery: { componentId: 'battery' },
+  gps: { componentId: 'gps' },
+  position: { componentId: 'position' },
+  velocity: { componentId: 'velocity' },
+  flightMode: { componentId: 'flight-mode' },
+  flightControl: { componentId: 'flight-control' },
+  map: { componentId: 'map', defaultBounds: { width: 960, height: 720 } },
+  messages: { componentId: 'messages' },
+};
+
+/**
+ * Right-aligned action slot in every dockview tab header. Spawns a native
+ * Electron BrowserWindow for the active panel via our window manager —
+ * NOT dockview's `addPopoutGroup`. Dockview popout requires the parent and
+ * child windows to share one renderer process so it can DOM-portal between
+ * them; Electron's security model gives each child window its own renderer
+ * and the popped window ends up unstyled. Native Electron windows with IPC-
+ * driven state are the only reliable path here.
+ */
+function PanelHeaderActions(props: IDockviewHeaderActionsProps): JSX.Element | null {
+  const active = props.activePanel;
+  if (!active) return null;
+  const mapping = PANEL_ID_TO_DETACHED[active.id];
+  if (!mapping) return null;
+  const title = active.title ?? active.id;
+
+  const handleClick = () => {
+    window.electronAPI.openDetachedWindow({
+      componentId: mapping.componentId,
+      title,
+      ...(mapping.defaultBounds !== undefined ? { initialBounds: mapping.defaultBounds } : {}),
+    });
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className="h-7 px-2 mx-0.5 rounded-md inline-flex items-center gap-1.5 text-xs transition-colors text-content-secondary hover:text-content hover:bg-surface-raised"
+      title={`Open ${title} in new window`}
+    >
+      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M14 3h7m0 0v7m0-7L10 14M5 5h4M5 19h14a0 0 0 010 0v-4" />
+      </svg>
+      <span>Pop out</span>
+    </button>
+  );
 }
 
 // Component registry for dockview
@@ -63,7 +123,7 @@ const components: Record<string, React.FC<IDockviewPanelProps>> = {
   VelocityPanel: () => <PanelWrapper component={VelocityPanel} />,
   FlightModePanel: () => <PanelWrapper component={FlightModePanel} />,
   FlightControlPanel: () => <PanelWrapper component={FlightControlPanel} />,
-  MapPanel: () => <PanelWrapper component={MapPanel} />, // Now includes mission overlays
+  MapPanel: () => <PanelWrapper component={MapPanel} />,
   MessagesPanel: () => <PanelWrapper component={MessagesPanel} />,
   PreflightCheckCard: () => <PanelWrapper component={PreflightCheckCard} />,
   // Mission panels (for monitoring during flight) - readOnly mode
@@ -925,6 +985,7 @@ export function TelemetryDashboard() {
           components={components}
           onReady={onReady}
           theme={resolvedTheme === 'light' ? themeLight : themeDark}
+          rightHeaderActionsComponent={PanelHeaderActions}
           className="h-full"
         />
       </div>

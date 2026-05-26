@@ -20,6 +20,7 @@ import {
 import { registerCompanionIpcHandlers } from './companion/companion-ipc-handlers.js';
 import { registerDroneBridgeIpcHandlers } from './dronebridge/dronebridge-ipc-handlers.js';
 import { setupOverlayHandlers, getApiKey } from './overlays/overlay-ipc-handlers.js';
+import { getAllWindows } from './window-manager.js';
 import {
   MAVLinkParser,
   type MAVLinkPacket,
@@ -945,14 +946,31 @@ const NON_VEHICLE_TYPES = new Set([
   42, // Winch
 ]);
 
-// Safely send IPC message to window (checks if window is still valid)
+// Safely send IPC message to all live windows (main + every detached pop-out).
+// The `mainWindow` argument is kept for backwards compatibility with the
+// 60+ existing call sites but is no longer the sole target — every detached
+// window subscribed to the same channel receives the broadcast too. This is
+// how telemetry / status / param events reach pop-out HUDs and graphs.
 function safeSend(mainWindow: BrowserWindow, channel: string, ...args: unknown[]): void {
-  try {
-    if (!mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
-      mainWindow.webContents.send(channel, ...args);
+  for (const win of getAllWindows()) {
+    try {
+      if (!win.isDestroyed() && win.webContents && !win.webContents.isDestroyed()) {
+        win.webContents.send(channel, ...args);
+      }
+    } catch {
+      // Window was destroyed between getAllWindows() and now; ignore.
     }
-  } catch {
-    // Window was destroyed, ignore
+  }
+  // Defensive: if the manager hasn't been initialized yet for some reason,
+  // fall back to the direct mainWindow send so we don't drop events at boot.
+  if (getAllWindows().length === 0) {
+    try {
+      if (!mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+        mainWindow.webContents.send(channel, ...args);
+      }
+    } catch {
+      // ignore
+    }
   }
 }
 
@@ -2643,6 +2661,21 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
             // Parse telemetry data from known message types
             parseTelemetry(mainWindow, packet);
+
+            // Broadcast raw frame to renderer(s) for the MAVLink Inspector and
+            // any FieldGraph pop-outs. Stays cheap: payload is the small bytes
+            // already in memory; conversion is O(payload length). Renderer-side
+            // decoders only run for messages a live inspector/graph cares about.
+            safeSend(mainWindow, IPC_CHANNELS.MAVLINK_PACKET, {
+              msgid: packet.msgid,
+              sysid: packet.sysid,
+              compid: packet.compid,
+              seq: packet.seq,
+              payload: Array.from(packet.payload),
+              rxtime: packet.rxtime.getTime(),
+              isMavlink2: packet.isMavlink2,
+              isSigned: packet.isSigned,
+            });
 
             // Log packets (limit to not spam)
             if (connectionState.packetsReceived <= 10 || connectionState.packetsReceived % 100 === 0) {
