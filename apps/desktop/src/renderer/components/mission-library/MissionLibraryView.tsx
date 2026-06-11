@@ -60,8 +60,11 @@ export function MissionLibraryView() {
         mission.homePosition.alt
       );
     }
-    // Set items without triggering FC download success message
-    missionStore.setMissionItemsFromFile(mission.items);
+    // Set items without triggering FC download success message. Pass the
+    // mission's persisted groups so survey/manual structure round-trips
+    // through library load instead of being collapsed back into a single
+    // Manual group.
+    missionStore.setMissionItemsFromFile(mission.items, mission.groups);
 
     // Navigate to mission editor
     setView('mission');

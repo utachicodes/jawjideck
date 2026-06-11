@@ -35,6 +35,7 @@ interface TelemetryBatch {
   attitude?: AttitudeData;
   position?: PositionData;
   gps?: GpsData;
+  gps2?: GpsData;
   battery?: BatteryData;
   vfrHud?: VfrHudData;
   wind?: WindData;
@@ -428,11 +429,14 @@ const api = {
   setCurrentWaypoint: (seq: number): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.MISSION_SET_CURRENT, seq),
 
-  saveMissionToFile: (items: MissionItem[]): Promise<{ success: boolean; filePath?: string; error?: string }> =>
-    ipcRenderer.invoke(IPC_CHANNELS.MISSION_SAVE_FILE, items),
+  saveMissionToFile: (items: MissionItem[], format?: 'waypoints' | 'plan'): Promise<{ success: boolean; filePath?: string; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MISSION_SAVE_FILE, items, format),
 
   loadMissionFromFile: (): Promise<{ success: boolean; items?: MissionItem[]; error?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.MISSION_LOAD_FILE),
+
+  importSurveyArea: (): Promise<{ success: boolean; error?: string; format?: 'kml' | 'geojson'; content?: string; fileName?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MISSION_IMPORT_AREA),
 
   // Mission event listeners
   onMissionItem: (callback: (item: MissionItem) => void) => {
@@ -1556,6 +1560,9 @@ const api = {
 
   openExternal: (url: string): Promise<void> =>
     ipcRenderer.invoke(IPC_CHANNELS.APP_OPEN_EXTERNAL, url),
+
+  relaunchApp: (): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.APP_RELAUNCH),
 
   onUpdateStatus: (callback: (info: AppUpdateInfo) => void) => {
     const handler = (_: unknown, info: AppUpdateInfo) => callback(info);

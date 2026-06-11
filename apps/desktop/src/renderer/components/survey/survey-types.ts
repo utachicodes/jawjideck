@@ -3,7 +3,16 @@
  * Types and interfaces for photogrammetry survey planning
  */
 
-export type SurveyPattern = 'grid' | 'crosshatch' | 'circular' | 'spiral' | 'perimeter-fill';
+export type SurveyPattern = 'grid' | 'crosshatch' | 'circular' | 'spiral' | 'perimeter-fill' | 'corridor';
+
+/**
+ * Corridor flight strategy.
+ * - 'plane': fixed-wing. Strips get end overshoot and sharp centerline bends
+ *   get racetrack turn waypoints (see {@link SurveyConfig.maxTurnAngle}) so the
+ *   aircraft has room to turn without stalling.
+ * - 'copter': multirotor. Turns on the spot, so no overshoot and no turn loops.
+ */
+export type CorridorMode = 'plane' | 'copter';
 
 /**
  * Ground-vehicle path pattern. Only meaningful in manual / mower mode
@@ -46,6 +55,8 @@ export interface LatLng {
 
 export interface SurveyConfig {
   polygon: LatLng[];
+  /** Optional no-fly holes inside the polygon (e.g. imported from KML inner rings). */
+  holes?: LatLng[][];
   pattern: SurveyPattern;
   altitude: number;          // meters AGL
   speed: number;             // m/s
@@ -61,10 +72,61 @@ export interface SurveyConfig {
   spiralDirection?: 'inward' | 'outward';
   /** Number of perimeter passes before the grid fill (only used when pattern === 'perimeter-fill'). */
   perimeterPasses?: number;
+  /**
+   * Which value the operator drives directly. 'altitude' is the classic slider;
+   * 'gsd' lets them type a target ground sample distance and back-solves the
+   * altitude. Altitude stays the single source of truth either way.
+   */
+  planBy?: 'altitude' | 'gsd';
+  /** Usable flight minutes per battery (reserve already accounted for). Drives the battery-count readout and, later, sortie splitting. */
+  enduranceMinutes?: number;
+  /**
+   * Crosshatch only. Height offset for the SECOND (perpendicular) pass,
+   * expressed as a percentage of the relative flight altitude (e.g. 30 = the
+   * second pass flies 30% higher). Flying the two crosshatch directions at two
+   * different altitudes improves photogrammetric 3D reconstruction. 0 = both
+   * passes at the same altitude (classic crosshatch).
+   */
+  crossGridAltitudeOffset?: number;
+
+  // --- Corridor pattern (linear surveys: roads, rail, power lines, pipelines) ---
+  /**
+   * Corridor only. The drawn polygon is treated as an open CENTERLINE (the line
+   * the corridor follows), not a closed area. These fields tune the swath.
+   */
+  /** Total corridor swath width in meters. Strip count is derived from this and the line spacing unless `corridorStrips` overrides it. */
+  corridorWidth?: number;
+  /**
+   * Explicit number of parallel flight strips. When >0 this overrides the
+   * width-derived count, so the operator can force an even or odd strip count
+   * (an odd count puts one strip on the centerline; even straddles it).
+   */
+  corridorStrips?: number;
+  /** Fixed-wing vs multirotor turn strategy. */
+  corridorMode?: CorridorMode;
+  /** Lateral shift of the whole strip bundle off the centerline, in meters (e.g. to bias coverage to one side of a road). */
+  corridorSideOffset?: number;
+  /**
+   * Plane only. Centerline bends sharper than this (degrees of heading change)
+   * get racetrack turn waypoints so the aircraft overshoots and re-enters the
+   * next leg aligned instead of cutting the corner.
+   */
+  maxTurnAngle?: number;
+  /** Reverse the order the strips are flown in (start from the far side). */
+  flipLegs?: boolean;
+  /** Reverse the travel direction along the centerline. */
+  invertPath?: boolean;
 }
 
 export interface SurveyResult {
   waypoints: LatLng[];
+  /**
+   * Optional per-waypoint altitude (meters, in the config's altitude frame),
+   * aligned 1:1 with `waypoints`. When absent, every waypoint uses
+   * `config.altitude`. Used by patterns that fly at more than one height, e.g.
+   * crosshatch with a second-pass altitude offset.
+   */
+  altitudes?: number[];
   photoPositions: LatLng[];
   footprints: LatLng[][];
   stats: SurveyStats;
@@ -103,4 +165,14 @@ export const DEFAULT_SURVEY_CONFIG: Omit<SurveyConfig, 'polygon'> = {
   groundPattern: 'boustrophedon',
   spiralDirection: 'inward',
   perimeterPasses: 2,
+  planBy: 'altitude',
+  enduranceMinutes: 20,
+  crossGridAltitudeOffset: 0,
+  corridorWidth: 60,
+  corridorStrips: 0,
+  corridorMode: 'plane',
+  corridorSideOffset: 0,
+  maxTurnAngle: 15,
+  flipLegs: false,
+  invertPath: false,
 };

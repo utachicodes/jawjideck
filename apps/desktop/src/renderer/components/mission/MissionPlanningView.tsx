@@ -325,8 +325,6 @@ export function MissionPlanningView() {
     if (lastSuccessMessage) {
       setToast({ message: lastSuccessMessage, type: 'success' });
       clearLastSuccessMessage();
-      const timer = setTimeout(() => setToast(null), 3000);
-      return () => clearTimeout(timer);
     }
   }, [lastSuccessMessage, clearLastSuccessMessage]);
 
@@ -334,10 +332,17 @@ export function MissionPlanningView() {
   useEffect(() => {
     if (error) {
       setToast({ message: error, type: 'error' });
-      const timer = setTimeout(() => setToast(null), 5000);
-      return () => clearTimeout(timer);
     }
   }, [error]);
+
+  // Auto-dismiss the toast. Keyed on the toast itself (not the source message)
+  // so clearing lastSuccessMessage can't cancel the timer before it fires -
+  // that race left the "Recovered N waypoints" toast stuck on screen.
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), toast.type === 'error' ? 5000 : 3000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   // Add/remove the Survey panel as a tab next to Waypoints whenever survey
   // mode toggles. We attach it to the same group as the waypoint table so it

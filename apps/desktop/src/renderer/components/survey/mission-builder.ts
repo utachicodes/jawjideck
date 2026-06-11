@@ -1,12 +1,16 @@
 /**
  * Mission Builder - Convert SurveyResult into MissionItem[] for insertion.
  *
- * Camera/aircraft mode emits: NAV_TAKEOFF → DO_CHANGE_SPEED → DO_SET_CAM_TRIGG_DIST
- * → NAV_WAYPOINT× → cam-off → NAV_RETURN_TO_LAUNCH.
+ * Camera/aircraft mode emits: NAV_TAKEOFF → NAV_WAYPOINT(1st) → DO_CHANGE_SPEED
+ * → DO_SET_CAM_TRIGG_DIST → NAV_WAYPOINT× → cam-off → NAV_RETURN_TO_LAUNCH.
  *
- * Ground / manual mode (mower, rover) emits: DO_CHANGE_SPEED → optional
- * DO_SET_REVERSE between line pairs → NAV_WAYPOINT× → NAV_RETURN_TO_LAUNCH.
- * No takeoff, no camera trigger.
+ * Ground / manual mode (mower, rover) emits: NAV_WAYPOINT(1st) → DO_CHANGE_SPEED
+ * → optional DO_SET_REVERSE between line pairs → NAV_WAYPOINT× →
+ * NAV_RETURN_TO_LAUNCH. No takeoff, no camera trigger.
+ *
+ * DO_CHANGE_SPEED / DO_SET_CAM_TRIGG_DIST follow the first waypoint because
+ * ArduPilot does not execute DO_* commands placed before the first
+ * NAV_WAYPOINT (issue #83).
  *
  * Reverse-alternating pattern: rover drives forward on odd lines and reverses
  * on even lines (no U-turns). The waypoint geometry is the same boustrophedon
@@ -51,43 +55,9 @@ export function surveyToMissionItems(
     });
   }
 
-  // 1. DO_CHANGE_SPEED — applies to both aircraft (airspeed) and rovers (ground speed).
-  items.push({
-    seq: seq++,
-    frame: MAV_FRAME.GLOBAL_RELATIVE_ALT,
-    command: MAV_CMD.DO_CHANGE_SPEED,
-    current: false,
-    autocontinue: true,
-    // Speed type: 0 = airspeed (aircraft), 1 = ground speed (rover).
-    // ArduRover ignores type 0 and falls back to ground speed, so either works
-    // for rovers in practice, but we set it correctly for clarity.
-    param1: isManual ? 1 : 0,
-    param2: config.speed,
-    param3: -1,               // Throttle: -1 = no change
-    param4: 0,
-    latitude: 0,
-    longitude: 0,
-    altitude: 0,
-  });
-
-  // 2. DO_SET_CAM_TRIGG_DIST — aircraft only. Mower has no camera to trigger.
-  if (!isManual) {
-    const triggerDist = result.stats.photoSpacing > 0 ? result.stats.photoSpacing : 10;
-    items.push({
-      seq: seq++,
-      frame: MAV_FRAME.GLOBAL_RELATIVE_ALT,
-      command: MAV_CMD.DO_SET_CAM_TRIGG_DIST,
-      current: false,
-      autocontinue: true,
-      param1: triggerDist,      // Trigger distance in meters
-      param2: 0,
-      param3: 1,                // Trigger once immediately
-      param4: 0,
-      latitude: 0,
-      longitude: 0,
-      altitude: 0,
-    });
-  }
+  // DO_CHANGE_SPEED / DO_SET_CAM_TRIGG_DIST are emitted after the first
+  // waypoint (in the loop below): ArduPilot ignores DO_* before the first
+  // NAV_WAYPOINT, so they'd never take effect otherwise. See issue #83.
 
   // 3. NAV_WAYPOINT for each flight path point. In reverse-alternating mode
   // we insert DO_SET_REVERSE between line pairs (waypoints come as start/end
@@ -138,8 +108,50 @@ export function surveyToMissionItems(
       param4: 0,              // Yaw angle: 0 = auto
       latitude: wp.lat,
       longitude: wp.lng,
-      altitude: isManual ? 0 : config.altitude,
+      // Per-waypoint altitude when the pattern flies at more than one height
+      // (e.g. crosshatch second-pass offset); otherwise the flat config value.
+      altitude: isManual ? 0 : (result.altitudes?.[i] ?? config.altitude),
     });
+
+    if (i === 0) {
+      // DO_CHANGE_SPEED — applies to both aircraft (airspeed) and rovers (ground speed).
+      items.push({
+        seq: seq++,
+        frame: MAV_FRAME.GLOBAL_RELATIVE_ALT,
+        command: MAV_CMD.DO_CHANGE_SPEED,
+        current: false,
+        autocontinue: true,
+        // Speed type: 0 = airspeed (aircraft), 1 = ground speed (rover).
+        // ArduRover ignores type 0 and falls back to ground speed, so either works
+        // for rovers in practice, but we set it correctly for clarity.
+        param1: isManual ? 1 : 0,
+        param2: config.speed,
+        param3: -1,               // Throttle: -1 = no change
+        param4: 0,
+        latitude: 0,
+        longitude: 0,
+        altitude: 0,
+      });
+
+      // DO_SET_CAM_TRIGG_DIST — aircraft only. Mower has no camera to trigger.
+      if (!isManual) {
+        const triggerDist = result.stats.photoSpacing > 0 ? result.stats.photoSpacing : 10;
+        items.push({
+          seq: seq++,
+          frame: MAV_FRAME.GLOBAL_RELATIVE_ALT,
+          command: MAV_CMD.DO_SET_CAM_TRIGG_DIST,
+          current: false,
+          autocontinue: true,
+          param1: triggerDist,      // Trigger distance in meters
+          param2: 0,
+          param3: 1,                // Trigger once immediately
+          param4: 0,
+          latitude: 0,
+          longitude: 0,
+          altitude: 0,
+        });
+      }
+    }
   }
 
   // 3b. If we ended in reverse, flip back to forward so the rover can drive

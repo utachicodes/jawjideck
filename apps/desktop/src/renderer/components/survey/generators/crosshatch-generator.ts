@@ -2,6 +2,14 @@
  * Crosshatch (Double Grid) Pattern Generator
  * Runs the grid generator twice: once at gridAngle, once at gridAngle + 90.
  * Produces double coverage for 3D reconstruction.
+ *
+ * Optional second-pass altitude offset (config.crossGridAltitudeOffset, % of
+ * relative altitude): the perpendicular pass flies higher (or lower) than the
+ * first. Flying the two directions at two different heights improves
+ * photogrammetric 3D reconstruction. The offset changes the second pass's
+ * footprint and therefore its line spacing, exactly as a real altitude change
+ * would, and the per-waypoint altitudes are carried on the result so the
+ * mission builder emits the correct height for each leg.
  */
 import type { SurveyConfig, SurveyResult } from '../survey-types';
 import { generateGrid } from './grid-generator';
@@ -11,10 +19,14 @@ export function generateCrosshatch(config: SurveyConfig): SurveyResult {
   // First pass at original angle
   const pass1 = generateGrid(config);
 
-  // Second pass at 90 degrees
+  // Second pass at 90 degrees, optionally at a different altitude.
+  const offsetPct = config.crossGridAltitudeOffset ?? 0;
+  const pass2Altitude =
+    offsetPct !== 0 ? config.altitude * (1 + offsetPct / 100) : config.altitude;
   const pass2Config: SurveyConfig = {
     ...config,
     gridAngle: (config.gridAngle + 90) % 360,
+    altitude: pass2Altitude,
   };
   const pass2 = generateGrid(pass2Config);
 
@@ -26,5 +38,16 @@ export function generateCrosshatch(config: SurveyConfig): SurveyResult {
 
   const stats = computeSurveyStats(config, waypoints, photoPositions, lineCount);
 
-  return { waypoints, photoPositions, footprints, stats };
+  const result: SurveyResult = { waypoints, photoPositions, footprints, stats };
+
+  // Only carry explicit per-waypoint altitudes when the two passes actually
+  // differ; the common case stays on the uniform config.altitude path.
+  if (offsetPct !== 0) {
+    result.altitudes = [
+      ...pass1.waypoints.map(() => config.altitude),
+      ...pass2.waypoints.map(() => pass2Altitude),
+    ];
+  }
+
+  return result;
 }

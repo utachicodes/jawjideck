@@ -83,15 +83,22 @@ ArduDeck is a next-generation ground control station built with Electron, React,
 
 ### Mission Planning
 - **Interactive Map Editing** - Click to add waypoints, drag to reposition
+- **Mission Groups** - Every waypoint lives in a named, colored group (manual or survey) with per-group distance, time, and GSD, recolor, show/hide, and per-group upload or save
 - **Waypoint Table** - Beginner-friendly with human-readable summaries
 - **Altitude Profile** - Terrain-aware visualization with drag-to-edit
 - **Terrain Data** - Real elevation data from Open-Meteo (Copernicus DEM)
-- **Collision Detection** - Visual warnings when path intersects terrain
+- **Collision Detection** - Visual warnings when the path intersects terrain, with one-click Auto Adjust that raises waypoints and inserts intermediates to clear ridgelines
 - **Spline Waypoints** - Smooth curved flight paths with Catmull-Rom interpolation
-- **Survey Grid** - Automated survey patterns (Grid, Crosshatch, Circular) with configurable camera, spacing, overlap, and angle
+- **Survey Grid** - Automated area patterns (Grid, Crosshatch, Circular) with configurable camera, spacing, overlap, and angle
+- **GSD-First Planning** - Plan by ground sample distance instead of altitude, with live photo, battery, and data estimates
+- **Crosshatch at Two Heights** - Optional second-pass altitude offset for better 3D reconstruction
+- **Corridor Surveys** - Linear surveys along a centerline for roads, rail, power lines, and pipelines, with plane racetrack turns or copter on-the-spot turns
+- **Battery Sortie Split** - Split a long survey into battery-sized flights, each independently uploadable
+- **GIS Import** - Import survey boundaries from KML, KMZ, and GeoJSON, one group per polygon with no-fly holes
 - **3D Mission View** - Three-dimensional visualization of mission waypoints and flight path
 - **Command Support** - Takeoff, Waypoint, Loiter, Land, RTL, Speed changes
-- **File Operations** - Save/Load .waypoints and QGC .plan formats
+- **File Operations** - Save to Library, or export .waypoints (QGC WPL) and QGC .plan formats
+- **Undo and Autosave** - Full undo/redo across edits, with continuous autosave and crash recovery
 - **Upload/Download** - Full MAVLink mission protocol support
 
 ### Parameter Management
@@ -126,7 +133,7 @@ ArduDeck is a next-generation ground control station built with Electron, React,
 - **Custom Profiles** - Save/load custom PID tunes and rate profiles
 
 ### ArduPilot Configuration
-- **PID Tuning** - ArduPilot PID controller tuning with presets
+- **PID Tuning** - ArduPilot PID controller tuning with presets, including a VTOL/Fixed-wing controller switch on QuadPlanes to tune each control-law set separately
 - **Rate Profiles** - Rate curve editor with visualization
 - **Flight Modes** - 6-mode channel assignment for ArduPilot
 - **Safety & Failsafe** - Failsafe actions, geofence behavior, RTL settings
@@ -201,7 +208,7 @@ ArduDeck is a next-generation ground control station built with Electron, React,
 
 ### SITL Simulator & FlightGear Bridge
 
-> **Temporarily Disabled** - Both iNav and ArduPilot SITL integration are under development and temporarily disabled. The SITL simulator requires complex protocol bridging that is still being refined. Check back in a future release!
+> **Now Available** - ArduPilot SITL runs natively in ArduDeck on macOS, Windows, and Linux. Pick a vehicle type (Copter, Plane, Rover, Sub) and frame, choose a release track, and ArduDeck downloads and launches the real ArduPilot firmware, then connects automatically. Virtual RC control, custom frame physics, and an optional FlightGear bridge are included.
 
 **What is this?** SITL (Software In The Loop) lets you run real flight controller firmware on your computer - no drone required! Perfect for:
 - **Learning** - Practice mission planning and configuration without risking a crash
@@ -209,7 +216,7 @@ ArduDeck is a next-generation ground control station built with Electron, React,
 - **Development** - Test new features without leaving your desk
 
 **How it works:**
-1. ArduDeck downloads and runs the actual iNav/Betaflight firmware as a desktop application
+1. ArduDeck downloads and runs the actual ArduPilot, iNav, or Betaflight firmware as a desktop application
 2. The simulated flight controller behaves exactly like real hardware
 3. You can configure PIDs, modes, missions - everything works!
 4. Optionally connect to **FlightGear** (free flight simulator) to see your virtual aircraft fly
@@ -266,14 +273,28 @@ ArduDeck is a next-generation ground control station built with Electron, React,
 ### Mission Planning
 
 <p align="center">
-  <a href="docs/screenshots/mission_planning.png?raw=true">
-    <img src="docs/screenshots/mission_planning.png" alt="Mission Planning" width="800"/>
+  <a href="docs/screenshots/mission_planning_overview.png?raw=true">
+    <img src="docs/screenshots/mission_planning_overview.png" alt="Mission Planning" width="800"/>
   </a>
   <br/>
-  <em>Mission planning with terrain-aware altitude profile and automatic elevation data</em>
+  <em>Mission planning with grouped surveys, GSD-first planning, and a terrain-aware altitude profile</em>
 </p>
 
 <table>
+  <tr>
+    <td align="center">
+      <a href="docs/screenshots/mission_groups.png?raw=true">
+        <img src="docs/screenshots/mission_groups.png" alt="Mission Groups" width="400"/>
+      </a>
+      <br/><em>Colored Mission Groups with Per-Block Stats</em>
+    </td>
+    <td align="center">
+      <a href="docs/screenshots/survey_gsd_panel.png?raw=true">
+        <img src="docs/screenshots/survey_gsd_panel.png" alt="GSD Survey Planning" width="400"/>
+      </a>
+      <br/><em>GSD-First Survey Planning</em>
+    </td>
+  </tr>
   <tr>
     <td align="center">
       <a href="docs/screenshots/mission_panner_3d_view.png?raw=true">
@@ -630,12 +651,15 @@ Found a bug? We want to hear about it! ArduDeck includes a built-in bug reportin
 - **ArduPilot configuration UI** - PID tuning, rate profiles, flight modes, safety, battery monitor, sensors
 - **Lua Graph Editor** - Visual scripting for ArduPilot Lua with 50+ nodes, compiler, templates, and [in-app docs](apps/desktop/src/renderer/components/lua-graph/docs/)
 - **Survey Grid Planner** - Automated survey patterns (Grid, Crosshatch, Circular) with camera and flight parameter configuration
+- **Mission Groups** - Waypoints organized into colored, per-group survey and manual groups with per-block stats, per-group upload/save, undo, and autosave
+- **Corridor Surveys** - Linear surveys along a centerline for roads, rail, and power lines, with plane and copter turn strategies
+- **GSD-First Survey Planning** - Plan by ground sample distance, crosshatch at two heights, battery sortie splitting, and KML/KMZ/GeoJSON import
 - **3D Mission View** - Three-dimensional visualization of mission waypoints and flight paths
 - **MAVLink Signing** - Passphrase-based packet signing for secure vehicle communication
 - **Flight Log Analysis** - DataFlash .bin parser, health checks, log explorer with 3D flight path, and AI-assisted diagnostics
+- **SITL Simulator** - ArduPilot, iNav, and Betaflight software-in-the-loop with vehicle/frame selection, virtual RC, custom frame physics, and FlightGear integration
 
 ### Coming Soon
-- **SITL Simulator** - iNav and ArduPilot software-in-the-loop with FlightGear integration (temporarily disabled)
 - OSD element editor and font designer
 
 ---

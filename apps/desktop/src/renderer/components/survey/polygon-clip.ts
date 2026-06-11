@@ -53,6 +53,7 @@ export function clipScanLines(
   polygon: Point2D[],
   lineSpacing: number,
   overshoot: number = 0,
+  holes: Point2D[][] = [],
 ): ClippedSegment[] {
   if (polygon.length < 3 || lineSpacing <= 0) return [];
 
@@ -69,12 +70,24 @@ export function clipScanLines(
   const startY = minY + lineSpacing / 2;
 
   for (let y = startY; y < maxY; y += lineSpacing) {
-    const intersections = scanLineIntersections(polygon, y);
+    // Combine the outer-boundary crossings with each hole's crossings and sort.
+    // Even-odd pairing over the merged list yields the spans that are inside the
+    // polygon AND outside every hole - so scan lines automatically break around
+    // no-fly holes. (A hole crossing flips parity, turning a hole span into a
+    // gap.)
+    const xs = scanLineIntersections(polygon, y);
+    if (xs.length < 2) continue;
+    for (const hole of holes) {
+      if (hole.length >= 3) xs.push(...scanLineIntersections(hole, y));
+    }
+    xs.sort((a, b) => a - b);
 
-    // Pair intersections (enter/exit) to form segments
-    for (let i = 0; i + 1 < intersections.length; i += 2) {
-      const x1 = intersections[i]! - overshoot;
-      const x2 = intersections[i + 1]! + overshoot;
+    const lastIdx = xs.length - 1;
+    for (let i = 0; i + 1 < xs.length; i += 2) {
+      // Overshoot only extends the true outer ends of the line (first/last
+      // crossings), never the hole-induced split points.
+      const x1 = xs[i]! - (i === 0 ? overshoot : 0);
+      const x2 = xs[i + 1]! + (i + 1 === lastIdx ? overshoot : 0);
       segments.push({ x1, x2, y });
     }
   }

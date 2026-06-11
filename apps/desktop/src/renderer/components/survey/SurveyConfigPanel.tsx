@@ -19,14 +19,20 @@ import { useMissionStore } from '../../stores/mission-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import { CameraPresetSelector } from './CameraPresetSelector';
 import { SurveyStatsPanel } from './SurveyStatsPanel';
+import { estimateBatteryCount, estimateDataSizeGb } from './survey-stats';
 import { surveyToMissionItems } from './mission-builder';
+import { patternToGeneratorId, getSurveyGenerator } from './generator-registry';
+import { createSurveyGroup, createManualGroup, nextGroupColor, GROUP_COLOR_PALETTE } from '../../../shared/mission-group-types';
+import { splitIntoSorties } from './survey-sortie-split';
+import { computeSurveyGroupSignature } from './survey-group-signature';
+import { MAV_CMD } from '../../../shared/mission-types';
 import {
   BUILTIN_SURVEY_PRESETS,
   captureCurrentAsPresetConfig,
   makeUserPreset,
   type SurveyPreset,
 } from './survey-presets';
-import type { SurveyPattern, CameraPreset, AltitudeReference, GroundPattern } from './survey-types';
+import type { SurveyPattern, CameraPreset, AltitudeReference, GroundPattern, CorridorMode } from './survey-types';
 import type { PersistedSurveyPreset } from '../../../shared/ipc-channels';
 
 // Pattern catalog. Each entry advertises which modes it applies to so the UI
@@ -40,8 +46,14 @@ const ALL_PATTERN_OPTIONS: {
   { id: 'grid', label: 'Grid', description: 'Parallel back-and-forth lines', modes: ['camera', 'mower'] },
   { id: 'crosshatch', label: 'Crosshatch', description: 'Two perpendicular grid passes', modes: ['camera', 'mower'] },
   { id: 'circular', label: 'Circular', description: 'Concentric rings around centroid', modes: ['camera'] },
+  { id: 'corridor', label: 'Corridor', description: 'Follow a centerline (roads, rail, power lines, pipelines)', modes: ['camera', 'mower'] },
   { id: 'spiral', label: 'Spiral', description: 'Polygon-aware inward/outward spiral', modes: ['mower'] },
   { id: 'perimeter-fill', label: 'Perimeter + Fill', description: 'Edge passes then grid interior', modes: ['mower'] },
+];
+
+const CORRIDOR_MODE_OPTIONS: { id: CorridorMode; label: string; description: string }[] = [
+  { id: 'plane', label: 'Plane', description: 'Fixed wing: strips get overshoot and racetrack turns at sharp bends' },
+  { id: 'copter', label: 'Copter', description: 'Multirotor: turns on the spot, no overshoot or turn loops' },
 ];
 
 const GROUND_PATTERN_OPTIONS: { id: GroundPattern; label: string; description: string }[] = [
@@ -75,6 +87,8 @@ export function SurveyConfigPanel() {
   const config = useSurveyStore((s) => s.config);
   const result = useSurveyStore((s) => s.result);
   const showFootprints = useSurveyStore((s) => s.showFootprints);
+  const editingGroupId = useSurveyStore((s) => s.editingGroupId);
+  const setEditingGroupId = useSurveyStore((s) => s.setEditingGroupId);
 
   const setPattern = useSurveyStore((s) => s.setPattern);
   const setAltitude = useSurveyStore((s) => s.setAltitude);
@@ -89,11 +103,27 @@ export function SurveyConfigPanel() {
   const setGroundPattern = useSurveyStore((s) => s.setGroundPattern);
   const setSpiralDirection = useSurveyStore((s) => s.setSpiralDirection);
   const setPerimeterPasses = useSurveyStore((s) => s.setPerimeterPasses);
+  const setPlanBy = useSurveyStore((s) => s.setPlanBy);
+  const setGsd = useSurveyStore((s) => s.setGsd);
+  const setEnduranceMinutes = useSurveyStore((s) => s.setEnduranceMinutes);
+  const setCrossGridAltitudeOffset = useSurveyStore((s) => s.setCrossGridAltitudeOffset);
+  const setCorridorWidth = useSurveyStore((s) => s.setCorridorWidth);
+  const setCorridorStrips = useSurveyStore((s) => s.setCorridorStrips);
+  const setCorridorMode = useSurveyStore((s) => s.setCorridorMode);
+  const setCorridorSideOffset = useSurveyStore((s) => s.setCorridorSideOffset);
+  const setMaxTurnAngle = useSurveyStore((s) => s.setMaxTurnAngle);
+  const setFlipLegs = useSurveyStore((s) => s.setFlipLegs);
+  const setInvertPath = useSurveyStore((s) => s.setInvertPath);
   const startDrawing = useSurveyStore((s) => s.startDrawing);
+  const importArea = useSurveyStore((s) => s.importArea);
   const clearSurvey = useSurveyStore((s) => s.clearSurvey);
+  const deactivateSurvey = useSurveyStore((s) => s.deactivateSurvey);
   const applyPresetConfig = useSurveyStore((s) => s.applyPresetConfig);
 
-  const insertMissionItems = useMissionStore((s) => s.insertMissionItems);
+  const addSurveyGroup = useMissionStore((s) => s.addSurveyGroup);
+  const addGroupsWithItems = useMissionStore((s) => s.addGroupsWithItems);
+  const existingGroups = useMissionStore((s) => s.groups);
+  const existingItems = useMissionStore((s) => s.missionItems);
 
   // Preset state lives in settings-store (persisted via electron-store).
   const userPresets = useSettingsStore((s) => s.surveyPresets);
@@ -107,6 +137,13 @@ export function SurveyConfigPanel() {
   const [customCamera, setCustomCamera] = useState<CameraPreset>(config.camera);
   const [insertSuccess, setInsertSuccess] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const handleImportArea = useCallback(async () => {
+    setImportError(null);
+    const res = await importArea();
+    if (!res.ok && res.error) setImportError(res.error);
+  }, [importArea]);
 
   // Combined preset list: built-ins first, user-defined below.
   const allPresets: SurveyPreset[] = [
@@ -195,14 +232,74 @@ export function SurveyConfigPanel() {
   const handleInsertSurvey = useCallback(() => {
     if (!result || !polygon) return;
     const fullConfig = { ...config, polygon };
-    const items = surveyToMissionItems(result, fullConfig);
+    let items = surveyToMissionItems(result, fullConfig);
     if (items.length === 0) return;
 
-    insertMissionItems(items);
+    // If the mission already contains a NAV_TAKEOFF (either auto-prepended
+    // when the user dropped their first manual WP, or from an earlier
+    // survey), strip the leading NAV_TAKEOFF that surveyToMissionItems
+    // always emits. Otherwise we'd end up with two takeoff commands and
+    // the flight controller would refuse the mission or behave oddly.
+    const missionAlreadyHasTakeoff = existingItems.some(
+      (it) => it.command === MAV_CMD.NAV_TAKEOFF,
+    );
+    if (missionAlreadyHasTakeoff && items[0]?.command === MAV_CMD.NAV_TAKEOFF) {
+      items = items.slice(1).map((it, i) => ({ ...it, seq: i }));
+    }
+
+    // Build a SurveyGroup that owns the polygon + generator config + cached
+    // result so the survey is editable + regeneratable later (PR 5 + 8).
+    // The `generatorResult` carries any generator-specific extras (e.g. TOPAS
+    // decomposition); built-in generators leave it null.
+    const generatorId = patternToGeneratorId(config.pattern);
+    const reg = getSurveyGenerator(generatorId);
+    const survey = createSurveyGroup({
+      name: `Survey ${existingGroups.filter((g) => g.kind === 'survey').length + 1}`,
+      generatorId,
+      generatorVersion: reg?.version ?? '1.0.0',
+      polygon: polygon.map((p) => ({ lat: p.lat, lng: p.lng })),
+      config: fullConfig as unknown as Record<string, unknown>,
+      color: nextGroupColor(existingGroups),
+    });
+    // Stamp the signature now so the group starts off in a non-stale
+    // state. Subsequent polygon / config edits flip it to stale.
+    survey.lastGeneratedSignature = computeSurveyGroupSignature(survey);
+    survey.lastGeneratedAt = Date.now();
+    const newGroupId = addSurveyGroup(survey, items);
+
+    // Link the survey draft to the freshly-committed SurveyGroup so further
+    // vertex / config edits flow back through generateSurvey -> mission-store
+    // and keep the committed WPs in sync. Polygon stays visible (existing
+    // SurveyMapOverlay renders the draft), panel stays open. Re-Insert is
+    // disabled when linked; the Clear button starts a new draft.
+    setEditingGroupId(newGroupId);
 
     setInsertSuccess(true);
     setTimeout(() => setInsertSuccess(false), 2000);
-  }, [result, polygon, config, insertMissionItems]);
+  }, [result, polygon, config, existingGroups, existingItems, addSurveyGroup, setEditingGroupId]);
+
+  // Split the survey into one battery-sized flight group per sortie, instead of
+  // a single group. Each flight is independently uploadable from the table.
+  const handleSplitIntoFlights = useCallback(() => {
+    if (!result || !polygon) return;
+    const sorties = splitIntoSorties(result.waypoints, config.speed, config.enduranceMinutes ?? 20);
+    if (sorties.length <= 1) return;
+    const fullConfig = { ...config, polygon };
+    const baseName = `Survey ${existingGroups.filter((g) => g.kind === 'survey').length + 1}`;
+    const entries = sorties.map((slice, i) => {
+      // Each sortie is its own complete flight: takeoff -> slice -> RTL.
+      const items = surveyToMissionItems({ ...result, waypoints: slice }, fullConfig);
+      const group = createManualGroup({
+        name: `${baseName} · Flight ${i + 1}/${sorties.length}`,
+        color: GROUP_COLOR_PALETTE[i % GROUP_COLOR_PALETTE.length]!,
+      });
+      return { group, items };
+    });
+    addGroupsWithItems(entries);
+    clearSurvey();
+    setInsertSuccess(true);
+    setTimeout(() => setInsertSuccess(false), 2000);
+  }, [result, polygon, config, existingGroups, addGroupsWithItems, clearSurvey]);
 
   // Empty-state copy when no polygon yet — guides the user back to the map.
   if (!polygon) {
@@ -215,6 +312,18 @@ export function SurveyConfigPanel() {
         <p className="text-xs text-content-tertiary max-w-[14rem]">
           Click the Survey button on the map toolbar, then draw a polygon to plan a grid.
         </p>
+        <div className="mt-4 flex flex-col items-center gap-1">
+          <span className="text-[10px] uppercase tracking-wide text-content-tertiary">or</span>
+          <button
+            onClick={handleImportArea}
+            className="px-3 py-1.5 text-xs rounded-md bg-surface-raised text-content hover:text-purple-300 transition-colors"
+            title="Import a boundary from a KML, KMZ, or GeoJSON file"
+          >
+            Import area from file
+          </button>
+          <span className="text-[10px] text-content-tertiary">KML · KMZ · GeoJSON</span>
+          {importError && <span className="text-[10px] text-red-400 max-w-[14rem]">{importError}</span>}
+        </div>
       </div>
     );
   }
@@ -239,6 +348,15 @@ export function SurveyConfigPanel() {
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 4h11l3 3v13H5z M9 4v5h6V4 M9 17h6" />
+          </svg>
+        </button>
+        <button
+          onClick={handleImportArea}
+          className="p-1.5 text-content-secondary hover:text-purple-400 transition-colors"
+          title="Import area from file (KML/KMZ/GeoJSON)"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
         </button>
         <button
@@ -296,7 +414,43 @@ export function SurveyConfigPanel() {
           <div className="space-y-2">
             {!isManualCamera && (
               <>
-                <SliderInput label="Altitude" value={config.altitude} onChange={setAltitude} min={10} max={500} step={5} unit="m" />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-content-secondary w-14 flex-shrink-0">Plan by</span>
+                  <div className="flex gap-1 flex-1">
+                    {(['altitude', 'gsd'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => setPlanBy(mode)}
+                        className={`flex-1 px-1.5 py-1 text-[10px] rounded-md transition-colors ${
+                          (config.planBy ?? 'altitude') === mode
+                            ? 'bg-purple-600/80 text-white'
+                            : 'bg-surface-raised text-content-secondary hover:text-content'
+                        }`}
+                        title={mode === 'gsd' ? 'Set target ground sample distance; altitude is derived' : 'Set altitude directly'}
+                      >
+                        {mode === 'gsd' ? 'GSD' : 'Altitude'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {(config.planBy ?? 'altitude') === 'gsd' ? (
+                  <>
+                    <SliderInput
+                      label="Target GSD"
+                      value={result ? Number(result.stats.gsd.toFixed(1)) : 0}
+                      onChange={setGsd}
+                      min={0.5}
+                      max={20}
+                      step={0.1}
+                      unit="cm/px"
+                    />
+                    <p className="text-[10px] text-content-tertiary leading-snug">
+                      Altitude {Math.round(config.altitude)} m (derived from GSD and camera)
+                    </p>
+                  </>
+                ) : (
+                  <SliderInput label="Altitude" value={config.altitude} onChange={setAltitude} min={10} max={500} step={5} unit="m" />
+                )}
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-content-secondary w-14 flex-shrink-0">Alt Ref</span>
                   <div className="flex gap-1 flex-1">
@@ -319,6 +473,18 @@ export function SurveyConfigPanel() {
               </>
             )}
             <SliderInput label="Speed" value={config.speed} onChange={setSpeed} min={1} max={30} step={0.5} unit="m/s" />
+            <SliderInput
+              label="Endurance"
+              value={config.enduranceMinutes ?? 20}
+              onChange={setEnduranceMinutes}
+              min={5}
+              max={90}
+              step={1}
+              unit="min"
+            />
+            <p className="text-[10px] text-content-tertiary leading-snug -mt-1">
+              Usable flight time per battery (after your reserve). Drives the battery estimate.
+            </p>
           </div>
         </Section>
 
@@ -394,7 +560,145 @@ export function SurveyConfigPanel() {
               </span>
             </div>
           )}
+
+          {/* Crosshatch second-pass altitude offset — camera mode only. Flying
+              the two perpendicular passes at two heights improves 3D
+              reconstruction. 0% = classic same-altitude crosshatch. */}
+          {config.pattern === 'crosshatch' && !isManualCamera && (
+            <div className="mt-2">
+              <SliderInput
+                label="2nd alt"
+                value={config.crossGridAltitudeOffset ?? 0}
+                onChange={setCrossGridAltitudeOffset}
+                min={0}
+                max={100}
+                step={5}
+                unit="%"
+              />
+              <p className="mt-1 text-[10px] text-content-tertiary leading-snug">
+                {(config.crossGridAltitudeOffset ?? 0) > 0
+                  ? `Perpendicular pass flies ${Math.round(config.altitude * (1 + (config.crossGridAltitudeOffset ?? 0) / 100))} m (+${config.crossGridAltitudeOffset}%) for better photogrammetry.`
+                  : 'Both passes at the same altitude. Raise to fly the second pass higher.'}
+              </p>
+            </div>
+          )}
         </Section>
+
+        {/* Corridor settings — only when the corridor pattern is active. The
+            drawn polygon is treated as a centerline, not an area. */}
+        {config.pattern === 'corridor' && (
+          <Section title="Corridor">
+            <div className="space-y-2">
+              {!isManualCamera && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-content-secondary w-14 flex-shrink-0">Mode</span>
+                  <div className="flex gap-1 flex-1">
+                    {CORRIDOR_MODE_OPTIONS.map((opt) => {
+                      const active = (config.corridorMode ?? 'plane') === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          onClick={() => setCorridorMode(opt.id)}
+                          className={`flex-1 px-2 py-1 text-[11px] rounded-md transition-colors ${
+                            active
+                              ? 'bg-purple-600/80 text-white'
+                              : 'bg-surface-raised text-content-secondary hover:text-content'
+                          }`}
+                          title={opt.description}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <SliderInput
+                label="Width"
+                value={config.corridorWidth ?? 60}
+                onChange={setCorridorWidth}
+                min={5}
+                max={500}
+                step={5}
+                unit="m"
+              />
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-content-secondary w-14 flex-shrink-0">Strips</span>
+                <input
+                  type="range"
+                  value={config.corridorStrips ?? 0}
+                  onChange={(e) => setCorridorStrips(Number(e.target.value))}
+                  min={0}
+                  max={20}
+                  step={1}
+                  className="flex-1 h-1 bg-surface-inset rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-400 [&::-webkit-slider-thumb]:cursor-grab"
+                />
+                <span className="text-xs text-content w-14 text-right tabular-nums font-medium">
+                  {(config.corridorStrips ?? 0) === 0 ? (result ? `${result.stats.lineCount} auto` : 'auto') : config.corridorStrips}
+                </span>
+              </div>
+
+              <SliderInput
+                label="Side off"
+                value={config.corridorSideOffset ?? 0}
+                onChange={setCorridorSideOffset}
+                min={-200}
+                max={200}
+                step={5}
+                unit="m"
+              />
+
+              {!isManualCamera && (config.corridorMode ?? 'plane') === 'plane' && (
+                <>
+                  <SliderInput label="Overshoot" value={config.overshoot} onChange={setOvershoot} min={0} max={150} step={5} unit="m" />
+                  <SliderInput
+                    label="Max turn"
+                    value={config.maxTurnAngle ?? 15}
+                    onChange={setMaxTurnAngle}
+                    min={5}
+                    max={90}
+                    step={5}
+                    unit="°"
+                  />
+                  <p className="text-[10px] text-content-tertiary leading-snug -mt-1">
+                    Bends sharper than this get racetrack turn waypoints so the plane re-enters the next leg aligned.
+                  </p>
+                </>
+              )}
+
+              <div className="flex gap-1 pt-1">
+                <button
+                  onClick={() => setFlipLegs(!config.flipLegs)}
+                  className={`flex-1 px-2 py-1.5 text-[11px] rounded-md transition-colors ${
+                    config.flipLegs
+                      ? 'bg-purple-600/80 text-white'
+                      : 'bg-surface-raised text-content-secondary hover:text-content'
+                  }`}
+                  title="Fly the strips starting from the far side"
+                >
+                  Flip legs
+                </button>
+                <button
+                  onClick={() => setInvertPath(!config.invertPath)}
+                  className={`flex-1 px-2 py-1.5 text-[11px] rounded-md transition-colors ${
+                    config.invertPath
+                      ? 'bg-purple-600/80 text-white'
+                      : 'bg-surface-raised text-content-secondary hover:text-content'
+                  }`}
+                  title="Reverse the travel direction along the centerline"
+                >
+                  Invert path
+                </button>
+              </div>
+
+              <p className="text-[10px] text-content-tertiary leading-snug">
+                Draw the centerline as a path (roads, rail, power lines). Strips run parallel to it; an odd strip count rides the centerline, even straddles it.
+              </p>
+            </div>
+          </Section>
+        )}
 
         {/* Ground path — manual / mower mode only. Picks how the rover moves
             between lines: zigzag (skid-steer) vs reverse (Ackermann). */}
@@ -457,7 +761,7 @@ export function SurveyConfigPanel() {
                 </Section>
               )}
 
-              {config.pattern !== 'circular' && (
+              {config.pattern !== 'circular' && config.pattern !== 'corridor' && (
                 <Section title="Grid">
                   <div className="space-y-2">
                     <SliderInput label="Angle" value={config.gridAngle} onChange={setGridAngle} min={0} max={359} step={1} unit="°" />
@@ -490,27 +794,60 @@ export function SurveyConfigPanel() {
         {/* Stats — show whenever we have a generated result. */}
         {result && result.waypoints.length > 0 && (
           <div className="pt-3 border-t border-subtle">
-            <SurveyStatsPanel stats={result.stats} />
+            <SurveyStatsPanel
+              stats={result.stats}
+              batteries={estimateBatteryCount(result.stats.flightTime, config.enduranceMinutes ?? 20)}
+              dataSizeGb={estimateDataSizeGb(result.stats.photoCount, config.camera.imageWidth, config.camera.imageHeight)}
+            />
           </div>
         )}
       </div>
 
-      {/* Insert button — pinned outside scroll area */}
+      {/* Insert / Editing button — pinned outside scroll area.
+          When linked to a SurveyGroup (editingGroupId set), edits flow
+          through live and the button shows "Editing live" as a non-action
+          status indicator. To start a fresh survey: use Clear (top of panel)
+          which resets editingGroupId. */}
       {result && result.waypoints.length > 0 && (
         <div className="p-3 pt-0 flex-shrink-0">
-          <button
-            onClick={handleInsertSurvey}
-            className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${
-              insertSuccess
-                ? 'bg-emerald-600 text-white'
-                : 'bg-purple-600 hover:bg-purple-500 text-white'
-            }`}
-          >
-            {insertSuccess
-              ? `Inserted ${result.waypoints.length} waypoints`
-              : `Insert Survey (${result.waypoints.length} WPs)`
-            }
-          </button>
+          {editingGroupId ? (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 py-2 rounded-lg text-sm font-medium text-center bg-emerald-600/15 text-emerald-300 border border-emerald-500/30">
+                Editing live · {result.waypoints.length} WPs
+              </div>
+              <button
+                onClick={deactivateSurvey}
+                className="px-3 py-2 rounded-lg text-sm font-medium bg-surface-raised text-content hover:text-white hover:bg-surface-input transition-colors"
+                title="Finish editing this survey"
+              >
+                Done
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <button
+                onClick={handleInsertSurvey}
+                className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${
+                  insertSuccess
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-purple-600 hover:bg-purple-500 text-white'
+                }`}
+              >
+                {insertSuccess
+                  ? `Inserted ${result.waypoints.length} waypoints`
+                  : `Insert Survey (${result.waypoints.length} WPs)`}
+              </button>
+              {!isManualCamera && estimateBatteryCount(result.stats.flightTime, config.enduranceMinutes ?? 20) > 1 && (
+                <button
+                  onClick={handleSplitIntoFlights}
+                  className="w-full py-1.5 rounded-lg text-xs font-medium bg-surface-raised text-content hover:text-purple-300 transition-colors"
+                  title="Split into one battery-sized flight group per sortie; upload each from the table"
+                >
+                  Split into {estimateBatteryCount(result.stats.flightTime, config.enduranceMinutes ?? 20)} flights
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

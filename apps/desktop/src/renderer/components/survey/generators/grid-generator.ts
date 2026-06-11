@@ -67,6 +67,11 @@ export function generateGrid(config: SurveyConfig): SurveyResult {
     return rotatePoint(local, angleRad);
   });
 
+  // No-fly holes get the same transform so scan-line clipping can carve them out.
+  const localHoles = (config.holes ?? [])
+    .filter(ring => ring.length >= 3)
+    .map(ring => ring.map(v => rotatePoint(latLngToLocal(origin, v), angleRad)));
+
   // Camera footprint and spacing (or manual corridor width if camera is in manual mode)
   const { width: footprintW, height: footprintH } = getEffectiveFootprint(camera, altitude);
   const { lineSpacing, photoSpacing } = getEffectiveSpacing(
@@ -78,7 +83,7 @@ export function generateGrid(config: SurveyConfig): SurveyResult {
   }
 
   // Clip scan lines to polygon
-  const clippedLines = clipScanLines(localPoly, lineSpacing, effectiveOvershoot);
+  const clippedLines = clipScanLines(localPoly, lineSpacing, effectiveOvershoot, localHoles);
 
   if (clippedLines.length === 0) {
     return { waypoints: [], photoPositions: [], footprints: [], stats: emptyStats(config) };

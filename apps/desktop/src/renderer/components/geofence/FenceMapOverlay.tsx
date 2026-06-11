@@ -183,6 +183,11 @@ export function FenceMapOverlay({ readOnly = false }: FenceMapOverlayProps) {
   const handlePolygonClick = useCallback(
     (polygon: PolygonFence, e: L.LeafletMouseEvent) => {
       if (readOnly) return;
+      // When placing a return point, a click inside the polygon should set the
+      // return point at that location, not select/edit the polygon. Let the
+      // event propagate to FenceDrawTool's map-click handler so the point lands
+      // where the user clicked. (issue #57)
+      if (drawMode === 'return-point') return;
       // Stop propagation so FenceDrawTool doesn't add a vertex
       e.originalEvent.stopPropagation();
       // Exit draw mode if active
@@ -198,6 +203,10 @@ export function FenceMapOverlay({ readOnly = false }: FenceMapOverlayProps) {
   const handleCircleClick = useCallback(
     (circle: CircleFence, e: L.LeafletMouseEvent) => {
       if (readOnly) return;
+      // When placing a return point, let the click fall through to
+      // FenceDrawTool so it lands inside the circle rather than selecting it.
+      // (issue #57)
+      if (drawMode === 'return-point') return;
       // Stop propagation so FenceDrawTool doesn't add a vertex
       e.originalEvent.stopPropagation();
       // Exit draw mode if active

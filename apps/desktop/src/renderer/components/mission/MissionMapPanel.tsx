@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
-import { MapContainer, TileLayer, useMap, Marker, Polyline, useMapEvents, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, Marker, Polyline, useMapEvents, Circle, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useMissionStore } from '../../stores/mission-store';
 import { useTelemetryStore } from '../../stores/telemetry-store';
 import { useConnectionStore } from '../../stores/connection-store';
-import { commandHasLocation, isNavigationCommand, hasValidCoordinates, MAV_CMD, type MissionItem } from '../../../shared/mission-types';
+import { commandHasLocation, isNavigationCommand, hasValidCoordinates, computeGroupWaypointNumbers, MAV_CMD, type MissionItem } from '../../../shared/mission-types';
 import { useIpLocation } from '../../utils/ip-geolocation';
 import { SEGMENT_COLORS, getSegmentColor, computeItemColors } from '../../utils/mission-segment-colors';
 
@@ -28,7 +28,9 @@ import { TAKEOFF_AT_HOME_ICON } from './takeoff-icon';
 // Survey grid overlay
 import { SurveyDrawTool } from '../survey/SurveyDrawTool';
 import { SurveyMapOverlay } from '../survey/SurveyMapOverlay';
+import { PersistentSurveyOverlay } from '../survey/PersistentSurveyOverlay';
 import { useSurveyStore } from '../../stores/survey-store';
+import { isSurveyGroup } from '../../../shared/mission-group-types';
 
 // Offline map download
 import { OfflineAreaDownload } from '../map/OfflineAreaDownload';
@@ -147,6 +149,14 @@ function buildSegmentedPath(allItems: MissionItem[]): PathSegment[] {
       }
     }
 
+    // Don't draw a connecting leg across group boundaries — each group is a
+    // distinct area, and a line from the last WP of one to the first WP of the
+    // next is meaningless (the vehicle isn't told to fly it as one path here).
+    // DO_* state above is still walked so flags stay consistent.
+    if (fromWp.groupId && toWp.groupId && fromWp.groupId !== toWp.groupId) {
+      continue;
+    }
+
     const color = getSegmentColor(toWp.command, cameraActive, roiActive, speedOverride);
 
     // Build positions for this segment (with spline if needed)
@@ -240,7 +250,7 @@ function getCommandShape(cmd: number): string {
 }
 
 // Create waypoint marker icon
-function createWaypointIcon(wp: MissionItem, isSelected: boolean, isCurrent: boolean, segmentColor?: string): L.DivIcon {
+function createWaypointIcon(wp: MissionItem, isSelected: boolean, isCurrent: boolean, segmentColor?: string, displayNumber?: number): L.DivIcon {
   // For regular waypoints, use segment color to reflect mission state (camera, ROI, speed)
   // For special commands (takeoff, land, loiter, etc.), keep their distinct command color
   const commandColor = getCommandColor(wp.command);
@@ -249,7 +259,7 @@ function createWaypointIcon(wp: MissionItem, isSelected: boolean, isCurrent: boo
   const bgColor = isCurrent ? '#f59e0b' : baseColor;
   const size = isSelected ? 38 : 28;
   const shape = getCommandShape(wp.command);
-  const displayText = shape || (wp.seq + 1).toString();
+  const displayText = shape || (displayNumber ?? wp.seq + 1).toString();
   const borderColor = isCurrent ? '#fbbf24' : 'rgba(255,255,255,0.95)';
   const borderWidth = isCurrent ? 3 : isSelected ? 3 : 2;
 
@@ -669,10 +679,12 @@ const DraggableMarker = memo(function DraggableMarker({
   onRightClick,
   readOnly = false,
   segmentColor,
+  displayNumber,
 }: {
   wp: MissionItem;
   isSelected: boolean;
   isCurrent: boolean;
+  displayNumber?: number;
   onSelect: (seq: number) => void;
   onDragEnd: (seq: number, lat: number, lng: number) => void;
   onRightClick?: (e: L.LeafletMouseEvent, wp: MissionItem) => void;
@@ -718,8 +730,8 @@ const DraggableMarker = memo(function DraggableMarker({
 
   // Memoize icon to prevent unnecessary recreations
   const icon = useMemo(
-    () => createWaypointIcon(wp, isSelected, isCurrent, segmentColor),
-    [wp.command, wp.seq, isSelected, isCurrent, segmentColor]
+    () => createWaypointIcon(wp, isSelected, isCurrent, segmentColor, displayNumber),
+    [wp.command, wp.seq, isSelected, isCurrent, segmentColor, displayNumber]
   );
 
   return (
@@ -883,24 +895,85 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
   const surveyIsActive = useSurveyStore((s) => s.isActive);
   const surveyDrawMode = useSurveyStore((s) => s.drawMode);
   const surveyPolygon = useSurveyStore((s) => s.polygon);
+  const surveyPattern = useSurveyStore((s) => s.config.pattern);
   const activateSurvey = useSurveyStore((s) => s.activateSurvey);
   const deactivateSurvey = useSurveyStore((s) => s.deactivateSurvey);
   const startSurveyDrawing = useSurveyStore((s) => s.startDrawing);
+  const setSurveyPattern = useSurveyStore((s) => s.setPattern);
 
   // Disable mission editing when fence, rally, or survey editing is active
   const isFenceOrRallyActive = fenceDrawMode !== 'none' || rallyAddMode || surveyDrawMode !== 'none';
 
+  const groups = useMissionStore((s) => s.groups);
+
+  // Hidden groups (checkbox off) drop off the map entirely — polygon, WPs,
+  // and path. Items with no groupId (legacy/orphan) always show.
+  const visibleMissionItems = useMemo(() => {
+    if (groups.length === 0) return missionItems;
+    const hidden = new Set(groups.filter((g) => !g.visible).map((g) => g.id));
+    if (hidden.size === 0) return missionItems;
+    return missionItems.filter((it) => !it.groupId || !hidden.has(it.groupId));
+  }, [missionItems, groups]);
+
   // Filter to only items with locations and valid (non-zero) coordinates
-  const waypoints = missionItems.filter(
+  const waypoints = visibleMissionItems.filter(
     item => commandHasLocation(item.command) && hasValidCoordinates(item.latitude, item.longitude),
   );
 
+  // Per-group waypoint numbers (1-based within each group). Computed over the
+  // full mission so hiding a group doesn't renumber the others.
+  const groupWaypointNumbers = useMemo(
+    () => computeGroupWaypointNumbers(missionItems),
+    [missionItems],
+  );
+
+  // Survey grids are read as their PATH plus light turn-point dots, NOT as
+  // full numbered pins (which stack into an unreadable cluster). So we split:
+  // manual waypoints keep the rich draggable pins; survey waypoints render as
+  // small clickable dots (visible + selectable, but quiet). The colored
+  // polyline shows the lawnmower lines for both.
+  const surveyGroupIds = useMemo(
+    () => new Set(groups.filter(isSurveyGroup).map((g) => g.id)),
+    [groups],
+  );
+  const manualWaypoints = useMemo(
+    () => waypoints.filter((wp) => !wp.groupId || !surveyGroupIds.has(wp.groupId)),
+    [waypoints, surveyGroupIds],
+  );
+  const surveyWaypoints = useMemo(
+    () => waypoints.filter((wp) => wp.groupId && surveyGroupIds.has(wp.groupId)),
+    [waypoints, surveyGroupIds],
+  );
+
+  // Decimate a list to a marker cap, always keeping the last point plus
+  // whatever is selected/current so interaction still works.
+  const decimate = useCallback(
+    (list: MissionItem[], cap: number): MissionItem[] => {
+      if (list.length <= cap) return list;
+      const stride = Math.ceil(list.length / cap);
+      const keep = new Set<number>();
+      list.forEach((wp, i) => {
+        if (i % stride === 0 || i === list.length - 1) keep.add(wp.seq);
+      });
+      if (selectedSeq !== null) keep.add(selectedSeq);
+      if (currentSeq !== null) keep.add(currentSeq);
+      return list.filter((wp) => keep.has(wp.seq));
+    },
+    [selectedSeq, currentSeq],
+  );
+
+  // Pins are expensive (DivIcon), dots are cheap (CircleMarker), so different caps.
+  const displayedWaypoints = useMemo(() => decimate(manualWaypoints, 500), [manualWaypoints, decimate]);
+  const displayedSurveyDots = useMemo(() => decimate(surveyWaypoints, 1500), [surveyWaypoints, decimate]);
+  const markersDecimated =
+    displayedWaypoints.length + displayedSurveyDots.length < waypoints.length;
+
   // TAKEOFF items with placeholder (0,0) coords - render at home with rocket icon
   const ghostTakeoffItems = useMemo(() =>
-    missionItems.filter(item =>
+    visibleMissionItems.filter(item =>
       item.command === MAV_CMD.NAV_TAKEOFF && !hasValidCoordinates(item.latitude, item.longitude)
     ),
-    [missionItems]
+    [visibleMissionItems]
   );
 
   // Auto-fit map only when a mission is freshly loaded (file or FC download).
@@ -1074,10 +1147,11 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
 
   const layer = MAP_LAYERS[activeLayer];
 
-  // Build colored path segments from all mission items (includes DO_* state changes)
+  // Build colored path segments from visible mission items (includes DO_* state
+  // changes). Hidden groups are excluded so their legs vanish with their WPs.
   const pathSegments = useMemo(() => {
-    return buildSegmentedPath(missionItems);
-  }, [missionItems]);
+    return buildSegmentedPath(visibleMissionItems);
+  }, [visibleMissionItems]);
 
   // Segment colors per item (for marker tinting)
   const itemColors = useMemo(() => computeItemColors(missionItems), [missionItems]);
@@ -1210,7 +1284,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
         ))}
 
         {/* Waypoint markers */}
-        {waypoints.map((wp) => (
+        {displayedWaypoints.map((wp) => (
           <DraggableMarker
             key={wp.seq}
             wp={wp}
@@ -1221,8 +1295,29 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
             onRightClick={handleMarkerRightClick}
             readOnly={readOnly}
             segmentColor={showSegmentColors ? itemColors.get(wp.seq) : undefined}
+            displayNumber={groupWaypointNumbers.get(wp.seq)}
           />
         ))}
+
+        {/* Survey turn-waypoints as light, clickable dots (not heavy pins). */}
+        {displayedSurveyDots.map((wp) => {
+          const isSel = wp.seq === selectedSeq;
+          const isCur = wp.seq === currentSeq;
+          const fill = isCur
+            ? '#f59e0b'
+            : isSel
+              ? '#22d3ee'
+              : (showSegmentColors ? (itemColors.get(wp.seq) ?? '#3b82f6') : '#3b82f6');
+          return (
+            <CircleMarker
+              key={wp.seq}
+              center={[wp.latitude, wp.longitude]}
+              radius={isSel || isCur ? 5 : 3}
+              pathOptions={{ color: '#ffffff', weight: 1, fillColor: fill, fillOpacity: 0.95 }}
+              eventHandlers={{ click: () => handleMarkerClick(wp.seq) }}
+            />
+          );
+        })}
 
         {/* Ghost preview for relative-waypoint editor */}
         {relativeEditor && relativePreview && (
@@ -1265,6 +1360,11 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
 
         {/* Map overlays (self-subscribed to avoid re-rendering terrain) */}
         <MapOverlayLayers baseLayer={activeLayer} />
+
+        {/* Persistent overlay for completed survey groups (always on whenever
+            survey groups exist in the mission). The in-progress drawing
+            overlay below is conditional on the survey panel being active. */}
+        <PersistentSurveyOverlay />
 
         {/* Survey grid overlay */}
         {surveyIsActive && (
@@ -1339,6 +1439,11 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
       )}
 
       {/* Bottom controls - mode-specific floating tools */}
+      {markersDecimated && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] px-2 py-1 rounded-md bg-surface/90 border border-subtle text-[10px] text-content-secondary pointer-events-none">
+          Showing {displayedWaypoints.length} of {waypoints.length} markers (path is complete)
+        </div>
+      )}
       <div className="absolute bottom-3 left-3 z-[1000] flex items-center gap-2">
         {/* === MISSION MODE TOOLS === */}
         {activeMode === 'mission' && (
@@ -1438,33 +1543,50 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
               <>
                 <div className="w-px h-5 bg-subtle" />
                 {!surveyIsActive ? (
-                  <button
-                    onClick={() => { activateSurvey(); startSurveyDrawing(); }}
-                    className="px-2.5 py-1.5 rounded text-xs font-medium bg-surface-solid border border-purple-400 shadow-sm text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1.5"
-                    title="Start survey grid planning"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                    </svg>
-                    Survey
-                  </button>
+                  <>
+                    <button
+                      data-tour="mission-survey"
+                      onClick={() => { activateSurvey(); setSurveyPattern('grid'); startSurveyDrawing(); }}
+                      className="px-2.5 py-1.5 rounded text-xs font-medium bg-surface-solid border border-purple-400 shadow-sm text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1.5"
+                      title="Plan an area survey: draw a polygon, fill it with a grid/crosshatch"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                      </svg>
+                      Survey
+                    </button>
+                    <button
+                      data-tour="mission-corridor"
+                      onClick={() => { activateSurvey(); setSurveyPattern('corridor'); startSurveyDrawing(); }}
+                      className="px-2.5 py-1.5 rounded text-xs font-medium bg-surface-solid border border-purple-400 shadow-sm text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1.5"
+                      title="Plan a corridor survey: draw a centerline (roads, rail, power lines), strips run parallel"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21L10 3M17 21L14 3" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 17v-2.5M12 11.5V9M12 6V4" />
+                      </svg>
+                      Corridor
+                    </button>
+                  </>
                 ) : (
                   <>
                     {surveyDrawMode === 'polygon' && (
                       <span className="text-xs text-purple-400 bg-surface-solid border border-subtle shadow-sm px-2.5 py-1.5 rounded">
-                        Click to add boundary points, double-click to finish
+                        {surveyPattern === 'corridor'
+                          ? 'Click to add centerline points, double-click to finish'
+                          : 'Click to add boundary points, double-click to finish'}
                       </span>
                     )}
                     {surveyDrawMode === 'none' && !surveyPolygon && (
                       <button
                         onClick={startSurveyDrawing}
                         className="px-2.5 py-1.5 rounded text-xs font-medium bg-purple-600/80 text-white transition-colors flex items-center gap-1.5"
-                        title="Draw survey boundary"
+                        title={surveyPattern === 'corridor' ? 'Draw corridor centerline' : 'Draw survey boundary'}
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
-                        Draw Boundary
+                        {surveyPattern === 'corridor' ? 'Draw Centerline' : 'Draw Boundary'}
                       </button>
                     )}
                     <button

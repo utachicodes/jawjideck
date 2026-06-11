@@ -266,6 +266,7 @@ export function ModuleManagerView() {
   } = useModuleStore();
 
   const [keyInput, setKeyInput] = useState('');
+  const [restartRequired, setRestartRequired] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Load modules and check for updates on mount
@@ -290,6 +291,9 @@ export function ModuleManagerView() {
     const result = await activateLicense(trimmed);
     if (result.success) {
       setKeyInput('');
+      // Newly installed modules are only loaded into the running app at
+      // startup, so the module won't appear until ArduDeck restarts.
+      setRestartRequired(true);
       // Refresh updates
       checkUpdates();
     }
@@ -382,6 +386,32 @@ export function ModuleManagerView() {
         {/* Progress indicator */}
         {progress && progress.stage !== 'complete' && (
           <ActivationProgress progress={progress} />
+        )}
+
+        {/* Restart-required banner — modules only load at startup, so a freshly
+            installed module stays hidden until the app restarts. */}
+        {restartRequired && (
+          <div className="flex items-center gap-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+            <AlertIcon className="w-5 h-5 text-amber-400 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-medium text-amber-300">Restart required</h3>
+              <p className="text-sm text-content-secondary mt-0.5">
+                Module installed. ArduDeck must restart before it appears.
+              </p>
+            </div>
+            <button
+              onClick={() => window.electronAPI.relaunchApp()}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black text-sm font-medium rounded-lg transition-colors shrink-0"
+            >
+              Restart now
+            </button>
+            <button
+              onClick={() => setRestartRequired(false)}
+              className="px-3 py-2 text-sm text-content-secondary hover:text-content transition-colors shrink-0"
+            >
+              Later
+            </button>
+          </div>
         )}
 
         {/* Installed Modules */}

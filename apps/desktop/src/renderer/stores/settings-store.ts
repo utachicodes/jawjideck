@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type { TelemetrySpeed, BoardStats, PersistedSurveyPreset } from '../../shared/ipc-channels.js';
 import type { FirmwareSource } from '../../shared/firmware-types.js';
+import type { NonDefaultColorKey } from '../components/parameters/non-default-palette.js';
+import { DEFAULT_NON_DEFAULT_COLOR } from '../components/parameters/non-default-palette.js';
 
 /**
  * Vehicle type for visualization
@@ -309,6 +311,10 @@ interface SettingsStore {
   // Theme
   theme: ThemePreference;
   setTheme: (theme: ThemePreference) => void;
+
+  // Parameter view: color used to highlight non-default param values
+  nonDefaultHighlightColor: NonDefaultColorKey;
+  setNonDefaultHighlightColor: (color: NonDefaultColorKey) => void;
 
   // Experience level
   experienceLevel: ExperienceLevel | null;
@@ -722,6 +728,7 @@ export const useSettingsStore = create<SettingsStore>()(
   telemetrySpeed: 'normal' as TelemetrySpeed,
   displayUnits: 'small' as DisplayUnits,
   theme: 'dark' as ThemePreference,
+  nonDefaultHighlightColor: DEFAULT_NON_DEFAULT_COLOR,
   experienceLevel: null as ExperienceLevel | null,
   experienceLevelVersion: null as string | null,
   uiVisibility: { ...BEGINNER_UI_VISIBILITY },
@@ -815,6 +822,7 @@ export const useSettingsStore = create<SettingsStore>()(
           telemetrySpeed: ((settings as unknown as Record<string, unknown>).telemetrySpeed as TelemetrySpeed) || 'normal',
           displayUnits: ((settings as unknown as Record<string, unknown>).displayUnits as DisplayUnits) || 'small',
           theme: ((settings as unknown as Record<string, unknown>).theme as ThemePreference) || 'dark',
+          nonDefaultHighlightColor: ((settings as unknown as Record<string, unknown>).nonDefaultHighlightColor as NonDefaultColorKey) || DEFAULT_NON_DEFAULT_COLOR,
           experienceLevel: ((settings as unknown as Record<string, unknown>).experienceLevel as ExperienceLevel) || null,
           experienceLevelVersion: ((settings as unknown as Record<string, unknown>).experienceLevelVersion as string) || null,
           uiVisibility: {
@@ -857,6 +865,7 @@ export const useSettingsStore = create<SettingsStore>()(
         telemetrySpeed: state.telemetrySpeed,
         displayUnits: state.displayUnits,
         theme: state.theme,
+        nonDefaultHighlightColor: state.nonDefaultHighlightColor,
         ...(state.experienceLevel ? { experienceLevel: state.experienceLevel } : {}),
         ...(state.experienceLevelVersion ? { experienceLevelVersion: state.experienceLevelVersion } : {}),
         uiVisibility: state.uiVisibility,
@@ -1100,6 +1109,10 @@ export const useSettingsStore = create<SettingsStore>()(
     set({ theme });
   },
 
+  setNonDefaultHighlightColor: (color) => {
+    set({ nonDefaultHighlightColor: color });
+  },
+
   setExperienceLevel: (level, version) => {
     const uiVis = level === 'advanced' ? { ...ADVANCED_UI_VISIBILITY } : { ...BEGINNER_UI_VISIBILITY };
     set((state) => ({
@@ -1160,6 +1173,7 @@ useSettingsStore.subscribe(
     telemetrySpeed: state.telemetrySpeed,
     displayUnits: state.displayUnits,
     theme: state.theme,
+    nonDefaultHighlightColor: state.nonDefaultHighlightColor,
     experienceLevel: state.experienceLevel,
     experienceLevelVersion: state.experienceLevelVersion,
     uiVisibility: state.uiVisibility,

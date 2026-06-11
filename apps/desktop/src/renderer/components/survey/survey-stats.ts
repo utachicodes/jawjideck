@@ -58,6 +58,42 @@ export function calculateGSD(
 }
 
 /**
+ * Inverse of {@link calculateGSD}: the altitude (m) that yields a target GSD
+ * (cm/px) for a camera. Lets the planner work GSD-first - surveyors think in
+ * cm/px, not metres. Returns 0 for invalid camera inputs.
+ */
+export function calculateAltitudeForGSD(
+  sensorWidth: number,   // mm
+  focalLength: number,   // mm
+  imageWidth: number,     // pixels
+  gsd: number,            // cm/px
+): number {
+  if (sensorWidth <= 0) return 0;
+  return (gsd * focalLength * imageWidth) / (sensorWidth * 100);
+}
+
+/**
+ * Number of battery swaps a flight needs: total flight time divided by the
+ * usable endurance per battery, rounded up. `enduranceMinutes` should already
+ * bake in the operator's reserve margin. Returns 0 when inputs are unusable.
+ */
+export function estimateBatteryCount(flightTimeSeconds: number, enduranceMinutes: number): number {
+  if (enduranceMinutes <= 0 || flightTimeSeconds <= 0) return 0;
+  return Math.ceil(flightTimeSeconds / 60 / enduranceMinutes);
+}
+
+/**
+ * Rough captured-data estimate in GB. Uses sensor resolution as a proxy:
+ * ~1.2 MB per megapixel approximates a JPEG+RAW pair from a mapping payload.
+ * Deliberately an estimate for storage/offload planning, not an exact size.
+ */
+export function estimateDataSizeGb(photoCount: number, imageWidth: number, imageHeight: number): number {
+  const megapixels = (imageWidth * imageHeight) / 1_000_000;
+  const mbPerPhoto = megapixels * 1.2;
+  return (photoCount * mbPerPhoto) / 1024;
+}
+
+/**
  * Calculate survey footprint dimensions.
  */
 export function calculateFootprint(

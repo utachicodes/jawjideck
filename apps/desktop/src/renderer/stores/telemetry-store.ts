@@ -7,6 +7,7 @@ export interface TelemetryBatch {
   attitude?: AttitudeData;
   position?: PositionData;
   gps?: GpsData;
+  gps2?: GpsData;
   battery?: BatteryData;
   vfrHud?: VfrHudData;
   wind?: WindData;
@@ -35,6 +36,7 @@ const initialState: TelemetryState = {
   lastAttitude: 0,
   lastPosition: 0,
   lastGps: 0,
+  lastGps2: 0,
   lastBattery: 0,
   lastVfrHud: 0,
   lastRcChannels: 0,
@@ -44,7 +46,8 @@ const initialState: TelemetryState = {
 
   attitude: { roll: 0, pitch: 0, yaw: 0, rollSpeed: 0, pitchSpeed: 0, yawSpeed: 0 },
   position: { lat: 0, lon: 0, alt: 0, relativeAlt: 0, vx: 0, vy: 0, vz: 0 },
-  gps: { fixType: 0, satellites: 0, hdop: 99, lat: 0, lon: 0, alt: 0 },
+  gps: { fixType: 0, satellites: 0, hdop: 99, vdop: 99, lat: 0, lon: 0, alt: 0 },
+  gps2: null,
   battery: { voltage: 0, current: 0, remaining: 0 },
   vfrHud: { airspeed: 0, groundspeed: 0, heading: 0, throttle: 0, alt: 0, climb: 0 },
   wind: { direction: 0, speed: 0, speedZ: 0 },
@@ -83,6 +86,10 @@ export const useTelemetryStore = create<TelemetryStore>((set) => ({
     if (batch.gps) {
       updates.gps = batch.gps;
       updates.lastGps = now;
+    }
+    if (batch.gps2) {
+      updates.gps2 = batch.gps2;
+      updates.lastGps2 = now;
     }
     if (batch.battery) {
       updates.battery = batch.battery;

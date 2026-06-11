@@ -118,7 +118,7 @@ function resolvePlaneParam(parameters: Map<string, unknown>, modern: string, leg
 }
 
 /** Build a plane PID scheme adapted to whichever param names exist on the board */
-function buildPlaneScheme(parameters: Map<string, { value: number }>): PidScheme {
+export function buildPlaneScheme(parameters: Map<string, { value: number }>): PidScheme {
   const isModern = parameters.has('RLL_RATE_P');
   const r = (m: string, l: string) => resolvePlaneParam(parameters, m, l);
 
@@ -163,7 +163,7 @@ function buildPlaneScheme(parameters: Map<string, { value: number }>): PidScheme
   };
 }
 
-const QUADPLANE_SCHEME: PidScheme = {
+export const QUADPLANE_SCHEME: PidScheme = {
   id: 'quadplane',
   label: 'QuadPlane VTOL',
   description: 'QuadPlane VTOL rate controller with feedforward',
@@ -191,6 +191,18 @@ const QUADPLANE_SCHEME: PidScheme = {
  * Checks in order of specificity: quadplane > modern copter > legacy copter > plane > unknown.
  * ArduPlane handles both modern (RLL_RATE_*) and legacy (RLL2SRV_*) naming transparently.
  */
+/**
+ * True when the board is a QuadPlane exposing BOTH control-law sets: the VTOL
+ * multicopter rate controller (Q_A_RAT_) and the fixed-wing controller
+ * (RLL_RATE_ or RLL2SRV_). VTOL pilots tune each set separately, so the Tuning
+ * UI offers a VTOL / Fixed-wing switch in this case.
+ */
+export function hasDualVtolControllers(parameters: Map<string, { value: number }>): boolean {
+  const hasVtol = parameters.has('Q_A_RAT_RLL_P');
+  const hasPlane = parameters.has('RLL_RATE_P') || parameters.has('RLL2SRV_P');
+  return hasVtol && hasPlane;
+}
+
 export function detectPidScheme(parameters: Map<string, { value: number }>): PidScheme {
   if (parameters.has('Q_A_RAT_RLL_P')) return QUADPLANE_SCHEME;
   if (parameters.has('ATC_RAT_RLL_P')) return MODERN_COPTER_SCHEME;

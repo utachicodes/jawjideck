@@ -50,7 +50,11 @@ export function TourManager() {
     const candidates = getToursForView(currentView);
     if (candidates.length === 0) return;
     const state = useToursStore.getState();
-    const next = candidates.find((t) => isTourEligible(t.id, state));
+    // Tour-level predicate gates whether a tour is offered at all (e.g. the
+    // QuadPlane VTOL switch only applies when both controller sets exist).
+    const next = candidates.find(
+      (t) => isTourEligible(t.id, state) && (!t.predicate || t.predicate()),
+    );
     if (!next) return;
     if (state.activeTourId || state.gateTourId || state.panelGateTourId) return;
     const timer = setTimeout(() => showPrompt(next.id), PROMPT_DELAY_MS);

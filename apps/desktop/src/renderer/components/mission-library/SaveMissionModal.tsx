@@ -25,6 +25,10 @@ export function SaveMissionModal({ onClose, onSaved, importedItems, importedHome
   const homePosition = importedItems ? (importedHome ?? null) : missionStore.homePosition;
   const distance = importedItems ? calculateMissionDistance(importedItems) : missionStore.getTotalDistance();
   const isImport = !!importedItems;
+  // Saving the active mission preserves its group structure. Imports go in
+  // unstructured; the provider's migrateSavePayload wraps them in a default
+  // Manual group on write.
+  const groups = importedItems ? undefined : missionStore.groups;
 
   const allTags = useMissionLibraryStore(s => s.allTags);
 
@@ -48,6 +52,7 @@ export function SaveMissionModal({ onClose, onSaved, importedItems, importedHome
       description: description.trim(),
       vehicleProfileId: activeVehicleId,
       tags,
+      groups,
       items,
       homePosition,
     });

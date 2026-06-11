@@ -16,23 +16,48 @@ import type {
 } from '../../shared/module-types.js';
 
 const DEFAULT_BASE_URL = 'https://ardudeck-marketplace.herokuapp.com';
+const DEV_BASE_URL = 'http://localhost:3012';
 
 function getBaseUrl(): string {
-  return process.env['MARKETPLACE_URL'] || DEFAULT_BASE_URL;
+  if (process.env['MARKETPLACE_URL']) return process.env['MARKETPLACE_URL'];
+  // In dev, talk to the local marketplace by default instead of production.
+  if (!app.isPackaged) return DEV_BASE_URL;
+  return DEFAULT_BASE_URL;
 }
 
 async function jsonPost<T>(path: string, body: Record<string, unknown>): Promise<T> {
   const url = `${getBaseUrl()}${path}`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error(`Could not reach the marketplace at ${getBaseUrl()}. Check your connection and try again.`);
+  }
   if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(`API ${res.status}: ${text}`);
+    throw new Error(await marketplaceError(res));
   }
   return res.json() as Promise<T>;
+}
+
+/**
+ * Build a clean error message from a failed response. The API returns JSON
+ * errors ({ message }); a non-JSON body (e.g. an HTML gateway/"no such app"
+ * page) means the marketplace itself is down or misconfigured, so we never
+ * surface raw HTML to the UI.
+ */
+async function marketplaceError(res: Response): Promise<string> {
+  const text = await res.text().catch(() => '');
+  try {
+    const json = JSON.parse(text);
+    if (json?.message) return `Marketplace error (${res.status}): ${json.message}`;
+  } catch {
+    // body is not JSON — fall through to the generic message
+  }
+  return `Marketplace unavailable (${res.status}). The service may be down or MARKETPLACE_URL is misconfigured.`;
 }
 
 /**
@@ -86,14 +111,18 @@ export async function downloadBundle(
   onProgress?: (downloaded: number, total: number) => void,
 ): Promise<{ filePath: string; hash: string }> {
   const url = `${getBaseUrl()}/client/download/${encodeURIComponent(slug)}/${encodeURIComponent(version)}`;
-  const res = await fetch(url, {
-    method: 'GET',
-    headers: { 'x-license-key': licenseKey },
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'GET',
+      headers: { 'x-license-key': licenseKey },
+    });
+  } catch {
+    throw new Error(`Could not reach the marketplace at ${getBaseUrl()}. Check your connection and try again.`);
+  }
 
   if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(`Download failed (${res.status}): ${text}`);
+    throw new Error(await marketplaceError(res));
   }
 
   const hash = res.headers.get('x-bundle-hash') || '';

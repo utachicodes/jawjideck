@@ -4,6 +4,14 @@
  */
 
 import type { MissionItem } from './mission-types';
+import type { Group } from './mission-group-types';
+
+/**
+ * Current mission file format version.
+ * v1 = legacy (no `version` field on disk, no groups, flat WP list)
+ * v2 = groups added; every WP has groupId; mission file carries Group[].
+ */
+export const MISSION_FILE_VERSION = 2 as const;
 
 // =============================================================================
 // Status Tracking
@@ -43,6 +51,17 @@ export interface MissionSummary {
 // =============================================================================
 
 export interface StoredMission extends MissionSummary {
+  /**
+   * On-disk schema version. Older files (no `version` field) are treated as
+   * v1 and migrated to v2 by `migrateStoredMission` at load time.
+   */
+  version?: number;
+  /**
+   * Ordered list of groups. Every waypoint in `items` references one of
+   * these by `groupId`. For migrated v1 files this is a single auto-created
+   * Manual group.
+   */
+  groups: Group[];
   items: MissionItem[];
   homePosition: { lat: number; lon: number; alt: number } | null;
 }
@@ -85,6 +104,12 @@ export interface SaveMissionPayload {
   description: string;
   vehicleProfileId: string | null;
   tags: string[];
+  /**
+   * Optional during the structural rollout. If omitted (legacy callers), the
+   * provider auto-creates a single Manual group and assigns every item to
+   * it on save. New callers should always supply groups.
+   */
+  groups?: Group[];
   items: MissionItem[];
   homePosition: { lat: number; lon: number; alt: number } | null;
   existingId?: string; // If set, update existing mission

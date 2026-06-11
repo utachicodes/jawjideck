@@ -1019,6 +1019,7 @@ const MSG_HEARTBEAT = 0;
 const MSG_SYS_STATUS = 1;
 const MSG_PARAM_VALUE = 22;
 const MSG_GPS_RAW_INT = 24;
+const MSG_GPS2_RAW = 124;
 const MSG_ATTITUDE = 30;
 const MSG_GLOBAL_POSITION_INT = 33;
 const MSG_RC_CHANNELS_RAW = 35;
@@ -1187,16 +1188,38 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
     }
 
     case MSG_GPS_RAW_INT: {
-      // MAVLink wire order: time_usec(8), lat(4), lon(4), alt(4), eph(2), epv(2), vel(2), cog(2), fix_type(1), satellites_visible(1)
+      // MAVLink wire order (base fields, size-descending): time_usec(8) @0,
+      // lat(4) @8, lon(4) @12, alt(4) @16, eph(2) @20, epv(2) @22, vel(2) @24,
+      // cog(2) @26, fix_type(1) @28, satellites_visible(1) @29.
       const lat = readInt32(payload, 8) / 1e7;
       const lon = readInt32(payload, 12) / 1e7;
       const alt = readInt32(payload, 16) / 1000; // mm to m
       const hdop = readUint16(payload, 20) / 100; // eph = hdop * 100
+      const vdop = readUint16(payload, 22) / 100; // epv = vdop * 100
       const fixType = payload[28]!;
       const satellites = payload[29]!;
 
-      const gps: GpsData = { fixType, satellites, hdop, lat, lon, alt };
+      const gps: GpsData = { fixType, satellites, hdop, vdop, lat, lon, alt };
       queueMavlinkTelemetry(mainWindow, { gps });
+      break;
+    }
+
+    case MSG_GPS2_RAW: {
+      // Second GPS receiver. MAVLink wire order (base fields, size-descending):
+      // time_usec(8) @0, lat(4) @8, lon(4) @12, alt(4) @16, dgps_age(4) @20,
+      // eph(2) @24, epv(2) @26, vel(2) @28, cog(2) @30, fix_type(1) @32,
+      // satellites_visible(1) @33, dgps_numch(1) @34. (The extra 4-byte
+      // dgps_age shifts the 2-byte and 1-byte fields vs GPS_RAW_INT.)
+      const lat = readInt32(payload, 8) / 1e7;
+      const lon = readInt32(payload, 12) / 1e7;
+      const alt = readInt32(payload, 16) / 1000; // mm to m
+      const hdop = readUint16(payload, 24) / 100; // eph = hdop * 100
+      const vdop = readUint16(payload, 26) / 100; // epv = vdop * 100
+      const fixType = payload[32] ?? 0;
+      const satellites = payload[33] ?? 0;
+
+      const gps2: GpsData = { fixType, satellites, hdop, vdop, lat, lon, alt };
+      queueMavlinkTelemetry(mainWindow, { gps2 });
       break;
     }
 
@@ -5803,6 +5826,45 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   });
 
   // Load parameters from file
+  ipcMain.handle(IPC_CHANNELS.MISSION_IMPORT_AREA, async (): Promise<{ success: boolean; error?: string; format?: 'kml' | 'geojson'; content?: string; fileName?: string }> => {
+    try {
+      const result = await dialog.showOpenDialog(mainWindow, {
+        title: 'Import Survey Area',
+        filters: [
+          { name: 'Boundary Files', extensions: ['kml', 'kmz', 'geojson', 'json'] },
+          { name: 'KML / KMZ', extensions: ['kml', 'kmz'] },
+          { name: 'GeoJSON', extensions: ['geojson', 'json'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+        properties: ['openFile'],
+      });
+      if (result.canceled || result.filePaths.length === 0) {
+        return { success: false, error: 'Cancelled' };
+      }
+
+      const filePath = result.filePaths[0]!;
+      const path = await import('path');
+      const fs = await import('fs/promises');
+      const ext = path.extname(filePath).replace(/^\./, '').toLowerCase();
+      const fileName = path.basename(filePath);
+
+      if (ext === 'kmz') {
+        // KMZ is a zip; pull the first .kml entry (conventionally doc.kml).
+        const AdmZip = (await import('adm-zip')).default;
+        const zip = new AdmZip(filePath);
+        const kmlEntry = zip.getEntries().find((e) => e.entryName.toLowerCase().endsWith('.kml'));
+        if (!kmlEntry) return { success: false, error: 'No .kml found inside the KMZ archive' };
+        return { success: true, format: 'kml', content: kmlEntry.getData().toString('utf-8'), fileName };
+      }
+
+      const content = await fs.readFile(filePath, 'utf-8');
+      const format: 'kml' | 'geojson' = ext === 'kml' ? 'kml' : 'geojson';
+      return { success: true, format, content, fileName };
+    } catch (err) {
+      return { success: false, error: String(err) };
+    }
+  });
+
   ipcMain.handle(IPC_CHANNELS.PARAM_LOAD_FILE, async (): Promise<{ success: boolean; error?: string; params?: Array<{ id: string; value: number }>; vehicleType?: string; filePath?: string }> => {
     try {
       const result = await dialog.showOpenDialog(mainWindow, {
@@ -6204,16 +6266,26 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   });
 
   // Save mission to file
-  ipcMain.handle(IPC_CHANNELS.MISSION_SAVE_FILE, async (_, items: MissionItem[]): Promise<{ success: boolean; filePath?: string; error?: string }> => {
+  ipcMain.handle(IPC_CHANNELS.MISSION_SAVE_FILE, async (_, items: MissionItem[], format?: 'waypoints' | 'plan'): Promise<{ success: boolean; filePath?: string; error?: string }> => {
     try {
+      // When the caller picked a format explicitly (Export dropdown), default
+      // the filename + filter to it so the saved file is unambiguous; otherwise
+      // offer both and decide by the chosen extension.
+      const planFirst = format === 'plan';
       const result = await dialog.showSaveDialog(mainWindow, {
         title: 'Save Mission',
-        defaultPath: 'mission.waypoints',
-        filters: [
-          { name: 'Waypoints', extensions: ['waypoints', 'txt'] },
-          { name: 'QGC Plan', extensions: ['plan'] },
-          { name: 'All Files', extensions: ['*'] },
-        ],
+        defaultPath: planFirst ? 'mission.plan' : 'mission.waypoints',
+        filters: planFirst
+          ? [
+              { name: 'QGC Plan', extensions: ['plan'] },
+              { name: 'Waypoints', extensions: ['waypoints', 'txt'] },
+              { name: 'All Files', extensions: ['*'] },
+            ]
+          : [
+              { name: 'Waypoints', extensions: ['waypoints', 'txt'] },
+              { name: 'QGC Plan', extensions: ['plan'] },
+              { name: 'All Files', extensions: ['*'] },
+            ],
       });
 
       if (result.canceled || !result.filePath) {
@@ -6225,7 +6297,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       const ext = path.extname(result.filePath).toLowerCase();
 
       let content: string;
-      if (ext === '.plan') {
+      if (ext === '.plan' || (ext === '' && format === 'plan')) {
         // QGC Plan format (JSON)
         content = formatQgcPlan(items);
       } else {
@@ -8221,6 +8293,11 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   ipcMain.handle(IPC_CHANNELS.APP_INSTALL_UPDATE, (): void => {
     installUpdate();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APP_RELAUNCH, (): void => {
+    app.relaunch();
+    app.exit(0);
   });
 
   ipcMain.handle(IPC_CHANNELS.APP_OPEN_EXTERNAL, (_event, url: string): void => {

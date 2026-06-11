@@ -23,7 +23,7 @@ export interface SurveyPreset {
   /** Partial config the preset writes. Fields it omits are left untouched. */
   config: Partial<Pick<
     SurveyConfig,
-    'pattern' | 'altitude' | 'speed' | 'frontOverlap' | 'sideOverlap' | 'overshoot' | 'altitudeReference' | 'groundPattern' | 'spiralDirection' | 'perimeterPasses'
+    'pattern' | 'altitude' | 'speed' | 'frontOverlap' | 'sideOverlap' | 'overshoot' | 'altitudeReference' | 'groundPattern' | 'spiralDirection' | 'perimeterPasses' | 'crossGridAltitudeOffset' | 'corridorWidth' | 'corridorStrips' | 'corridorMode' | 'corridorSideOffset' | 'maxTurnAngle'
   >>;
   /**
    * When set, the preset replaces the active camera. Mower mode uses this to
@@ -88,6 +88,43 @@ export const BUILTIN_SURVEY_PRESETS: SurveyPreset[] = [
     },
   },
   {
+    id: 'corridor-plane',
+    name: 'Corridor (Plane)',
+    description: 'Roads, rail, power lines. Fixed-wing strips with racetrack turns.',
+    tag: 'Flying',
+    config: {
+      pattern: 'corridor',
+      altitude: 100,
+      speed: 16,
+      frontOverlap: 70,
+      sideOverlap: 75,
+      overshoot: 40,
+      altitudeReference: 'relative',
+      corridorMode: 'plane',
+      corridorWidth: 70,
+      corridorStrips: 0,
+      maxTurnAngle: 15,
+    },
+  },
+  {
+    id: 'corridor-copter',
+    name: 'Corridor (Copter)',
+    description: 'Branched corridors. Multirotor turns on the spot.',
+    tag: 'Flying',
+    config: {
+      pattern: 'corridor',
+      altitude: 60,
+      speed: 6,
+      frontOverlap: 75,
+      sideOverlap: 70,
+      overshoot: 0,
+      altitudeReference: 'relative',
+      corridorMode: 'copter',
+      corridorWidth: 40,
+      corridorStrips: 0,
+    },
+  },
+  {
     id: 'rover-mower',
     name: 'Rover / Mower',
     description: 'Ground vehicle. Set corridor width directly.',
@@ -139,5 +176,15 @@ export function captureCurrentAsPresetConfig(c: SurveyConfig): SurveyPreset['con
     ...(c.groundPattern ? { groundPattern: c.groundPattern } : {}),
     ...(c.spiralDirection ? { spiralDirection: c.spiralDirection } : {}),
     ...(c.perimeterPasses !== undefined ? { perimeterPasses: c.perimeterPasses } : {}),
+    ...(c.crossGridAltitudeOffset !== undefined ? { crossGridAltitudeOffset: c.crossGridAltitudeOffset } : {}),
+    ...(c.pattern === 'corridor'
+      ? {
+          corridorWidth: c.corridorWidth,
+          corridorStrips: c.corridorStrips,
+          corridorMode: c.corridorMode,
+          corridorSideOffset: c.corridorSideOffset,
+          maxTurnAngle: c.maxTurnAngle,
+        }
+      : {}),
   };
 }

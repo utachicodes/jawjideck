@@ -266,34 +266,11 @@
   }
 }
 
-/* Fast tooltips for icon-only buttons */
-[data-tip] {
-  position: relative;
-}
-[data-tip]::after {
-  content: attr(data-tip);
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-top: 6px;
-  padding: 4px 8px;
-  background: var(--bg-tooltip);
-  color: var(--text-primary);
-  border: 1px solid var(--border-default);
-  font-size: 11px;
-  line-height: 1.3;
-  border-radius: 6px;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  z-index: 9999;
-  box-shadow: 0 4px 6px -1px var(--shadow-color);
-  transition: opacity 0.15s ease 0.15s;
-}
-[data-tip]:hover::after {
-  opacity: 1;
-}
+/* Tooltips for [data-tip] elements are rendered by the GlobalTooltip React
+   component in a body-level portal (see components/GlobalTooltip.tsx). A pure
+   CSS ::after tooltip was clipped by overflow ancestors (toolbars, scroll
+   panes) and covered by sibling stacking contexts, which read as "broken /
+   only shows in roomy blocks". The portal approach can't be clipped. */
 
 /* Prevent text selection on UI elements */
 button,

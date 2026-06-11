@@ -7,8 +7,9 @@
 
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { History, AlertTriangle, RotateCw, Loader2, Star, CheckCircle, XCircle, Info, ExternalLink, Cpu, Pencil } from 'lucide-react';
+import { History, AlertTriangle, RotateCw, Loader2, Star, CheckCircle, XCircle, Info, ExternalLink, Cpu, Pencil, Check } from 'lucide-react';
 import { useParameterStore, type SortColumn } from '../../stores/parameter-store';
+import { useSettingsStore } from '../../stores/settings-store';
 import { PARAMETER_GROUPS } from '../../../shared/parameter-groups';
 import { useConnectionStore } from '../../stores/connection-store';
 import { getParameterDocsUrl, mavTypeToVehicleType } from '../../../shared/parameter-metadata';
@@ -17,6 +18,7 @@ import { classifySitlUnsafeParam } from '../../../shared/sitl-unsafe-params';
 import BitmaskEditor from './BitmaskEditor';
 import ParamHistoryModal from './ParamHistoryModal';
 import { Tooltip } from '../ui/Tooltip';
+import { NON_DEFAULT_COLORS, getNonDefaultColor } from '../parameters/non-default-palette';
 
 // Toast notification state
 type ToastType = 'success' | 'error' | 'info';
@@ -87,6 +89,10 @@ const ParameterTable: React.FC = () => {
     showOnlyFavourites,
     toggleShowOnlyFavourites,
     favouriteCount,
+    showOnlyNonDefault,
+    toggleShowOnlyNonDefault,
+    nonDefaultCount: nonDefaultCountFn,
+    hasDefaults: hasDefaultsFn,
     // File compare
     showCompareModal,
     fileParamDiffs,
@@ -109,6 +115,10 @@ const ParameterTable: React.FC = () => {
     clearPendingRetryParams,
   } = useParameterStore();
 
+  const nonDefaultColorKey = useSettingsStore((s) => s.nonDefaultHighlightColor);
+  const setNonDefaultHighlightColor = useSettingsStore((s) => s.setNonDefaultHighlightColor);
+  const nonDefaultColor = getNonDefaultColor(nonDefaultColorKey);
+
   const [editingParam, setEditingParam] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [editError, setEditError] = useState<string | null>(null);
@@ -127,6 +137,8 @@ const ParameterTable: React.FC = () => {
   const pendingParamRefresh = useRef(false);
   const [saveDropdownOpen, setSaveDropdownOpen] = useState(false);
   const saveDropdownRef = useRef<HTMLDivElement>(null);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const colorPickerRef = useRef<HTMLDivElement>(null);
 
   // Reboot cycle state
   const rebootCycleRef = useRef<{
@@ -183,6 +195,18 @@ const ParameterTable: React.FC = () => {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [saveDropdownOpen]);
+
+  // Close color picker on outside click
+  useEffect(() => {
+    if (!colorPickerOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) {
+        setColorPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [colorPickerOpen]);
 
   // Auto-hide toast after 3 seconds
   const showToast = useCallback((message: string, type: ToastType) => {
@@ -513,6 +537,8 @@ const ParameterTable: React.FC = () => {
   const displayParams = filteredParameters();
   const paramCount = parameters.size;
   const modified = modifiedCount();
+  const nonDefaultCount = nonDefaultCountFn();
+  const hasDefaults = hasDefaultsFn();
 
   // Vehicle slug for the per-param ArduPilot docs link. Null when vehicle is unknown.
   const docsVehicle = connectionState.mavType != null ? mavTypeToVehicleType(connectionState.mavType) : null;
@@ -641,6 +667,66 @@ const ParameterTable: React.FC = () => {
               )}
               {modified} modified
             </button>
+          )}
+
+          {paramCount > 0 && (
+            <div className="relative" ref={colorPickerRef}>
+              <div className="flex">
+                <button
+                  onClick={toggleShowOnlyNonDefault}
+                  className={`px-3 py-2 rounded-l-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                    showOnlyNonDefault
+                      ? 'bg-surface-raised text-content ring-1 ring-inset ring-blue-500/40'
+                      : 'bg-surface-raised hover:bg-surface-raised text-content'
+                  }`}
+                  title={showOnlyNonDefault
+                    ? 'Show all parameters'
+                    : (hasDefaults
+                        ? 'Show only parameters that differ from firmware defaults'
+                        : 'Show only parameters changed in this session (firmware defaults unavailable on this connection)')}
+                >
+                  <span className={`inline-block w-3 h-3 rounded-full ring-1 ring-black/10 ${nonDefaultColor.swatchClass}`} />
+                  Non-default
+                  <span className="text-xs text-content-secondary">({nonDefaultCount})</span>
+                </button>
+                <button
+                  onClick={() => setColorPickerOpen((o) => !o)}
+                  className="px-1.5 py-2 bg-surface-raised hover:bg-surface-raised text-content rounded-r-lg border-l border-subtle/40 text-sm transition-colors"
+                  title="Pick highlight color"
+                  aria-haspopup="menu"
+                  aria-expanded={colorPickerOpen}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+
+              {colorPickerOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-1 z-50 w-48 rounded-lg bg-surface-solid border border-subtle shadow-xl p-2"
+                >
+                  <div className="px-1.5 pb-1.5 text-[10px] uppercase tracking-wider text-content-tertiary">Highlight color</div>
+                  <div className="grid grid-cols-4 gap-1">
+                    {NON_DEFAULT_COLORS.map((c) => {
+                      const active = c.key === nonDefaultColorKey;
+                      return (
+                        <button
+                          key={c.key}
+                          onClick={() => { setNonDefaultHighlightColor(c.key); setColorPickerOpen(false); }}
+                          className={`relative h-8 rounded-md ${c.swatchClass} transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-surface-solid focus:ring-white/40 ${active ? 'ring-2 ring-white/90 ring-offset-1 ring-offset-surface-solid' : ''}`}
+                          title={c.label}
+                          aria-label={c.label}
+                        >
+                          {active && <Check className="w-4 h-4 text-white absolute inset-0 m-auto drop-shadow" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -828,6 +914,11 @@ const ParameterTable: React.FC = () => {
               {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                 const param = displayParams[virtualRow.index]!;
                 const idx = virtualRow.index;
+                const isNonDefault = !param.isReadOnly && (
+                  param.defaultValue !== undefined
+                    ? Math.fround(param.value) !== Math.fround(param.defaultValue)
+                    : param.isModified
+                );
                 return (
                 <div
                   key={param.id}
@@ -899,7 +990,7 @@ const ParameterTable: React.FC = () => {
                               <select
                                 value={Math.round(param.value)}
                                 onChange={(e) => setParameter(param.id, Number(e.target.value))}
-                                className="flex-1 min-w-0 h-7 px-2 bg-surface-input border rounded-md text-sm leading-none text-content focus:outline-none focus:border-blue-500 truncate"
+                                className={`flex-1 min-w-0 h-7 px-2 bg-surface-input border rounded-md text-sm leading-none focus:outline-none focus:border-blue-500 truncate ${isNonDefault ? nonDefaultColor.textClass : 'text-content'}`}
                               >
                                 {Object.entries(meta!.values!).map(([code, label]) => (
                                   <option key={code} value={code}>{code}: {label}</option>
@@ -920,9 +1011,12 @@ const ParameterTable: React.FC = () => {
                             <>
                               <button
                                 onClick={() => startEdit(param.id, param.value)}
-                                className="font-mono text-sm text-content hover:text-blue-400 transition-colors tabular-nums"
+                                className={`font-mono text-sm hover:text-blue-400 transition-colors tabular-nums ${isNonDefault ? nonDefaultColor.textClass : 'text-content'}`}
                                 title={(() => {
                                   const hints: string[] = [];
+                                  if (isNonDefault && param.defaultValue !== undefined) {
+                                    hints.push(`Default: ${formatParamValue(param.defaultValue)}`);
+                                  }
                                   if (meta?.range) hints.push(`Range: ${meta.range.min} - ${meta.range.max}`);
                                   return hints.join('\n') || `Click to edit`;
                                 })()}
@@ -1051,7 +1145,7 @@ const ParameterTable: React.FC = () => {
       {/* Status bar */}
       <div className="shrink-0 px-4 py-2 border-t border-subtle bg-surface text-xs text-content-secondary flex items-center gap-4">
         <span>{paramCount} parameters</span>
-        {(searchQuery || selectedGroup !== 'all' || showOnlyModified || showOnlyFavourites) && displayParams.length !== paramCount && (
+        {(searchQuery || selectedGroup !== 'all' || showOnlyModified || showOnlyNonDefault || showOnlyFavourites) && displayParams.length !== paramCount && (
           <>
             <span className="text-content-tertiary">|</span>
             <span>{displayParams.length} shown</span>
@@ -1067,6 +1161,12 @@ const ParameterTable: React.FC = () => {
           <>
             <span className="text-content-tertiary">|</span>
             <span className="text-amber-400">Modified only</span>
+          </>
+        )}
+        {showOnlyNonDefault && (
+          <>
+            <span className="text-content-tertiary">|</span>
+            <span className={nonDefaultColor.textClass}>Non-default only</span>
           </>
         )}
         {selectedGroup !== 'all' && (

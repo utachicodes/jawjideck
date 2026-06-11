@@ -50,6 +50,7 @@ interface ParameterStore {
   searchQuery: string;
   selectedGroup: string;
   showOnlyModified: boolean;
+  showOnlyNonDefault: boolean;
   showOnlyFavourites: boolean;
   favourites: Set<string>;
   sortColumn: SortColumn;
@@ -111,6 +112,7 @@ interface ParameterStore {
   setSelectedGroup: (group: string) => void;
   setShowOnlyModified: (show: boolean) => void;
   toggleShowOnlyModified: () => void;
+  toggleShowOnlyNonDefault: () => void;
   toggleShowOnlyFavourites: () => void;
   toggleFavourite: (paramId: string) => void;
   setSortColumn: (column: SortColumn) => void;
@@ -180,6 +182,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
   searchQuery: '',
   selectedGroup: 'all',
   showOnlyModified: false,
+  showOnlyNonDefault: false,
   showOnlyFavourites: false,
   favourites: loadFavourites(),
   sortColumn: 'name' as SortColumn,
@@ -204,7 +207,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
   pendingRetryParams: [],
 
   filteredParameters: () => {
-    const { parameters, searchQuery, selectedGroup, showOnlyModified, showOnlyFavourites, favourites, sortColumn, sortDirection } = get();
+    const { parameters, searchQuery, selectedGroup, showOnlyModified, showOnlyNonDefault, showOnlyFavourites, favourites, sortColumn, sortDirection } = get();
     let params = Array.from(parameters.values());
 
     // Filter by favourites
@@ -220,6 +223,17 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
     // Filter by modified status
     if (showOnlyModified) {
       params = params.filter(p => p.isModified);
+    }
+
+    // Filter by non-default. If firmware default is known (FTP param.pck),
+    // compare against it. Otherwise fall back to in-session modifications
+    // so the filter still does something useful on SITL / no-FTP setups.
+    if (showOnlyNonDefault) {
+      params = params.filter(p => {
+        if (p.isReadOnly) return false;
+        if (p.defaultValue !== undefined) return !f32Equal(p.value, p.defaultValue);
+        return p.isModified;
+      });
     }
 
     // Then filter by search query (supports regex patterns like `serial[56]_baud`)
@@ -341,7 +355,10 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
     const { parameters } = get();
     let count = 0;
     for (const p of parameters.values()) {
-      if (!p.isReadOnly && p.defaultValue !== undefined && !f32Equal(p.value, p.defaultValue)) {
+      if (p.isReadOnly) continue;
+      if (p.defaultValue !== undefined) {
+        if (!f32Equal(p.value, p.defaultValue)) count++;
+      } else if (p.isModified) {
         count++;
       }
     }
@@ -547,6 +564,8 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
   setShowOnlyModified: (show) => set({ showOnlyModified: show }),
 
   toggleShowOnlyModified: () => set(state => ({ showOnlyModified: !state.showOnlyModified })),
+
+  toggleShowOnlyNonDefault: () => set(state => ({ showOnlyNonDefault: !state.showOnlyNonDefault })),
 
   toggleShowOnlyFavourites: () => set(state => ({ showOnlyFavourites: !state.showOnlyFavourites })),
 
@@ -1001,6 +1020,7 @@ export const useParameterStore = create<ParameterStore>((set, get) => ({
     searchQuery: '',
     selectedGroup: 'all',
     showOnlyModified: false,
+    showOnlyNonDefault: false,
     showOnlyFavourites: false,
     // NOTE: favourites are NOT reset - they persist across connections
     sortColumn: 'name',

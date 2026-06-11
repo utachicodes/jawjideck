@@ -27,7 +27,7 @@ import { useCalibrationStore } from './stores/calibration-store';
 import { useTelemetryStore } from './stores/telemetry-store';
 import { useNavigationStore, type ViewId } from './stores/navigation-store';
 import { useParameterStore } from './stores/parameter-store';
-import { useMissionStore } from './stores/mission-store';
+import { useMissionStore, hasMissionAutosave, restoreMissionAutosave } from './stores/mission-store';
 import { useFenceStore } from './stores/fence-store';
 import { useRallyStore } from './stores/rally-store';
 import { useLegacyConfigStore } from './stores/legacy-config-store';
@@ -43,6 +43,7 @@ import { useBoardProfileAssociation } from './hooks/useBoardProfileAssociation';
 import { SitlAutoApplyWatcher } from './components/settings/vehicle-profile/SitlAutoApplyWatcher';
 import { ProfileApplyOverlay } from './components/settings/vehicle-profile/ProfileApplyOverlay';
 import { ParameterCompareModalRoot } from './components/parameters/ParameterCompareModalRoot';
+import { GlobalTooltip } from './components/GlobalTooltip';
 import type { ElectronAPI } from '../main/preload';
 import logoImage from './assets/logo.png';
 
@@ -334,6 +335,15 @@ function App() {
   // Initialize settings on mount
   useEffect(() => {
     initializeSettings();
+  }, []);
+
+  // Crash recovery: if a mission was autosaved last session and nothing has
+  // been loaded yet, restore it so hours of survey prep survive a crash/close.
+  useEffect(() => {
+    const s = useMissionStore.getState();
+    if (s.missionItems.length === 0 && s.groups.length === 0 && hasMissionAutosave()) {
+      restoreMissionAutosave();
+    }
   }, []);
 
   // Start the MAVLink Inspector pipeline (packet listener + 4Hz tick) and
@@ -763,6 +773,7 @@ function App() {
     <ModuleRuntime>
     <AppTourProvider>
     <AppShell>
+      <GlobalTooltip />
       <SitlAutoApplyWatcher />
       <ProfileApplyOverlay />
       <ParameterCompareModalRoot />

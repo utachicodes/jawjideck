@@ -430,23 +430,26 @@ describe('issue #74: survey mission builder produces correct item structure', ()
     expect(items).toEqual([]);
   });
 
-  it('produces takeoff + DO_CHANGE_SPEED + cam on + waypoints + cam off + rtl', () => {
+  it('produces takeoff + wp1 + DO_CHANGE_SPEED + cam on + waypoints + cam off + rtl', () => {
     const config = makeConfig({ speed: 8, altitude: 100 });
     const result = makeSurveyResult(3);
     const items = surveyToMissionItems(result, config);
 
-    // Expected: 1 takeoff + 1 speed + 1 cam on + 3 waypoints + 1 cam off + 1 rtl = 8
+    // Expected: 1 takeoff + 3 waypoints + 1 speed + 1 cam on + 1 cam off + 1 rtl = 8
     expect(items).toHaveLength(8);
 
     expect(items[0]!.command).toBe(MAV_CMD.NAV_TAKEOFF);
 
-    expect(items[1]!.command).toBe(MAV_CMD.DO_CHANGE_SPEED);
-    expect(items[1]!.param2).toBe(8); // speed
+    // Speed + camera trigger now follow the FIRST waypoint (issue #83):
+    // ArduPilot ignores DO_* commands placed before the first NAV_WAYPOINT.
+    expect(items[1]!.command).toBe(MAV_CMD.NAV_WAYPOINT);
 
-    expect(items[2]!.command).toBe(MAV_CMD.DO_SET_CAM_TRIGG_DIST);
-    expect(items[2]!.param1).toBeGreaterThan(0); // trigger distance
+    expect(items[2]!.command).toBe(MAV_CMD.DO_CHANGE_SPEED);
+    expect(items[2]!.param2).toBe(8); // speed
 
-    expect(items[3]!.command).toBe(MAV_CMD.NAV_WAYPOINT);
+    expect(items[3]!.command).toBe(MAV_CMD.DO_SET_CAM_TRIGG_DIST);
+    expect(items[3]!.param1).toBeGreaterThan(0); // trigger distance
+
     expect(items[4]!.command).toBe(MAV_CMD.NAV_WAYPOINT);
     expect(items[5]!.command).toBe(MAV_CMD.NAV_WAYPOINT);
 

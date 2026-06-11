@@ -3,13 +3,13 @@
  * camera footprints, and drawing preview on the map.
  */
 import { useMemo, useCallback, memo } from 'react';
-import { Polygon, Polyline, CircleMarker, Marker, Tooltip } from 'react-leaflet';
+import { Polygon, Polyline, CircleMarker, Marker, Tooltip, Pane } from 'react-leaflet';
 import L from 'leaflet';
 import { useSurveyStore } from '../../stores/survey-store';
 import type { LatLng } from './survey-types';
 
 // Colors
-const SURVEY_POLYGON_COLOR = '#8b5cf6';     // Purple
+const SURVEY_POLYGON_COLOR = '#d946ef';     // Fuchsia - kept clearly off the sky-blue grid lines
 const SURVEY_LINE_COLOR = '#38bdf8';         // Sky blue
 const SURVEY_PHOTO_COLOR = '#f59e0b';        // Amber
 const SURVEY_FOOTPRINT_COLOR = '#8b5cf6';    // Purple
@@ -96,6 +96,7 @@ export function SurveyMapOverlay() {
   const drawMode = useSurveyStore((s) => s.drawMode);
   const drawingVertices = useSurveyStore((s) => s.drawingVertices);
   const polygon = useSurveyStore((s) => s.polygon);
+  const pattern = useSurveyStore((s) => s.config.pattern);
   const result = useSurveyStore((s) => s.result);
   const showFootprints = useSurveyStore((s) => s.showFootprints);
   const updateVertex = useSurveyStore((s) => s.updateVertex);
@@ -169,19 +170,50 @@ export function SurveyMapOverlay() {
         </>
       )}
 
-      {/* Completed survey polygon */}
+      {/* Completed survey polygon. Rendered in a high-z pane (above the survey
+          grid lines and the numbered waypoint markers) so the boundary and its
+          drag handles are visible and grabbable instead of buried under the WPs. */}
       {polygon && polygonPositions.length > 0 && (
-        <>
-          <Polygon
-            positions={polygonPositions}
-            pathOptions={{
-              color: SURVEY_POLYGON_COLOR,
-              weight: 2,
-              fillColor: SURVEY_POLYGON_COLOR,
-              fillOpacity: 0.1,
-              dashArray: '6, 3',
-            }}
-          />
+        <Pane name="surveyEditPane" style={{ zIndex: 640 }}>
+          {/* Corridor renders the boundary as an OPEN centerline polyline; area
+              patterns render a closed, lightly-filled polygon. Both keep the
+              white casing for legibility over the blue grid and the draggable
+              vertices for editing. */}
+          {pattern === 'corridor' ? (
+            <>
+              <Polyline
+                positions={polygonPositions}
+                interactive={false}
+                pathOptions={{ color: '#ffffff', weight: 7, opacity: 0.85 }}
+              />
+              <Polyline
+                positions={polygonPositions}
+                pathOptions={{ color: SURVEY_POLYGON_COLOR, weight: 4, dashArray: '10, 6' }}
+                eventHandlers={{ click: (e) => e.originalEvent.stopPropagation() }}
+              />
+            </>
+          ) : (
+            <>
+              {/* White casing so the boundary reads clearly over the blue grid. */}
+              <Polygon
+                positions={polygonPositions}
+                interactive={false}
+                pathOptions={{ color: '#ffffff', weight: 7, opacity: 0.85, fill: false }}
+              />
+              <Polygon
+                positions={polygonPositions}
+                pathOptions={{
+                  color: SURVEY_POLYGON_COLOR,
+                  weight: 4,
+                  fillColor: SURVEY_POLYGON_COLOR,
+                  fillOpacity: 0.05,
+                }}
+                // Clicking the polygon you're editing shouldn't count as an
+                // "empty map" click that exits edit mode.
+                eventHandlers={{ click: (e) => e.originalEvent.stopPropagation() }}
+              />
+            </>
+          )}
           {/* Draggable vertex markers - right-click to delete, hover for coordinates */}
           {polygon.map((v, i) => (
             <VertexMarker
@@ -193,7 +225,7 @@ export function SurveyMapOverlay() {
               onDelete={handleVertexDelete}
             />
           ))}
-        </>
+        </Pane>
       )}
 
       {/* Camera footprints (rendered behind flight lines) */}

@@ -28,6 +28,7 @@ export interface GpsData {
   fixType: number;   // 0=no fix, 1=no fix, 2=2D, 3=3D, 4=DGPS, 5=RTK float, 6=RTK fixed
   satellites: number;
   hdop: number;      // horizontal dilution of precision (lower is better)
+  vdop: number;      // vertical dilution of precision (lower is better)
   lat: number;       // degrees
   lon: number;       // degrees
   alt: number;       // meters MSL
@@ -96,6 +97,7 @@ export interface TelemetryState {
   lastAttitude: number;
   lastPosition: number;
   lastGps: number;
+  lastGps2: number;
   lastBattery: number;
   lastVfrHud: number;
   lastRcChannels: number;
@@ -107,6 +109,8 @@ export interface TelemetryState {
   attitude: AttitudeData;
   position: PositionData;
   gps: GpsData;
+  /** Second GPS receiver (GPS2_RAW). null until a GPS2_RAW message is received. */
+  gps2: GpsData | null;
   battery: BatteryData;
   vfrHud: VfrHudData;
   wind: WindData;

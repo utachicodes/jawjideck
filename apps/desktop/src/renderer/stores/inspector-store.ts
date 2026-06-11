@@ -303,7 +303,16 @@ export function ingestPacket(p: PacketEvent): void {
 
   if (info) {
     try {
-      const decoded = info.deserialize(payloadBytes);
+      // MAVLink v2 truncates trailing zero bytes from the payload, so a
+      // received payload is often shorter than the message's full length
+      // (e.g. SERVO_OUTPUT_RAW with servo9-16 all zero). The generated
+      // deserializers read at fixed offsets up to maxLength and would throw
+      // a RangeError on a truncated buffer. Zero-pad back to maxLength so
+      // the missing trailing fields decode as 0.
+      const full = payloadBytes.length < info.maxLength
+        ? (() => { const b = new Uint8Array(info.maxLength); b.set(payloadBytes); return b; })()
+        : payloadBytes;
+      const decoded = info.deserialize(full);
       // Decoded result is a typed message object — its enumerable properties
       // are the fields we want to display.
       entry.fields = decoded as Record<string, unknown>;

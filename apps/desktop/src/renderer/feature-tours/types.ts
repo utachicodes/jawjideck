@@ -46,4 +46,13 @@ export interface FeatureTour {
   steps: FeatureTourStep[];
   requires?: FeatureTourRequirements;
   demo?: FeatureTourDemo;
+  /**
+   * Optional gate evaluated before the tour is ever offered. When it returns
+   * false the tour is not prompted (and its prompt is never scheduled). Use for
+   * tours that only apply to specific hardware/state, e.g. the QuadPlane
+   * VTOL/fixed-wing tuning switch which only exists when both controller sets
+   * are present. Distinct from step-level `predicate`, which only filters
+   * individual steps after a tour has already started.
+   */
+  predicate?: () => boolean;
 }

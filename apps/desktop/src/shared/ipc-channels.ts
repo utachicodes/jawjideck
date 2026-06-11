@@ -137,6 +137,7 @@ export const IPC_CHANNELS = {
   MISSION_REACHED: 'mission:reached',
   MISSION_SAVE_FILE: 'mission:save-file',
   MISSION_LOAD_FILE: 'mission:load-file',
+  MISSION_IMPORT_AREA: 'mission:import-area',
 
   // Geofencing (mission_type = FENCE)
   FENCE_DOWNLOAD: 'fence:download',
@@ -458,6 +459,7 @@ export const IPC_CHANNELS = {
   MODULE_REMOVE: 'module:remove',
   MODULE_CHECK_UPDATES: 'module:check-updates',
   MODULE_PROGRESS: 'module:progress',
+  MODULE_DEEP_LINK_INSTALL: 'module:deep-link-install',
 
   // Module Host (runtime API exposed to loaded modules)
   MODULE_HOST_LIST_LOADED: 'module-host:list-loaded',
@@ -487,6 +489,7 @@ export const IPC_CHANNELS = {
   APP_INSTALL_UPDATE: 'app:install-update',
   APP_UPDATE_STATUS: 'app:update-status',
   APP_OPEN_EXTERNAL: 'app:open-external',
+  APP_RELAUNCH: 'app:relaunch',
 
   // =========================================================================
   // Companion Computer (Agent WebSocket + MAVLink Layer 1)

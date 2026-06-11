@@ -6,10 +6,12 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { AlertTriangle, RotateCw, Loader2, Star } from 'lucide-react';
+import { AlertTriangle, RotateCw, Loader2, Star, Check } from 'lucide-react';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useParameterStore, type SortColumn, type FileParamDiff } from '../../stores/parameter-store';
 import { useQuickSetupStore } from '../../stores/quick-setup-store';
+import { useSettingsStore } from '../../stores/settings-store';
+import { NON_DEFAULT_COLORS, getNonDefaultColor } from './non-default-palette';
 import { getParamTypeName, formatParamValue } from '../../../shared/parameter-types';
 import { PARAMETER_GROUPS } from '../../../shared/parameter-groups';
 import { MspConfigView } from './MspConfigView';
@@ -100,6 +102,8 @@ export function ParametersView() {
     showOnlyFavourites,
     toggleShowOnlyFavourites,
     favouriteCount,
+    showOnlyNonDefault,
+    toggleShowOnlyNonDefault,
     nonDefaultCount: nonDefaultCountFn,
     hasDefaults: hasDefaultsFn,
     // File compare
@@ -128,6 +132,10 @@ export function ParametersView() {
     closeOfflineMode,
   } = useParameterStore();
 
+  const nonDefaultColorKey = useSettingsStore((s) => s.nonDefaultHighlightColor);
+  const setNonDefaultHighlightColor = useSettingsStore((s) => s.setNonDefaultHighlightColor);
+  const nonDefaultColor = getNonDefaultColor(nonDefaultColorKey);
+
   const [editingParam, setEditingParam] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [editError, setEditError] = useState<string | null>(null);
@@ -143,6 +151,8 @@ export function ParametersView() {
   const pendingParamRefresh = useRef(false);
   const [saveDropdownOpen, setSaveDropdownOpen] = useState(false);
   const saveDropdownRef = useRef<HTMLDivElement>(null);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const colorPickerRef = useRef<HTMLDivElement>(null);
 
   // Close save dropdown on outside click
   useEffect(() => {
@@ -155,6 +165,18 @@ export function ParametersView() {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [saveDropdownOpen]);
+
+  // Close color picker on outside click
+  useEffect(() => {
+    if (!colorPickerOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) {
+        setColorPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [colorPickerOpen]);
 
   // Auto-hide toast after 3 seconds
   const showToast = useCallback((message: string, type: ToastType) => {
@@ -686,6 +708,59 @@ export function ParametersView() {
               {modified} modified
             </button>
           )}
+
+          {hasDefaults && nonDefaultCount > 0 && (
+            <div ref={colorPickerRef} className="relative flex items-center rounded-full bg-surface-overlay-subtle ring-1 ring-subtle">
+              <button
+                onClick={toggleShowOnlyNonDefault}
+                className={`pl-3 pr-2 py-1 rounded-l-full text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                  showOnlyNonDefault
+                    ? 'bg-surface-raised text-content ring-1 ring-subtle'
+                    : 'text-content-secondary hover:bg-surface-raised hover:text-content'
+                }`}
+                title={showOnlyNonDefault ? 'Show all parameters' : 'Show only non-default parameters'}
+              >
+                <span className={`inline-block w-2 h-2 rounded-full ${nonDefaultColor.swatchClass}`} />
+                {nonDefaultCount} non-default
+              </button>
+              <button
+                onClick={() => setColorPickerOpen((o) => !o)}
+                className="pl-1.5 pr-2 py-1 rounded-r-full text-content-secondary hover:text-content hover:bg-surface-raised transition-colors flex items-center gap-1 border-l border-subtle/60"
+                title="Pick highlight color"
+                aria-haspopup="menu"
+                aria-expanded={colorPickerOpen}
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {colorPickerOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-1.5 z-30 w-44 rounded-lg bg-surface-solid border border-strong shadow-lg p-2"
+                >
+                  <div className="px-1.5 pb-1.5 text-[10px] uppercase tracking-wider text-content-tertiary">Highlight color</div>
+                  <div className="grid grid-cols-4 gap-1">
+                    {NON_DEFAULT_COLORS.map((c) => {
+                      const active = c.key === nonDefaultColorKey;
+                      return (
+                        <button
+                          key={c.key}
+                          onClick={() => { setNonDefaultHighlightColor(c.key); setColorPickerOpen(false); }}
+                          className={`relative h-7 rounded-md ${c.swatchClass} transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-surface-solid focus:ring-white/40 ${active ? 'ring-2 ring-white/80 ring-offset-1 ring-offset-surface-solid' : ''}`}
+                          title={c.label}
+                          aria-label={c.label}
+                        >
+                          {active && <Check className="w-3.5 h-3.5 text-white absolute inset-0 m-auto drop-shadow" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Progress bar */}
@@ -842,7 +917,13 @@ export function ParametersView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-subtle/30">
-              {displayParams.map((param) => (
+              {displayParams.map((param) => {
+                const isNonDefault = !param.isReadOnly && (
+                  param.defaultValue !== undefined
+                    ? Math.fround(param.value) !== Math.fround(param.defaultValue)
+                    : param.isModified
+                );
+                return (
                 <tr
                   key={param.id}
                   className="hover:bg-surface-overlay-subtle transition-colors"
@@ -894,14 +975,16 @@ export function ParametersView() {
                       ) : (
                         <button
                           onClick={() => startEdit(param.id, param.value)}
-                          className="font-mono text-sm text-content hover:text-blue-400 transition-colors tabular-nums"
+                          className={`font-mono text-sm ${isNonDefault ? nonDefaultColor.textClass : 'text-content'} hover:text-blue-400 transition-colors tabular-nums`}
                           title={(() => {
                             const meta = getParameterMetadata(param.id);
-                            if (!meta) return undefined;
                             const hints: string[] = [];
-                            if (meta.range) hints.push(`Range: ${meta.range.min} to ${meta.range.max}`);
-                            if (meta.values) hints.push(`Values: ${Object.entries(meta.values).map(([k,v]) => `${k}=${v}`).join(', ')}`);
-                            if (meta.units) hints.push(`Units: ${meta.units}`);
+                            if (isNonDefault && param.defaultValue !== undefined) {
+                              hints.push(`Default: ${formatParamValue(param.defaultValue)}`);
+                            }
+                            if (meta?.range) hints.push(`Range: ${meta.range.min} to ${meta.range.max}`);
+                            if (meta?.values) hints.push(`Values: ${Object.entries(meta.values).map(([k,v]) => `${k}=${v}`).join(', ')}`);
+                            if (meta?.units) hints.push(`Units: ${meta.units}`);
                             return hints.length > 0 ? hints.join('\n') : undefined;
                           })()}
                         >
@@ -944,7 +1027,8 @@ export function ParametersView() {
                     </span>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -953,7 +1037,7 @@ export function ParametersView() {
       {/* Status bar */}
       <div className="shrink-0 px-4 py-2 border-t border-subtle bg-surface text-xs text-content-secondary flex items-center gap-4">
         <span>{paramCount} parameters</span>
-        {(searchQuery || selectedGroup !== 'all' || showOnlyModified || showOnlyFavourites) && displayParams.length !== paramCount && (
+        {(searchQuery || selectedGroup !== 'all' || showOnlyModified || showOnlyNonDefault || showOnlyFavourites) && displayParams.length !== paramCount && (
           <>
             <span className="text-content-tertiary">|</span>
             <span>{displayParams.length} shown</span>
@@ -969,6 +1053,12 @@ export function ParametersView() {
           <>
             <span className="text-content-tertiary">|</span>
             <span className="text-amber-400">Modified only</span>
+          </>
+        )}
+        {showOnlyNonDefault && (
+          <>
+            <span className="text-content-tertiary">|</span>
+            <span className={nonDefaultColor.textClass}>Non-default only</span>
           </>
         )}
         {selectedGroup !== 'all' && (

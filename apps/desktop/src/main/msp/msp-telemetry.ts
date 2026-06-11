@@ -184,7 +184,7 @@ function startTelemetryInterval(intervalMs: number): void {
         vfrHud?: { airspeed: number; groundspeed: number; heading: number; throttle: number; alt: number; climb: number };
         battery?: { voltage: number; current: number; remaining: number; cellCount?: number; cellVoltage?: number; mahDrawn?: number };
         flight?: { mode: string; modeNum: number; armed: boolean; isFlying: boolean; armingDisabledReasons?: string[]; activeSensors?: number };
-        gps?: { fixType: number; satellites: number; hdop: number; lat: number; lon: number; alt: number };
+        gps?: { fixType: number; satellites: number; hdop: number; vdop: number; lat: number; lon: number; alt: number };
         position?: { lat: number; lon: number; alt: number; relativeAlt: number; vx: number; vy: number; vz: number };
       } = {};
 
@@ -305,7 +305,8 @@ function startTelemetryInterval(intervalMs: number): void {
         const gps = deserializeRawGps(gpsPayload);
         const decimal = gpsToDecimalDegrees(gps);
 
-        batch.gps = { fixType: gps.fixType, satellites: gps.numSat, hdop: gps.hdop / 100, lat: decimal.latDeg, lon: decimal.lonDeg, alt: decimal.altM };
+        // MSP_RAW_GPS reports HDOP but not VDOP; mark VDOP unknown (99).
+        batch.gps = { fixType: gps.fixType, satellites: gps.numSat, hdop: gps.hdop / 100, vdop: 99, lat: decimal.latDeg, lon: decimal.lonDeg, alt: decimal.altM };
         batch.position = { lat: decimal.latDeg, lon: decimal.lonDeg, alt: decimal.altM, relativeAlt: altitudeM, vx: 0, vy: 0, vz: 0 };
         batch.vfrHud = { airspeed: decimal.speedMs, groundspeed: decimal.speedMs, heading: headingDeg, throttle: throttlePercent, alt: altitudeM, climb: varioMs };
       } catch {

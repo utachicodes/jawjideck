@@ -14,8 +14,8 @@
  * - Custom profile save/load
  */
 
-import React, { useMemo, useCallback } from 'react';
-import { MoveHorizontal, MoveVertical, RefreshCw, Lightbulb, AlertTriangle, Gauge } from 'lucide-react';
+import React, { useMemo, useCallback, useState } from 'react';
+import { MoveHorizontal, MoveVertical, RefreshCw, Lightbulb, AlertTriangle, Gauge, Plane, RotateCw } from 'lucide-react';
 import { useParameterStore } from '../../stores/parameter-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import { DraggableSlider } from '../ui/DraggableSlider';
@@ -23,7 +23,10 @@ import { PresetSelector } from '../ui/PresetSelector';
 import { ProfileManager } from '../ui/ProfileManager';
 import { InfoCard } from '../ui/InfoCard';
 import { PID_PRESETS } from './presets/mavlink-presets';
-import { detectPidScheme, buildPresetParams, buildAccelParams, type PidScheme, type AxisParams } from './mavlink-pid-schemes';
+import { detectPidScheme, buildPresetParams, buildAccelParams, buildPlaneScheme, QUADPLANE_SCHEME, hasDualVtolControllers, type PidScheme, type AxisParams } from './mavlink-pid-schemes';
+
+/** Which control-law set a QuadPlane pilot is editing. */
+type ControllerSet = 'vtol' | 'fixedwing';
 
 // Storage key for custom profiles
 const PID_PROFILES_KEY = 'ardudeck_mavlink_pid_profiles';
@@ -35,11 +38,27 @@ const PidTuningTab: React.FC = () => {
   // Check if parameters are loaded
   const hasParameters = parameters.size > 0;
 
-  // Auto-detect PID scheme from loaded parameters
+  // QuadPlanes run two control-law sets on one autopilot: the VTOL multicopter
+  // rate controller (Q_A_RAT_*) and the fixed-wing controller (RLL_RATE_* /
+  // RLL2SRV_*). When both are present, let the pilot pick which set to tune.
+  const dualController = useMemo(
+    () => hasParameters && hasDualVtolControllers(parameters),
+    [hasParameters, parameters],
+  );
+  const [controllerSet, setControllerSet] = useState<ControllerSet>('vtol');
+
+  // Auto-detect PID scheme from loaded parameters. On a dual-controller
+  // QuadPlane the toggle overrides detection so the fixed-wing set is reachable
+  // (detectPidScheme always resolves a QuadPlane to its VTOL set).
   const scheme = useMemo(() => {
     if (!hasParameters) return null;
+    if (dualController) {
+      return controllerSet === 'fixedwing'
+        ? buildPlaneScheme(parameters)
+        : QUADPLANE_SCHEME;
+    }
     return detectPidScheme(parameters);
-  }, [hasParameters, parameters]);
+  }, [hasParameters, parameters, dualController, controllerSet]);
 
   const isUnknown = scheme?.id === 'unknown';
 
@@ -241,6 +260,41 @@ const PidTuningTab: React.FC = () => {
         PIDs control how your aircraft responds to commands. P = how quickly it reacts,
         I = how well it holds position, D = how smoothly it stops. Start with a preset!
       </InfoCard>
+
+      {/* VTOL / Fixed-wing controller switch — only on QuadPlanes that carry
+          both control-law sets. Lets VTOL pilots tune each separately. */}
+      {dualController && (
+        <div data-tour="tuning-vtol-toggle" className="bg-surface-raised/40 rounded-xl border border-subtle p-4 flex items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-content">Controller set</p>
+            <p className="text-xs text-content-secondary mt-0.5">
+              This QuadPlane runs separate VTOL and fixed-wing controllers. Choose which one to tune
+              {scheme ? <> — editing <span className="font-mono text-content">{controllerSet === 'vtol' ? 'Q_A_RAT_*' : (parameters.has('RLL_RATE_P') ? 'RLL_RATE_*' : 'RLL2SRV_*')}</span></> : null}.
+            </p>
+          </div>
+          <div className="flex items-center rounded-lg overflow-hidden border border-subtle shrink-0">
+            <button
+              onClick={() => setControllerSet('vtol')}
+              className={`px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors ${
+                controllerSet === 'vtol' ? 'bg-indigo-600 text-white' : 'text-content-secondary hover:bg-surface-raised'
+              }`}
+              data-tip="Multicopter rate controller used in VTOL / hover (Q_A_RAT_*)"
+            >
+              <RotateCw className="w-3.5 h-3.5" /> VTOL
+            </button>
+            <div className="w-px h-5 bg-subtle" />
+            <button
+              onClick={() => setControllerSet('fixedwing')}
+              className={`px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors ${
+                controllerSet === 'fixedwing' ? 'bg-indigo-600 text-white' : 'text-content-secondary hover:bg-surface-raised'
+              }`}
+              data-tip="Fixed-wing controller used in forward flight (RLL_RATE_* / RLL2SRV_*)"
+            >
+              <Plane className="w-3.5 h-3.5" /> Fixed-wing
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Quick Presets, Custom Profiles, and PID Sliders - disabled when scheme unknown */}
       <div className={isUnknown || !scheme ? 'opacity-40 pointer-events-none' : ''}>

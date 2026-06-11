@@ -1,10 +1,18 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Camera, Clock, Gauge, Crosshair, RotateCw, RotateCcw,
-  Repeat, Wrench, Ruler, ArrowUpDown, type LucideIcon,
+  Repeat, Wrench, Ruler, ArrowUpDown, ChevronRight, MoreHorizontal,
+  RefreshCw, Pencil, Upload, Save,
+  type LucideIcon,
 } from 'lucide-react';
 import { useMissionStore } from '../../stores/mission-store';
+import { useSurveyStore } from '../../stores/survey-store';
+import { type Group, isSurveyGroup, type SurveyGroup, GROUP_COLOR_PALETTE } from '../../../shared/mission-group-types';
+import { isSurveyGroupStale } from '../survey/survey-group-signature';
+import { regenerateSurveyGroup } from '../survey/survey-regen';
+import { distanceLatLng } from '../survey/geo-math';
+import { calculateGSD } from '../survey/survey-stats';
 import { useTelemetryStore } from '../../stores/telemetry-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import {
@@ -13,6 +21,7 @@ import {
   MAV_CMD,
   commandHasLocation,
   isNavigationCommand,
+  computeGroupWaypointNumbers,
   type MissionItem
 } from '../../../shared/mission-types';
 import { FenceListPanel } from '../geofence/FenceListPanel';
@@ -22,6 +31,9 @@ import { useRallyStore } from '../../stores/rally-store';
 import { useEditModeStore } from '../../stores/edit-mode-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { computeItemColors, SEGMENT_COLORS } from '../../utils/mission-segment-colors';
+import { validateMission } from '../../../shared/mission-validation';
+import { MissionValidationBadge } from './MissionValidationBadge';
+import { useVirtualizer } from '@tanstack/react-virtual';
 
 // Helper to get GPS state without subscribing (avoids re-renders)
 function getGpsState() {
@@ -954,19 +966,390 @@ export function WaypointTablePanel({ readOnly = false }: WaypointTablePanelProps
   );
 }
 
+/**
+ * Group header rendered above the first WP of each group in the mission
+ * table. Carries the group's color, count, collapse toggle, rename, and
+ * overflow menu (delete). Selective-upload checkbox + edit-survey shortcut
+ * land in later steps.
+ */
+function formatBlockDistance(m: number): string {
+  return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`;
+}
+
+function formatBlockDuration(s: number): string {
+  const mins = Math.floor(s / 60);
+  const secs = Math.round(s % 60);
+  return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+}
+
+function GroupHeaderRow({
+  group,
+  count,
+  stats,
+  readOnly,
+  isSelected,
+  isEditing,
+  onVehicleState,
+  onSelect,
+  onToggleCollapse,
+  onToggleVisible,
+  onSync,
+  connected,
+  onRename,
+  onSetColor,
+  onDelete,
+  onRegenerate,
+  onEdit,
+}: {
+  group: Group;
+  count: number;
+  /** Per-group flight stats shown inline in the header (distance, time, GSD). */
+  stats?: { distanceM: number; timeS: number; gsd: number | null };
+  readOnly: boolean;
+  isSelected: boolean;
+  /** True when the survey panel is currently editing this group live. */
+  isEditing: boolean;
+  /**
+   * Vehicle-sync state for this group from the last successful upload.
+   * - 'none': never uploaded or no record
+   * - 'on-vehicle': uploaded and unchanged since
+   * - 'stale-on-vehicle': uploaded then locally edited; vehicle now lags
+   */
+  onVehicleState: 'none' | 'on-vehicle' | 'stale-on-vehicle';
+  onSelect: () => void;
+  onToggleCollapse: () => void;
+  /** Toggle whether this group is shown on the map. */
+  onToggleVisible: () => void;
+  /** Sync this group: upload to the vehicle when connected, else save to file. */
+  onSync?: () => void;
+  /** Whether an FC is connected (drives the sync button's upload-vs-save mode). */
+  connected?: boolean;
+  onRename: (name: string) => void;
+  /** Change the group's color (map + sidebar). */
+  onSetColor: (color: string) => void;
+  onDelete: () => void;
+  onRegenerate?: () => void;
+  /** Re-open the survey panel and load this group's polygon + config back
+      into the draft for live editing. Survey groups only. */
+  onEdit?: () => void;
+}) {
+  const isStaleSurvey = isSurveyGroup(group) && isSurveyGroupStale(group);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(group.name);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [colorOpen, setColorOpen] = useState(false);
+  const [colorPos, setColorPos] = useState<{ top: number; left: number } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const swatchRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [editing]);
+
+  const commit = () => {
+    const next = draft.trim();
+    if (next && next !== group.name) onRename(next);
+    else setDraft(group.name);
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setDraft(group.name);
+    setEditing(false);
+  };
+
+  return (
+    <div
+      data-tour="mission-group"
+      className={`flex flex-col select-none cursor-pointer transition-colors ${
+        isSelected ? 'bg-surface-raised/80' : 'bg-surface-raised/40 hover:bg-surface-raised/60'
+      }`}
+      style={{ borderLeft: `3px solid ${group.color}` }}
+      onClick={onSelect}
+    >
+      <div className="flex items-center gap-2 px-2 pt-1.5 pb-0.5">
+      {!readOnly && (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleVisible();
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="shrink-0 flex items-center justify-center w-5 h-5"
+          data-tip={group.visible ? 'Visible on map (click to hide)' : 'Hidden on map (click to show)'}
+        >
+          <input
+            type="checkbox"
+            checked={group.visible}
+            onChange={() => { /* handled by wrapper onClick */ }}
+            className="w-3.5 h-3.5 rounded border-subtle bg-surface-raised text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+          />
+        </div>
+      )}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleCollapse();
+        }}
+        className="w-4 h-4 flex items-center justify-center text-content-secondary hover:text-content transition-colors shrink-0"
+        data-tip={group.collapsed ? `Expand (${count} items)` : 'Collapse group'}
+      >
+        <ChevronRight
+          className={`w-3 h-3 transition-transform ${group.collapsed ? '' : 'rotate-90'}`}
+        />
+      </button>
+      <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+        <button
+          ref={swatchRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (readOnly) return;
+            if (!colorOpen) {
+              const r = swatchRef.current?.getBoundingClientRect();
+              // Anchor the palette to the swatch, in a body-level portal so it
+              // isn't clipped by the waypoint list's overflow.
+              if (r) setColorPos({ top: r.bottom + 4, left: r.left });
+            }
+            setColorOpen((v) => !v);
+          }}
+          className="w-3.5 h-3.5 rounded-sm border border-white/25 block"
+          style={{ backgroundColor: group.color }}
+          data-tip={readOnly ? undefined : 'Change color'}
+          aria-label="Group color"
+        />
+        {colorOpen && !readOnly && colorPos &&
+          createPortal(
+            <>
+              <div className="fixed inset-0 z-[9998]" onClick={() => setColorOpen(false)} />
+              <div
+                className="fixed z-[9999] p-1.5 bg-surface-raised border border-subtle rounded-lg shadow-2xl grid grid-cols-4 gap-1"
+                style={{ top: colorPos.top, left: colorPos.left }}
+              >
+                {GROUP_COLOR_PALETTE.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => {
+                      onSetColor(c);
+                      setColorOpen(false);
+                    }}
+                    className={`w-5 h-5 rounded transition-transform hover:scale-110 ${c === group.color ? 'ring-2 ring-white' : ''}`}
+                    style={{ backgroundColor: c }}
+                    aria-label={`Set color ${c}`}
+                  />
+                ))}
+              </div>
+            </>,
+            document.body,
+          )}
+      </div>
+      <div className="flex-1 min-w-0 flex items-center gap-2">
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commit();
+              else if (e.key === 'Escape') cancel();
+            }}
+            className="text-xs font-medium bg-surface-input border border-subtle rounded px-1 py-0.5 text-content focus:outline-none focus:border-blue-500/50 max-w-[200px]"
+          />
+        ) : (
+          <span
+            className={`text-xs font-medium text-content truncate ${readOnly ? '' : 'cursor-text hover:text-blue-300'}`}
+            onDoubleClick={() => !readOnly && setEditing(true)}
+            title={readOnly ? group.name : 'Double-click to rename'}
+          >
+            {group.name}
+          </span>
+        )}
+        <span className="text-[10px] text-content-secondary shrink-0">
+          {count} {count === 1 ? 'WP' : 'WPs'}
+        </span>
+        {isStaleSurvey && (
+          <span
+            className="text-[10px] px-1.5 py-0 rounded bg-amber-500/15 text-amber-300 shrink-0"
+            title="Polygon or config changed since last generation"
+          >
+            modified
+          </span>
+        )}
+        {onVehicleState === 'on-vehicle' && (
+          <span
+            className="text-[10px] px-1.5 py-0 rounded bg-emerald-500/15 text-emerald-300 shrink-0"
+            title="This group's waypoints are on the vehicle (matches last upload)"
+          >
+            on vehicle
+          </span>
+        )}
+        {onVehicleState === 'stale-on-vehicle' && (
+          <span
+            className="text-[10px] px-1.5 py-0 rounded bg-yellow-500/15 text-yellow-300 shrink-0"
+            title="This group was uploaded earlier but has been edited since. The vehicle is out of date."
+          >
+            stale on vehicle
+          </span>
+        )}
+        {isEditing && (
+          <span
+            className="text-[10px] px-1.5 py-0 rounded bg-emerald-500/15 text-emerald-300 shrink-0"
+            title="Survey panel is editing this group live; vertex / config changes flow into the mission"
+          >
+            editing
+          </span>
+        )}
+      </div>
+      {!readOnly && onSync && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (count > 0) onSync();
+          }}
+          disabled={count === 0}
+          className={`shrink-0 w-6 h-6 flex items-center justify-center rounded transition-colors ${
+            count === 0
+              ? 'text-content-tertiary cursor-not-allowed'
+              : 'text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/15'
+          }`}
+          data-tip={
+            count === 0
+              ? 'No waypoints in this group'
+              : connected
+                ? 'Upload only this group to the vehicle (replaces its mission)'
+                : 'Save only this group to a file'
+          }
+        >
+          {connected ? <Upload className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+        </button>
+      )}
+      {!readOnly && onEdit && !isEditing && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+          className="shrink-0 flex items-center gap-1 px-1.5 h-6 rounded text-[11px] font-medium text-purple-300 bg-purple-500/15 hover:bg-purple-500/25 transition-colors"
+          data-tip="Edit this survey (loads its polygon + config back into the Survey panel)"
+        >
+          <Pencil className="w-3 h-3" />
+          Edit
+        </button>
+      )}
+      {!readOnly && isStaleSurvey && onRegenerate && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onRegenerate();
+          }}
+          className="shrink-0 w-6 h-6 flex items-center justify-center text-amber-300 hover:text-amber-200 hover:bg-amber-500/15 rounded transition-colors"
+          data-tip="Regenerate this survey from current polygon + config"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+        </button>
+      )}
+      {!readOnly && (
+        <div className="relative shrink-0">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen((v) => !v);
+            }}
+            className="w-5 h-5 flex items-center justify-center text-content-tertiary hover:text-content transition-colors rounded hover:bg-surface"
+            data-tip="Group actions"
+          >
+            <MoreHorizontal className="w-3.5 h-3.5" />
+          </button>
+          {menuOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-30"
+                onClick={() => setMenuOpen(false)}
+              />
+              <div className="absolute right-0 top-full mt-1 z-40 min-w-[140px] bg-surface-raised border border-subtle rounded-lg shadow-xl py-1">
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setEditing(true);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-xs text-content hover:bg-surface-input transition-colors"
+                >
+                  Rename
+                </button>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onDelete();
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-surface-input hover:text-red-300 transition-colors"
+                >
+                  Delete group
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      </div>
+      <div className="px-2 pb-1.5 pl-12 -mt-0.5 flex items-center gap-1.5 text-[10px] text-content-tertiary tabular-nums">
+        <span className="uppercase tracking-wide">{group.kind}</span>
+        {stats && stats.distanceM > 0 && (
+          <>
+            <span>· {formatBlockDistance(stats.distanceM)}</span>
+            {stats.timeS > 0 && <span>· {formatBlockDuration(stats.timeS)}</span>}
+            {stats.gsd != null && stats.gsd > 0 && <span>· {stats.gsd.toFixed(1)} cm/px</span>}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Extracted waypoint list content (original WaypointTablePanel content)
 function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
   const {
     missionItems,
+    groups,
     selectedSeq,
+    selectedGroupId,
     currentSeq,
     setSelectedSeq,
+    setSelectedGroupId,
     updateWaypoint,
     removeWaypoint,
     removeWaypoints,
     addWaypoint,
     reorderWaypoints,
+    renameGroup,
+    setGroupColor,
+    deleteGroup,
+    toggleGroupCollapsed,
+    setGroupVisible,
+    uploadGroup,
+    saveGroupToFile,
+    lastUploadedAt,
+    lastUploadedGroupIds,
   } = useMissionStore();
+
+  const surveyEditingGroupId = useSurveyStore((s) => s.editingGroupId);
+  const surveyLoadFromGroup = useSurveyStore((s) => s.loadFromGroup);
+
+  // Pre-compute upload state per group id. Doing this once per render keeps
+  // the GroupHeaderRow props cheap and avoids each header subscribing.
+  const uploadedSet = useMemo(
+    () => new Set(lastUploadedGroupIds),
+    [lastUploadedGroupIds],
+  );
+  const computeOnVehicleState = useCallback(
+    (g: Group): 'none' | 'on-vehicle' | 'stale-on-vehicle' => {
+      if (!lastUploadedAt || !uploadedSet.has(g.id)) return 'none';
+      return g.updatedAt > lastUploadedAt ? 'stale-on-vehicle' : 'on-vehicle';
+    },
+    [lastUploadedAt, uploadedSet],
+  );
 
   const advancedLabels = useSettingsStore((s) => s.missionDefaults.advancedMissionLabels);
   const settingsFirmware = useSettingsStore((s) => s.missionDefaults.missionFirmware);
@@ -976,6 +1359,60 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
 
   // Segment colors for sidebar indicators (matches map line colors)
   const itemColors = useMemo(() => computeItemColors(missionItems), [missionItems]);
+
+  // Per-group waypoint numbers (1-based within each group), matching the map.
+  const groupWaypointNumbers = useMemo(
+    () => computeGroupWaypointNumbers(missionItems),
+    [missionItems],
+  );
+
+  // Per-group flight stats (distance, time, GSD) shown in each group header,
+  // mirroring the per-block readout pro survey planners expect.
+  const groupStats = useMemo(() => {
+    const itemsByGroup = new Map<string, MissionItem[]>();
+    for (const it of missionItems) {
+      if (!it.groupId) continue;
+      const arr = itemsByGroup.get(it.groupId);
+      if (arr) arr.push(it);
+      else itemsByGroup.set(it.groupId, [it]);
+    }
+    const stats = new Map<string, { distanceM: number; timeS: number; gsd: number | null }>();
+    for (const g of groups) {
+      const items = itemsByGroup.get(g.id) ?? [];
+      let distanceM = 0;
+      let prev: { lat: number; lng: number } | null = null;
+      for (const it of items) {
+        if (it.latitude === 0 && it.longitude === 0) continue;
+        const cur = { lat: it.latitude, lng: it.longitude };
+        if (prev) distanceM += distanceLatLng(prev, cur);
+        prev = cur;
+      }
+      // Speed: survey config first, then any DO_CHANGE_SPEED in the group.
+      let speed = 0;
+      let gsd: number | null = null;
+      if (isSurveyGroup(g)) {
+        const cfg = g.config as { speed?: number; altitude?: number; camera?: { sensorWidth: number; focalLength: number; imageWidth: number; manualCorridorWidth?: number } };
+        if (typeof cfg.speed === 'number') speed = cfg.speed;
+        const cam = cfg.camera;
+        if (cam && !(cam.manualCorridorWidth && cam.manualCorridorWidth > 0) && typeof cfg.altitude === 'number') {
+          gsd = calculateGSD(cam.sensorWidth, cam.focalLength, cam.imageWidth, cfg.altitude);
+        }
+      }
+      if (speed <= 0) {
+        const spd = items.find((it) => it.command === MAV_CMD.DO_CHANGE_SPEED && it.param2 > 0);
+        if (spd) speed = spd.param2;
+      }
+      const timeS = speed > 0 ? distanceM / speed : 0;
+      stats.set(g.id, { distanceM, timeS, gsd });
+    }
+    return stats;
+  }, [missionItems, groups]);
+
+  // Pre-flight validation, recomputed on any mission/group change.
+  const validation = useMemo(
+    () => validateMission(missionItems, groups, { isAir: true }),
+    [missionItems, groups],
+  );
 
   // When connected, auto-detect firmware from protocol. When disconnected, use setting.
   const effectiveFirmware: 'ardupilot' | 'inav' = connectionState.isConnected
@@ -1023,6 +1460,24 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
     }
 
     return { parentOf, childCountOf };
+  }, [missionItems]);
+
+  // Group-level lookups for the header rows. `groupById` keeps O(1) lookup
+  // from a wp's groupId; `itemCountByGroup` powers the "N WPs" header label
+  // even when WPs are hidden by collapse.
+  const groupById = useMemo(() => {
+    const m = new Map<string, Group>();
+    for (const g of groups) m.set(g.id, g);
+    return m;
+  }, [groups]);
+
+  const itemCountByGroup = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const wp of missionItems) {
+      if (!wp.groupId) continue;
+      m.set(wp.groupId, (m.get(wp.groupId) ?? 0) + 1);
+    }
+    return m;
   }, [missionItems]);
 
   const toggleCollapse = useCallback((parentSeq: number, e: React.MouseEvent) => {
@@ -1165,6 +1620,58 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
   const getCommandName = (cmd: number) => COMMAND_NAMES[cmd] || `Unknown CMD ${cmd}`;
   const getCommandInfo = (cmd: number) => ALL_AVAILABLE_COMMANDS.find(c => c.value === cmd);
 
+  // Virtualization for large missions. Collapsed children don't render, so we
+  // virtualize over the list of ACTUALLY-rendered indices (otherwise measured
+  // heights would be wrong). Below the threshold we render the list normally so
+  // typical missions behave exactly as before.
+  const VIRTUALIZE_THRESHOLD = 250;
+  const renderableIndices = useMemo(() => {
+    const out: number[] = [];
+    for (let idx = 0; idx < missionItems.length; idx++) {
+      const wp = missionItems[idx]!;
+      const isChild = !isNavigationCommand(wp.command) || wp.command === MAV_CMD.NAV_DELAY;
+      const parentSeq = groupInfo.parentOf.get(wp.seq);
+      if (isChild && parentSeq !== undefined && collapsedGroups.has(parentSeq)) continue;
+      out.push(idx);
+    }
+    return out;
+  }, [missionItems, groupInfo, collapsedGroups]);
+  const useVirtual = renderableIndices.length > VIRTUALIZE_THRESHOLD;
+  const rowVirtualizer = useVirtualizer({
+    count: renderableIndices.length,
+    getScrollElement: () => tableRef.current,
+    estimateSize: () => 44,
+    overscan: 15,
+  });
+  const virtualByRealIdx = useMemo(() => {
+    const m = new Map<number, { start: number; vIndex: number; key: React.Key }>();
+    if (!useVirtual) return m;
+    for (const v of rowVirtualizer.getVirtualItems()) {
+      const realIdx = renderableIndices[v.index];
+      if (realIdx !== undefined) m.set(realIdx, { start: v.start, vIndex: v.index, key: v.key });
+    }
+    return m;
+    // getVirtualItems changes on scroll; rowVirtualizer drives re-renders itself.
+  }, [useVirtual, renderableIndices, rowVirtualizer, rowVirtualizer.getVirtualItems()]);
+
+  // Wrap a rendered row for absolute virtual positioning, or pass through when
+  // virtualization is off. Returns null for rows outside the current window.
+  const wrapRow = (idx: number, node: React.ReactNode): React.ReactNode => {
+    if (!useVirtual) return node;
+    const info = virtualByRealIdx.get(idx);
+    if (!info) return null;
+    return (
+      <div
+        key={info.key}
+        data-index={info.vIndex}
+        ref={rowVirtualizer.measureElement}
+        style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${info.start}px)` }}
+      >
+        {node}
+      </div>
+    );
+  };
+
   return (
     <div className="h-full flex flex-col bg-surface">
       {/* Header: collapse/expand or, when multi-selected, bulk actions */}
@@ -1226,6 +1733,13 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
         </div>
       )}
 
+      {/* Pre-flight validation strip */}
+      {!readOnly && missionItems.length > 0 && (
+        <div className="border-b border-subtle shrink-0">
+          <MissionValidationBadge result={validation} />
+        </div>
+      )}
+
       {/* Waypoint list */}
       <div className="flex-1 overflow-auto" ref={tableRef}>
         {missionItems.length === 0 ? (
@@ -1246,7 +1760,10 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
             )}
           </div>
         ) : (
-          <div className="divide-y divide-subtle">
+          <div
+            className={useVirtual ? 'relative' : 'divide-y divide-subtle'}
+            style={useVirtual ? { height: rowVirtualizer.getTotalSize() } : undefined}
+          >
             {missionItems.map((wp, idx) => {
               const isSelected = wp.seq === selectedSeq;
               const isCurrent = wp.seq === currentSeq;
@@ -1270,9 +1787,66 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
               const isCollapsed = !isChild && collapsedGroups.has(wp.seq);
               const hasChildren = childCount > 0;
 
-              return (
+              // Group header detection. We show a header before the first WP
+              // of each group. When the group is collapsed, only the header
+              // renders for that span; subsequent items return null.
+              const prevWp = idx > 0 ? missionItems[idx - 1] : null;
+              const showGroupHeader = !prevWp || prevWp.groupId !== wp.groupId;
+              const group = wp.groupId ? groupById.get(wp.groupId) : undefined;
+              const hideByGroupCollapse = group?.collapsed === true;
+              const headerNode =
+                showGroupHeader && group ? (
+                  <GroupHeaderRow
+                    group={group}
+                    count={itemCountByGroup.get(group.id) ?? 0}
+                    stats={groupStats.get(group.id)}
+                    readOnly={readOnly}
+                    isSelected={selectedGroupId === group.id}
+                    isEditing={surveyEditingGroupId === group.id}
+                    onVehicleState={computeOnVehicleState(group)}
+                    onSelect={() => setSelectedGroupId(group.id)}
+                    onToggleCollapse={() => toggleGroupCollapsed(group.id)}
+                    onToggleVisible={() =>
+                      setGroupVisible(group.id, !group.visible)
+                    }
+                    onSync={() =>
+                      connectionState.isConnected
+                        ? uploadGroup(group.id)
+                        : saveGroupToFile(group.id)
+                    }
+                    connected={connectionState.isConnected}
+                    onRename={(name) => renameGroup(group.id, name)}
+                    onSetColor={(color) => setGroupColor(group.id, color)}
+                    onDelete={() => deleteGroup(group.id)}
+                    onRegenerate={
+                      isSurveyGroup(group)
+                        ? () => regenerateSurveyGroup(group.id)
+                        : undefined
+                    }
+                    onEdit={
+                      isSurveyGroup(group)
+                        ? () => {
+                            const sg = group as SurveyGroup;
+                            surveyLoadFromGroup({
+                              id: sg.id,
+                              polygon: sg.polygon,
+                              config: sg.config,
+                            });
+                          }
+                        : undefined
+                    }
+                  />
+                ) : null;
+
+              if (hideByGroupCollapse) {
+                // Render only the header (if any) and suppress the row.
+                return wrapRow(idx, <Fragment key={wp.seq}>{headerNode}</Fragment>);
+              }
+
+              return wrapRow(idx, (
+                <Fragment key={wp.seq}>
+                {headerNode}
                 <div
-                  key={wp.seq}
                   onClick={() => !readOnly && handleRowClick(wp.seq)}
                   draggable={!readOnly}
                   onDragStart={(e) => !readOnly && handleDragStart(e, wp.seq)}
@@ -1380,7 +1954,7 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
                       }`}
                       style={segColor ? { backgroundColor: segColor } : undefined}
                     >
-                      {wp.seq + 1}
+                      {groupWaypointNumbers.get(wp.seq) ?? wp.seq + 1}
                     </div>
                   )}
 
@@ -1429,7 +2003,8 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
                     </button>
                   )}
                 </div>
-              );
+                </Fragment>
+              ));
             })}
           </div>
         )}
@@ -1440,7 +2015,7 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
         <div className="border-t border-subtle bg-surface p-3">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium text-content-secondary">
-              Editing Waypoint {selectedWaypoint.seq + 1}
+              Editing Waypoint {groupWaypointNumbers.get(selectedWaypoint.seq) ?? selectedWaypoint.seq + 1}
             </span>
             <button
               onClick={() => setSelectedSeq(null)}

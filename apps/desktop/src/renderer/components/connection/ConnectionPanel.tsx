@@ -18,6 +18,7 @@ export function ConnectionPanel() {
   const { connectionMemory, updateConnectionMemory, removeRecentConnection } = useSettingsStore();
   const settingsInitialized = useSettingsStore((s) => s._isInitialized);
   const [ports, setPorts] = useState<SerialPortInfo[]>([]);
+  const [isRefreshingPorts, setIsRefreshingPorts] = useState(false);
   const [selectedPort, setSelectedPort] = useState('');
   const [baudRate, setBaudRate] = useState(115200);
   const [connectionType, setConnectionType] = useState<'serial' | 'tcp' | 'udp'>('serial');
@@ -278,8 +279,14 @@ export function ConnectionPanel() {
   }, [connectionState.isConnected]);
 
   const refreshPorts = async () => {
-    const portList = await window.electronAPI.listPorts();
-    setPorts(portList);
+    setIsRefreshingPorts(true);
+    let portList: SerialPortInfo[] = [];
+    try {
+      portList = await window.electronAPI.listPorts();
+      setPorts(portList);
+    } finally {
+      setIsRefreshingPorts(false);
+    }
 
     // Try to select the remembered port, fall back to first available
     if (portList.length > 0 && !selectedPort) {
@@ -542,6 +549,23 @@ export function ConnectionPanel() {
                     </option>
                   ))}
                 </select>
+                <button
+                  type="button"
+                  onClick={refreshPorts}
+                  disabled={connectionState.isConnected || isRefreshingPorts}
+                  title="Rescan serial ports"
+                  aria-label="Rescan serial ports"
+                  className="shrink-0 px-2.5 rounded-lg bg-surface-raised hover:bg-surface-raised text-content-secondary hover:text-content disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                >
+                  <svg
+                    className={`w-4 h-4 ${isRefreshingPorts ? 'animate-spin' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
               </div>
             </div>
 

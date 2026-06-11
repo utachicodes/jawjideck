@@ -5,6 +5,10 @@ import type { SurveyStats } from './survey-types';
 
 interface SurveyStatsPanelProps {
   stats: SurveyStats;
+  /** Battery swaps needed for the whole survey (0 = not estimated). */
+  batteries?: number;
+  /** Rough captured-data size in GB (0/undefined = not shown). */
+  dataSizeGb?: number;
 }
 
 function formatDistance(meters: number): string {
@@ -29,7 +33,12 @@ function formatArea(sqMeters: number): string {
   return `${Math.round(sqMeters)} m\u00B2`;
 }
 
-export function SurveyStatsPanel({ stats }: SurveyStatsPanelProps) {
+function formatDataSize(gb: number): string {
+  if (gb >= 1) return `${gb.toFixed(1)} GB`;
+  return `${Math.round(gb * 1024)} MB`;
+}
+
+export function SurveyStatsPanel({ stats, batteries, dataSizeGb }: SurveyStatsPanelProps) {
   // Hide stats only when there's nothing to show. Manual/ground-vehicle mode
   // has photoCount=0 but real lineCount/distance/area — still useful.
   if (stats.photoCount === 0 && stats.lineCount === 0) return null;
@@ -46,6 +55,12 @@ export function SurveyStatsPanel({ stats }: SurveyStatsPanelProps) {
       <StatItem label="Distance" value={formatDistance(stats.flightDistance)} />
       <StatItem label="Time" value={formatTime(stats.flightTime)} />
       <StatItem label="Area" value={formatArea(stats.areaCovered)} />
+      {batteries !== undefined && batteries > 0 && (
+        <StatItem label="Batteries" value={batteries.toString()} />
+      )}
+      {!isManualMode && dataSizeGb !== undefined && dataSizeGb > 0 && (
+        <StatItem label="~Data" value={formatDataSize(dataSizeGb)} />
+      )}
     </div>
   );
 }

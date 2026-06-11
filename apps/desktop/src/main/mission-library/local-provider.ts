@@ -27,6 +27,11 @@ import type {
   MissionSortOptions,
   BoundingBox,
 } from '../../shared/mission-library-types.js';
+import { MISSION_FILE_VERSION } from '../../shared/mission-library-types.js';
+import {
+  migrateStoredMission,
+  migrateSavePayload,
+} from '../../shared/mission-migration.js';
 import type { MissionItem } from '../../shared/mission-types.js';
 
 // =============================================================================
@@ -175,13 +180,20 @@ export class LocalMissionLibraryProvider implements MissionLibraryProvider {
 
   async getMission(id: string): Promise<StoredMission | null> {
     const missionPath = join(this.missionsDir, `${id}.json`);
-    return readJsonSafe<StoredMission>(missionPath);
+    const raw = readJsonSafe<unknown>(missionPath);
+    if (raw === null) return null;
+    return migrateStoredMission(raw);
   }
 
   async saveMission(payload: SaveMissionPayload): Promise<MissionSummary> {
     const now = new Date().toISOString();
     const isUpdate = !!payload.existingId;
     const id = payload.existingId ?? randomUUID();
+
+    // Ensure groups + groupId invariants are met before persisting. Legacy
+    // callers that don't yet build groups go through this shim and get a
+    // single auto-created Manual group covering all items.
+    const v2Payload = migrateSavePayload(payload);
 
     // Get existing data for update
     let existingFlightCount = 0;
@@ -197,13 +209,15 @@ export class LocalMissionLibraryProvider implements MissionLibraryProvider {
       }
     }
 
-    const summary = buildSummary(id, payload, now, existingFlightCount, existingLastFlightStatus, existingCreatedAt);
+    const summary = buildSummary(id, v2Payload, now, existingFlightCount, existingLastFlightStatus, existingCreatedAt);
 
     // Write full mission file
     const storedMission: StoredMission = {
       ...summary,
-      items: payload.items,
-      homePosition: payload.homePosition,
+      version: MISSION_FILE_VERSION,
+      groups: v2Payload.groups,
+      items: v2Payload.items,
+      homePosition: v2Payload.homePosition,
     };
     writeJson(join(this.missionsDir, `${id}.json`), storedMission);
 
@@ -250,6 +264,7 @@ export class LocalMissionLibraryProvider implements MissionLibraryProvider {
       description: original.description,
       vehicleProfileId: original.vehicleProfileId,
       tags: [...original.tags],
+      groups: original.groups,
       items: original.items,
       homePosition: original.homePosition,
     });

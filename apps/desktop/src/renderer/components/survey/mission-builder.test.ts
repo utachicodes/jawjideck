@@ -103,14 +103,16 @@ describe('surveyToMissionItems', () => {
     }
   });
 
-  it('generates correct structure: takeoff, speed, cam-on, waypoints, cam-off, rtl', () => {
+  it('generates correct structure: takeoff, wp1, speed, cam-on, waypoints, cam-off, rtl', () => {
     const items = surveyToMissionItems(makeSurveyResult(), makeConfig('relative'));
-    // 1 takeoff + 1 speed + 1 cam-on + 2 waypoints + 1 cam-off + 1 rtl = 7
+    // 1 takeoff + 2 waypoints + 1 speed + 1 cam-on + 1 cam-off + 1 rtl = 7
     expect(items).toHaveLength(7);
+    // Speed and camera-trigger now follow the FIRST waypoint (issue #83):
+    // ArduPilot ignores DO_* commands placed before the first NAV_WAYPOINT.
     expect(items[0]!.command).toBe(MAV_CMD.NAV_TAKEOFF);
-    expect(items[1]!.command).toBe(MAV_CMD.DO_CHANGE_SPEED);
-    expect(items[2]!.command).toBe(MAV_CMD.DO_SET_CAM_TRIGG_DIST);
-    expect(items[3]!.command).toBe(MAV_CMD.NAV_WAYPOINT);
+    expect(items[1]!.command).toBe(MAV_CMD.NAV_WAYPOINT);
+    expect(items[2]!.command).toBe(MAV_CMD.DO_CHANGE_SPEED);
+    expect(items[3]!.command).toBe(MAV_CMD.DO_SET_CAM_TRIGG_DIST);
     expect(items[4]!.command).toBe(MAV_CMD.NAV_WAYPOINT);
     expect(items[5]!.command).toBe(MAV_CMD.DO_SET_CAM_TRIGG_DIST);
     // Last cam trigger should disable (distance = 0)

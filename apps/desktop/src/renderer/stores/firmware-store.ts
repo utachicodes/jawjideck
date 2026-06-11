@@ -10,6 +10,14 @@ import type {
 } from '../../shared/firmware-types';
 import { findMatchingInavBoard } from '../../shared/board-mappings';
 import { useSettingsStore } from './settings-store';
+import { VEHICLE_TO_FIRMWARE } from '../../shared/firmware-types';
+
+// Request sequence counters: a stale fetchBoards/fetchVersions response can land
+// after the user has switched source/vehicle/board and clobber the newer state
+// (e.g. Copter result overwriting a Rover selection → wrong firmware flashed).
+// Each call bumps the counter; only the most recent request is allowed to write.
+let fetchBoardsSeq = 0;
+let fetchVersionsSeq = 0;
 
 /**
  * Board info from manifest
@@ -578,6 +586,10 @@ export const useFirmwareStore = create<FirmwareStore>((set, get) => ({
 
     if (selectedSource === 'custom') return;
 
+    const reqId = ++fetchBoardsSeq;
+    const reqSource = selectedSource;
+    const reqVehicleType = selectedVehicleType;
+
     set({ isFetchingBoards: true, boardsError: null });
 
     try {
@@ -586,7 +598,13 @@ export const useFirmwareStore = create<FirmwareStore>((set, get) => ({
         throw new Error('Firmware API not available - check preload.ts');
       }
 
-      const result = await window.electronAPI.fetchFirmwareBoards(selectedSource, selectedVehicleType);
+      const result = await window.electronAPI.fetchFirmwareBoards(reqSource, reqVehicleType);
+
+      // Drop stale response: user may have changed source/vehicle since we asked.
+      if (reqId !== fetchBoardsSeq) {
+        console.log('[FirmwareStore] fetchBoards: dropping stale response for', reqSource, reqVehicleType);
+        return;
+      }
       console.log('[FirmwareStore] fetchBoards result:', result);
 
       if (result?.success && result.boards) {
@@ -637,6 +655,11 @@ export const useFirmwareStore = create<FirmwareStore>((set, get) => ({
 
     if (selectedSource === 'custom' || !selectedBoard) return;
 
+    const reqId = ++fetchVersionsSeq;
+    const reqSource = selectedSource;
+    const reqVehicleType = selectedVehicleType;
+    const reqBoardId = selectedBoard.id;
+
     set({ isFetchingVersions: true, versionsError: null });
 
     try {
@@ -646,10 +669,19 @@ export const useFirmwareStore = create<FirmwareStore>((set, get) => ({
       }
 
       const result = await window.electronAPI.fetchFirmwareVersions(
-        selectedSource,
-        selectedVehicleType,
-        selectedBoard.id
+        reqSource,
+        reqVehicleType,
+        reqBoardId
       );
+
+      // Drop stale response: if the user has clicked another vehicle/board/source
+      // while this request was in flight, applying its result would clobber the
+      // newer selection. That's how Copter firmware ended up flashed for users
+      // who clicked Rover — the earlier Copter request finished last.
+      if (reqId !== fetchVersionsSeq) {
+        console.log('[FirmwareStore] fetchVersions: dropping stale response for', reqSource, reqVehicleType, reqBoardId);
+        return;
+      }
       console.log('[FirmwareStore] fetchVersions result:', result);
 
       if (result?.success && result.groups) {
@@ -707,11 +739,26 @@ export const useFirmwareStore = create<FirmwareStore>((set, get) => ({
 
   // Flash operations
   startFlash: async () => {
-    const { selectedSource, selectedVersion, customFirmwarePath, detectedBoard, selectedPort } = get();
+    const { selectedSource, selectedVehicleType, selectedVersion, customFirmwarePath, detectedBoard, selectedPort } = get();
 
     if (!detectedBoard) {
       set({ flashError: 'No board connected. Click Connect first.' });
       return;
+    }
+
+    // Defensive vehicle-type check: refuse to flash if the selected version's
+    // vehicle doesn't match the user's vehicle-type pill. The race fix in
+    // fetchVersions should prevent divergence, but a mismatch here means
+    // something downstream regressed — better to bail than silently flash the
+    // wrong vehicle firmware (this is what put Copter on Rover boards).
+    if (selectedSource !== 'custom' && selectedVersion) {
+      const expectedFirmwareType = VEHICLE_TO_FIRMWARE[selectedVehicleType];
+      if (selectedVersion.vehicleType && selectedVersion.vehicleType !== expectedFirmwareType) {
+        set({
+          flashError: `Vehicle type mismatch: you selected ${selectedVehicleType} but the chosen version is ${selectedVersion.vehicleType}. Reselect the vehicle and version, then try again.`,
+        });
+        return;
+      }
     }
 
     // For AVR boards (avrdude), ensure port is set from selectedPort if not auto-detected

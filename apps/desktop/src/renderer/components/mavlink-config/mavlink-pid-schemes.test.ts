@@ -3,7 +3,10 @@ import {
   detectPidScheme,
   buildAccelParams,
   buildPresetParams,
+  buildPlaneScheme,
   getAllPidParamNames,
+  hasDualVtolControllers,
+  QUADPLANE_SCHEME,
   type PidScheme,
 } from './mavlink-pid-schemes';
 
@@ -19,6 +22,32 @@ function makeParams(names: string[]): Map<string, { value: number }> {
   }
   return map;
 }
+
+// ---------------------------------------------------------------------------
+// QuadPlane dual-controller (VTOL / fixed-wing switch)
+// ---------------------------------------------------------------------------
+
+describe('hasDualVtolControllers', () => {
+  it('is true when both Q_A_RAT_ (VTOL) and plane controllers exist', () => {
+    expect(hasDualVtolControllers(makeParams(['Q_A_RAT_RLL_P', 'RLL_RATE_P']))).toBe(true);
+    expect(hasDualVtolControllers(makeParams(['Q_A_RAT_RLL_P', 'RLL2SRV_P']))).toBe(true);
+  });
+
+  it('is false for a VTOL-only or plane-only board', () => {
+    expect(hasDualVtolControllers(makeParams(['Q_A_RAT_RLL_P']))).toBe(false);
+    expect(hasDualVtolControllers(makeParams(['RLL_RATE_P']))).toBe(false);
+    expect(hasDualVtolControllers(makeParams(['ATC_RAT_RLL_P']))).toBe(false);
+  });
+
+  it('detectPidScheme always resolves a dual board to its VTOL set, so the UI needs the override', () => {
+    const params = makeParams(['Q_A_RAT_RLL_P', 'RLL_RATE_P']);
+    // Detection alone hides the fixed-wing controller behind the VTOL scheme.
+    expect(detectPidScheme(params).id).toBe('quadplane');
+    // The two schemes the toggle switches between target different params.
+    expect(QUADPLANE_SCHEME.roll.p).toBe('Q_A_RAT_RLL_P');
+    expect(buildPlaneScheme(params).roll.p).toBe('RLL_RATE_P');
+  });
+});
 
 // ---------------------------------------------------------------------------
 // buildAccelParams

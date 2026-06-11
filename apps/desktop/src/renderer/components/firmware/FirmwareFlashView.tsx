@@ -1346,6 +1346,9 @@ export function FirmwareFlashView() {
                 ) : (
                   <>
                     {FIRMWARE_SOURCE_NAMES[selectedSource]}{' '}
+                    <span className="text-amber-300 font-medium">
+                      {VEHICLE_TYPE_NAMES[selectedVehicleType]}
+                    </span>{' '}
                     <span className="text-content">{selectedVersion?.version}</span> for{' '}
                     <span className="text-content">
                       {selectedBoard?.name || detectedBoard?.name}
