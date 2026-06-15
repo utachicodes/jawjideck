@@ -16,6 +16,7 @@ import { MissionStatusBar } from './MissionStatusBar';
 import { MissionMapPanel } from './MissionMapPanel';
 import { WaypointTablePanel } from './WaypointTablePanel';
 import { AltitudeProfilePanel } from './AltitudeProfilePanel';
+import { FlightInfoPanel } from './FlightInfoPanel';
 import { SurveyConfigPanel } from '../survey/SurveyConfigPanel';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { useMissionStore } from '../../stores/mission-store';
@@ -23,6 +24,7 @@ import { useConnectionStore } from '../../stores/connection-store';
 import { useNavigationStore } from '../../stores/navigation-store';
 import { useFirmwareStore } from '../../stores/firmware-store';
 import { useSurveyStore } from '../../stores/survey-store';
+import { useToursStore } from '../../stores/tours-store';
 import { isUnsupportedF3Board, hasInavF3Support } from '../../../shared/board-mappings';
 import { Map, AlertTriangle, Lightbulb, RefreshCw, Plane, Wrench } from 'lucide-react';
 
@@ -43,8 +45,25 @@ const components: Record<string, React.FC<IDockviewPanelProps>> = {
   MissionMapPanel: () => <ErrorBoundary label="map"><MissionMapPanel /></ErrorBoundary>,
   WaypointTablePanel: () => <ErrorBoundary label="waypoint list"><WaypointTablePanel /></ErrorBoundary>,
   AltitudeProfilePanel: () => <ErrorBoundary label="altitude profile"><AltitudeProfilePanel /></ErrorBoundary>,
+  FlightInfoPanel: () => <ErrorBoundary label="flight info"><FlightInfoPanel /></ErrorBoundary>,
   SurveyConfigPanel: () => <ErrorBoundary label="survey panel"><SurveyConfigPanel /></ErrorBoundary>,
 };
+
+// Ensure the Flight Info tab exists next to Waypoints. Called for fresh layouts
+// and after restoring a saved one (older layouts predate this panel), so the
+// panel shows up without forcing a layout reset.
+function ensureFlightInfoPanel(api: DockviewApi): void {
+  if (api.getPanel('flightInfo')) return;
+  const refGroup = api.getPanel('waypointTable')?.group;
+  api.addPanel({
+    id: 'flightInfo',
+    component: 'FlightInfoPanel',
+    title: 'Flight Info',
+    ...(refGroup ? { position: { referenceGroup: refGroup } } : {}),
+  });
+  // Keep Waypoints as the visible tab; Flight Info is a sibling.
+  api.getPanel('waypointTable')?.api.setActive();
+}
 
 // Stable panel id for the Survey tab — opened/closed dynamically based on
 // whether survey mode is active. Lives as a sibling tab next to Waypoints.
@@ -82,6 +101,9 @@ function createDefaultLayout(api: DockviewApi): void {
     title: 'Altitude Profile',
     position: { referenceGroup: bottomGroup },
   });
+
+  // Flight Info as a sibling tab of Waypoints.
+  ensureFlightInfoPanel(api);
 }
 
 // Component for when mission planning is not available
@@ -386,6 +408,16 @@ export function MissionPlanningView() {
     return () => disposable.dispose();
   }, [layoutLoaded, deactivateSurvey]);
 
+  // The Flight Info tour highlights that panel, but dockview drops inactive tab
+  // content from the DOM, so bring the tab forward when its tour starts.
+  const activeTourId = useToursStore((s) => s.activeTourId);
+  useEffect(() => {
+    if (!apiRef.current || !layoutLoaded) return;
+    if (activeTourId === 'flight-info-alpha32-5') {
+      apiRef.current.getPanel('flightInfo')?.api.setActive();
+    }
+  }, [activeTourId, layoutLoaded]);
+
   // Auto-save layout when it changes
   useEffect(() => {
     if (!apiRef.current || !layoutLoaded) return;
@@ -438,6 +470,8 @@ export function MissionPlanningView() {
       const savedLayout = await window.electronAPI?.getLayout(MISSION_LAYOUT_NAME);
       if (savedLayout?.data) {
         event.api.fromJSON(savedLayout.data as SerializedDockview);
+        // Saved layouts from before this panel existed won't include it.
+        ensureFlightInfoPanel(event.api);
         setLayoutLoaded(true);
         return;
       }

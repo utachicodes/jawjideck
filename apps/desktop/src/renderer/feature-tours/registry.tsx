@@ -36,16 +36,16 @@ export const FEATURE_TOURS: FeatureTour[] = [
         ),
       },
       {
-        selector: '[data-tour="mission-corridor"]',
-        predicate: present('[data-tour="mission-corridor"]'),
+        selector: '[data-tour="mission-survey"]',
+        predicate: present('[data-tour="mission-survey"]'),
         content: (
           <div className="space-y-2">
             <div className="text-sm font-semibold">Corridor surveys</div>
             <p className="text-xs leading-relaxed opacity-90">
-              New <strong>Corridor</strong> mode for linear jobs - roads, rail, power lines,
-              pipelines. Draw a centerline and ArduDeck lays parallel strips along it. Pick
-              {' '}<strong>Plane</strong> (racetrack turns at sharp bends) or <strong>Copter</strong>
-              {' '}(turns on the spot), and set width, strip count and overlap.
+              Under the <strong>Survey</strong> button, pick <strong>Corridor</strong> for linear
+              jobs - roads, rail, power lines, pipelines. Draw a centerline and ArduDeck lays
+              parallel strips along it. Pick <strong>Plane</strong> (racetrack turns at sharp bends)
+              or <strong>Copter</strong> (turns on the spot), and set width, strip count and overlap.
             </p>
           </div>
         ),
@@ -136,6 +136,39 @@ export const FEATURE_TOURS: FeatureTour[] = [
             <p className="text-xs leading-relaxed opacity-90">
               The sliders, presets and profiles all follow your choice, so you can tune each set
               without leaving the page.
+            </p>
+          </div>
+        ),
+      },
+    ],
+  },
+  {
+    id: 'flight-info-alpha32-5',
+    view: 'mission',
+    version: '0.0.32.5',
+    title: 'New: the Flight Info briefing',
+    blurb:
+      'A live pre-flight briefing for any mission or survey: endurance and batteries, distance and altitude, site wind and weather, and your daylight window.',
+    steps: [
+      {
+        selector: '[data-tour="flight-info-panel"]',
+        // No predicate: the panel's tab is activated when this tour starts (see
+        // MissionPlanningView), and mutationObservables lets the highlight snap
+        // to it once dockview mounts the panel content.
+        mutationObservables: ['[data-tour="flight-info-panel"]'],
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Brief the flight before you fly it</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              The new <strong>Flight Info</strong> tab turns your mission into the numbers a pilot
+              decides on: <strong>flight time</strong> and how many <strong>batteries</strong> it
+              needs, total <strong>distance</strong> and <strong>altitude</strong> against the
+              ceiling, and live <strong>site weather</strong>.
+            </p>
+            <p className="text-xs leading-relaxed opacity-90">
+              Wind shows as a <strong>compass</strong>, and the <strong>daylight</strong> bar marks
+              when the flight would finish against sunset - so you can see at a glance whether it
+              lands before dark.
             </p>
           </div>
         ),

@@ -28,6 +28,7 @@ import { TAKEOFF_AT_HOME_ICON } from './takeoff-icon';
 // Survey grid overlay
 import { SurveyDrawTool } from '../survey/SurveyDrawTool';
 import { SurveyMapOverlay } from '../survey/SurveyMapOverlay';
+import { SurveyStartButton } from '../survey/SurveyStartButton';
 import { PersistentSurveyOverlay } from '../survey/PersistentSurveyOverlay';
 import { useSurveyStore } from '../../stores/survey-store';
 import { isSurveyGroup } from '../../../shared/mission-group-types';
@@ -927,7 +928,6 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
   const activateSurvey = useSurveyStore((s) => s.activateSurvey);
   const deactivateSurvey = useSurveyStore((s) => s.deactivateSurvey);
   const startSurveyDrawing = useSurveyStore((s) => s.startDrawing);
-  const setSurveyPattern = useSurveyStore((s) => s.setPattern);
 
   // Disable mission editing when fence, rally, or survey editing is active
   const isFenceOrRallyActive = fenceDrawMode !== 'none' || rallyAddMode || surveyDrawMode !== 'none';
@@ -1581,31 +1581,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
               <>
                 <div className="w-px h-5 bg-subtle" />
                 {!surveyIsActive ? (
-                  <>
-                    <button
-                      data-tour="mission-survey"
-                      onClick={() => { activateSurvey(); setSurveyPattern('grid'); startSurveyDrawing(); }}
-                      className="px-2.5 py-1.5 rounded text-xs font-medium bg-surface-solid border border-purple-400 shadow-sm text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1.5"
-                      title="Plan an area survey: draw a polygon, fill it with a grid/crosshatch"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                      </svg>
-                      Survey
-                    </button>
-                    <button
-                      data-tour="mission-corridor"
-                      onClick={() => { activateSurvey(); setSurveyPattern('corridor'); startSurveyDrawing(); }}
-                      className="px-2.5 py-1.5 rounded text-xs font-medium bg-surface-solid border border-purple-400 shadow-sm text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1.5"
-                      title="Plan a corridor survey: draw a centerline (roads, rail, power lines), strips run parallel"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21L10 3M17 21L14 3" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 17v-2.5M12 11.5V9M12 6V4" />
-                      </svg>
-                      Corridor
-                    </button>
-                  </>
+                  <SurveyStartButton />
                 ) : (
                   <>
                     {surveyDrawMode === 'polygon' && (
