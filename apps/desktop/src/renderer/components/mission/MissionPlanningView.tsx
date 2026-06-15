@@ -17,6 +17,7 @@ import { MissionMapPanel } from './MissionMapPanel';
 import { WaypointTablePanel } from './WaypointTablePanel';
 import { AltitudeProfilePanel } from './AltitudeProfilePanel';
 import { SurveyConfigPanel } from '../survey/SurveyConfigPanel';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { useMissionStore } from '../../stores/mission-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useNavigationStore } from '../../stores/navigation-store';
@@ -35,12 +36,14 @@ interface Toast {
   type: ToastType;
 }
 
-// Component registry for dockview
+// Component registry for dockview. Each panel is wrapped in an ErrorBoundary so
+// a crash in one (e.g. a render loop on a huge mission) shows an inline message
+// in that panel instead of blanking the entire window.
 const components: Record<string, React.FC<IDockviewPanelProps>> = {
-  MissionMapPanel: () => <MissionMapPanel />,
-  WaypointTablePanel: () => <WaypointTablePanel />,
-  AltitudeProfilePanel: () => <AltitudeProfilePanel />,
-  SurveyConfigPanel: () => <SurveyConfigPanel />,
+  MissionMapPanel: () => <ErrorBoundary label="map"><MissionMapPanel /></ErrorBoundary>,
+  WaypointTablePanel: () => <ErrorBoundary label="waypoint list"><WaypointTablePanel /></ErrorBoundary>,
+  AltitudeProfilePanel: () => <ErrorBoundary label="altitude profile"><AltitudeProfilePanel /></ErrorBoundary>,
+  SurveyConfigPanel: () => <ErrorBoundary label="survey panel"><SurveyConfigPanel /></ErrorBoundary>,
 };
 
 // Stable panel id for the Survey tab — opened/closed dynamically based on

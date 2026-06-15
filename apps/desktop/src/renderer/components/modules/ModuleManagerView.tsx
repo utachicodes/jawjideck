@@ -329,17 +329,17 @@ export function ModuleManagerView() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-content">Module Manager</h1>
-            <p className="text-sm text-content-secondary">Activate license keys and manage installed modules</p>
+            <p className="text-sm text-content-secondary">Add modules and manage what's installed</p>
           </div>
         </div>
 
-        {/* License Key Input */}
+        {/* Module key input */}
         <div className="bg-surface rounded-xl border border-subtle p-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
               <KeyIcon className="w-4 h-4 text-blue-400" />
             </div>
-            <h2 className="text-sm font-medium text-content">Activate License</h2>
+            <h2 className="text-sm font-medium text-content">Add a module</h2>
           </div>
 
           <div className="flex gap-2">
@@ -350,7 +350,7 @@ export function ModuleManagerView() {
                 value={keyInput}
                 onChange={(e) => setKeyInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="ARDUDECK-xxxxxxxx-xxxxxxxx"
+                placeholder="ARDUDECK.xxxxxxxx.xxxxxxxx"
                 disabled={activating}
                 className="w-full px-3 py-2.5 bg-surface-input border border-subtle rounded-lg text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50 font-mono"
                 spellCheck={false}
@@ -370,7 +370,7 @@ export function ModuleManagerView() {
               disabled={!keyInput.trim() || activating}
               className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:hover:bg-blue-600 shrink-0"
             >
-              {activating ? 'Activating...' : 'Activate'}
+              {activating ? 'Adding…' : 'Add'}
             </button>
           </div>
 
@@ -388,7 +388,7 @@ export function ModuleManagerView() {
           <ActivationProgress progress={progress} />
         )}
 
-        {/* Restart-required banner — modules only load at startup, so a freshly
+        {/* Restart-required banner - modules only load at startup, so a freshly
             installed module stays hidden until the app restarts. */}
         {restartRequired && (
           <div className="flex items-center gap-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">

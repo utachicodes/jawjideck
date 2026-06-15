@@ -100,81 +100,103 @@ function buildSegmentedPath(allItems: MissionItem[]): PathSegment[] {
   );
   if (navWaypoints.length < 2) return [];
 
+  // Index nav waypoints by seq so spline interpolation can find their position
+  // without a linear scan.
+  const navIndexBySeq = new Map<number, number>();
+  navWaypoints.forEach((w, i) => navIndexBySeq.set(w.seq, i));
+
   // State flags
   let cameraActive = false;
   let roiActive = false;
   let speedOverride = false;
 
-  const segments: PathSegment[] = [];
+  // Single pass over all items in seq order: DO_* commands update the flags;
+  // each located nav waypoint closes the leg from the previous one. This is
+  // O(n) — the old version re-scanned every item for every nav pair (O(n²)),
+  // which froze/OOM'd the renderer on large (20k+) survey missions.
+  const raw: PathSegment[] = [];
+  let prevNav: MissionItem | null = null;
+  let prevNavIdx = -1;
 
-  // Walk nav waypoints in order; for each pair, collect DO_* commands between them
-  for (let ni = 0; ni < navWaypoints.length - 1; ni++) {
-    const fromWp = navWaypoints[ni]!;
-    const toWp = navWaypoints[ni + 1]!;
+  for (const item of allItems) {
+    const isLocatedNav =
+      isNavigationCommand(item.command) &&
+      commandHasLocation(item.command) &&
+      hasValidCoordinates(item.latitude, item.longitude);
 
-    // Process DO_* / condition commands between fromWp.seq and toWp.seq
-    for (const item of allItems) {
-      if (item.seq <= fromWp.seq) continue;
-      if (item.seq >= toWp.seq) break;
-      // Skip nav commands (they're the waypoints themselves)
-      if (isNavigationCommand(item.command)) continue;
-
-      switch (item.command) {
-        // Camera triggers
-        case MAV_CMD.DO_SET_CAM_TRIGG_DIST:
-          cameraActive = item.param1 > 0;
-          break;
-        case MAV_CMD.DO_SET_CAM_TRIGG_INTERVAL:
-          cameraActive = item.param1 > 0;
-          break;
-        case MAV_CMD.IMAGE_START_CAPTURE:
-          cameraActive = true;
-          break;
-        case MAV_CMD.IMAGE_STOP_CAPTURE:
-          cameraActive = false;
-          break;
-        // ROI
-        case MAV_CMD.DO_SET_ROI:
-        case MAV_CMD.DO_SET_ROI_LOCATION:
-          roiActive = true;
-          break;
-        case MAV_CMD.DO_SET_ROI_NONE:
-          roiActive = false;
-          break;
-        // Speed
-        case MAV_CMD.DO_CHANGE_SPEED:
-          // param2 is speed; 0 or -1 means reset to default
-          speedOverride = item.param2 > 0;
-          break;
+    if (isLocatedNav) {
+      const idx = navIndexBySeq.get(item.seq)!;
+      // Skip the connecting leg across group boundaries — a line from the last
+      // WP of one group to the first of the next isn't a real flight leg.
+      const crossesGroup = !!(prevNav && prevNav.groupId && item.groupId && prevNav.groupId !== item.groupId);
+      if (prevNav && !crossesGroup) {
+        const color = getSegmentColor(item.command, cameraActive, roiActive, speedOverride);
+        const isSpline =
+          prevNav.command === MAV_CMD.NAV_SPLINE_WAYPOINT ||
+          item.command === MAV_CMD.NAV_SPLINE_WAYPOINT;
+        const positions: [number, number][] = isSpline
+          ? interpolateSpline(navWaypoints, prevNavIdx, idx)
+          : [
+              [prevNav.latitude, prevNav.longitude],
+              [item.latitude, item.longitude],
+            ];
+        raw.push({ positions, color });
       }
-    }
-
-    // Don't draw a connecting leg across group boundaries — each group is a
-    // distinct area, and a line from the last WP of one to the first WP of the
-    // next is meaningless (the vehicle isn't told to fly it as one path here).
-    // DO_* state above is still walked so flags stay consistent.
-    if (fromWp.groupId && toWp.groupId && fromWp.groupId !== toWp.groupId) {
+      prevNav = item;
+      prevNavIdx = idx;
       continue;
     }
 
-    const color = getSegmentColor(toWp.command, cameraActive, roiActive, speedOverride);
+    // Match the original windowed behavior: DO_* commands only take effect once
+    // the first located waypoint has been seen (legs are drawn between located
+    // waypoints, and the old code never scanned items before the first one).
+    if (prevNav === null) continue;
 
-    // Build positions for this segment (with spline if needed)
-    const currIsSpline = fromWp.command === MAV_CMD.NAV_SPLINE_WAYPOINT;
-    const nextIsSpline = toWp.command === MAV_CMD.NAV_SPLINE_WAYPOINT;
-
-    let positions: [number, number][];
-    if (currIsSpline || nextIsSpline) {
-      positions = interpolateSpline(navWaypoints, ni, ni + 1);
-    } else {
-      positions = [
-        [fromWp.latitude, fromWp.longitude],
-        [toWp.latitude, toWp.longitude],
-      ];
+    switch (item.command) {
+      case MAV_CMD.DO_SET_CAM_TRIGG_DIST:
+      case MAV_CMD.DO_SET_CAM_TRIGG_INTERVAL:
+        cameraActive = item.param1 > 0;
+        break;
+      case MAV_CMD.IMAGE_START_CAPTURE:
+        cameraActive = true;
+        break;
+      case MAV_CMD.IMAGE_STOP_CAPTURE:
+        cameraActive = false;
+        break;
+      case MAV_CMD.DO_SET_ROI:
+      case MAV_CMD.DO_SET_ROI_LOCATION:
+        roiActive = true;
+        break;
+      case MAV_CMD.DO_SET_ROI_NONE:
+        roiActive = false;
+        break;
+      case MAV_CMD.DO_CHANGE_SPEED:
+        speedOverride = item.param2 > 0;
+        break;
     }
-
-    segments.push({ positions, color });
   }
+
+  // Coalesce consecutive straight legs of the same color into a single polyline.
+  // A survey is overwhelmingly one color (camera), so this collapses ~20k tiny
+  // two-point segments into a handful of polylines — the difference between
+  // thousands of Leaflet layers and a few. Spline legs (multi-point) and any
+  // break in continuity (group-boundary gap) start a fresh run.
+  const samePoint = (a: [number, number], b: [number, number]) => a[0] === b[0] && a[1] === b[1];
+  const segments: PathSegment[] = [];
+  let run: { positions: [number, number][]; color: string; plain: boolean } | null = null;
+  for (const seg of raw) {
+    const plain = seg.positions.length === 2;
+    if (
+      run && run.plain && plain && run.color === seg.color &&
+      samePoint(run.positions[run.positions.length - 1]!, seg.positions[0]!)
+    ) {
+      run.positions.push(seg.positions[1]!);
+    } else {
+      if (run) segments.push({ positions: run.positions, color: run.color });
+      run = { positions: [...seg.positions], color: seg.color, plain };
+    }
+  }
+  if (run) segments.push({ positions: run.positions, color: run.color });
 
   return segments;
 }
@@ -186,6 +208,11 @@ import { MAP_LAYERS, type LayerKey, type MapLayer } from '../../../shared/map-la
 const FALLBACK_CENTER: [number, number] = [51.505, -0.09];
 const DEFAULT_ZOOM_AIRCRAFT = 15;
 const DEFAULT_ZOOM_ROVER = 18; // Rovers need higher zoom for street-level detail
+
+// Above this many waypoints we stop rendering per-leg clickable insertion
+// segments — each is an interactive Leaflet layer and tens of thousands of them
+// exhaust memory. The (coalesced) visible path still draws.
+const MAX_CLICKABLE_SEGMENTS = 2000;
 
 // Get color based on command type
 function getCommandColor(cmd: number): string {
@@ -881,6 +908,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
   const activeMode = useEditModeStore((state) => state.activeMode);
   const showSegmentColors = useSettingsStore((s) => s.missionDefaults.showSegmentColors);
   const updateMissionDefaults = useSettingsStore((s) => s.updateMissionDefaults);
+  const maxWaypointMarkers = useSettingsStore((s) => s.surveyPerformance.maxWaypointMarkers);
 
   // Get fence and rally stores for floating tools
   const fenceDrawMode = useFenceStore((state) => state.drawMode);
@@ -964,7 +992,7 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
 
   // Pins are expensive (DivIcon), dots are cheap (CircleMarker), so different caps.
   const displayedWaypoints = useMemo(() => decimate(manualWaypoints, 500), [manualWaypoints, decimate]);
-  const displayedSurveyDots = useMemo(() => decimate(surveyWaypoints, 1500), [surveyWaypoints, decimate]);
+  const displayedSurveyDots = useMemo(() => decimate(surveyWaypoints, maxWaypointMarkers), [surveyWaypoints, decimate, maxWaypointMarkers]);
   const markersDecimated =
     displayedWaypoints.length + displayedSurveyDots.length < waypoints.length;
 
@@ -1223,8 +1251,13 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
           />
         ))}
 
-        {/* Clickable path segments for right-click insertion (hidden in readOnly mode) */}
-        {!readOnly && waypoints.length > 1 && waypoints.slice(0, -1).map((wp, i) => {
+        {/* Clickable path segments for right-click insertion (hidden in readOnly
+            mode). Each is an interactive Leaflet layer, so for very large
+            missions we skip them entirely — rendering ~20k interactive layers
+            OOM'd the map. Per-segment insertion isn't a meaningful workflow on
+            an auto-generated survey of that size anyway. */}
+        {!readOnly && waypoints.length > 1 && waypoints.length <= MAX_CLICKABLE_SEGMENTS &&
+          waypoints.slice(0, -1).map((wp, i) => {
           const nextWp = waypoints[i + 1]!;
           return (
             <ClickablePathSegment
@@ -1440,8 +1473,13 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
 
       {/* Bottom controls - mode-specific floating tools */}
       {markersDecimated && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] px-2 py-1 rounded-md bg-surface/90 border border-subtle text-[10px] text-content-secondary pointer-events-none">
-          Showing {displayedWaypoints.length} of {waypoints.length} markers (path is complete)
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-900/90 border border-white/10 shadow-md backdrop-blur-sm text-[11px] text-gray-100 pointer-events-none whitespace-nowrap">
+          <svg className="w-3.5 h-3.5 text-blue-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>
+            Large mission: showing {(displayedWaypoints.length + displayedSurveyDots.length).toLocaleString()} of {waypoints.length.toLocaleString()} waypoint markers for speed - the full path is still drawn.
+          </span>
         </div>
       )}
       <div className="absolute bottom-3 left-3 z-[1000] flex items-center gap-2">

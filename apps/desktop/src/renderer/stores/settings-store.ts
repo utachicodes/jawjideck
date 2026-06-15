@@ -158,6 +158,34 @@ export interface MissionDefaults {
 }
 
 /**
+ * Survey planner performance tuning. These are global guardrails, not
+ * per-survey geometry — they bound how much work the map and importer do so a
+ * huge imported boundary doesn't stall the app.
+ */
+export interface SurveyPerformance {
+  /** RDP tolerance (meters) for simplifying imported GIS boundary rings. */
+  importSimplifyToleranceM: number;
+  /** Above this many boundary vertices, per-vertex drag handles are hidden. */
+  maxEditableVertices: number;
+  /** Above this many photo positions, the dots are not drawn on the map. */
+  maxPhotoMarkers: number;
+  /**
+   * Cap on waypoint markers drawn on the mission/telemetry maps. Beyond this the
+   * markers are decimated (every Nth kept, plus the active one); the full path
+   * line is always drawn. Guards against tens of thousands of markers OOM'ing
+   * the map on large survey missions.
+   */
+  maxWaypointMarkers: number;
+}
+
+export const DEFAULT_SURVEY_PERFORMANCE: SurveyPerformance = {
+  importSimplifyToleranceM: 1.0,
+  maxEditableVertices: 200,
+  maxPhotoMarkers: 1500,
+  maxWaypointMarkers: 1000,
+};
+
+/**
  * Display unit preferences for large vehicle support
  * 'small' = mm, g, mAh (default - racing/freestyle quads)
  * 'large' = m, kg, Ah (large aircraft, industrial drones)
@@ -284,6 +312,19 @@ interface SettingsStore {
 
   // Mission defaults
   missionDefaults: MissionDefaults;
+
+  // Survey planner performance tuning
+  surveyPerformance: SurveyPerformance;
+  updateSurveyPerformance: (updates: Partial<SurveyPerformance>) => void;
+
+  // Connection sidebar collapsed state, remembered PER CONTEXT and persisted.
+  // The context key is "connected" when a vehicle is connected (one shared
+  // state - the connect panel is rarely needed once connected) and
+  // "offline:<viewId>" otherwise, so a manual minimize is remembered per screen
+  // while offline (e.g. collapsed on Mission Planning, open on Telemetry).
+  // Absent key falls back to: collapsed when connected, expanded when offline.
+  sidebarCollapsedByContext: Record<string, boolean>;
+  setSidebarCollapsedForContext: (contextKey: string, collapsed: boolean) => void;
 
   // Vehicle profiles
   vehicles: VehicleProfile[];
@@ -719,6 +760,18 @@ export const useSettingsStore = create<SettingsStore>()(
 
   // Initial state (will be replaced by loadSettings)
   missionDefaults: { ...DEFAULT_MISSION_DEFAULTS },
+  surveyPerformance: { ...DEFAULT_SURVEY_PERFORMANCE },
+  updateSurveyPerformance: (updates) => {
+    set((state) => ({
+      surveyPerformance: { ...state.surveyPerformance, ...updates },
+    }));
+  },
+  sidebarCollapsedByContext: {},
+  setSidebarCollapsedForContext: (contextKey, collapsed) => {
+    set((state) => ({
+      sidebarCollapsedByContext: { ...state.sidebarCollapsedByContext, [contextKey]: collapsed },
+    }));
+  },
   vehicles: [{ ...DEFAULT_VEHICLE }],
   activeVehicleId: 'default',
   flightStats: { ...DEFAULT_FLIGHT_STATS },
@@ -813,6 +866,11 @@ export const useSettingsStore = create<SettingsStore>()(
       if (settings) {
         set({
           missionDefaults: { ...DEFAULT_MISSION_DEFAULTS, ...settings.missionDefaults },
+          surveyPerformance: {
+            ...DEFAULT_SURVEY_PERFORMANCE,
+            ...((settings as unknown as Record<string, unknown>).surveyPerformance as Partial<SurveyPerformance> | undefined),
+          },
+          sidebarCollapsedByContext: ((settings as unknown as Record<string, unknown>).sidebarCollapsedByContext as Record<string, boolean> | undefined) ?? {},
           vehicles: settings.vehicles?.length ? settings.vehicles : [{ ...DEFAULT_VEHICLE }],
           activeVehicleId: settings.activeVehicleId || settings.vehicles?.[0]?.id || 'default',
           flightStats: settings.flightStats || { ...DEFAULT_FLIGHT_STATS },
@@ -856,6 +914,8 @@ export const useSettingsStore = create<SettingsStore>()(
     try {
       const payload = {
         missionDefaults: state.missionDefaults,
+        surveyPerformance: state.surveyPerformance,
+        sidebarCollapsedByContext: state.sidebarCollapsedByContext,
         vehicles: state.vehicles,
         activeVehicleId: state.activeVehicleId,
         flightStats: state.flightStats,
@@ -1164,6 +1224,8 @@ const debouncedSave = () => {
 useSettingsStore.subscribe(
   (state) => ({
     missionDefaults: state.missionDefaults,
+    surveyPerformance: state.surveyPerformance,
+    sidebarCollapsedByContext: state.sidebarCollapsedByContext,
     vehicles: state.vehicles,
     activeVehicleId: state.activeVehicleId,
     flightStats: state.flightStats,
@@ -1192,6 +1254,8 @@ useSettingsStore.subscribe(
       // Check if anything actually changed (shallow comparison)
       if (
         curr.missionDefaults !== prev.missionDefaults ||
+        curr.surveyPerformance !== prev.surveyPerformance ||
+        curr.sidebarCollapsedByContext !== prev.sidebarCollapsedByContext ||
         curr.vehicles !== prev.vehicles ||
         curr.activeVehicleId !== prev.activeVehicleId ||
         curr.flightStats !== prev.flightStats ||

@@ -6,6 +6,7 @@ import { useTelemetryStore } from '../../stores/telemetry-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useMissionStore } from '../../stores/mission-store';
 import { commandHasLocation, hasValidCoordinates, MAV_CMD, type MissionItem } from '../../../shared/mission-types';
+import { splitMissionMarkers } from '../../utils/mission-markers';
 import { AttitudeIndicator } from './AttitudePanel';
 import { useIpLocation } from '../../utils/ip-geolocation';
 import { useEditModeStore } from '../../stores/edit-mode-store';
@@ -244,6 +245,35 @@ function createWaypointIcon(wp: MissionItem, isCurrent: boolean): L.DivIcon {
     iconAnchor: [size / 2, size / 2],
   });
 }
+
+// Start/end pills for large missions, where a plain endpoint's sequence number
+// is meaningless. A labeled pill ("START"/"END") tells the pilot where the
+// route begins and finishes; key commands (takeoff/land/loiter) keep their own
+// glyph instead.
+function createEndpointIcon(label: string, color: string): L.DivIcon {
+  return L.divIcon({
+    className: 'waypoint-endpoint-marker',
+    html: `
+      <div style="
+        padding: 2px 7px;
+        border-radius: 9px;
+        background: ${color};
+        border: 2px solid rgba(255,255,255,0.9);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: white;
+        white-space: nowrap;
+      ">${label}</div>
+    `,
+    iconSize: [46, 18],
+    iconAnchor: [23, 9],
+  });
+}
+
+const START_ICON = createEndpointIcon('START', '#22c55e');
+const END_ICON = createEndpointIcon('END', '#ef4444');
 
 // Mission home marker icon
 function createMissionHomeIcon(): L.DivIcon {
@@ -1493,6 +1523,117 @@ export const MapPanel = React.memo(function MapPanel() {
   return <TelemetryMap2D />;
 });
 
+// ─── Mission overlays (read-only) ────────────────────────────────────────────
+// Self-subscribed to the mission store so live telemetry ticks (position,
+// attitude, vfrHud - several per second) can't re-render it. Without this, a
+// large mission re-maps every waypoint marker and rebuilds every DivIcon on
+// every telemetry frame, which is what made the telemetry map lag on big KMLs.
+// React.memo + no props means the parent's telemetry re-renders bail out here.
+const MissionOverlays = React.memo(function MissionOverlays() {
+  const { missionItems, homePosition: missionHome, currentSeq } = useMissionStore();
+
+  const waypoints = useMemo(() =>
+    missionItems.filter(item =>
+      commandHasLocation(item.command) && hasValidCoordinates(item.latitude, item.longitude)
+    ),
+    [missionItems]
+  );
+  const ghostTakeoffItems = useMemo(() =>
+    missionItems.filter(item =>
+      item.command === MAV_CMD.NAV_TAKEOFF && !hasValidCoordinates(item.latitude, item.longitude)
+    ),
+    [missionItems]
+  );
+  const missionPath = useMemo(() => buildMissionPath(waypoints), [waypoints]);
+
+  // Small missions: a numbered pin per waypoint. Large/auto-generated missions:
+  // only the live target, route start/end, and meaningful commands keep a pin -
+  // the rest are noise and the path already shows them. See mission-markers.ts.
+  const markerPins = useMemo(
+    () => splitMissionMarkers(waypoints, currentSeq).pins,
+    [waypoints, currentSeq],
+  );
+
+  return (
+    <>
+      {/* Mission path - single polyline with curves through spline waypoints */}
+      {missionPath.positions.length > 1 && (
+        <Polyline
+          positions={missionPath.positions}
+          pathOptions={{ color: '#3b82f6', weight: 3, opacity: 0.8 }}
+        />
+      )}
+
+      {/* Loiter radius circles - param3 is radius for all loiter commands */}
+      {waypoints
+        .filter(wp =>
+          (wp.command === MAV_CMD.NAV_LOITER_UNLIM ||
+           wp.command === MAV_CMD.NAV_LOITER_TIME ||
+           wp.command === MAV_CMD.NAV_LOITER_TURNS) &&
+          wp.param3 > 0
+        )
+        .map((wp) => (
+          <Circle
+            key={`loiter-${wp.seq}`}
+            center={[wp.latitude, wp.longitude]}
+            radius={Math.abs(wp.param3)}
+            pathOptions={{
+              color: '#a855f7',
+              weight: 2,
+              opacity: 0.6,
+              fill: true,
+              fillColor: '#a855f7',
+              fillOpacity: 0.1,
+              dashArray: '5, 5',
+            }}
+          />
+        ))}
+
+      {/* Mission home marker */}
+      {missionHome && (
+        <Marker
+          position={[missionHome.lat, missionHome.lon]}
+          icon={MISSION_HOME_ICON}
+          zIndexOffset={-1000}
+        />
+      )}
+
+      {/* TAKEOFF (placeholder coords) rendered at mission home */}
+      {missionHome && ghostTakeoffItems.map((wp) => (
+        <Marker
+          key={`takeoff-${wp.seq}`}
+          position={[missionHome.lat, missionHome.lon]}
+          icon={TAKEOFF_AT_HOME_ICON}
+          zIndexOffset={-500}
+        />
+      ))}
+
+      {/* Waypoint markers (read-only). Small missions get a numbered pin each;
+          large missions get only key waypoints + start/end + the live target. */}
+      {markerPins.map(({ wp, role }) => (
+        <Marker
+          key={wp.seq}
+          position={[wp.latitude, wp.longitude]}
+          icon={
+            role === 'start'
+              ? START_ICON
+              : role === 'end'
+                ? END_ICON
+                : createWaypointIcon(wp, wp.seq === currentSeq)
+          }
+          zIndexOffset={role === 'current' ? 1000 : 0}
+        />
+      ))}
+
+      {/* Geofence overlays (read-only) */}
+      <FenceMapOverlay readOnly />
+
+      {/* Rally point overlays (read-only) */}
+      <RallyMapOverlay readOnly />
+    </>
+  );
+});
+
 // ─── 2D Telemetry Map ────────────────────────────────────────────────────────
 
 const TelemetryMap2D = React.memo(function TelemetryMap2D() {
@@ -1528,11 +1669,12 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
   const lastUpdateRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Mission store (read-only display)
-  const { missionItems, homePosition: missionHome, currentSeq } = useMissionStore();
+  // Mission store - only what the large-mission badge below needs. The actual
+  // mission overlays render in <MissionOverlays/>, which self-subscribes so
+  // telemetry re-renders can't rebuild its markers.
+  const { missionItems, currentSeq } = useMissionStore();
 
-  // Filter to only items with locations and real coordinates
-  // (TAKEOFF and other commands often have lat/lon = 0; render those separately at home)
+  // Filter to only items with real coordinates (badge counts what gets thinned).
   const waypoints = useMemo(() =>
     missionItems.filter(item =>
       commandHasLocation(item.command) && hasValidCoordinates(item.latitude, item.longitude)
@@ -1540,16 +1682,12 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
     [missionItems]
   );
 
-  // TAKEOFF items with placeholder (0,0) coords - render at home with rocket icon
-  const ghostTakeoffItems = useMemo(() =>
-    missionItems.filter(item =>
-      item.command === MAV_CMD.NAV_TAKEOFF && !hasValidCoordinates(item.latitude, item.longitude)
-    ),
-    [missionItems]
+  // Whether the mission is large enough that we collapse plain waypoints to
+  // key markers only (drives the explanatory badge). Same split the overlay uses.
+  const markersSemantic = useMemo(
+    () => splitMissionMarkers(waypoints, currentSeq).semantic,
+    [waypoints, currentSeq],
   );
-
-  // Build mission path for rendering
-  const missionPath = useMemo(() => buildMissionPath(waypoints), [waypoints]);
 
   // IP geolocation fallback (used when GPS not available)
   const [ipLocation] = useIpLocation();
@@ -1806,6 +1944,19 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
 
   return (
     <div ref={containerRef} data-tour="telemetry-map" className="h-full w-full flex flex-col bg-surface-base relative">
+      {/* Large-mission notice: plain waypoints carry no useful number and stack
+          into an unreadable cluster, so we show only the route's start/end, the
+          live target, and key commands. The full flight path is still drawn. */}
+      {showMission && markersSemantic && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-900/90 border border-white/10 shadow-md backdrop-blur-sm text-[11px] text-gray-100 pointer-events-none whitespace-nowrap">
+          <svg className="w-3.5 h-3.5 text-blue-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>
+            Large mission: showing key waypoints (launch, turns, landing) and the live target - the full flight path is drawn.
+          </span>
+        </div>
+      )}
       {/* Top toolbar */}
       <div data-tour="telemetry-map-overlays" className="absolute top-2 right-2 z-[1000] flex flex-col gap-1">
         <LayerSwitcher currentLayer={currentLayer} onLayerChange={setCurrentLayer} />
@@ -2137,80 +2288,9 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
         )}
 
         {/* ======= MISSION OVERLAYS (read-only) ======= */}
-        {showMission && (
-          <>
-            {/* Mission path - single polyline with curves through spline waypoints */}
-            {missionPath.positions.length > 1 && (
-              <Polyline
-                positions={missionPath.positions}
-                pathOptions={{
-                  color: '#3b82f6',
-                  weight: 3,
-                  opacity: 0.8,
-                }}
-              />
-            )}
-
-            {/* Loiter radius circles - param3 is radius for all loiter commands */}
-            {waypoints
-              .filter(wp =>
-                (wp.command === MAV_CMD.NAV_LOITER_UNLIM ||
-                 wp.command === MAV_CMD.NAV_LOITER_TIME ||
-                 wp.command === MAV_CMD.NAV_LOITER_TURNS) &&
-                wp.param3 > 0
-              )
-              .map((wp) => (
-                <Circle
-                  key={`loiter-${wp.seq}`}
-                  center={[wp.latitude, wp.longitude]}
-                  radius={Math.abs(wp.param3)}
-                  pathOptions={{
-                    color: '#a855f7',
-                    weight: 2,
-                    opacity: 0.6,
-                    fill: true,
-                    fillColor: '#a855f7',
-                    fillOpacity: 0.1,
-                    dashArray: '5, 5',
-                  }}
-                />
-              ))}
-
-            {/* Mission home marker */}
-            {missionHome && (
-              <Marker
-                position={[missionHome.lat, missionHome.lon]}
-                icon={MISSION_HOME_ICON}
-                zIndexOffset={-1000}
-              />
-            )}
-
-            {/* TAKEOFF (placeholder coords) rendered at mission home */}
-            {missionHome && ghostTakeoffItems.map((wp) => (
-              <Marker
-                key={`takeoff-${wp.seq}`}
-                position={[missionHome.lat, missionHome.lon]}
-                icon={TAKEOFF_AT_HOME_ICON}
-                zIndexOffset={-500}
-              />
-            ))}
-
-            {/* Waypoint markers (read-only) */}
-            {waypoints.map((wp) => (
-              <Marker
-                key={wp.seq}
-                position={[wp.latitude, wp.longitude]}
-                icon={createWaypointIcon(wp, wp.seq === currentSeq)}
-              />
-            ))}
-
-            {/* Geofence overlays (read-only) */}
-            <FenceMapOverlay readOnly />
-
-            {/* Rally point overlays (read-only) */}
-            <RallyMapOverlay readOnly />
-          </>
-        )}
+        {/* Self-subscribed + memoized so live telemetry re-renders don't rebuild
+            every waypoint marker/DivIcon. See MissionOverlays above. */}
+        {showMission && <MissionOverlays />}
         {/* ======= END MISSION OVERLAYS ======= */}
 
         {/* Map overlays (self-subscribed to avoid re-rendering terrain) */}

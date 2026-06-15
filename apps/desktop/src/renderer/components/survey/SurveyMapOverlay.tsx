@@ -2,10 +2,11 @@
  * Survey Map Overlay - Renders survey polygon, flight lines, photo dots,
  * camera footprints, and drawing preview on the map.
  */
-import { useMemo, useCallback, memo } from 'react';
-import { Polygon, Polyline, CircleMarker, Marker, Tooltip, Pane } from 'react-leaflet';
+import { useMemo, useCallback, useState, useEffect, memo } from 'react';
+import { Polygon, Polyline, CircleMarker, Marker, Tooltip, Pane, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { useSurveyStore } from '../../stores/survey-store';
+import { useSettingsStore } from '../../stores/settings-store';
 import type { LatLng } from './survey-types';
 
 // Colors
@@ -82,7 +83,7 @@ const VertexMarker = memo(function VertexMarker({
         contextmenu: handleContextMenu,
       }}
     >
-      <Tooltip direction="top" offset={[0, -8]} opacity={0.9}>
+      <Tooltip direction="top" offset={[0, -8]} opacity={0.9} pane="vertexTooltipPane">
         <span style={{ fontSize: '10px', fontFamily: 'monospace', whiteSpace: 'pre' }}>
           {`P${index + 1}: ${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}`}
           {canDelete ? '\nRight-click to delete' : ''}
@@ -101,6 +102,41 @@ export function SurveyMapOverlay() {
   const showFootprints = useSurveyStore((s) => s.showFootprints);
   const updateVertex = useSurveyStore((s) => s.updateVertex);
   const removeVertex = useSurveyStore((s) => s.removeVertex);
+  const maxEditableVertices = useSettingsStore((s) => s.surveyPerformance.maxEditableVertices);
+  const maxPhotoMarkers = useSettingsStore((s) => s.surveyPerformance.maxPhotoMarkers);
+  const polygonEditMode = useSurveyStore((s) => s.polygonEditMode);
+
+  // Track the map viewport so that, when editing a large polygon, we only
+  // render drag handles for vertices currently on screen (capped) - editing a
+  // 20k-point boundary is impossible (and would relag the map) if we drew a
+  // marker for every vertex. Zoom to the stretch you want and nudge those.
+  const [bounds, setBounds] = useState<L.LatLngBounds | null>(null);
+  const map = useMapEvents({
+    moveend: () => setBounds(map.getBounds()),
+    zoomend: () => setBounds(map.getBounds()),
+  });
+  useEffect(() => { setBounds(map.getBounds()); }, [map]);
+
+  const editableVertexIndices = useMemo<number[]>(() => {
+    if (!polygon) return [];
+    if (polygonEditMode) {
+      // Edit mode: viewport-culled handles, capped so a zoomed-out view can't
+      // spawn thousands of markers.
+      if (!bounds) return [];
+      const out: number[] = [];
+      for (let i = 0; i < polygon.length; i++) {
+        const v = polygon[i]!;
+        if (bounds.contains([v.lat, v.lng])) {
+          out.push(i);
+          if (out.length >= maxEditableVertices) break;
+        }
+      }
+      return out;
+    }
+    // Not editing: show handles only for small polygons (back-compat); large
+    // ones require entering edit mode.
+    return polygon.length <= maxEditableVertices ? polygon.map((_, i) => i) : [];
+  }, [polygon, polygonEditMode, bounds, maxEditableVertices]);
 
   // Drawing preview (in-progress polygon)
   const drawingPositions = useMemo(
@@ -120,11 +156,13 @@ export function SurveyMapOverlay() {
     [result],
   );
 
-  // Photo positions
-  const photoPositions = useMemo(
-    () => result?.photoPositions ?? [],
-    [result],
-  );
+  // Photo positions. Rendering one CircleMarker each is fine for a typical
+  // survey but melts the map for a huge area; past a threshold we drop the dots
+  // (the flight path already conveys coverage).
+  const photoPositions = useMemo(() => {
+    const photos = result?.photoPositions ?? [];
+    return photos.length > maxPhotoMarkers ? [] : photos;
+  }, [result, maxPhotoMarkers]);
 
   // Camera footprints (limit to first 500 to avoid perf issues)
   const footprintPolygons = useMemo(() => {
@@ -142,6 +180,10 @@ export function SurveyMapOverlay() {
 
   return (
     <>
+      {/* Dedicated high-z pane for vertex tooltips so they sit above the survey
+          grid/flight lines and the boundary (which live in lower panes). */}
+      <Pane name="vertexTooltipPane" style={{ zIndex: 680 }} />
+
       {/* Drawing preview */}
       {drawMode === 'polygon' && drawingPositions.length > 0 && (
         <>
@@ -214,11 +256,14 @@ export function SurveyMapOverlay() {
               />
             </>
           )}
-          {/* Draggable vertex markers - right-click to delete, hover for coordinates */}
-          {polygon.map((v, i) => (
+          {/* Draggable vertex markers - right-click to delete, hover for
+              coordinates. For dense (imported) boundaries these only appear in
+              edit mode and only for the on-screen vertices, so the map stays
+              responsive at any polygon size. */}
+          {editableVertexIndices.map((i) => (
             <VertexMarker
               key={`vertex-${i}`}
-              position={v}
+              position={polygon[i]!}
               index={i}
               canDelete={polygon.length > 3}
               onDragEnd={handleVertexDrag}

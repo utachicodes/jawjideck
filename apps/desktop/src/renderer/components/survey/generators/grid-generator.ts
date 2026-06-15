@@ -16,7 +16,7 @@
  */
 import type { LatLng, SurveyConfig, SurveyResult } from '../survey-types';
 import { latLngToLocal, localToLatLng, polygonCentroid, rotatePoint } from '../geo-math';
-import { clipScanLines } from '../polygon-clip';
+import { clipScanLines, routeScanSegments } from '../polygon-clip';
 import { computeSurveyStats, getEffectiveFootprint, getEffectiveSpacing } from '../survey-stats';
 
 /**
@@ -82,14 +82,22 @@ export function generateGrid(config: SurveyConfig): SurveyResult {
     return { waypoints: [], photoPositions: [], footprints: [], stats: emptyStats(config) };
   }
 
-  // Clip scan lines to polygon
-  const clippedLines = clipScanLines(localPoly, lineSpacing, effectiveOvershoot, localHoles);
+  // Clip scan lines to polygon, then order them into a single coherent path.
+  // routeScanSegments groups the spans into connected components (arms) and
+  // serpentines within each, so a branching/concave boundary doesn't produce a
+  // flight path that deadheads across the empty interior on every row.
+  const clippedLines = routeScanSegments(
+    clipScanLines(localPoly, lineSpacing, effectiveOvershoot, localHoles),
+    lineSpacing,
+  );
 
   if (clippedLines.length === 0) {
     return { waypoints: [], photoPositions: [], footprints: [], stats: emptyStats(config) };
   }
 
-  // Build boustrophedon (alternating direction) waypoints
+  // Build waypoints. routeScanSegments already oriented each segment (x1 =
+  // entry, x2 = exit) for the chosen traversal direction, so we follow it
+  // directly instead of alternating by index.
   const waypointsLocal: { x: number; y: number }[] = [];
   const photoLocal: { x: number; y: number }[] = [];
   const reverseAngleRad = -angleRad;
@@ -98,10 +106,9 @@ export function generateGrid(config: SurveyConfig): SurveyResult {
 
   for (let i = 0; i < clippedLines.length; i++) {
     const line = clippedLines[i]!;
-    const reverse = i % 2 === 1;
 
-    const startX = reverse ? line.x2 : line.x1;
-    const endX = reverse ? line.x1 : line.x2;
+    const startX = line.x1;
+    const endX = line.x2;
     const y = line.y;
 
     // Line start point

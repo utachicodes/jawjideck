@@ -61,6 +61,19 @@ interface ProfilePoint {
   altitude: number;
 }
 
+// Min/max via a single loop. `Math.min(...arr)` / `Math.max(...arr)` spread the
+// array as call arguments, which throws RangeError ("too many arguments") on
+// large arrays — a 20k+ survey would crash the whole panel (black screen).
+function minMax(values: number[]): { min: number; max: number } {
+  let min = Infinity;
+  let max = -Infinity;
+  for (const v of values) {
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  return { min, max };
+}
+
 interface AltitudeProfilePanelProps {
   readOnly?: boolean;
 }
@@ -83,6 +96,7 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
   const [autoAdjustOpen, setAutoAdjustOpen] = useState(false);
   const { missionDefaults } = useSettingsStore();
   const safeAltitudeBuffer = missionDefaults.safeAltitudeBuffer;
+  const maxWaypointMarkers = useSettingsStore((s) => s.surveyPerformance.maxWaypointMarkers);
 
   // Filter to items with location AND valid coordinates. Takeoff uses (0,0)
   // as a "take off from current position" sentinel; including it would make
@@ -125,6 +139,18 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
     return points;
   }, [waypoints]);
 
+  // Decimated profile for rendering. The chart draws one interactive <g> (line +
+  // circles) per point and runs collision sampling per point; at 20k+ that is
+  // tens of thousands of SVG nodes and millions of ops, which blacks out the
+  // panel. We thin to maxWaypointMarkers with a plain stride (kept selection-
+  // independent so it doesn't refetch terrain on every click). For normal
+  // missions (<= cap) this is exactly profileData, so behavior is unchanged.
+  const displayProfile = useMemo(() => {
+    if (profileData.length <= maxWaypointMarkers) return profileData;
+    const stride = Math.ceil(profileData.length / maxWaypointMarkers);
+    return profileData.filter((_, i) => i % stride === 0 || i === profileData.length - 1);
+  }, [profileData, maxWaypointMarkers]);
+
   // Fetch terrain data when waypoints change
   useEffect(() => {
     if (waypoints.length < 2) {
@@ -143,10 +169,12 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
           40 // Number of terrain samples
         );
 
-        // Also get elevation at each waypoint
+        // Also get elevation at each displayed waypoint (decimated set — fetching
+        // an elevation for all 20k+ would be a huge IPC payload and main-process
+        // fetch; only the drawn dots need an AGL readout).
         const allPoints = [
           ...pathPoints.map(p => ({ lat: p.lat, lon: p.lon })),
-          ...waypoints.map(wp => ({ lat: wp.latitude, lon: wp.longitude })),
+          ...displayProfile.map(p => ({ lat: p.wp.latitude, lon: p.wp.longitude })),
         ];
 
         const elevations = await getElevations(allPoints);
@@ -167,10 +195,10 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
 
         // Build waypoint elevations map
         const wpElevMap = new Map<number, number>();
-        waypoints.forEach((wp, i) => {
+        displayProfile.forEach((p, i) => {
           const elev = wpElevations[i];
           if (elev !== null && elev !== undefined) {
-            wpElevMap.set(wp.seq, elev);
+            wpElevMap.set(p.wp.seq, elev);
           }
         });
         setWaypointElevations(wpElevMap);
@@ -184,7 +212,7 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
     // Debounce terrain fetch
     const timeoutId = setTimeout(fetchTerrain, 500);
     return () => clearTimeout(timeoutId);
-  }, [waypoints]);
+  }, [waypoints, displayProfile]);
 
   // Handle resize
   useEffect(() => {
@@ -223,14 +251,17 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
       };
     }
 
-    const maxDistance = Math.max(...profileData.map(p => p.distance), 100);
-    const flightAltitudes = profileData.map(p => p.altitude);
-    const terrainAltitudes = terrainData.map(t => t.elevation);
+    // Distance is cumulative/monotonic, so the last point is the max — no need
+    // to spread the (potentially huge) array into Math.max.
+    const lastDist = profileData[profileData.length - 1]?.distance ?? 0;
+    const maxDistance = Math.max(lastDist, 100);
 
-    // Include both flight path and terrain in altitude range
-    const allAltitudes = [...flightAltitudes, ...terrainAltitudes];
-    const minAltVal = Math.min(...allAltitudes, 0);
-    const maxAltVal = Math.max(...allAltitudes, 100);
+    // Include both flight path and terrain in altitude range, via a loop (never
+    // a spread — see minMax).
+    const flight = minMax(displayProfile.map(p => p.altitude));
+    const terr = minMax(terrainData.map(t => t.elevation));
+    const minAltVal = Math.min(flight.min, terr.min, 0);
+    const maxAltVal = Math.max(flight.max, terr.max, 100);
     const altPadding = (maxAltVal - minAltVal) * 0.1 || 10;
     const yRange = maxAltVal - minAltVal + 2 * altPadding;
 
@@ -265,7 +296,7 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
       minAlt: minAltVal - altPadding,
       maxAlt: maxAltVal + altPadding,
     };
-  }, [profileData, terrainData, chartWidth, chartHeight]);
+  }, [profileData, displayProfile, terrainData, chartWidth, chartHeight]);
 
   // Get display altitude for a point (use drag altitude if dragging this point)
   const getDisplayAltitude = useCallback((p: ProfilePoint): number => {
@@ -277,22 +308,22 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
 
   // Build path for the altitude line (updates during drag)
   const pathD = useMemo(() => {
-    if (profileData.length < 2) return '';
+    if (displayProfile.length < 2) return '';
 
-    return profileData
+    return displayProfile
       .map((p, i) => {
         const x = xScale(p.distance);
         const y = yScale(getDisplayAltitude(p));
         return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
       })
       .join(' ');
-  }, [profileData, xScale, yScale, getDisplayAltitude]);
+  }, [displayProfile, xScale, yScale, getDisplayAltitude]);
 
   // Build area path (filled area under the line)
   const areaD = useMemo(() => {
-    if (profileData.length < 2) return '';
+    if (displayProfile.length < 2) return '';
 
-    const linePath = profileData
+    const linePath = displayProfile
       .map((p, i) => {
         const x = xScale(p.distance);
         const y = yScale(getDisplayAltitude(p));
@@ -300,12 +331,12 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
       })
       .join(' ');
 
-    const lastX = xScale(profileData[profileData.length - 1]!.distance);
-    const firstX = xScale(profileData[0]!.distance);
+    const lastX = xScale(displayProfile[displayProfile.length - 1]!.distance);
+    const firstX = xScale(displayProfile[0]!.distance);
     const bottomY = chartHeight;
 
     return `${linePath} L ${lastX} ${bottomY} L ${firstX} ${bottomY} Z`;
-  }, [profileData, xScale, yScale, chartHeight, getDisplayAltitude]);
+  }, [displayProfile, xScale, yScale, chartHeight, getDisplayAltitude]);
 
   // Build terrain profile path (filled area)
   const terrainPathD = useMemo(() => {
@@ -359,14 +390,14 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
   // Check for collision segments (where flight path intersects terrain)
   // Sample along the path, not just at waypoints
   const collisionSegments = useMemo(() => {
-    if (terrainData.length === 0 || profileData.length < 2) return [];
+    if (terrainData.length === 0 || displayProfile.length < 2) return [];
 
     const segments: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
 
     // Check each flight path segment against terrain with fine sampling
-    for (let i = 0; i < profileData.length - 1; i++) {
-      const p1 = profileData[i]!;
-      const p2 = profileData[i + 1]!;
+    for (let i = 0; i < displayProfile.length - 1; i++) {
+      const p1 = displayProfile[i]!;
+      const p2 = displayProfile[i + 1]!;
       const alt1 = getDisplayAltitude(p1);
       const alt2 = getDisplayAltitude(p2);
       const dist1 = p1.distance;
@@ -416,7 +447,7 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
     }
 
     return segments;
-  }, [profileData, terrainData, xScale, yScale, getDisplayAltitude, getTerrainAtDistance]);
+  }, [displayProfile, terrainData, xScale, yScale, getDisplayAltitude, getTerrainAtDistance]);
 
   // Update store with collision status
   useEffect(() => {
@@ -642,7 +673,7 @@ export function AltitudeProfilePanel({ readOnly = false }: AltitudeProfilePanelP
             />
 
             {/* Waypoint markers */}
-            {profileData.map((p, i) => {
+            {displayProfile.map((p, i) => {
               const x = xScale(p.distance);
               const isDragging = draggingSeq === p.wp.seq;
               const displayAlt = isDragging && dragAltitude !== null ? dragAltitude : p.altitude;

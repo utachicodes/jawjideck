@@ -65,9 +65,9 @@ You agree to notify the Copyright Holder if you become aware of any facts or cir
 
 ## 7. Why This CLA Exists
 
-ArduDeck is licensed under the GPL v3 with a Marketplace Module Exception. This exception allows third-party Modules distributed through the official ArduDeck Marketplace to use proprietary licenses. To maintain this dual-licensing capability, the Copyright Holder must hold sufficient rights over all code in the project. Without this CLA, individual contributors would retain exclusive copyright over their contributions, potentially preventing the Copyright Holder from maintaining the marketplace exception or adapting licensing terms as the project evolves.
+ArduDeck is licensed under the GPL v3 with a Marketplace Module Exception. This exception allows third-party Modules distributed through the official ArduDeck Hangar to use proprietary licenses. To maintain this dual-licensing capability, the Copyright Holder must hold sufficient rights over all code in the project. Without this CLA, individual contributors would retain exclusive copyright over their contributions, potentially preventing the Copyright Holder from maintaining the marketplace exception or adapting licensing terms as the project evolves.
 
-**In plain terms:** This CLA ensures that the ArduDeck project can continue to offer its marketplace model while keeping the core open source. Your contributions remain credited to you, the project stays GPL v3, and the marketplace can function as designed.
+**In plain terms:** This CLA ensures that the ArduDeck project can continue to offer its Hangar model while keeping the core open source. Your contributions remain credited to you, the project stays GPL v3, and the Hangar can function as designed.
 
 ---
 

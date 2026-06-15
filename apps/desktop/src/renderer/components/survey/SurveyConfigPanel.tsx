@@ -17,6 +17,7 @@ import { createPortal } from 'react-dom';
 import { useSurveyStore } from '../../stores/survey-store';
 import { useMissionStore } from '../../stores/mission-store';
 import { useSettingsStore } from '../../stores/settings-store';
+import { useNavigationStore } from '../../stores/navigation-store';
 import { CameraPresetSelector } from './CameraPresetSelector';
 import { SurveyStatsPanel } from './SurveyStatsPanel';
 import { estimateBatteryCount, estimateDataSizeGb } from './survey-stats';
@@ -88,6 +89,10 @@ export function SurveyConfigPanel() {
   const result = useSurveyStore((s) => s.result);
   const showFootprints = useSurveyStore((s) => s.showFootprints);
   const editingGroupId = useSurveyStore((s) => s.editingGroupId);
+  const polygonEditMode = useSurveyStore((s) => s.polygonEditMode);
+  const pendingRecompute = useSurveyStore((s) => s.pendingRecompute);
+  const enterPolygonEdit = useSurveyStore((s) => s.enterPolygonEdit);
+  const exitPolygonEdit = useSurveyStore((s) => s.exitPolygonEdit);
   const setEditingGroupId = useSurveyStore((s) => s.setEditingGroupId);
 
   const setPattern = useSurveyStore((s) => s.setPattern);
@@ -138,6 +143,12 @@ export function SurveyConfigPanel() {
   const [insertSuccess, setInsertSuccess] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+
+  const simplifyToleranceM = useSettingsStore((s) => s.surveyPerformance.importSimplifyToleranceM);
+  const updateSurveyPerformance = useSettingsStore((s) => s.updateSurveyPerformance);
+  const goToPerformanceSettings = useCallback(() => {
+    useNavigationStore.getState().setView('settings', 'settings-survey-performance');
+  }, []);
 
   const handleImportArea = useCallback(async () => {
     setImportError(null);
@@ -322,6 +333,34 @@ export function SurveyConfigPanel() {
             Import area from file
           </button>
           <span className="text-[10px] text-content-tertiary">KML · KMZ · GeoJSON</span>
+
+          {/* Simplify tolerance — applied to imported boundaries. Dense GIS
+              rings (thousands of points) are reduced to this tolerance so the
+              map stays responsive; 0 disables simplification. */}
+          <div className="flex items-center gap-1.5 mt-2 text-[10px] text-content-tertiary">
+            <span>Simplify</span>
+            <input
+              type="number"
+              value={simplifyToleranceM}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) updateSurveyPerformance({ importSimplifyToleranceM: Math.max(0, Math.min(50, n)) });
+              }}
+              className="w-12 px-1.5 py-0.5 bg-surface-input border border-border rounded text-content text-[10px] focus:outline-none focus:border-blue-500"
+              min="0"
+              max="50"
+              step="0.5"
+              title="RDP tolerance in meters for imported boundaries (0 = off)"
+            />
+            <span>m</span>
+            <button
+              onClick={goToPerformanceSettings}
+              className="ml-1 underline decoration-dotted hover:text-purple-300 transition-colors"
+              title="Open survey performance settings"
+            >
+              Performance settings
+            </button>
+          </div>
           {importError && <span className="text-[10px] text-red-400 max-w-[14rem]">{importError}</span>}
         </div>
       </div>
@@ -375,6 +414,16 @@ export function SurveyConfigPanel() {
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+        <button
+          onClick={goToPerformanceSettings}
+          className="p-1.5 text-content-secondary hover:text-purple-400 transition-colors"
+          title="Survey performance settings"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         </button>
       </div>
@@ -811,18 +860,47 @@ export function SurveyConfigPanel() {
       {result && result.waypoints.length > 0 && (
         <div className="p-3 pt-0 flex-shrink-0">
           {editingGroupId ? (
-            <div className="flex items-center gap-2">
-              <div className="flex-1 py-2 rounded-lg text-sm font-medium text-center bg-emerald-600/15 text-emerald-300 border border-emerald-500/30">
-                Editing live · {result.waypoints.length} WPs
+            polygonEditMode ? (
+              <div className="space-y-1.5">
+                <div className="text-[11px] text-center text-amber-300">
+                  Editing polygon - drag points on the map (zoom in to reach them).
+                  {pendingRecompute ? ' Waypoints will recompute on Done.' : ''}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => exitPolygonEdit(true)}
+                    className="flex-1 py-2 rounded-lg text-sm font-medium bg-purple-600 hover:bg-purple-500 text-white transition-colors"
+                    title="Finish editing and recompute the waypoints"
+                  >
+                    {pendingRecompute ? 'Done - recompute waypoints' : 'Done'}
+                  </button>
+                  <button
+                    onClick={() => exitPolygonEdit(false)}
+                    className="px-3 py-2 rounded-lg text-sm font-medium bg-surface-raised text-content hover:text-white hover:bg-surface-input transition-colors"
+                    title="Discard polygon changes"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={deactivateSurvey}
-                className="px-3 py-2 rounded-lg text-sm font-medium bg-surface-raised text-content hover:text-white hover:bg-surface-input transition-colors"
-                title="Finish editing this survey"
-              >
-                Done
-              </button>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={enterPolygonEdit}
+                  className="flex-1 py-2 rounded-lg text-sm font-medium bg-surface-raised text-content hover:text-purple-300 border border-purple-500/30 transition-colors"
+                  title="Edit the boundary - drag vertices on the map, then Done recomputes the waypoints"
+                >
+                  Edit polygon
+                </button>
+                <button
+                  onClick={deactivateSurvey}
+                  className="px-3 py-2 rounded-lg text-sm font-medium bg-surface-raised text-content hover:text-white hover:bg-surface-input transition-colors"
+                  title="Finish editing this survey"
+                >
+                  Close
+                </button>
+              </div>
+            )
           ) : (
             <div className="space-y-1.5">
               <button

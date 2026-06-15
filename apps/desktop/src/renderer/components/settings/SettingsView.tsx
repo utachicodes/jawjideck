@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { TileCacheCard } from './TileCacheCard';
 import { useSettingsStore, type VehicleProfile, type VehicleType, type DisplayUnits, type ExperienceLevel, type UiVisibility } from '../../stores/settings-store';
 import { useParameterStore } from '../../stores/parameter-store';
+import { useNavigationStore } from '../../stores/navigation-store';
 import { useTelemetryStore } from '../../stores/telemetry-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useUpdateStore } from '../../stores/update-store';
@@ -1004,7 +1005,25 @@ export function SettingsView() {
     setExperienceLevel,
     uiVisibility,
     setUiVisibility,
+    surveyPerformance,
+    updateSurveyPerformance,
   } = useSettingsStore();
+
+  // Deep-link scroll: a caller (e.g. the survey panel's "Performance settings"
+  // link) can request this view and a target element to scroll to on arrival.
+  const scrollTarget = useNavigationStore((s) => s.scrollTarget);
+  useEffect(() => {
+    if (!scrollTarget) return;
+    const el = document.getElementById(scrollTarget);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.classList.add('ring-2', 'ring-blue-500/60');
+      const t = setTimeout(() => el.classList.remove('ring-2', 'ring-blue-500/60'), 1800);
+      useNavigationStore.getState().clearScrollTarget();
+      return () => clearTimeout(t);
+    }
+    useNavigationStore.getState().clearScrollTarget();
+  }, [scrollTarget]);
 
   const { connectionState } = useConnectionStore();
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
@@ -1562,6 +1581,78 @@ export function SettingsView() {
                     <option value="asl">Above Sea Level</option>
                   </select>
                   <div className="text-[10px] text-content-tertiary mt-1">Default altitude reference</div>
+                </div>
+              </div>
+            </section>
+
+            {/* Survey Performance Section */}
+            <section
+              id="settings-survey-performance"
+              className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-5 transition-shadow"
+            >
+              <h2 className="text-sm font-medium text-content mb-1 flex items-center gap-2">
+                <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                Survey &amp; Map Performance
+              </h2>
+              <p className="text-[11px] text-content-tertiary mb-4">
+                Guardrails that keep the map responsive with large imported boundaries and big missions. Applies everywhere.
+              </p>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-content-secondary mb-1.5">
+                    Max editable vertices
+                  </label>
+                  <input
+                    type="number"
+                    value={surveyPerformance.maxEditableVertices}
+                    onChange={(e) => {
+                      const n = Math.round(Number(e.target.value));
+                      if (Number.isFinite(n)) updateSurveyPerformance({ maxEditableVertices: Math.max(0, Math.min(5000, n)) });
+                    }}
+                    className="w-full px-2 py-1.5 bg-surface-input border border-border rounded text-content text-sm focus:outline-none focus:border-blue-500"
+                    min="0"
+                    max="5000"
+                  />
+                  <div className="text-[10px] text-content-tertiary mt-1">Above this, drag handles are hidden</div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-content-secondary mb-1.5">
+                    Max photo markers
+                  </label>
+                  <input
+                    type="number"
+                    value={surveyPerformance.maxPhotoMarkers}
+                    onChange={(e) => {
+                      const n = Math.round(Number(e.target.value));
+                      if (Number.isFinite(n)) updateSurveyPerformance({ maxPhotoMarkers: Math.max(0, Math.min(50000, n)) });
+                    }}
+                    className="w-full px-2 py-1.5 bg-surface-input border border-border rounded text-content text-sm focus:outline-none focus:border-blue-500"
+                    min="0"
+                    max="50000"
+                  />
+                  <div className="text-[10px] text-content-tertiary mt-1">Above this, photo dots aren't drawn</div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-content-secondary mb-1.5">
+                    Max waypoint markers
+                  </label>
+                  <input
+                    type="number"
+                    value={surveyPerformance.maxWaypointMarkers}
+                    onChange={(e) => {
+                      const n = Math.round(Number(e.target.value));
+                      if (Number.isFinite(n)) updateSurveyPerformance({ maxWaypointMarkers: Math.max(0, Math.min(50000, n)) });
+                    }}
+                    className="w-full px-2 py-1.5 bg-surface-input border border-border rounded text-content text-sm focus:outline-none focus:border-blue-500"
+                    min="0"
+                    max="50000"
+                  />
+                  <div className="text-[10px] text-content-tertiary mt-1">Markers thinned above this (path still drawn)</div>
                 </div>
               </div>
             </section>

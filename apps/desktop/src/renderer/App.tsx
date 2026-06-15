@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { AppShell } from './components/layout/AppShell';
 import { ConnectionPanel } from './components/connection/ConnectionPanel';
 import { TelemetryDashboard } from './components/telemetry/TelemetryDashboard';
 import { NavigationRail } from './components/navigation/NavigationRail';
 import { ParametersView } from './components/parameters/ParametersView';
+import { DeepLinkInstallPrompt } from './components/modules/DeepLinkInstallPrompt';
 import { MissionPlanningView } from './components/mission';
 import { SettingsView } from './components/settings';
 import { FirmwareFlashView } from './components/firmware';
@@ -44,6 +45,7 @@ import { SitlAutoApplyWatcher } from './components/settings/vehicle-profile/Sitl
 import { ProfileApplyOverlay } from './components/settings/vehicle-profile/ProfileApplyOverlay';
 import { ParameterCompareModalRoot } from './components/parameters/ParameterCompareModalRoot';
 import { GlobalTooltip } from './components/GlobalTooltip';
+import { ActivityIndicator } from './components/ui/ActivityIndicator';
 import type { ElectronAPI } from '../main/preload';
 import logoImage from './assets/logo.png';
 
@@ -234,13 +236,23 @@ function App() {
   const { reset: resetCli } = useCliStore();
   const { clearModeMappings: resetFlightControl, stopOverride } = useFlightControlStore();
   const { vehicles, activeVehicleId, updateVehicle, experienceLevel, experienceLevelVersion, setExperienceLevel } = useSettingsStore();
+  const sidebarCollapsedByContext = useSettingsStore((s) => s.sidebarCollapsedByContext);
+  const setSidebarCollapsedForContext = useSettingsStore((s) => s.setSidebarCollapsedForContext);
+  // Per-context collapse: shared "connected" state while connected, otherwise
+  // per-screen while offline. Default: collapsed when connected (connect panel
+  // not needed), expanded when offline. A manual toggle is remembered for that
+  // exact context and persisted, so e.g. collapsing on Mission Planning while
+  // offline sticks there without affecting other screens.
+  const sidebarContextKey = connectionState.isConnected ? 'connected' : `offline:${currentView}`;
+  const sidebarCollapsed =
+    sidebarCollapsedByContext[sidebarContextKey] ?? connectionState.isConnected;
+  const setSidebarCollapsed = (collapsed: boolean) =>
+    setSidebarCollapsedForContext(sidebarContextKey, collapsed);
   const {
     reset: resetCalibration,
     handleProgressUpdate: handleCalibrationProgressUpdate,
     handleCalibrationComplete,
   } = useCalibrationStore();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
   // Board-profile association (auto-link boards to vehicle profiles)
   useBoardProfileAssociation();
 
@@ -383,14 +395,6 @@ function App() {
     };
   }, []);
 
-  // Auto-collapse sidebar when connected, auto-expand when disconnected
-  useEffect(() => {
-    if (connectionState.isConnected) {
-      setSidebarCollapsed(true);
-    } else {
-      setSidebarCollapsed(false);
-    }
-  }, [connectionState.isConnected]);
 
   // Auto-load parameters, metadata, and mission when connected (MAVLink only)
   useEffect(() => {
@@ -774,6 +778,7 @@ function App() {
     <AppTourProvider>
     <AppShell>
       <GlobalTooltip />
+      <ActivityIndicator />
       <SitlAutoApplyWatcher />
       <ProfileApplyOverlay />
       <ParameterCompareModalRoot />
@@ -808,6 +813,9 @@ function App() {
           {renderMainContent()}
         </main>
       </div>
+
+      {/* Deep-link module install prompt (ardudeck://install) */}
+      <DeepLinkInstallPrompt />
 
       {/* Vehicle type mismatch dialog */}
       {showMismatchDialog && detectedFcType && (

@@ -1689,6 +1689,15 @@ const api = {
     return () => ipcRenderer.removeListener(IPC_CHANNELS.MODULE_PROGRESS, handler);
   },
 
+  onModuleDeepLinkInstall: (
+    callback: (payload: { slug: string; name: string; key: string }) => void,
+  ) => {
+    const handler = (_: unknown, payload: { slug: string; name: string; key: string }) =>
+      callback(payload);
+    ipcRenderer.on(IPC_CHANNELS.MODULE_DEEP_LINK_INSTALL, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.MODULE_DEEP_LINK_INSTALL, handler);
+  },
+
   // =============================================================================
   // Module Host (runtime API for loaded modules)
   // =============================================================================

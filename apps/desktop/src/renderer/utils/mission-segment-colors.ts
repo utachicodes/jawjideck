@@ -42,55 +42,63 @@ export function computeItemColors(allItems: MissionItem[]): Map<number, string> 
 
   if (navWaypoints.length === 0) return colorMap;
 
-  // First nav waypoint = default blue
-  colorMap.set(navWaypoints[0]!.seq, SEGMENT_COLORS.default);
-
   let cameraActive = false;
   let roiActive = false;
   let speedOverride = false;
 
-  for (let ni = 0; ni < navWaypoints.length - 1; ni++) {
-    const fromWp = navWaypoints[ni]!;
-    const toWp = navWaypoints[ni + 1]!;
+  // Single pass over all items in seq order (the old version re-scanned every
+  // item for every nav pair — O(n²) — which froze the map and the waypoint
+  // table on large 20k+ survey missions). DO_* commands update the flags and
+  // are buffered until the next located waypoint, which colors them and itself.
+  let prevNavSeen = false;
+  let pendingChildSeqs: number[] = [];
 
-    const childSeqs: number[] = [];
-    for (const item of allItems) {
-      if (item.seq <= fromWp.seq) continue;
-      if (item.seq >= toWp.seq) break;
-      if (isNavigationCommand(item.command)) continue;
+  for (const item of allItems) {
+    const isLocatedNav = isNavigationCommand(item.command) && commandHasLocation(item.command);
 
-      switch (item.command) {
-        case MAV_CMD.DO_SET_CAM_TRIGG_DIST:
-        case MAV_CMD.DO_SET_CAM_TRIGG_INTERVAL:
-          cameraActive = item.param1 > 0;
-          break;
-        case MAV_CMD.IMAGE_START_CAPTURE:
-          cameraActive = true;
-          break;
-        case MAV_CMD.IMAGE_STOP_CAPTURE:
-          cameraActive = false;
-          break;
-        case MAV_CMD.DO_SET_ROI:
-        case MAV_CMD.DO_SET_ROI_LOCATION:
-          roiActive = true;
-          break;
-        case MAV_CMD.DO_SET_ROI_NONE:
-          roiActive = false;
-          break;
-        case MAV_CMD.DO_CHANGE_SPEED:
-          speedOverride = item.param2 > 0;
-          break;
+    if (isLocatedNav) {
+      if (!prevNavSeen) {
+        // First nav waypoint = default blue (no incoming segment).
+        colorMap.set(item.seq, SEGMENT_COLORS.default);
+        prevNavSeen = true;
+      } else {
+        const color = getSegmentColor(item.command, cameraActive, roiActive, speedOverride);
+        for (const seq of pendingChildSeqs) colorMap.set(seq, color);
+        colorMap.set(item.seq, color);
       }
-
-      childSeqs.push(item.seq);
+      pendingChildSeqs = [];
+      continue;
     }
 
-    const color = getSegmentColor(toWp.command, cameraActive, roiActive, speedOverride);
+    // Other nav commands (e.g. RTL) carry no segment color. DO_* before the
+    // first located waypoint are ignored, matching the original windowing.
+    if (isNavigationCommand(item.command)) continue;
+    if (!prevNavSeen) continue;
 
-    for (const seq of childSeqs) {
-      colorMap.set(seq, color);
+    switch (item.command) {
+      case MAV_CMD.DO_SET_CAM_TRIGG_DIST:
+      case MAV_CMD.DO_SET_CAM_TRIGG_INTERVAL:
+        cameraActive = item.param1 > 0;
+        break;
+      case MAV_CMD.IMAGE_START_CAPTURE:
+        cameraActive = true;
+        break;
+      case MAV_CMD.IMAGE_STOP_CAPTURE:
+        cameraActive = false;
+        break;
+      case MAV_CMD.DO_SET_ROI:
+      case MAV_CMD.DO_SET_ROI_LOCATION:
+        roiActive = true;
+        break;
+      case MAV_CMD.DO_SET_ROI_NONE:
+        roiActive = false;
+        break;
+      case MAV_CMD.DO_CHANGE_SPEED:
+        speedOverride = item.param2 > 0;
+        break;
     }
-    colorMap.set(toWp.seq, color);
+
+    pendingChildSeqs.push(item.seq);
   }
 
   return colorMap;

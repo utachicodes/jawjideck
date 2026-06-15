@@ -10,6 +10,7 @@ import { setupIpcHandlers, cleanupOnShutdown } from './ipc-handlers.js';
 import { setupModuleIpc } from './modules/module-ipc.js';
 import { registerTileCacheScheme, setupTileCacheProtocol, setupTileCacheHandlers } from './tile-cache.js';
 import { registerModuleSchemePrivileges, setupModuleProtocol } from './modules/module-protocol.js';
+import { setupDeepLinks, handleStartupArgs, flushPendingDeepLink } from './modules/deep-link.js';
 import { initWindowManager, restoreDetachedWindows, setupWindowManagerIpc } from './window-manager.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,6 +55,17 @@ process.on('unhandledRejection', (reason: unknown) => {
 });
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+
+// Single-instance lock so ardudeck:// deep links route to the running app
+// instead of spawning a second one.
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+}
+
+// Track the main window so deep-link handlers can focus/message it.
+let mainWindowRef: BrowserWindow | null = null;
+setupDeepLinks(() => mainWindowRef);
 
 // Set app name early to ensure consistent userData path in dev mode
 // This ensures electron-store saves to %APPDATA%/ardudeck/ instead of %APPDATA%/Electron/
@@ -118,6 +130,9 @@ function createWindow(): BrowserWindow {
 }
 
 app.whenReady().then(() => {
+  // A second instance is quitting; don't open another window.
+  if (!gotSingleInstanceLock) return;
+
   // Set macOS dock icon
   if (process.platform === 'darwin') {
     const resourcesPath = isDev
@@ -131,6 +146,7 @@ app.whenReady().then(() => {
   setupModuleProtocol();
 
   const mainWindow = createWindow();
+  mainWindowRef = mainWindow;
 
   // Register the main window with the detachable-windows manager BEFORE any
   // IPC handlers wire up, so safeSend's broadcast() helper can see it.
@@ -147,6 +163,10 @@ app.whenReady().then(() => {
   // to the push channels by the time pop-outs spawn (they share the broadcast).
   mainWindow.webContents.once('did-finish-load', () => {
     restoreDetachedWindows();
+    // Deliver any deep link captured before the renderer was ready, and handle
+    // a link present in the initial launch argv (Windows/Linux cold start).
+    flushPendingDeepLink();
+    handleStartupArgs(process.argv);
   });
 
   // Dev-only: start test driver MCP server

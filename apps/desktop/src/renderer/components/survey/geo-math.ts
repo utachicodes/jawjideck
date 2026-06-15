@@ -259,6 +259,66 @@ export function offsetPolygonRings(
 }
 
 /**
+ * Ramer–Douglas–Peucker simplification of a lat/lng ring, with the tolerance
+ * expressed in meters (perpendicular distance in the local projection).
+ *
+ * Imported GIS boundaries (KML/GeoJSON) routinely carry thousands of vertices
+ * digitized at sub-meter resolution. A survey doesn't need that fidelity — line
+ * spacing is tens of meters — and every retained vertex becomes a draggable map
+ * marker plus per-edge work in scan-line clipping, so a dense ring makes import
+ * crawl. Reducing to a tolerance of ~1 m keeps the shape visually identical
+ * while cutting vertex counts by 1–2 orders of magnitude.
+ *
+ * Endpoints are always kept; a result that would drop below 3 vertices falls
+ * back to the original ring (never destroy a polygon).
+ */
+export function simplifyPolygon(points: LatLng[], toleranceMeters: number): LatLng[] {
+  if (points.length <= 3 || toleranceMeters <= 0) return points;
+
+  const origin = points[0]!;
+  const local = points.map((p) => latLngToLocal(origin, p));
+
+  // Perpendicular distance from p to the segment a→b (meters).
+  const perpDist = (
+    p: { x: number; y: number },
+    a: { x: number; y: number },
+    b: { x: number; y: number },
+  ): number => {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+    const t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq;
+    const cx = a.x + t * dx;
+    const cy = a.y + t * dy;
+    return Math.hypot(p.x - cx, p.y - cy);
+  };
+
+  const keep = new Array<boolean>(local.length).fill(false);
+  keep[0] = true;
+  keep[local.length - 1] = true;
+
+  // Iterative RDP to avoid stack overflow on very large rings.
+  const stack: Array<[number, number]> = [[0, local.length - 1]];
+  while (stack.length > 0) {
+    const [start, end] = stack.pop()!;
+    let maxDist = 0;
+    let idx = -1;
+    for (let i = start + 1; i < end; i++) {
+      const d = perpDist(local[i]!, local[start]!, local[end]!);
+      if (d > maxDist) { maxDist = d; idx = i; }
+    }
+    if (maxDist > toleranceMeters && idx !== -1) {
+      keep[idx] = true;
+      stack.push([start, idx], [idx, end]);
+    }
+  }
+
+  const out = points.filter((_, i) => keep[i]);
+  return out.length >= 3 ? out : points;
+}
+
+/**
  * Calculate camera ground footprint dimensions at a given altitude.
  */
 export function cameraFootprint(

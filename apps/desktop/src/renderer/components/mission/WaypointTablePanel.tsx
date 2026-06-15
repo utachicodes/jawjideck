@@ -1637,40 +1637,46 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
     return out;
   }, [missionItems, groupInfo, collapsedGroups]);
   const useVirtual = renderableIndices.length > VIRTUALIZE_THRESHOLD;
+  // Dynamic DOM measurement (measureElement) gives pixel-perfect row heights and
+  // is fine for normal missions. But at very large scale react-virtual corrects
+  // the scroll position on every measured size delta (virtual-core resizeItem),
+  // which feeds back into more measurements and never settles - an infinite
+  // measure -> resize -> setState loop that crashes the panel ("Maximum update
+  // depth exceeded") on 20k+ surveys. Above this size we turn measurement off
+  // and position rows from a deterministic per-row estimate, which cannot loop.
+  const MEASURE_LIMIT = 2000;
+  const dynamicMeasure = renderableIndices.length <= MEASURE_LIMIT;
+  const estimateRowSize = (vi: number): number => {
+    const idx = renderableIndices[vi];
+    const wp = idx === undefined ? undefined : missionItems[idx];
+    if (!wp || idx === undefined) return 52;
+    const child = !isNavigationCommand(wp.command) || wp.command === MAV_CMD.NAV_DELAY;
+    const prev = idx > 0 ? missionItems[idx - 1] : undefined;
+    const showHeader = !prev || prev.groupId !== wp.groupId;
+    // Generous so the estimate is >= the real height: a too-small estimate would
+    // overlap rows, while a slightly large one just adds a little spacing.
+    // Survey rows are uniform, so cumulative drift is negligible.
+    return (child ? 40 : 52) + (showHeader ? 48 : 0);
+  };
   const rowVirtualizer = useVirtualizer({
     count: renderableIndices.length,
     getScrollElement: () => tableRef.current,
-    estimateSize: () => 44,
+    estimateSize: estimateRowSize,
     overscan: 15,
   });
-  const virtualByRealIdx = useMemo(() => {
-    const m = new Map<number, { start: number; vIndex: number; key: React.Key }>();
-    if (!useVirtual) return m;
-    for (const v of rowVirtualizer.getVirtualItems()) {
-      const realIdx = renderableIndices[v.index];
-      if (realIdx !== undefined) m.set(realIdx, { start: v.start, vIndex: v.index, key: v.key });
-    }
-    return m;
-    // getVirtualItems changes on scroll; rowVirtualizer drives re-renders itself.
-  }, [useVirtual, renderableIndices, rowVirtualizer, rowVirtualizer.getVirtualItems()]);
-
-  // Wrap a rendered row for absolute virtual positioning, or pass through when
-  // virtualization is off. Returns null for rows outside the current window.
-  const wrapRow = (idx: number, node: React.ReactNode): React.ReactNode => {
-    if (!useVirtual) return node;
-    const info = virtualByRealIdx.get(idx);
-    if (!info) return null;
-    return (
-      <div
-        key={info.key}
-        data-index={info.vIndex}
-        ref={rowVirtualizer.measureElement}
-        style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${info.start}px)` }}
-      >
-        {node}
-      </div>
-    );
-  };
+  // Canonical react-virtual rendering: render ONLY the current window from
+  // getVirtualItems(). The previous approach mapped over all items and null-ed
+  // the off-window ones, which re-attached measureElement refs on every commit
+  // and drove an infinite measure -> resize -> setState loop ("Maximum update
+  // depth exceeded") that crashed the panel on large (20k+) missions. Below the
+  // virtualize threshold we render every renderable row, exactly as before.
+  const rowsToRender: { idx: number; v: { key: React.Key; index: number; start: number } | null }[] =
+    useVirtual
+      ? rowVirtualizer.getVirtualItems().flatMap((vi) => {
+          const idx = renderableIndices[vi.index];
+          return idx === undefined ? [] : [{ idx, v: { key: vi.key, index: vi.index, start: vi.start } }];
+        })
+      : missionItems.map((_, idx) => ({ idx, v: null }));
 
   return (
     <div className="h-full flex flex-col bg-surface">
@@ -1764,7 +1770,23 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
             className={useVirtual ? 'relative' : 'divide-y divide-subtle'}
             style={useVirtual ? { height: rowVirtualizer.getTotalSize() } : undefined}
           >
-            {missionItems.map((wp, idx) => {
+            {rowsToRender.map(({ idx, v }) => {
+              const wp = missionItems[idx]!;
+              // Wrap in an absolutely-positioned, measured container when
+              // virtualizing; pass through unchanged otherwise.
+              const wrap = (node: React.ReactNode): React.ReactNode =>
+                v
+                  ? (
+                    <div
+                      key={v.key}
+                      data-index={v.index}
+                      ref={dynamicMeasure ? rowVirtualizer.measureElement : undefined}
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${v.start}px)` }}
+                    >
+                      {node}
+                    </div>
+                  )
+                  : node;
               const isSelected = wp.seq === selectedSeq;
               const isCurrent = wp.seq === currentSeq;
               const isDragging = wp.seq === draggedSeq;
@@ -1840,10 +1862,10 @@ function WaypointListContent({ readOnly = false }: { readOnly?: boolean }) {
 
               if (hideByGroupCollapse) {
                 // Render only the header (if any) and suppress the row.
-                return wrapRow(idx, <Fragment key={wp.seq}>{headerNode}</Fragment>);
+                return wrap(<Fragment key={wp.seq}>{headerNode}</Fragment>);
               }
 
-              return wrapRow(idx, (
+              return wrap((
                 <Fragment key={wp.seq}>
                 {headerNode}
                 <div

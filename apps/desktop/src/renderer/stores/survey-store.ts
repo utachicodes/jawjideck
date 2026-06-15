@@ -10,6 +10,8 @@ import '../components/survey/generators';
 import { getSurveyGenerator, patternToGeneratorId } from '../components/survey/generator-registry';
 import { surveyToMissionItems } from '../components/survey/mission-builder';
 import { calculateAltitudeForGSD } from '../components/survey/survey-stats';
+import { simplifyPolygon } from '../components/survey/geo-math';
+import { runWithActivity } from './activity-store';
 import { parseGisArea } from '../../shared/gis-area-import';
 import { computeSurveyGroupSignature } from '../components/survey/survey-group-signature';
 import { useSettingsStore } from './settings-store';
@@ -18,6 +20,18 @@ import { MAV_CMD } from '../../shared/mission-types';
 import { isSurveyGroup, createSurveyGroup, GROUP_COLOR_PALETTE, type SurveyGroup } from '../../shared/mission-group-types';
 
 type DrawMode = 'none' | 'polygon';
+
+// A recompute is "heavy" (worth a progress indicator + a yielded frame so it
+// paints) when the polygon is dense or the last result was large. Cheap edits
+// recompute inline so there's no spinner flash.
+function recomputeIsHeavy(polygon: LatLng[] | null, result: SurveyResult | null): boolean {
+  return (polygon?.length ?? 0) > 500 || (result?.waypoints?.length ?? 0) > 2000;
+}
+
+// Debounce so dragging a slider regenerates once when you stop, not on every
+// pixel - the "recompute on release" behavior without per-slider handlers.
+let recomputeTimer: ReturnType<typeof setTimeout> | null = null;
+const RECOMPUTE_DEBOUNCE_MS = 350;
 
 interface SurveyStore {
   // Drawing state
@@ -99,6 +113,27 @@ interface SurveyStore {
   updateVertex: (index: number, lat: number, lng: number) => void;
   removeVertex: (index: number) => void;
 
+  /**
+   * Explicit polygon-edit mode. While active, vertex edits mutate only the
+   * polygon (cheap) and mark the waypoints stale (`pendingRecompute`) instead of
+   * regenerating on every drag - essential for large imported boundaries. Done
+   * (commit=true) regenerates once; Cancel (commit=false) reverts to the
+   * snapshot taken on enter.
+   */
+  polygonEditMode: boolean;
+  pendingRecompute: boolean;
+  /** Polygon snapshot captured on enterPolygonEdit, used to revert on Cancel. */
+  editSnapshot: LatLng[] | null;
+  enterPolygonEdit: () => void;
+  exitPolygonEdit: (commit: boolean) => void;
+
+  /**
+   * Regenerate the preview/mission. `immediate` runs now (used by discrete
+   * actions and Done); otherwise it debounces so a dragged slider regenerates
+   * once on release. Heavy recomputes show a progress indicator.
+   */
+  requestRecompute: (opts?: { immediate?: boolean }) => void;
+
   // Survey actions
   /**
    * Regenerate the preview from the current polygon/config. When editing a
@@ -160,6 +195,9 @@ export const useSurveyStore = create<SurveyStore>()(subscribeWithSelector((set, 
   showFootprints: false,
   isActive: false,
   editingGroupId: null,
+  polygonEditMode: false,
+  pendingRecompute: false,
+  editSnapshot: null,
 
   startDrawing: () => {
     set({ drawMode: 'polygon', drawingVertices: [], polygon: null, result: null });
@@ -186,42 +224,42 @@ export const useSurveyStore = create<SurveyStore>()(subscribeWithSelector((set, 
 
   setPattern: (pattern) => {
     set({ config: { ...get().config, pattern } });
-    get().generateSurvey();
+    get().requestRecompute({ immediate: true });
   },
 
   setAltitude: (altitude) => {
     set({ config: { ...get().config, altitude } });
-    get().generateSurvey();
+    get().requestRecompute();
   },
 
   setSpeed: (speed) => {
     set({ config: { ...get().config, speed } });
-    get().generateSurvey();
+    get().requestRecompute();
   },
 
   setFrontOverlap: (frontOverlap) => {
     set({ config: { ...get().config, frontOverlap } });
-    get().generateSurvey();
+    get().requestRecompute();
   },
 
   setSideOverlap: (sideOverlap) => {
     set({ config: { ...get().config, sideOverlap } });
-    get().generateSurvey();
+    get().requestRecompute();
   },
 
   setCamera: (camera) => {
     set({ config: { ...get().config, camera } });
-    get().generateSurvey();
+    get().requestRecompute({ immediate: true });
   },
 
   setGridAngle: (gridAngle) => {
     set({ config: { ...get().config, gridAngle } });
-    get().generateSurvey();
+    get().requestRecompute();
   },
 
   setOvershoot: (overshoot) => {
     set({ config: { ...get().config, overshoot } });
-    get().generateSurvey();
+    get().requestRecompute();
   },
 
   setAltitudeReference: (altitudeReference) => {
@@ -241,7 +279,7 @@ export const useSurveyStore = create<SurveyStore>()(subscribeWithSelector((set, 
 
   setSpiralDirection: (spiralDirection) => {
     set({ config: { ...get().config, spiralDirection } });
-    get().generateSurvey();
+    get().requestRecompute({ immediate: true });
   },
 
   setPerimeterPasses: (perimeterPasses) => {
@@ -249,7 +287,7 @@ export const useSurveyStore = create<SurveyStore>()(subscribeWithSelector((set, 
     // push past what's geometrically sensible.
     const clamped = Math.max(1, Math.min(5, Math.round(perimeterPasses)));
     set({ config: { ...get().config, perimeterPasses: clamped } });
-    get().generateSurvey();
+    get().requestRecompute();
   },
 
   setPlanBy: (planBy) => {
@@ -269,7 +307,7 @@ export const useSurveyStore = create<SurveyStore>()(subscribeWithSelector((set, 
     // the aircraft past sane limits.
     const clamped = Math.max(10, Math.min(500, Math.round(altitude)));
     set({ config: { ...config, altitude: clamped } });
-    get().generateSurvey();
+    get().requestRecompute();
   },
 
   setEnduranceMinutes: (enduranceMinutes) => {
@@ -279,13 +317,13 @@ export const useSurveyStore = create<SurveyStore>()(subscribeWithSelector((set, 
   setCrossGridAltitudeOffset: (percent) => {
     const clamped = Math.max(0, Math.min(100, Math.round(percent)));
     set({ config: { ...get().config, crossGridAltitudeOffset: clamped } });
-    get().generateSurvey();
+    get().requestRecompute();
   },
 
   setCorridorWidth: (meters) => {
     const clamped = Math.max(1, Math.min(2000, Math.round(meters)));
     set({ config: { ...get().config, corridorWidth: clamped } });
-    get().generateSurvey();
+    get().requestRecompute();
   },
 
   setCorridorStrips: (count) => {
@@ -293,50 +331,96 @@ export const useSurveyStore = create<SurveyStore>()(subscribeWithSelector((set, 
     // tens of thousands of waypoints.
     const clamped = Math.max(0, Math.min(40, Math.round(count)));
     set({ config: { ...get().config, corridorStrips: clamped } });
-    get().generateSurvey();
+    get().requestRecompute();
   },
 
   setCorridorMode: (corridorMode) => {
     set({ config: { ...get().config, corridorMode } });
-    get().generateSurvey();
+    get().requestRecompute({ immediate: true });
   },
 
   setCorridorSideOffset: (meters) => {
     set({ config: { ...get().config, corridorSideOffset: Math.round(meters) } });
-    get().generateSurvey();
+    get().requestRecompute();
   },
 
   setMaxTurnAngle: (degrees) => {
     const clamped = Math.max(1, Math.min(90, Math.round(degrees)));
     set({ config: { ...get().config, maxTurnAngle: clamped } });
-    get().generateSurvey();
+    get().requestRecompute();
   },
 
   setFlipLegs: (flipLegs) => {
     set({ config: { ...get().config, flipLegs } });
-    get().generateSurvey();
+    get().requestRecompute({ immediate: true });
   },
 
   setInvertPath: (invertPath) => {
     set({ config: { ...get().config, invertPath } });
-    get().generateSurvey();
+    get().requestRecompute({ immediate: true });
   },
 
   updateVertex: (index, lat, lng) => {
-    const { polygon } = get();
+    const { polygon, polygonEditMode } = get();
     if (!polygon) return;
     const newPolygon = [...polygon];
     newPolygon[index] = { lat, lng };
     set({ polygon: newPolygon });
-    get().generateSurvey();
+    // In edit mode just move the point and mark waypoints stale; Done recomputes.
+    if (polygonEditMode) set({ pendingRecompute: true });
+    else get().requestRecompute({ immediate: true });
   },
 
   removeVertex: (index) => {
-    const { polygon } = get();
+    const { polygon, polygonEditMode } = get();
     if (!polygon || polygon.length <= 3) return; // Need at least 3 vertices
     const newPolygon = polygon.filter((_, i) => i !== index);
     set({ polygon: newPolygon });
-    get().generateSurvey();
+    if (polygonEditMode) set({ pendingRecompute: true });
+    else get().requestRecompute({ immediate: true });
+  },
+
+  enterPolygonEdit: () => {
+    const { polygon } = get();
+    set({
+      polygonEditMode: true,
+      pendingRecompute: false,
+      editSnapshot: polygon ? polygon.map((p) => ({ ...p })) : null,
+    });
+  },
+
+  exitPolygonEdit: (commit) => {
+    if (recomputeTimer) { clearTimeout(recomputeTimer); recomputeTimer = null; }
+    if (!commit) {
+      // Cancel: restore the polygon captured on enter.
+      const snap = get().editSnapshot;
+      set({
+        polygonEditMode: false,
+        pendingRecompute: false,
+        editSnapshot: null,
+        ...(snap ? { polygon: snap } : {}),
+      });
+      return;
+    }
+    const dirty = get().pendingRecompute;
+    set({ polygonEditMode: false, pendingRecompute: false, editSnapshot: null });
+    if (dirty) get().requestRecompute({ immediate: true });
+  },
+
+  requestRecompute: (opts) => {
+    if (recomputeTimer) { clearTimeout(recomputeTimer); recomputeTimer = null; }
+    const run = () => {
+      const { polygon, result } = get();
+      if (recomputeIsHeavy(polygon, result)) {
+        const count = result?.waypoints?.length ?? 0;
+        const label = count > 0 ? `Recomputing ${count.toLocaleString()} waypoints...` : 'Generating waypoints...';
+        void runWithActivity(label, () => get().generateSurvey());
+      } else {
+        get().generateSurvey();
+      }
+    };
+    if (opts?.immediate) run();
+    else recomputeTimer = setTimeout(() => { recomputeTimer = null; run(); }, RECOMPUTE_DEBOUNCE_MS);
   },
 
   generateSurvey: (opts) => {
@@ -410,14 +494,26 @@ export const useSurveyStore = create<SurveyStore>()(subscribeWithSelector((set, 
     // the generators don't subtract them yet.)
     const { config } = get();
     const missionStore = useMissionStore.getState();
+    const simplifyToleranceM = useSettingsStore.getState().surveyPerformance.importSimplifyToleranceM;
     const baseCount = missionStore.groups.filter(isSurveyGroup).length;
     const generatorId = patternToGeneratorId(config.pattern);
     const reg = getSurveyGenerator(generatorId);
 
     const entries: Array<{ group: SurveyGroup; items: ReturnType<typeof surveyToMissionItems> }> = [];
+    await runWithActivity('Importing survey - generating waypoints...', () => {
     areas.forEach((area, i) => {
-      const polygon = area.polygon.map((p) => ({ lat: p.lat, lng: p.lng }));
-      const holes = area.holes.map((ring) => ring.map((p) => ({ lat: p.lat, lng: p.lng })));
+      // GIS boundaries are often digitized at sub-meter resolution (thousands of
+      // vertices). Survey line spacing is tens of meters, so that detail is
+      // wasted - and every vertex becomes a draggable marker plus per-edge work
+      // in scan-line clipping, which is what makes large-KML import lag. Reduce
+      // to a ~1 m tolerance: visually identical, orders of magnitude fewer points.
+      const polygon = simplifyPolygon(
+        area.polygon.map((p) => ({ lat: p.lat, lng: p.lng })),
+        simplifyToleranceM,
+      );
+      const holes = area.holes.map((ring) =>
+        simplifyPolygon(ring.map((p) => ({ lat: p.lat, lng: p.lng })), simplifyToleranceM),
+      );
       // Holes flow through config so the generator can carve them out, and onto
       // the group so the map draws them as cutouts.
       const fullConfig: SurveyConfig = { ...config, polygon, holes };
@@ -436,6 +532,7 @@ export const useSurveyStore = create<SurveyStore>()(subscribeWithSelector((set, 
       group.lastGeneratedSignature = computeSurveyGroupSignature(group);
       group.lastGeneratedAt = Date.now();
       entries.push({ group, items });
+    });
     });
 
     if (entries.length === 0) {
@@ -512,7 +609,8 @@ export const useSurveyStore = create<SurveyStore>()(subscribeWithSelector((set, 
     // Build the preview only - do NOT sync, or merely opening a group would
     // overwrite its committed WPs (e.g. terrain-adjusted altitudes) before the
     // user edits anything. Subsequent vertex/config changes sync as normal.
-    get().generateSurvey({ sync: false });
+    // Opening a large group regenerates a big preview; show progress.
+    void runWithActivity('Loading survey...', () => get().generateSurvey({ sync: false }));
   },
 
   applyPresetConfig: (partial, camera) => {
@@ -528,7 +626,7 @@ export const useSurveyStore = create<SurveyStore>()(subscribeWithSelector((set, 
     };
     set({ config: nextConfig });
     // Regenerate so the map updates immediately.
-    get().generateSurvey();
+    get().requestRecompute({ immediate: true });
   },
 })));
 

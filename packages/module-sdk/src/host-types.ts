@@ -47,6 +47,13 @@ export interface MainHostApi {
   dataDir: string;
   readData(key: string): Promise<string | undefined>;
   writeData(key: string, value: string): Promise<void>;
+  /**
+   * Encrypted-at-rest storage for secrets (e.g. API keys), backed by the OS
+   * keychain via Electron safeStorage. Falls back to plaintext with a warning
+   * if OS encryption is unavailable. Prefer this over writeData for secrets.
+   */
+  secureRead(key: string): Promise<string | undefined>;
+  secureWrite(key: string, value: string): Promise<void>;
   log(level: 'info' | 'warn' | 'error', ...args: unknown[]): void;
   onRendererMessage(
     channel: string,
