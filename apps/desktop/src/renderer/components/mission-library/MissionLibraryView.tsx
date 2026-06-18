@@ -245,9 +245,31 @@ export function MissionLibraryView() {
               </svg>
             </div>
             <h3 className="text-sm font-medium text-content mb-1">No missions saved yet</h3>
-            <p className="text-xs text-content-secondary max-w-xs">
-              Create waypoints in the Mission Planner and click the Library button to save missions here for reuse.
+            <p className="text-xs text-content-secondary max-w-xs mb-4">
+              Save plans here for reuse. Build them in the Mission Planner, or draw survey areas in the Area Editor.
             </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setView('mission')}
+                className="px-3 py-1.5 text-xs font-medium bg-surface-raised hover:brightness-125 text-content rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+                Mission Planner
+              </button>
+              <button
+                onClick={() => { window.electronAPI?.openAreaEditor?.().catch(() => undefined); }}
+                className="px-3 py-1.5 text-xs font-medium bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 11l6.5-6.5a2 2 0 012.828 2.828L11.828 14H9v-3z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21h18" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 17l4-4" />
+                </svg>
+                Area Editor
+              </button>
+            </div>
           </div>
         ) : store.viewMode === 'grid' ? (
           /* Grid view */

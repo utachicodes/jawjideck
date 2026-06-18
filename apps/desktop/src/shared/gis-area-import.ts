@@ -5,7 +5,7 @@
  * Both formats reduce to the same shape: an outer ring plus optional inner
  * rings (no-fly holes). Coordinates are normalized to {lat, lng}. KMZ is a zip
  * around a KML document; the main process unzips it and hands us the KML text,
- * so this module stays pure (no Node, no DOM) and unit-testable.
+ * so this module stays pure (no Node) and unit-testable.
  */
 
 export interface ImportedArea {
@@ -109,28 +109,102 @@ function kmlCoordinates(blob: string): Array<{ lat: number; lng: number }> {
   return openRing(out);
 }
 
-function parseKml(content: string): ImportedArea[] {
-  const areas: ImportedArea[] = [];
-  const polygonRe = /<Polygon\b[^>]*>([\s\S]*?)<\/Polygon>/gi;
-  const outerRe = /<outerBoundaryIs\b[^>]*>[\s\S]*?<coordinates\b[^>]*>([\s\S]*?)<\/coordinates>/i;
-  const innerRe = /<innerBoundaryIs\b[^>]*>[\s\S]*?<coordinates\b[^>]*>([\s\S]*?)<\/coordinates>/gi;
-
-  let m: RegExpExecArray | null;
-  while ((m = polygonRe.exec(content)) !== null) {
-    const body = m[1]!;
-    const outerMatch = outerRe.exec(body);
-    if (!outerMatch) continue;
-    const outer = kmlCoordinates(outerMatch[1]!);
-    if (outer.length < 3) continue;
-    const holes: Array<Array<{ lat: number; lng: number }>> = [];
-    let h: RegExpExecArray | null;
-    innerRe.lastIndex = 0;
-    while ((h = innerRe.exec(body)) !== null) {
-      const ring = kmlCoordinates(h[1]!);
-      if (ring.length >= 3) holes.push(ring);
+/**
+ * Get the text content of the first child element matching a local name,
+ * searched within a parent element. Namespace-agnostic: compares localName
+ * so "kml:coordinates" and "coordinates" both match "coordinates".
+ */
+function firstChildText(parent: Element, localName: string): string | null {
+  const nodes = parent.getElementsByTagName(localName);
+  // getElementsByTagName with an unqualified name matches across all namespaces
+  // in both the browser and @xmldom/xmldom.
+  if (nodes.length > 0 && nodes[0] != null) {
+    return nodes[0].textContent ?? null;
+  }
+  // Fallback: iterate children by localName for edge cases where prefixed tags
+  // might not be matched by the unqualified name.
+  const stack: Element[] = [parent];
+  while (stack.length > 0) {
+    const el = stack.pop()!;
+    for (let i = 0; i < el.childNodes.length; i++) {
+      const child = el.childNodes[i];
+      if (child && child.nodeType === 1 /* ELEMENT_NODE */) {
+        const elem = child as Element;
+        if (elem.localName === localName) return elem.textContent ?? null;
+        stack.push(elem);
+      }
     }
+  }
+  return null;
+}
+
+/**
+ * Extract an outer ring from a Polygon element's outerBoundaryIs > LinearRing > coordinates.
+ * Returns null if not found or fewer than 3 points.
+ */
+function extractOuterRing(polygon: Element): Array<{ lat: number; lng: number }> | null {
+  // getElementsByTagName is namespace-agnostic in both browser and xmldom -
+  // it matches on the local part of the tag name, ignoring any prefix.
+  const outerEls = polygon.getElementsByTagName('outerBoundaryIs');
+  if (outerEls.length === 0 || outerEls[0] == null) return null;
+  const coordText = firstChildText(outerEls[0], 'coordinates');
+  if (!coordText) return null;
+  const ring = kmlCoordinates(coordText);
+  return ring.length >= 3 ? ring : null;
+}
+
+/** Extract all inner (hole) rings from a Polygon element. */
+function extractHoles(polygon: Element): Array<Array<{ lat: number; lng: number }>> {
+  const holes: Array<Array<{ lat: number; lng: number }>> = [];
+  const innerEls = polygon.getElementsByTagName('innerBoundaryIs');
+  for (let i = 0; i < innerEls.length; i++) {
+    const inner = innerEls[i];
+    if (!inner) continue;
+    const coordText = firstChildText(inner, 'coordinates');
+    if (!coordText) continue;
+    const ring = kmlCoordinates(coordText);
+    if (ring.length >= 3) holes.push(ring);
+  }
+  return holes;
+}
+
+function parseKml(content: string): ImportedArea[] {
+  // Use DOMParser to parse XML. In the browser renderer this is the native
+  // global. In the test environment, a compatible DOMParser is set as a global
+  // by the test setup (using @xmldom/xmldom which is already installed).
+  const parser = new DOMParser();
+  let doc: Document;
+  try {
+    doc = parser.parseFromString(content, 'application/xml');
+  } catch (e) {
+    // Some DOMParser implementations (e.g. @xmldom/xmldom with errorHandler)
+    // throw on fatal parse errors instead of embedding a <parsererror> element.
+    throw new Error(`Invalid KML: could not parse XML (${(e as Error).message ?? e})`);
+  }
+
+  // In the browser, a parse failure produces a document whose root is
+  // <parsererror> rather than the expected element. Detect and reject it.
+  const parseErrors = doc.getElementsByTagName('parsererror');
+  if (parseErrors.length > 0) {
+    throw new Error('Invalid KML: could not parse XML');
+  }
+
+  // Collect all <Polygon> elements anywhere in the document, including inside
+  // <MultiGeometry>, <Placemark>, <Folder>, etc. getElementsByTagName with an
+  // unqualified name matches regardless of namespace prefix (both browser and
+  // @xmldom/xmldom), so "kml:Polygon" is also matched.
+  const polygonEls = doc.getElementsByTagName('Polygon');
+  const areas: ImportedArea[] = [];
+
+  for (let i = 0; i < polygonEls.length; i++) {
+    const polygon = polygonEls[i];
+    if (!polygon) continue;
+    const outer = extractOuterRing(polygon);
+    if (!outer) continue;
+    const holes = extractHoles(polygon);
     areas.push({ polygon: outer, holes });
   }
+
   return areas;
 }
 

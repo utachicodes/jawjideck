@@ -99,13 +99,34 @@ export async function activateLicense(
     return { success: false, error: activateResult.error || 'Activation rejected' };
   }
 
-  // 3. Download each module bundle
+  // 3. Download each module bundle (activatable modules ship in the app, so
+  //    they are enabled in place - no download/extract).
   const modules = activateResult.modules;
+  const activatableSlugs = new Set(activateResult.activatable ?? []);
   const newModules: InstalledModule[] = [];
 
   for (let i = 0; i < modules.length; i++) {
     const slug = modules[i]!;
     const moduleIndex = i + 1;
+
+    if (activatableSlugs.has(slug)) {
+      onProgress({
+        stage: 'activating',
+        message: `Enabling ${slug} (${moduleIndex}/${modules.length})...`,
+        percent: Math.round((i / modules.length) * 100),
+      });
+      newModules.push({
+        slug,
+        name: slug,
+        version: '',
+        installedAt: new Date().toISOString(),
+        licenseKey: key,
+        licenseType: verification.payload!.type,
+        bundleName: activateResult.bundle,
+        activatable: true,
+      });
+      continue;
+    }
 
     onProgress({
       stage: 'downloading',

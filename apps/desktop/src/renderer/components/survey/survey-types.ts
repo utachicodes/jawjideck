@@ -65,6 +65,28 @@ export interface SurveyConfig {
   camera: CameraPreset;
   gridAngle: number;         // degrees, 0=north-south lines
   overshoot: number;         // meters past polygon edge for turns
+  /**
+   * Buffer applied to the polygon before generating the grid, in meters.
+   * Positive grows the surveyed area outward (so footprints cover past the
+   * boundary); negative shrinks it inward (keep the flight lines inside).
+   * 0 = use the polygon as drawn. Grid/crosshatch only.
+   */
+  margin?: number;
+  /**
+   * Camera/aircraft only. When true, the camera triggers only along the scan
+   * lines inside the boundary and is switched off during the turn-arounds (the
+   * deadhead segments outside the polygon). When false (default) a single
+   * trigger distance runs for the whole flight. Grid/crosshatch only.
+   */
+  cameraOffOutside?: boolean;
+  /**
+   * Grid/crosshatch turn strategy.
+   * - 'copter' (default): lines connect directly; the vehicle turns on the spot.
+   * - 'plane': fixed-wing. At each turn the SHORTER line end is extended so both
+   *   ends of the turn share an offset, letting the aircraft fly a clean 180°
+   *   racetrack turn into the next line instead of an asymmetric cut.
+   */
+  gridMode?: CorridorMode;
   altitudeReference: AltitudeReference;
   /** Ground-vehicle path pattern. Only consumed in manual / mower mode. */
   groundPattern?: GroundPattern;
@@ -161,6 +183,9 @@ export const DEFAULT_SURVEY_CONFIG: Omit<SurveyConfig, 'polygon'> = {
   },
   gridAngle: 0,
   overshoot: 20,
+  margin: 0,
+  cameraOffOutside: false,
+  gridMode: 'copter',
   altitudeReference: 'relative',
   groundPattern: 'boustrophedon',
   spiralDirection: 'inward',

@@ -1,4 +1,11 @@
-export type OverlayId = 'radar' | 'openaip' | 'airspace' | 'dipul';
+export type OverlayId = 'radar' | 'openaip' | 'airspace' | 'dipul' | 'wind';
+
+/** A single geocoder hit for the "Go to location" search. */
+export interface GeocodeResult {
+  label: string;
+  lat: number;
+  lon: number;
+}
 
 // ─── RainViewer ──────────────────────────────────────────────────────────────
 

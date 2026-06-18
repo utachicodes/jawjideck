@@ -26,9 +26,13 @@ import { startInspector } from './stores/inspector-store';
 import { useConnectionStore } from './stores/connection-store';
 import { useCalibrationStore } from './stores/calibration-store';
 import { useTelemetryStore } from './stores/telemetry-store';
-import { useNavigationStore, type ViewId } from './stores/navigation-store';
+import { useNavigationStore, isViewId, type ViewId } from './stores/navigation-store';
+import { useModuleStore } from './stores/module-store';
+import { isViewAvailable, useEnabledCapabilitySlugs } from './modules/capabilities';
 import { useParameterStore } from './stores/parameter-store';
 import { useMissionStore, hasMissionAutosave, restoreMissionAutosave } from './stores/mission-store';
+import { useSurveyStore } from './stores/survey-store';
+import type { SurveyConfig } from './components/survey/survey-types';
 import { useFenceStore } from './stores/fence-store';
 import { useRallyStore } from './stores/rally-store';
 import { useLegacyConfigStore } from './stores/legacy-config-store';
@@ -48,6 +52,41 @@ import { GlobalTooltip } from './components/GlobalTooltip';
 import { ActivityIndicator } from './components/ui/ActivityIndicator';
 import type { ElectronAPI } from '../main/preload';
 import logoImage from './assets/logo.png';
+
+// Welcome-screen quick-link cards. Every entry works WITHOUT a connected
+// vehicle - the welcome screen only shows while disconnected. Add a card by
+// appending here; the grid renders them generically. Static class strings keep
+// them Tailwind-purge-safe (no dynamically built class names).
+type WelcomeCardColor = 'orange' | 'teal' | 'purple' | 'blue' | 'amber' | 'indigo';
+
+const WELCOME_CARD_STYLES: Record<WelcomeCardColor, { border: string; ring: string; iconBg: string; iconText: string }> = {
+  orange: { border: 'hover:border-orange-500/40', ring: 'focus:ring-orange-500/40', iconBg: 'bg-orange-500/10', iconText: 'text-orange-400' },
+  teal: { border: 'hover:border-teal-500/40', ring: 'focus:ring-teal-500/40', iconBg: 'bg-teal-500/10', iconText: 'text-teal-400' },
+  purple: { border: 'hover:border-purple-500/40', ring: 'focus:ring-purple-500/40', iconBg: 'bg-purple-500/10', iconText: 'text-purple-400' },
+  blue: { border: 'hover:border-blue-500/40', ring: 'focus:ring-blue-500/40', iconBg: 'bg-blue-500/10', iconText: 'text-blue-400' },
+  amber: { border: 'hover:border-amber-500/40', ring: 'focus:ring-amber-500/40', iconBg: 'bg-amber-500/10', iconText: 'text-amber-400' },
+  indigo: { border: 'hover:border-indigo-500/40', ring: 'focus:ring-indigo-500/40', iconBg: 'bg-indigo-500/10', iconText: 'text-indigo-400' },
+};
+
+interface WelcomeCard {
+  title: string;
+  desc: string;
+  color: WelcomeCardColor;
+  iconPath: string;
+  badge?: string;
+  /** Navigate to a view, or run a custom action (e.g. open a window). */
+  view?: ViewId;
+  run?: () => void;
+}
+
+const WELCOME_CARDS: WelcomeCard[] = [
+  { title: 'Mission Planning', desc: 'Waypoints, surveys & geofences', color: 'orange', view: 'mission', iconPath: 'M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7' },
+  { title: 'Area Editor', desc: 'Draw mission areas on a live map', color: 'teal', badge: 'New', run: () => { window.electronAPI?.openAreaEditor?.().catch(() => undefined); }, iconPath: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' },
+  { title: 'Firmware Flash', desc: 'Flash firmware over USB or DFU', color: 'amber', view: 'firmware', iconPath: 'M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z' },
+  { title: 'SITL Simulator', desc: 'Test firmware without hardware', color: 'purple', view: 'sitl', iconPath: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+  { title: 'Flight Log Analysis', desc: 'AI-powered flight log review', color: 'blue', view: 'logs', iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+  { title: 'Mission Library', desc: 'Browse & manage saved plans', color: 'indigo', view: 'library', iconPath: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+];
 
 declare global {
   interface Window {
@@ -603,6 +642,23 @@ function App() {
     return () => cleanups.forEach((fn) => fn());
   }, [setCompanionConnectionState, setCompanionMetrics, setCompanionProcesses, addCompanionLog]);
 
+  // Load installed modules once so capability gating reflects what's enabled.
+  useEffect(() => {
+    void useModuleStore.getState().loadModules();
+  }, []);
+
+  // ardudeck://open?view=<id> deep link -> navigate, but only to a real view
+  // whose capability (if any) is enabled.
+  const enabledCapabilitySlugs = useEnabledCapabilitySlugs();
+  useEffect(() => {
+    const unsub = window.electronAPI.onNavDeepLinkOpen(({ view }) => {
+      if (isViewId(view) && isViewAvailable(view, enabledCapabilitySlugs)) {
+        setView(view);
+      }
+    });
+    return () => { unsub(); };
+  }, [setView, enabledCapabilitySlugs]);
+
   // Calibration events
   useEffect(() => {
     const unsubProgress = window.electronAPI?.onCalibrationProgress?.((event) => {
@@ -624,6 +680,41 @@ function App() {
       unsubComplete?.();
     };
   }, [handleCalibrationProgressUpdate, handleCalibrationComplete]);
+
+  // Area Editor commit: receive a polygon from the detached editor window,
+  // create a persistent survey group from it, and navigate to the mission view.
+  // Only App (main window) mounts this — the editor renders DetachedRoot, which
+  // never renders App.
+  useEffect(() => {
+    const unsub = window.electronAPI?.onAreaReceived?.((data) => {
+      useSurveyStore.getState().addSurveyAreaFromPolygon(data.polygon);
+      useNavigationStore.getState().setView('mission');
+    });
+    return () => { unsub?.(); };
+  }, []);
+
+  // Area Editor multi-area commit: receive multiple polygons (each with optional
+  // holes) from the detached editor window, create persistent survey groups for
+  // all of them in one atomic step, then navigate to the mission view.
+  useEffect(() => {
+    const unsub = window.electronAPI?.onAreasReceived?.((data) => {
+      // Use the editor's own survey config so the mission reproduces exactly
+      // what the editor briefing showed. A corridor additionally forces the
+      // corridor pattern + swath width so its polygon is treated as an open
+      // centerline rather than a filled area.
+      const areas = data.areas.map((a) => {
+        const base = a.config as Partial<Omit<SurveyConfig, 'polygon' | 'holes'>> | undefined;
+        const configOverride =
+          a.kind === 'corridor'
+            ? { ...(base ?? {}), pattern: 'corridor' as const, ...(a.corridorWidth ? { corridorWidth: a.corridorWidth } : {}) }
+            : base;
+        return { polygon: a.polygon, holes: a.holes, name: a.name, configOverride };
+      });
+      useSurveyStore.getState().addSurveyAreasFromPolygons(areas);
+      useNavigationStore.getState().setView('mission');
+    });
+    return () => { unsub?.(); };
+  }, []);
 
   // Render the appropriate view based on navigation
   const renderMainContent = () => {
@@ -674,7 +765,7 @@ function App() {
       // Default welcome screen for telemetry
       return (
         <div className="h-full flex items-center justify-center p-8">
-          <div className="text-center max-w-md">
+          <div className="text-center max-w-2xl">
             {/* Logo */}
             <div className="mx-auto w-48 h-48 mb-6 rounded-3xl overflow-hidden">
               <img src={logoImage} alt="ArduDeck" className="w-full h-full object-cover" />
@@ -683,52 +774,42 @@ function App() {
             <h2 className="text-2xl font-semibold text-content mb-3">
               Welcome to ArduDeck
             </h2>
-            <p className="text-content-secondary mb-8 leading-relaxed">
-              Connect to your flight controller using the panel on the left.
-              Choose serial, TCP, or UDP connection method.
+            <p className="text-content-secondary mb-8 leading-relaxed max-w-md mx-auto">
+              Connect to your flight controller using the panel on the left,
+              or jump straight into one of the tools below.
             </p>
 
-            {/* Feature cards */}
-            <div className="grid grid-cols-2 gap-3 text-left">
-              <div className="p-4 rounded-xl bg-surface border border-subtle">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-3">
-                  <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-medium text-content mb-1">Auto-detect</h3>
-                <p className="text-xs text-content-secondary">Automatically find MAVLink devices</p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-surface border border-subtle">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center mb-3">
-                  <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-medium text-content mb-1">Real-time</h3>
-                <p className="text-xs text-content-secondary">Live telemetry streaming</p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-surface border border-subtle">
-                <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center mb-3">
-                  <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-medium text-content mb-1">Parameters</h3>
-                <p className="text-xs text-content-secondary">Configure your vehicle</p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-surface border border-subtle">
-                <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center mb-3">
-                  <svg className="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-medium text-content mb-1">Mission Planning</h3>
-                <p className="text-xs text-content-secondary">Create flight plans</p>
-              </div>
+            {/* Feature cards - quick links to the most-used tools. Every card
+                works without a connected vehicle. Defined in WELCOME_CARDS. */}
+            <div className="grid grid-cols-3 auto-rows-fr gap-3 text-left">
+              {WELCOME_CARDS.map((card) => {
+                const s = WELCOME_CARD_STYLES[card.color];
+                return (
+                  <button
+                    key={card.title}
+                    type="button"
+                    onClick={() => { if (card.run) card.run(); else if (card.view) setView(card.view); }}
+                    className={`group relative h-full p-4 text-left rounded-xl bg-surface border border-subtle transition-colors hover:bg-surface-raised ${s.border} focus:outline-none focus:ring-2 ${s.ring}`}
+                  >
+                    {card.badge ? (
+                      <span className="absolute top-3 right-3 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-teal-300 bg-teal-500/15 border border-teal-500/30 rounded">
+                        {card.badge}
+                      </span>
+                    ) : (
+                      <svg className="absolute top-4 right-4 w-4 h-4 text-content-tertiary opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    )}
+                    <div className={`w-8 h-8 rounded-lg ${s.iconBg} flex items-center justify-center mb-3`}>
+                      <svg className={`w-4 h-4 ${s.iconText}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={card.iconPath} />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm font-medium text-content mb-1">{card.title}</h3>
+                    <p className="text-xs text-content-secondary">{card.desc}</p>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

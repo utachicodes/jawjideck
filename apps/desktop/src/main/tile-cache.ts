@@ -73,118 +73,136 @@ export function registerTileCacheScheme(): void {
 
 // ─── Protocol Handler (called after app.ready) ──────────────────────────────
 
-export function setupTileCacheProtocol(): void {
-  protocol.handle('tile-cache', async (request) => {
+/**
+ * Resolve a `tile-cache://layer/z/x/y.png` URL to raw PNG bytes, applying the
+ * cache-first / network-fallback / transparent-on-offline policy. Shared by the
+ * `protocol.handle` registration (main window, served natively to MapLibre and
+ * Leaflet) and the TILE_CACHE_GET_TILE IPC channel (detached windows, where the
+ * renderer/worker cannot fetch the privileged tile-cache:// scheme directly, so
+ * MapLibre's addProtocol handler pulls bytes over IPC instead).
+ *
+ * `body` is null only for malformed/unknown requests (status 4xx/5xx); image
+ * consumers receive a transparent PNG for offline/cache-miss instead of an error.
+ */
+export async function resolveTileBytes(
+  requestUrl: string,
+): Promise<{ status: number; body: ArrayBuffer | null }> {
+  try {
+    // URL format: tile-cache://layer/z/x/y.png
+    const url = new URL(requestUrl);
+    const layer = url.hostname;
+    const pathParts = url.pathname.split('/').filter(Boolean);
+
+    if (pathParts.length < 3) {
+      return { status: 400, body: null };
+    }
+
+    const z = parseInt(pathParts[0]!, 10);
+    const x = parseInt(pathParts[1]!, 10);
+    const yStr = pathParts[2]!.replace('.png', '');
+    const y = parseInt(yStr, 10);
+
+    if (isNaN(z) || isNaN(x) || isNaN(y)) {
+      return { status: 400, body: null };
+    }
+
+    // OpenAIP tiles require an API key — reject early if missing
+    const isOpenAipLayer = layer === 'openaip';
+    if (isOpenAipLayer) {
+      const apiKey = getApiKey('openaip');
+      if (!apiKey) {
+        return { status: 200, body: toArrayBuffer(TRANSPARENT_PNG) };
+      }
+    }
+
+    // Check if layer is valid (support radar-{path} dynamic layers)
+    const isRadarLayer = layer.startsWith('radar-');
+    if (!(layer in MAP_LAYERS) && !isRadarLayer) {
+      return { status: 404, body: null };
+    }
+
+    const layerKey = isRadarLayer ? 'radar' : layer;
+    const layerDef = MAP_LAYERS[layerKey as LayerKey];
+
+    // Clamp zoom to maxNativeZoom — fetch parent tile if beyond native range
+    let fetchZ = z;
+    let fetchX = x;
+    let fetchY = y;
+    if ('maxNativeZoom' in layerDef && z > layerDef.maxNativeZoom) {
+      const zDiff = z - layerDef.maxNativeZoom;
+      fetchZ = layerDef.maxNativeZoom;
+      fetchX = x >> zDiff;
+      fetchY = y >> zDiff;
+    }
+
+    const tilePath = getTilePath(layer, fetchZ, fetchX, fetchY);
+
+    // 1. Try disk cache first
     try {
-      // URL format: tile-cache://layer/z/x/y.png
-      const url = new URL(request.url);
-      const layer = url.hostname;
-      const pathParts = url.pathname.split('/').filter(Boolean);
+      const data = await readFile(tilePath);
+      return { status: 200, body: toArrayBuffer(data) };
+    } catch {
+      // Cache miss — continue to network
+    }
 
-      if (pathParts.length < 3) {
-        return new Response(null, { status: 400 });
+    // 2. Fetch from network
+    try {
+      let realUrl: string;
+      if (isRadarLayer) {
+        // Layer name is radar-{pathId}-c{colorScheme}, e.g. radar-8f4387a21ffe-c6
+        // pathId is the last segment of RainViewer's radar.past[].path — opaque, not derivable from timestamp.
+        const parts = layer.substring(6).split('-c');
+        const pathId = parts[0];
+        const colorScheme = parts[1] ?? '6';
+        realUrl = `https://tilecache.rainviewer.com/v2/radar/${pathId}/256/${fetchZ}/${fetchX}/${fetchY}/${colorScheme}/1_1.png`;
+      } else {
+        realUrl = resolveTileUrl(layerKey as LayerKey, fetchZ, fetchX, fetchY);
       }
-
-      const z = parseInt(pathParts[0]!, 10);
-      const x = parseInt(pathParts[1]!, 10);
-      const yStr = pathParts[2]!.replace('.png', '');
-      const y = parseInt(yStr, 10);
-
-      if (isNaN(z) || isNaN(x) || isNaN(y)) {
-        return new Response(null, { status: 400 });
-      }
-
-      // OpenAIP tiles require an API key — reject early if missing
-      const isOpenAipLayer = layer === 'openaip';
+      const fetchHeaders: Record<string, string> = {};
+      if ('headers' in layerDef) Object.assign(fetchHeaders, layerDef.headers);
+      // Inject API key for OpenAIP tiles as query parameter
       if (isOpenAipLayer) {
         const apiKey = getApiKey('openaip');
-        if (!apiKey) {
-          return new Response(TRANSPARENT_PNG, { headers: { 'Content-Type': 'image/png' } });
-        }
+        if (apiKey) realUrl += `?apiKey=${encodeURIComponent(apiKey)}`;
+      }
+      const response = await fetch(realUrl, { headers: fetchHeaders });
+
+      if (!response.ok) {
+        // Return transparent PNG instead of error status to avoid black tiles
+        return { status: 200, body: toArrayBuffer(TRANSPARENT_PNG) };
       }
 
-      // Check if layer is valid (support radar-{path} dynamic layers)
-      const isRadarLayer = layer.startsWith('radar-');
-      if (!(layer in MAP_LAYERS) && !isRadarLayer) {
-        return new Response(null, { status: 404 });
-      }
+      const buffer = Buffer.from(await response.arrayBuffer());
 
-      const layerKey = isRadarLayer ? 'radar' : layer;
-      const layerDef = MAP_LAYERS[layerKey as LayerKey];
+      // Save to disk cache (fire-and-forget, don't block response)
+      const dir = join(getCacheDir(), layer, String(fetchZ), String(fetchX));
+      mkdir(dir, { recursive: true })
+        .then(() => writeFile(tilePath, buffer))
+        .catch(() => { /* ignore write errors */ });
 
-      // Clamp zoom to maxNativeZoom — fetch parent tile if beyond native range
-      let fetchZ = z;
-      let fetchX = x;
-      let fetchY = y;
-      if ('maxNativeZoom' in layerDef && z > layerDef.maxNativeZoom) {
-        const zDiff = z - layerDef.maxNativeZoom;
-        fetchZ = layerDef.maxNativeZoom;
-        fetchX = x >> zDiff;
-        fetchY = y >> zDiff;
-      }
-
-      const tilePath = getTilePath(layer, fetchZ, fetchX, fetchY);
-
-      // 1. Try disk cache first
-      try {
-        const data = await readFile(tilePath);
-        return new Response(data, {
-          headers: { 'Content-Type': 'image/png' },
-        });
-      } catch {
-        // Cache miss — continue to network
-      }
-
-      // 2. Fetch from network
-      try {
-        let realUrl: string;
-        if (isRadarLayer) {
-          // Layer name is radar-{pathId}-c{colorScheme}, e.g. radar-8f4387a21ffe-c6
-          // pathId is the last segment of RainViewer's radar.past[].path — opaque, not derivable from timestamp.
-          const parts = layer.substring(6).split('-c');
-          const pathId = parts[0];
-          const colorScheme = parts[1] ?? '6';
-          realUrl = `https://tilecache.rainviewer.com/v2/radar/${pathId}/256/${fetchZ}/${fetchX}/${fetchY}/${colorScheme}/1_1.png`;
-        } else {
-          realUrl = resolveTileUrl(layerKey as LayerKey, fetchZ, fetchX, fetchY);
-        }
-        const fetchHeaders: Record<string, string> = {};
-        if ('headers' in layerDef) Object.assign(fetchHeaders, layerDef.headers);
-        // Inject API key for OpenAIP tiles as query parameter
-        if (isOpenAipLayer) {
-          const apiKey = getApiKey('openaip');
-          if (apiKey) realUrl += `?apiKey=${encodeURIComponent(apiKey)}`;
-        }
-        const response = await fetch(realUrl, { headers: fetchHeaders });
-
-        if (!response.ok) {
-          // Return transparent PNG instead of error status to avoid black tiles
-          return new Response(TRANSPARENT_PNG, {
-            headers: { 'Content-Type': 'image/png' },
-          });
-        }
-
-        const buffer = Buffer.from(await response.arrayBuffer());
-
-        // Save to disk cache (fire-and-forget, don't block response)
-        const dir = join(getCacheDir(), layer, String(fetchZ), String(fetchX));
-        mkdir(dir, { recursive: true })
-          .then(() => writeFile(tilePath, buffer))
-          .catch(() => { /* ignore write errors */ });
-
-        return new Response(buffer, {
-          headers: { 'Content-Type': 'image/png' },
-        });
-      } catch {
-        // 3. Offline + cache miss — return transparent 1x1 PNG
-        return new Response(TRANSPARENT_PNG, {
-          headers: { 'Content-Type': 'image/png' },
-        });
-      }
+      return { status: 200, body: toArrayBuffer(buffer) };
     } catch {
-      return new Response(null, { status: 500 });
+      // 3. Offline + cache miss — return transparent 1x1 PNG
+      return { status: 200, body: toArrayBuffer(TRANSPARENT_PNG) };
     }
+  } catch {
+    return { status: 500, body: null };
+  }
+}
+
+export function setupTileCacheProtocol(): void {
+  protocol.handle('tile-cache', async (request) => {
+    const { status, body } = await resolveTileBytes(request.url);
+    if (body === null) return new Response(null, { status });
+    return new Response(body, { status, headers: { 'Content-Type': 'image/png' } });
   });
+}
+
+// Copy a Buffer's bytes into a standalone ArrayBuffer. Needed because a Node
+// Buffer can be a view onto a larger shared pool; slicing yields exactly the
+// tile's bytes, suitable as a Response BodyInit and transferable over IPC.
+function toArrayBuffer(buf: Buffer): ArrayBuffer {
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
 }
 
 // Transparent 1x1 PNG for graceful offline degradation
@@ -540,6 +558,14 @@ async function cleanupCache(): Promise<void> {
 // ─── IPC Handlers ────────────────────────────────────────────────────────────
 
 export function setupTileCacheHandlers(mainWindow: BrowserWindow): void {
+  // Tile bytes over IPC for renderers that cannot fetch the privileged
+  // tile-cache:// scheme directly (detached windows' MapLibre addProtocol).
+  // Returns a transferable ArrayBuffer, or null for malformed/unknown tiles.
+  ipcMain.handle(IPC_CHANNELS.TILE_CACHE_GET_TILE, async (_event, url: string) => {
+    const { body } = await resolveTileBytes(url);
+    return body; // ArrayBuffer (transferred over IPC) or null
+  });
+
   ipcMain.handle(IPC_CHANNELS.TILE_CACHE_GET_STATS, async () => {
     return getCacheStats();
   });

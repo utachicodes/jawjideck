@@ -35,7 +35,6 @@ import { isSurveyGroup } from '../../../shared/mission-group-types';
 
 // Offline map download
 import { OfflineAreaDownload } from '../map/OfflineAreaDownload';
-import { LayerIcon } from '../map/LayerIcon';
 
 // Cached area overlay
 import { CachedAreaOverlay } from '../map/CachedAreaOverlay';
@@ -46,7 +45,10 @@ import { OpenAipOverlay } from '../map/overlays/OpenAipOverlay';
 import { DipulOverlay } from '../map/overlays/DipulOverlay';
 import { AirspaceOverlay } from '../map/overlays/AirspaceOverlay';
 import { AirspaceLegend } from '../map/overlays/AirspaceLegend';
-import { OverlayToggles } from '../map/overlays/OverlayToggles';
+import { MapLayersControl } from '../map/overlays/MapLayersControl';
+import { WindParticleOverlay } from '../map/overlays/WindParticleOverlay';
+import { WindControls } from '../map/overlays/WindControls';
+import { WindRoseCard } from '../map/overlays/WindRoseCard';
 import { ApiKeyDialog } from '../map/overlays/ApiKeyDialog';
 import { useOverlayStore } from '../../stores/overlay-store';
 
@@ -479,6 +481,8 @@ function MapOverlayLayers({ baseLayer }: { baseLayer: string }) {
       {activeOverlays.has('radar') && <WeatherRadarOverlay baseLayer={baseLayer} />}
       {activeOverlays.has('openaip') && <OpenAipOverlay />}
       {activeOverlays.has('dipul') && <DipulOverlay />}
+      {activeOverlays.has('wind') && <WindParticleOverlay />}
+      {activeOverlays.has('wind') && <WindRoseCard />}
     </>
   );
 }
@@ -488,6 +492,13 @@ function AirspaceLegendWrapper() {
   const hasAirspace = useOverlayStore((s) => s.activeOverlays.has('airspace'));
   if (!hasAirspace) return null;
   return <AirspaceLegend />;
+}
+
+// Wind controls — owns its own subscription, shown only when the overlay is on
+function WindControlsWrapper() {
+  const hasWind = useOverlayStore((s) => s.activeOverlays.has('wind'));
+  if (!hasWind) return null;
+  return <WindControls />;
 }
 
 // Update map maxZoom when layer changes (MapContainer maxZoom is immutable after mount)
@@ -638,12 +649,15 @@ function ViewportSync() {
   useEffect(() => {
     const sync = () => {
       const c = map.getCenter();
+      const zoom = map.getZoom();
       useEditModeStore.getState().setMapViewport({
         center: [c.lng, c.lat],
-        zoom: map.getZoom(),
+        zoom,
         pitch: 0,
         bearing: 0,
       });
+      // Report to main so the Area Editor opens on the same location.
+      window.electronAPI?.reportMapViewport?.({ lat: c.lat, lng: c.lng, zoom });
     };
     map.on('moveend', sync);
     sync(); // capture initial position
@@ -1411,45 +1425,23 @@ function MissionMapPanel2D({ readOnly = false }: MissionMapPanelProps) {
       {/* Survey config panel lives as a docked tab next to Waypoints; see
           MissionPlanningView. The map no longer renders it as a floating overlay. */}
 
-      {/* Layer selector */}
-      <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-1">
-        {(Object.keys(MAP_LAYERS) as LayerKey[]).filter((k) => k !== 'dem' && k !== 'radar' && k !== 'openaip').map((key) => (
-          <button
-            key={key}
-            onClick={() => setActiveLayer(key)}
-            className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1.5 ${
-              activeLayer === key
-                ? 'bg-blue-600 text-white'
-                : 'bg-surface border border-subtle text-content hover:bg-surface-raised shadow-sm'
-            }`}
-          >
-            <LayerIcon layerKey={key} />
-            {MAP_LAYERS[key].name}
-          </button>
-        ))}
-        <div className="border-t border-subtle my-0.5" />
-        <button
-          onClick={() => setShowTerrain(!showTerrain)}
-          className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1.5 ${
-            showTerrain
-              ? 'bg-blue-600 text-white'
-              : 'bg-surface border border-subtle text-content hover:bg-surface-raised shadow-sm'
-          }`}
-          title="Toggle terrain elevation heatmap"
-        >
-          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-4 3 3 4-6 7 7" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 17h18" />
-          </svg>
-          Height
-        </button>
-        <div className="border-t border-subtle my-0.5" />
-        <OverlayToggles />
-        <OfflineAreaDownload bounds={mapBounds} activeLayer={activeLayer} />
+      {/* Consolidated Layers control (base map + overlays + terrain + offline) */}
+      <div className="absolute top-3 right-3 z-[1000]">
+        <MapLayersControl
+          baseLayers={(Object.keys(MAP_LAYERS) as LayerKey[]).filter((k) => k !== 'dem' && k !== 'radar' && k !== 'openaip')}
+          activeLayer={activeLayer}
+          onSelectLayer={setActiveLayer}
+          showTerrain={showTerrain}
+          onToggleTerrain={() => setShowTerrain(!showTerrain)}
+          extra={<OfflineAreaDownload bounds={mapBounds} activeLayer={activeLayer} />}
+        />
       </div>
 
       {/* Airspace legend */}
       <AirspaceLegendWrapper />
+
+      {/* Wind overlay controls */}
+      <WindControlsWrapper />
 
       {/* API key dialog */}
       <ApiKeyDialog />

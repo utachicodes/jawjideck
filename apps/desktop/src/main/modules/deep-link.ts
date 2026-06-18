@@ -1,14 +1,21 @@
 /**
  * ardudeck:// deep-link handling.
  *
- * The marketplace "Install in ArduDeck" button opens
+ * Two actions are handled:
  *   ardudeck://install?slug=<slug>&name=<name>&key=<license-key>
- * which lands here. We validate the key's signature offline, then hand the
- * request to the renderer to confirm with the user before installing.
+ *     - validate the key's signature offline, then hand to the renderer to
+ *       confirm with the user before installing.
+ *   ardudeck://open?view=<viewId>
+ *     - navigate the renderer to a built-in view (no validation needed; the
+ *       renderer rejects unknown/unavailable views).
+ *   ardudeck://open?tool=area-editor
+ *     - open a standalone tool that lives in its own window (not a renderer
+ *       view), e.g. the Area Editor. Handled entirely in main.
  */
 
 import { app, BrowserWindow } from 'electron';
 import { verifyLicenseKey } from './license-validator.js';
+import { openAreaEditorWindow } from '../area-editor-window.js';
 import { IPC_CHANNELS } from '../../shared/ipc-channels.js';
 
 const PROTOCOL = 'ardudeck';
@@ -16,7 +23,7 @@ const PROTOCOL = 'ardudeck';
 let getWindow: (() => BrowserWindow | null) | null = null;
 // A deep link can arrive before the window/renderer is ready (cold start via
 // the link). Hold the most recent one and flush it once the renderer loads.
-let pending: { slug: string; name: string; key: string } | null = null;
+let pending: { channel: string; payload: unknown } | null = null;
 
 /**
  * Register the protocol and OS-level entry points. Call once, before the app
@@ -57,11 +64,21 @@ export function handleStartupArgs(argv: string[]): void {
   if (url) handleDeepLink(url);
 }
 
+/**
+ * Route a deep-link URL as if the OS had delivered it. Used in dev (via the
+ * ARDUDECK_DEEPLINK env var) to test the handler without OS scheme registration,
+ * which is unavailable for an unpackaged macOS build.
+ */
+export function deliverDeepLinkUrl(url: string): void {
+  handleDeepLink(url);
+}
+
 /** Flush any deep link captured before the renderer was ready. */
 export function flushPendingDeepLink(): void {
   if (pending) {
-    deliver(pending);
+    const p = pending;
     pending = null;
+    deliver(p.channel, p.payload);
   }
 }
 
@@ -74,12 +91,19 @@ function handleDeepLink(url: string): void {
     return;
   }
 
-  // ardudeck://install?... -> host is "install"
-  if (parsed.host !== 'install') {
-    console.warn('[DeepLink] Unknown action:', parsed.host);
-    return;
+  switch (parsed.host) {
+    case 'install':
+      handleInstall(parsed);
+      return;
+    case 'open':
+      handleOpen(parsed);
+      return;
+    default:
+      console.warn('[DeepLink] Unknown action:', parsed.host);
   }
+}
 
+function handleInstall(parsed: URL): void {
   const slug = parsed.searchParams.get('slug') ?? '';
   const name = parsed.searchParams.get('name') ?? slug;
   const key = parsed.searchParams.get('key') ?? '';
@@ -96,16 +120,42 @@ function handleDeepLink(url: string): void {
     return;
   }
 
-  deliver({ slug, name, key });
+  deliver(IPC_CHANNELS.MODULE_DEEP_LINK_INSTALL, { slug, name, key });
 }
 
-function deliver(payload: { slug: string; name: string; key: string }): void {
+function handleOpen(parsed: URL): void {
+  // Standalone tools open their own window from main, independent of the
+  // renderer's view router.
+  const tool = parsed.searchParams.get('tool');
+  if (tool === 'area-editor') {
+    // A cold-start link can arrive before the app is ready; defer until then
+    // since opening a window requires it.
+    if (app.isReady()) openAreaEditorWindow();
+    else app.whenReady().then(() => openAreaEditorWindow());
+    return;
+  }
+  if (tool) {
+    console.warn('[DeepLink] open: unknown tool:', tool);
+    return;
+  }
+
+  const view = parsed.searchParams.get('view') ?? '';
+  if (!view) {
+    console.warn('[DeepLink] open: missing view or tool');
+    return;
+  }
+  // No validation here - the renderer validates against its known view ids
+  // (and capability gating) before navigating.
+  deliver(IPC_CHANNELS.NAV_DEEP_LINK_OPEN, { view });
+}
+
+function deliver(channel: string, payload: unknown): void {
   const win = getWindow?.();
   if (!win || win.webContents.isLoading()) {
-    pending = payload;
+    pending = { channel, payload };
     return;
   }
   if (win.isMinimized()) win.restore();
   win.focus();
-  win.webContents.send(IPC_CHANNELS.MODULE_DEEP_LINK_INSTALL, payload);
+  win.webContents.send(channel, payload);
 }

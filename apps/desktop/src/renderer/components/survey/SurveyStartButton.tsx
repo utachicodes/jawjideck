@@ -101,6 +101,31 @@ export function SurveyStartButton() {
               </span>
             </button>
           ))}
+
+          {/* Area Editor: a richer, full-window way to draw the same survey areas
+              (multi-polygon, holes, KML round-trip) instead of drawing in-map. */}
+          <button
+            onClick={() => {
+              window.electronAPI?.openAreaEditor?.().catch(() => undefined);
+              setOpen(false);
+            }}
+            className="w-full text-left px-3 py-2 mt-1 border-t border-subtle hover:bg-surface-raised transition-colors flex items-start gap-2.5"
+          >
+            <span className="text-teal-400 mt-0.5 shrink-0">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 11l6.5-6.5a2 2 0 012.828 2.828L11.828 14H9v-3z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21h18" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 17l4-4" />
+              </svg>
+            </span>
+            <span className="min-w-0">
+              <span className="flex items-center gap-1.5">
+                <span className="text-xs font-medium text-content">Area Editor</span>
+                <span className="px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-teal-300 bg-teal-500/15 border border-teal-500/30 rounded">New</span>
+              </span>
+              <span className="block text-[10px] text-content-tertiary leading-snug">Full-window editor: multi-area, holes, KML import</span>
+            </span>
+          </button>
         </div>
       )}
     </div>

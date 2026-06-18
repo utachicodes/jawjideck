@@ -4,6 +4,7 @@ import { useSettingsStore } from '../../stores/settings-store';
 import { useNavigationStore } from '../../stores/navigation-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useParameterStore } from '../../stores/parameter-store';
+import { runClaudeLogChat } from './log-ai-tools';
 
 /** AI disclaimer dialog shown before first AI interaction */
 export function AiWarningDialog({ onAccept, onCancel }: { onAccept: (dismiss: boolean) => void; onCancel: () => void }) {
@@ -370,17 +371,31 @@ export function AiAnalysisPanel() {
       }
     }
 
+    // Claude gets tools to query the raw log on demand (see log-ai-tools.ts);
+    // other providers only get the summary + health results below.
+    const toolSection = aiProvider === 'claude'
+      ? `
+
+## Reading the Log (IMPORTANT)
+You have tools to query the raw telemetry of THIS log on demand — you are not limited to the summary below. Use them to ground every claim in actual data instead of guessing:
+- list_message_types — discover what's recorded (ATT, RCOU, VIBE, GPS, BAT, ERR, MODE, RATE, …). Call this first if unsure what's available.
+- get_field_stats(type, fields?, startS?, endS?) — count/min/max/mean/stddev/first/last for numeric fields. Use for aggregate questions.
+- read_samples(type, fields?, startS?, endS?, maxPoints?) — decimated time-series to inspect the shape of a trend, spike, or oscillation.
+- get_parameters(names? | search?) — ArduPilot parameter values from the log.
+All time arguments (startS/endS) are SECONDS from log start. This flight is ${dS.toFixed(1)} s long. Prefer real values pulled from these tools over the summary, and cite specific numbers and timestamps.`
+      : '';
+
     return `You are a flight log analyst embedded in ArduDeck, an ArduPilot ground control station.
 You ONLY answer questions about this specific flight log, ArduPilot configuration, and drone/vehicle troubleshooting. Refuse any off-topic requests politely.
 
 ## This Flight
 - Vehicle: ${meta.vehicleType || 'Unknown'} running ${meta.firmwareString || meta.firmwareVersion || 'Unknown firmware'}
-- Duration: ${(dS / 60).toFixed(1)} minutes
+- Duration: ${(dS / 60).toFixed(1)} minutes (${dS.toFixed(1)} s)
 - Max Altitude: ${stats.maxAlt.toFixed(1)} m | Max Speed: ${stats.maxSpd.toFixed(1)} m/s
 - Distance: ${dist} | Battery Used: ${stats.totalMah.toFixed(0)} mAh
 
 ## Health Check Results
-${JSON.stringify(healthResults, null, 2)}
+${JSON.stringify(healthResults, null, 2)}${toolSection}
 
 ## ArduDeck Navigation (use these to guide the user)
 - Parameters screen: user can search and change ArduPilot parameters.
@@ -405,13 +420,37 @@ If a parameter requires a reboot, mention it in your explanation text.${rebootPa
 - Reference ArduPilot parameters by name when suggesting changes.
 - Always use the :::param::: format when suggesting specific values.
 - If asked about data not in the log, say so.`;
-  }, [currentLog, healthResults, flightStats]);
+  }, [currentLog, healthResults, flightStats, aiProvider]);
 
   const sendToAi = useCallback(async () => {
     if (!aiProvider || !currentLog) return;
     const store = useLogStore.getState();
     store.setIsAiAnalyzing(true);
     store.setAiAnalysisError(null);
+
+    // Claude runs the tool-use loop and can query the raw log on demand; other
+    // providers get the summary-only single-shot path until they're wired up.
+    if (aiProvider === 'claude') {
+      const call = window.electronAPI?.logAiClaudeTool;
+      if (!call) {
+        store.setIsAiAnalyzing(false);
+        store.setAiAnalysisError('Claude analysis is unavailable.');
+        return;
+      }
+      const { text, error } = await runClaudeLogChat({
+        system: buildSystemContext(),
+        history: store.aiMessages,
+        log: currentLog,
+        call: (body) => call(body),
+      });
+      store.setIsAiAnalyzing(false);
+      if (text) {
+        store.addAiMessage({ role: 'assistant', content: text });
+      } else {
+        store.setAiAnalysisError(error ?? 'Analysis failed');
+      }
+      return;
+    }
 
     const result = await window.electronAPI?.logAiAnalyze({
       provider: aiProvider,
@@ -518,7 +557,11 @@ If a parameter requires a reboot, mention it in your explanation text.${rebootPa
             </div>
             <div className="text-center">
               <h3 className="text-content font-medium mb-1">Ask about this flight</h3>
-              <p className="text-xs text-content-secondary">Powered by {providerName}. Flight data and health checks are included as context.</p>
+              <p className="text-xs text-content-secondary">
+                {aiProvider === 'claude'
+                  ? 'Powered by Claude. It reads this log’s raw telemetry on demand to answer.'
+                  : `Powered by ${providerName}. Flight data and health checks are included as context.`}
+              </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2 max-w-lg">
               {[

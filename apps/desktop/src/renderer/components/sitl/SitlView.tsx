@@ -198,9 +198,8 @@ export default function SitlView() {
           </div>
         </div>
 
-        {/* Tab switcher - ArduPilot tab only in dev builds */}
-        {window.electronAPI.isDev && (
-          <div className="flex items-center gap-1 bg-surface-input border border-subtle rounded-lg p-1">
+        {/* Tab switcher */}
+        <div className="flex items-center gap-1 bg-surface-input border border-subtle rounded-lg p-1">
             <button
               onClick={() => setActiveTab('inav')}
               disabled={ardupilotSitlStore.isRunning}
@@ -226,7 +225,6 @@ export default function SitlView() {
               ArduPilot (MAVLink)
             </button>
           </div>
-        )}
 
         {/* Status indicator */}
         <div className="flex items-center gap-3">
@@ -247,8 +245,8 @@ export default function SitlView() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-y-auto p-4 gap-4">
-        {/* ArduPilot SITL Tab - dev only */}
-        {window.electronAPI.isDev && activeTab === 'ardupilot' && <ArduPilotSitlTab />}
+        {/* ArduPilot SITL Tab */}
+        {activeTab === 'ardupilot' && <ArduPilotSitlTab />}
 
         {/* iNav SITL Tab */}
         {activeTab === 'inav' && (

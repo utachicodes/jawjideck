@@ -10,7 +10,7 @@ import { setupIpcHandlers, cleanupOnShutdown } from './ipc-handlers.js';
 import { setupModuleIpc } from './modules/module-ipc.js';
 import { registerTileCacheScheme, setupTileCacheProtocol, setupTileCacheHandlers } from './tile-cache.js';
 import { registerModuleSchemePrivileges, setupModuleProtocol } from './modules/module-protocol.js';
-import { setupDeepLinks, handleStartupArgs, flushPendingDeepLink } from './modules/deep-link.js';
+import { setupDeepLinks, handleStartupArgs, flushPendingDeepLink, deliverDeepLinkUrl } from './modules/deep-link.js';
 import { initWindowManager, restoreDetachedWindows, setupWindowManagerIpc } from './window-manager.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -167,6 +167,12 @@ app.whenReady().then(() => {
     // a link present in the initial launch argv (Windows/Linux cold start).
     flushPendingDeepLink();
     handleStartupArgs(process.argv);
+    // Dev: macOS can't OS-register the scheme for an unpackaged build, so allow
+    // testing the deep-link path by feeding a URL in directly.
+    //   ARDUDECK_DEEPLINK="ardudeck://open?view=mission" npm run dev
+    if (isDev && process.env['ARDUDECK_DEEPLINK']) {
+      deliverDeepLinkUrl(process.env['ARDUDECK_DEEPLINK']);
+    }
   });
 
   // Dev-only: start test driver MCP server

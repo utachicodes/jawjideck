@@ -12,8 +12,9 @@ export interface InstalledModule {
   licenseKey: string;
   licenseType: 'perpetual' | 'subscription' | 'trial';
   bundleName: string | null; // null if single-module license
-  installPath?: string; // filesystem path where bundle was extracted
+  installPath?: string; // filesystem path where bundle was extracted (installable only)
   manifestVersion?: number; // schema version from module.json
+  activatable?: boolean; // built-in feature enabled by license, no bundle downloaded
 }
 
 /** License key payload (decoded from key, verified with Ed25519) */
@@ -39,6 +40,9 @@ export interface ActivateResponse {
   ok: boolean;
   modules: string[];
   bundle: string | null;
+  // Subset of `modules` whose code already ships in the app - enable in place
+  // instead of downloading a bundle.
+  activatable?: string[];
   error?: string;
 }
 

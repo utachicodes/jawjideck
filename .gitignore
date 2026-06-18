@@ -76,6 +76,7 @@ MissionPlanner/
 inav-configurator/
 betaflight-configurator/
 MissionPlanner-ref/
+qgroundcontrol/
 
 # Firmware files (downloaded on-demand from ArduPilot servers)
 # Note: Don't ignore apps/desktop/src/main/firmware/ (source code)

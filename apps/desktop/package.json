@@ -1,6 +1,6 @@
 {
   "name": "@ardudeck/desktop",
-  "version": "0.0.32-alpha.5",
+  "version": "0.32.5",
   "description": "ArduDeck - Desktop Application",
   "author": {
     "name": "rubenCodeforges",
@@ -14,6 +14,7 @@
   "type": "module",
   "scripts": {
     "dev": "electron-vite dev",
+    "dev:deeplink": "ARDUDECK_DEEPLINK=\"${ARDUDECK_DEEPLINK:-ardudeck://open?view=mission}\" electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "package": "electron-builder",
@@ -83,6 +84,14 @@
   "build": {
     "appId": "com.ardudeck.desktop",
     "productName": "ArduDeck",
+    "protocols": [
+      {
+        "name": "ArduDeck",
+        "schemes": [
+          "ardudeck"
+        ]
+      }
+    ],
     "npmRebuild": false,
     "electronVersion": "28.3.3",
     "publish": [

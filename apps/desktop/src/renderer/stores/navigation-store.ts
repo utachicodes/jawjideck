@@ -1,6 +1,19 @@
 import { create } from 'zustand';
 
-export type ViewId = 'telemetry' | 'parameters' | 'mission' | 'library' | 'settings' | 'firmware' | 'cli' | 'sitl' | 'osd' | 'report' | 'calibration' | 'lua-graph' | 'modules' | 'companion' | 'logs' | 'inspector';
+// Single source of truth for view ids. The ViewId type is derived from it so a
+// runtime guard (isViewId) can validate untrusted strings (e.g. a deep-link
+// `view` param) without duplicating the union.
+export const VIEW_IDS = [
+  'telemetry', 'parameters', 'mission', 'library', 'settings', 'firmware', 'cli',
+  'sitl', 'osd', 'report', 'calibration', 'lua-graph', 'modules', 'companion',
+  'logs', 'inspector',
+] as const;
+
+export type ViewId = (typeof VIEW_IDS)[number];
+
+export function isViewId(value: string): value is ViewId {
+  return (VIEW_IDS as readonly string[]).includes(value);
+}
 
 interface NavigationStore {
   // State

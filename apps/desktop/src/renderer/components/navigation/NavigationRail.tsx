@@ -1,6 +1,7 @@
 import { useNavigationStore, type ViewId } from '../../stores/navigation-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useSettingsStore, type ThemePreference } from '../../stores/settings-store';
+import { isViewAvailable, useEnabledCapabilitySlugs } from '../../modules/capabilities';
 
 interface NavItem {
   id: ViewId;
@@ -195,6 +196,13 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
   }
   allNavItems.push(logsNavItem);
 
+  // Hide views gated behind an activatable module that isn't enabled. With no
+  // gated capabilities defined this is a no-op (every view stays visible).
+  const enabledCapabilitySlugs = useEnabledCapabilitySlugs();
+  const visibleNavItems = allNavItems.filter((item) =>
+    isViewAvailable(item.id, enabledCapabilitySlugs),
+  );
+
   const handleClick = (viewId: ViewId) => {
     if (onViewChange) {
       onViewChange(viewId);
@@ -206,7 +214,7 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
   return (
     <nav className="w-14 h-full bg-surface-nav border-r border-subtle flex flex-col items-center py-3 gap-1">
       {/* Active navigation items */}
-      {allNavItems.map((item) => (
+      {visibleNavItems.map((item) => (
         <button
           key={item.id}
           onClick={() => !item.disabled && handleClick(item.id)}

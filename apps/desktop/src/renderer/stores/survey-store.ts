@@ -89,6 +89,9 @@ interface SurveyStore {
   setCamera: (camera: CameraPreset) => void;
   setGridAngle: (angle: number) => void;
   setOvershoot: (overshoot: number) => void;
+  setMargin: (margin: number) => void;
+  setCameraOffOutside: (v: boolean) => void;
+  setGridMode: (mode: 'plane' | 'copter') => void;
   setAltitudeReference: (ref: AltitudeReference) => void;
   setShowFootprints: (show: boolean) => void;
   setGroundPattern: (pattern: GroundPattern) => void;
@@ -160,10 +163,43 @@ interface SurveyStore {
     partial: Partial<Omit<SurveyConfig, 'polygon' | 'gridAngle'>>,
     camera?: CameraPreset,
   ) => void;
+
+  /**
+   * Turn one polygon (plus optional holes) into a persistent SurveyGroup added
+   * to the mission, using the same pipeline as importArea. The polygon is
+   * simplified, waypoints are generated with the current config, and the group
+   * is committed via addGroupsWithItems. The new group is then opened in the
+   * survey panel (loadFromGroup) so the user can tune it immediately.
+   * Returns the new group id, or null if generation produced no waypoints.
+   */
+  addSurveyAreaFromPolygon: (
+    polygon: LatLng[],
+    opts?: { holes?: LatLng[][]; name?: string },
+  ) => string | null;
+
+  /**
+   * Turn multiple polygons (each with optional holes) into persistent SurveyGroups
+   * added to the mission in a single atomic addGroupsWithItems call (one undo step).
+   * Polygons with fewer than 3 points are silently skipped. The first created group
+   * is opened in the survey panel for immediate tuning. Returns the array of created
+   * group ids (may be shorter than input if some areas produced no waypoints).
+   */
+  addSurveyAreasFromPolygons: (
+    areas: Array<{
+      polygon: LatLng[];
+      holes?: LatLng[][];
+      name?: string;
+      /** Per-area config overrides (e.g. corridor pattern + width) merged over the current config. */
+      configOverride?: Partial<Omit<SurveyConfig, 'polygon' | 'holes'>>;
+    }>,
+  ) => string[];
 }
 
 function runGenerator(config: SurveyConfig): SurveyResult | null {
-  if (config.polygon.length < 3) return null;
+  // Corridors are an open centerline (>= 2 points); every other pattern is a
+  // closed area (>= 3 points).
+  const minPoints = config.pattern === 'corridor' ? 2 : 3;
+  if (config.polygon.length < minPoints) return null;
 
   const id = patternToGeneratorId(config.pattern);
   const reg = getSurveyGenerator(id) ?? getSurveyGenerator('builtin.grid');
@@ -178,6 +214,47 @@ function runGenerator(config: SurveyConfig): SurveyResult | null {
     return null;
   }
   return result;
+}
+
+/**
+ * Shared helper: given a raw polygon + holes, simplify them, run the survey
+ * generator with the provided config, and return a {group, items} entry ready
+ * for addGroupsWithItems. Returns null when the generator produces no waypoints.
+ *
+ * Both importArea (batches N entries) and addSurveyAreaFromPolygon (single
+ * entry) call this so the polygon simplification, generator dispatch, group
+ * construction, and signature logic live in exactly one place.
+ */
+function buildSurveyGroupEntry(
+  rawPolygon: LatLng[],
+  rawHoles: LatLng[][],
+  config: Omit<SurveyConfig, 'polygon'>,
+  name: string,
+  colorIndex: number,
+  simplifyToleranceM: number,
+): { group: SurveyGroup; items: ReturnType<typeof surveyToMissionItems> } | null {
+  const polygon = simplifyPolygon(rawPolygon, simplifyToleranceM);
+  const holes = rawHoles.map((ring) => simplifyPolygon(ring, simplifyToleranceM));
+  // Holes flow through config so the generator can carve them out, and onto
+  // the group so the map draws them as cutouts.
+  const fullConfig: SurveyConfig = { ...config, polygon, holes };
+  const result = runGenerator(fullConfig);
+  if (!result || result.waypoints.length === 0) return null;
+  const items = surveyToMissionItems(result, fullConfig);
+  const generatorId = patternToGeneratorId(config.pattern);
+  const reg = getSurveyGenerator(generatorId);
+  const group = createSurveyGroup({
+    name,
+    generatorId,
+    generatorVersion: reg?.version ?? '1.0.0',
+    polygon,
+    holes: holes.length > 0 ? holes : undefined,
+    config: fullConfig as unknown as Record<string, unknown>,
+    color: GROUP_COLOR_PALETTE[colorIndex % GROUP_COLOR_PALETTE.length]!,
+  });
+  group.lastGeneratedSignature = computeSurveyGroupSignature(group);
+  group.lastGeneratedAt = Date.now();
+  return { group, items };
 }
 
 // Module-level flag — true after the initial hydration from settings, used to
@@ -259,6 +336,23 @@ export const useSurveyStore = create<SurveyStore>()(subscribeWithSelector((set, 
 
   setOvershoot: (overshoot) => {
     set({ config: { ...get().config, overshoot } });
+    get().requestRecompute();
+  },
+
+  setMargin: (margin) => {
+    set({ config: { ...get().config, margin } });
+    get().requestRecompute();
+  },
+
+  setCameraOffOutside: (cameraOffOutside) => {
+    set({ config: { ...get().config, cameraOffOutside } });
+    // Geometry is unchanged; recompute only so a live-linked committed group
+    // re-emits its mission items with the new camera triggering.
+    get().requestRecompute();
+  },
+
+  setGridMode: (gridMode) => {
+    set({ config: { ...get().config, gridMode } });
     get().requestRecompute();
   },
 
@@ -496,43 +590,29 @@ export const useSurveyStore = create<SurveyStore>()(subscribeWithSelector((set, 
     const missionStore = useMissionStore.getState();
     const simplifyToleranceM = useSettingsStore.getState().surveyPerformance.importSimplifyToleranceM;
     const baseCount = missionStore.groups.filter(isSurveyGroup).length;
-    const generatorId = patternToGeneratorId(config.pattern);
-    const reg = getSurveyGenerator(generatorId);
 
     const entries: Array<{ group: SurveyGroup; items: ReturnType<typeof surveyToMissionItems> }> = [];
     await runWithActivity('Importing survey - generating waypoints...', () => {
-    areas.forEach((area, i) => {
-      // GIS boundaries are often digitized at sub-meter resolution (thousands of
-      // vertices). Survey line spacing is tens of meters, so that detail is
-      // wasted - and every vertex becomes a draggable marker plus per-edge work
-      // in scan-line clipping, which is what makes large-KML import lag. Reduce
-      // to a ~1 m tolerance: visually identical, orders of magnitude fewer points.
-      const polygon = simplifyPolygon(
-        area.polygon.map((p) => ({ lat: p.lat, lng: p.lng })),
-        simplifyToleranceM,
-      );
-      const holes = area.holes.map((ring) =>
-        simplifyPolygon(ring.map((p) => ({ lat: p.lat, lng: p.lng })), simplifyToleranceM),
-      );
-      // Holes flow through config so the generator can carve them out, and onto
-      // the group so the map draws them as cutouts.
-      const fullConfig: SurveyConfig = { ...config, polygon, holes };
-      const result = runGenerator(fullConfig);
-      if (!result || result.waypoints.length === 0) return;
-      const items = surveyToMissionItems(result, fullConfig);
-      const group = createSurveyGroup({
-        name: `Imported ${baseCount + i + 1}`,
-        generatorId,
-        generatorVersion: reg?.version ?? '1.0.0',
-        polygon,
-        holes: holes.length > 0 ? holes : undefined,
-        config: fullConfig as unknown as Record<string, unknown>,
-        color: GROUP_COLOR_PALETTE[(baseCount + i) % GROUP_COLOR_PALETTE.length]!,
+      areas.forEach((area, i) => {
+        // GIS boundaries are often digitized at sub-meter resolution (thousands of
+        // vertices). Survey line spacing is tens of meters, so that detail is
+        // wasted - and every vertex becomes a draggable marker plus per-edge work
+        // in scan-line clipping, which is what makes large-KML import lag. Reduce
+        // to a ~1 m tolerance: visually identical, orders of magnitude fewer points.
+        const rawPolygon = area.polygon.map((p) => ({ lat: p.lat, lng: p.lng }));
+        const rawHoles = area.holes.map((ring) =>
+          ring.map((p) => ({ lat: p.lat, lng: p.lng })),
+        );
+        const entry = buildSurveyGroupEntry(
+          rawPolygon,
+          rawHoles,
+          config,
+          `Imported ${baseCount + i + 1}`,
+          baseCount + i,
+          simplifyToleranceM,
+        );
+        if (entry) entries.push(entry);
       });
-      group.lastGeneratedSignature = computeSurveyGroupSignature(group);
-      group.lastGeneratedAt = Date.now();
-      entries.push({ group, items });
-    });
     });
 
     if (entries.length === 0) {
@@ -613,6 +693,66 @@ export const useSurveyStore = create<SurveyStore>()(subscribeWithSelector((set, 
     void runWithActivity('Loading survey...', () => get().generateSurvey({ sync: false }));
   },
 
+  addSurveyAreaFromPolygon: (polygon, opts) => {
+    if (polygon.length < 3) return null;
+    const { config } = get();
+    const missionStore = useMissionStore.getState();
+    const simplifyToleranceM = useSettingsStore.getState().surveyPerformance.importSimplifyToleranceM;
+    const baseCount = missionStore.groups.filter(isSurveyGroup).length;
+    const holes = opts?.holes ?? [];
+    const name = opts?.name ?? `Survey ${baseCount + 1}`;
+    const entry = buildSurveyGroupEntry(
+      polygon,
+      holes,
+      config,
+      name,
+      baseCount,
+      simplifyToleranceM,
+    );
+    if (!entry) return null;
+    const ids = missionStore.addGroupsWithItems([entry]);
+    const id = ids[0];
+    if (!id) return null;
+    get().loadFromGroup({ id, polygon: entry.group.polygon, config: entry.group.config });
+    return id;
+  },
+
+  addSurveyAreasFromPolygons: (areas) => {
+    if (areas.length === 0) return [];
+    const { config } = get();
+    const missionStore = useMissionStore.getState();
+    const simplifyToleranceM = useSettingsStore.getState().surveyPerformance.importSimplifyToleranceM;
+    const baseCount = missionStore.groups.filter(isSurveyGroup).length;
+
+    const entries: Array<{ group: SurveyGroup; items: ReturnType<typeof surveyToMissionItems> }> = [];
+    areas.forEach((area, i) => {
+      const areaConfig = area.configOverride ? { ...config, ...area.configOverride } : config;
+      // Corridors are open centerlines (>= 2 points); areas are closed (>= 3).
+      const minPoints = areaConfig.pattern === 'corridor' ? 2 : 3;
+      if (area.polygon.length < minPoints) return;
+      const name = area.name ?? `Survey ${baseCount + entries.length + 1}`;
+      const entry = buildSurveyGroupEntry(
+        area.polygon,
+        area.holes ?? [],
+        areaConfig,
+        name,
+        baseCount + i,
+        simplifyToleranceM,
+      );
+      if (entry) entries.push(entry);
+    });
+
+    if (entries.length === 0) return [];
+
+    const ids = missionStore.addGroupsWithItems(entries);
+    const firstId = ids[0];
+    const firstEntry = entries[0];
+    if (firstId && firstEntry) {
+      get().loadFromGroup({ id: firstId, polygon: firstEntry.group.polygon, config: firstEntry.group.config });
+    }
+    return ids;
+  },
+
   applyPresetConfig: (partial, camera) => {
     const current = get().config;
     // Merge — preset wins on keys it sets, current stays for everything else.
@@ -628,6 +768,7 @@ export const useSurveyStore = create<SurveyStore>()(subscribeWithSelector((set, 
     // Regenerate so the map updates immediately.
     get().requestRecompute({ immediate: true });
   },
+
 })));
 
 // Persistence: any change to the survey config is serialized and pushed to

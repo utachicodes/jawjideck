@@ -21,6 +21,8 @@ export function getLoadedModules(): LoadedRecord[] {
 export async function loadAllModules(): Promise<void> {
   const installed = getInstalledModules();
   for (const mod of installed) {
+    // Activatable modules ship in the app - there is no bundle to load.
+    if (mod.activatable) continue;
     if (!mod.installPath) {
       console.warn(`[ModuleRegistry] skipping ${mod.slug}: no installPath`);
       continue;

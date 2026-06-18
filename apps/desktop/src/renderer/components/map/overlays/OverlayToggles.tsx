@@ -1,7 +1,7 @@
 import { useOverlayStore } from '../../../stores/overlay-store';
 import type { OverlayId } from '../../../../shared/overlay-types';
 
-const OVERLAYS: Array<{ id: OverlayId; label: string; icon: JSX.Element }> = [
+export const OVERLAYS: Array<{ id: OverlayId; label: string; icon: JSX.Element }> = [
   {
     id: 'radar',
     label: 'Weather',
@@ -35,6 +35,15 @@ const OVERLAYS: Array<{ id: OverlayId; label: string; icon: JSX.Element }> = [
     icon: (
       <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'wind',
+    label: 'Wind',
+    icon: (
+      <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8h11a2.5 2.5 0 10-2.5-2.5M3 16h15a2.5 2.5 0 11-2.5 2.5M3 12h17a2.5 2.5 0 10-2.5-2.5" />
       </svg>
     ),
   },

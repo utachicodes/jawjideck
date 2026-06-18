@@ -26,7 +26,7 @@ interface TipState {
   text: string;
   x: number;
   y: number;
-  placement: 'top' | 'bottom';
+  placement: 'top' | 'bottom' | 'left' | 'right';
 }
 
 const SHOW_DELAY_MS = 350;
@@ -53,12 +53,29 @@ export function GlobalTooltip() {
       const text = el.getAttribute('data-tip');
       if (!text) return;
       const rect = el.getBoundingClientRect();
+      const MARGIN = 8;
+      const GAP = 6;
+      // Half of the tooltip's max width — used to detect when a centered
+      // tooltip would spill past a horizontal viewport edge.
+      const HALF_EST = 130;
+      const center = rect.left + rect.width / 2;
+      // Against the left edge (e.g. a vertical tool rail): a centered tooltip
+      // would run off-screen and sit under the rail, so place it to the right.
+      if (center - HALF_EST < MARGIN) {
+        setTip({ text, x: rect.right + GAP, y: rect.top + rect.height / 2, placement: 'right' });
+        return;
+      }
+      // Against the right edge: mirror to the left.
+      if (center + HALF_EST > window.innerWidth - MARGIN) {
+        setTip({ text, x: rect.left - GAP, y: rect.top + rect.height / 2, placement: 'left' });
+        return;
+      }
       // Prefer below; flip above when the lower part of the viewport is tight.
       const placeBelow = rect.bottom + 40 < window.innerHeight;
       setTip({
         text,
-        x: rect.left + rect.width / 2,
-        y: placeBelow ? rect.bottom + 6 : rect.top - 6,
+        x: center,
+        y: placeBelow ? rect.bottom + GAP : rect.top - GAP,
         placement: placeBelow ? 'bottom' : 'top',
       });
     };
@@ -120,7 +137,10 @@ export function GlobalTooltip() {
         left: tip.x,
         top: tip.y,
         transform:
-          tip.placement === 'bottom' ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
+          tip.placement === 'bottom' ? 'translate(-50%, 0)'
+          : tip.placement === 'top' ? 'translate(-50%, -100%)'
+          : tip.placement === 'right' ? 'translate(0, -50%)'
+          : 'translate(-100%, -50%)',
         zIndex: 100000,
         pointerEvents: 'none',
       }}

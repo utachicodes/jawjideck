@@ -103,6 +103,9 @@ export function SurveyConfigPanel() {
   const setCamera = useSurveyStore((s) => s.setCamera);
   const setGridAngle = useSurveyStore((s) => s.setGridAngle);
   const setOvershoot = useSurveyStore((s) => s.setOvershoot);
+  const setMargin = useSurveyStore((s) => s.setMargin);
+  const setCameraOffOutside = useSurveyStore((s) => s.setCameraOffOutside);
+  const setGridMode = useSurveyStore((s) => s.setGridMode);
   const setAltitudeReference = useSurveyStore((s) => s.setAltitudeReference);
   const setShowFootprints = useSurveyStore((s) => s.setShowFootprints);
   const setGroundPattern = useSurveyStore((s) => s.setGroundPattern);
@@ -134,6 +137,7 @@ export function SurveyConfigPanel() {
   const userPresets = useSettingsStore((s) => s.surveyPresets);
   const lastPresetId = useSettingsStore((s) => s.lastSurveyPresetId);
   const saveSurveyPreset = useSettingsStore((s) => s.saveSurveyPreset);
+  const saveCameraPreset = useSettingsStore((s) => s.saveCameraPreset);
   const removeSurveyPreset = useSettingsStore((s) => s.removeSurveyPreset);
   const setLastSurveyPresetId = useSettingsStore((s) => s.setLastSurveyPresetId);
 
@@ -143,6 +147,9 @@ export function SurveyConfigPanel() {
   const [insertSuccess, setInsertSuccess] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  // null = not naming; '' or text = inline camera-name entry open. (Electron has
+  // no window.prompt, so naming is an inline field.)
+  const [cameraNameDraft, setCameraNameDraft] = useState<string | null>(null);
 
   const simplifyToleranceM = useSettingsStore((s) => s.surveyPerformance.importSimplifyToleranceM);
   const updateSurveyPerformance = useSettingsStore((s) => s.updateSurveyPerformance);
@@ -182,6 +189,19 @@ export function SurveyConfigPanel() {
     setCustomCamera(updated);
     setCamera(updated);
   }, [customCamera, setCamera]);
+
+  const commitCameraName = useCallback(() => {
+    const name = (cameraNameDraft ?? '').trim();
+    if (!name) return;
+    const preset: CameraPreset = { ...customCamera, name };
+    saveCameraPreset(preset);
+    // Switch the active camera to the freshly-saved named preset so it's
+    // selected (and no longer the editable "Custom" entry).
+    setIsCustomCamera(false);
+    setCustomCamera(preset);
+    setCamera(preset);
+    setCameraNameDraft(null);
+  }, [cameraNameDraft, customCamera, saveCameraPreset, setCamera]);
 
   const handleManualCorridorChange = useCallback((value: number) => {
     const updated = { ...customCamera, manualCorridorWidth: value };
@@ -440,6 +460,41 @@ export function SurveyConfigPanel() {
               <NumberInput label="Image H (px)" value={customCamera.imageHeight} onChange={(v) => handleCustomField('imageHeight', v)} min={100} max={20000} step={1} />
               <NumberInput label="Focal (mm)" value={customCamera.focalLength} onChange={(v) => handleCustomField('focalLength', v)} min={1} max={200} step={0.1} />
             </div>
+          )}
+          {isCustomCamera && (
+            cameraNameDraft === null ? (
+              <button
+                onClick={() => setCameraNameDraft('')}
+                className="mt-2 w-full py-1.5 text-xs rounded-md bg-surface-raised text-content hover:text-purple-300 transition-colors"
+                title="Save these specs as a named camera in the dropdown"
+              >
+                Save camera to list
+              </button>
+            ) : (
+              <div className="mt-2 flex items-center gap-1.5">
+                <input
+                  autoFocus
+                  value={cameraNameDraft}
+                  onChange={(e) => setCameraNameDraft(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') commitCameraName(); if (e.key === 'Escape') setCameraNameDraft(null); }}
+                  placeholder="Camera name"
+                  className="flex-1 px-2 py-1 text-xs bg-surface-input border border-subtle rounded text-content placeholder-content-tertiary focus:border-purple-500 focus:outline-none"
+                />
+                <button
+                  onClick={commitCameraName}
+                  disabled={!cameraNameDraft.trim()}
+                  className="px-2.5 py-1 text-xs rounded bg-purple-600 text-white hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setCameraNameDraft(null)}
+                  className="px-2 py-1 text-xs rounded bg-surface-raised text-content hover:text-content transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            )
           )}
           {isManualCamera && (
             <div className="mt-2">
@@ -804,8 +859,8 @@ export function SurveyConfigPanel() {
               {!isManualCamera && (
                 <Section title="Overlap">
                   <div className="space-y-2">
-                    <SliderInput label="Front" value={config.frontOverlap} onChange={setFrontOverlap} min={50} max={95} step={1} unit="%" />
-                    <SliderInput label="Side" value={config.sideOverlap} onChange={setSideOverlap} min={20} max={99} step={1} unit="%" />
+                    <SliderInput label="Front" value={config.frontOverlap} onChange={setFrontOverlap} min={10} max={95} step={1} unit="%" />
+                    <SliderInput label="Side" value={config.sideOverlap} onChange={setSideOverlap} min={10} max={99} step={1} unit="%" />
                   </div>
                 </Section>
               )}
@@ -817,8 +872,51 @@ export function SurveyConfigPanel() {
                     {!isManualCamera && (
                       <SliderInput label="Overshoot" value={config.overshoot} onChange={setOvershoot} min={0} max={100} step={5} unit="m" />
                     )}
+                    <SliderInput label="Margin" value={config.margin ?? 0} onChange={setMargin} min={-50} max={50} step={1} unit="m" />
+                    <p className="text-[10px] text-content-tertiary leading-snug -mt-1">
+                      Buffers the boundary: positive grows coverage past the edge, negative keeps lines inside.
+                    </p>
+                    {!isManualCamera && (
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className="text-xs text-content-secondary w-14 flex-shrink-0">Turns</span>
+                        <div className="flex gap-1 flex-1">
+                          {(['copter', 'plane'] as const).map((mode) => (
+                            <button
+                              key={mode}
+                              onClick={() => setGridMode(mode)}
+                              className={`flex-1 px-1.5 py-1 text-[10px] rounded-md transition-colors ${
+                                (config.gridMode ?? 'copter') === mode
+                                  ? 'bg-purple-600/80 text-white'
+                                  : 'bg-surface-raised text-content-secondary hover:text-content'
+                              }`}
+                              title={mode === 'plane'
+                                ? 'Fixed-wing: extend the shorter line end at each turn for a clean 180° racetrack turn'
+                                : 'Multirotor: turn on the spot, lines connect directly'}
+                            >
+                              {mode === 'plane' ? 'Plane' : 'Copter'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </Section>
+              )}
+
+              {!isManualCamera && (config.pattern === 'grid' || config.pattern === 'crosshatch') && (
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-xs text-content-secondary" title="Camera triggers only along the scan lines; off during the turn-arounds outside the boundary">Camera off on turns</span>
+                  <button
+                    onClick={() => setCameraOffOutside(!config.cameraOffOutside)}
+                    className={`w-8 h-4.5 rounded-full transition-colors relative ${
+                      config.cameraOffOutside ? 'bg-purple-600' : 'bg-surface-raised'
+                    }`}
+                  >
+                    <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${
+                      config.cameraOffOutside ? 'left-4' : 'left-0.5'
+                    }`} />
+                  </button>
+                </div>
               )}
 
               {!isManualCamera && (
@@ -949,6 +1047,15 @@ function SliderInput({
   label: string; value: number; onChange: (v: number) => void;
   min: number; max: number; step: number; unit: string;
 }) {
+  // The value is both a slider AND a directly-editable number field (power
+  // users asked to type exact values). Out-of-range keystrokes are ignored
+  // mid-type (matches NumberInput); blur snaps back into range.
+  const clampBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const v = Number(e.target.value);
+    if (!Number.isFinite(v)) { onChange(min); return; }
+    const clamped = Math.min(max, Math.max(min, v));
+    if (clamped !== value) onChange(clamped);
+  };
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs text-content-secondary w-14 flex-shrink-0">{label}</span>
@@ -961,7 +1068,20 @@ function SliderInput({
         step={step}
         className="flex-1 h-1 bg-surface-inset rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-400 [&::-webkit-slider-thumb]:cursor-grab"
       />
-      <span className="text-xs text-content w-14 text-right tabular-nums font-medium">{value}{unit}</span>
+      <div className="flex items-center gap-0.5 w-14 flex-shrink-0 justify-end">
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => { const v = Number(e.target.value); if (Number.isFinite(v) && v >= min && v <= max) onChange(v); }}
+          onBlur={clampBlur}
+          min={min}
+          max={max}
+          step={step}
+          aria-label={label}
+          className="w-10 px-1 py-0.5 text-xs text-right tabular-nums font-medium bg-surface-input border border-subtle rounded text-content focus:outline-none focus:border-purple-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        />
+        <span className="text-[10px] text-content-tertiary w-3">{unit}</span>
+      </div>
     </div>
   );
 }

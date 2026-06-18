@@ -12,6 +12,7 @@ import { getDetachedComponent } from './component-registry';
 import { useDetachedSubscriptions } from './useDetachedSubscriptions';
 import { initializeSettings } from '../stores/settings-store';
 import { useTheme } from '../hooks/useTheme';
+import { GlobalTooltip } from '../components/GlobalTooltip';
 
 interface ParsedQuery {
   componentId: string;
@@ -84,6 +85,9 @@ export function DetachedRoot(): JSX.Element {
       <div className="flex-1 min-h-0">
         <Component {...query.props} />
       </div>
+      {/* Body-level portal so data-tip tooltips render in this window too —
+          App.tsx mounts its own; detached windows are a separate document. */}
+      <GlobalTooltip />
     </div>
   );
 }

@@ -44,7 +44,10 @@ import { OpenAipOverlay } from '../map/overlays/OpenAipOverlay';
 import { DipulOverlay } from '../map/overlays/DipulOverlay';
 import { AirspaceOverlay } from '../map/overlays/AirspaceOverlay';
 import { AirspaceLegend } from '../map/overlays/AirspaceLegend';
-import { OverlayToggles } from '../map/overlays/OverlayToggles';
+import { MapLayersControl } from '../map/overlays/MapLayersControl';
+import { WindParticleOverlay } from '../map/overlays/WindParticleOverlay';
+import { WindControls } from '../map/overlays/WindControls';
+import { WindRoseCard } from '../map/overlays/WindRoseCard';
 import { ApiKeyDialog } from '../map/overlays/ApiKeyDialog';
 import { useOverlayStore } from '../../stores/overlay-store';
 
@@ -1500,6 +1503,8 @@ function MapOverlayLayers({ baseLayer }: { baseLayer: string }) {
       {activeOverlays.has('radar') && <WeatherRadarOverlay baseLayer={baseLayer} />}
       {activeOverlays.has('openaip') && <OpenAipOverlay />}
       {activeOverlays.has('dipul') && <DipulOverlay />}
+      {activeOverlays.has('wind') && <WindParticleOverlay />}
+      {activeOverlays.has('wind') && <WindRoseCard />}
     </>
   );
 }
@@ -1509,6 +1514,13 @@ function AirspaceLegendWrapper() {
   const hasAirspace = useOverlayStore((s) => s.activeOverlays.has('airspace'));
   if (!hasAirspace) return null;
   return <AirspaceLegend />;
+}
+
+// Wind timeline bar — owns its own subscription
+function WindControlsWrapper() {
+  const hasWind = useOverlayStore((s) => s.activeOverlays.has('wind'));
+  if (!hasWind) return null;
+  return <WindControls />;
 }
 
 // ─── MapPanel entry point — delegates to 2D or 3D based on global mapMode ────
@@ -1959,7 +1971,14 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
       )}
       {/* Top toolbar */}
       <div data-tour="telemetry-map-overlays" className="absolute top-2 right-2 z-[1000] flex flex-col gap-1">
-        <LayerSwitcher currentLayer={currentLayer} onLayerChange={setCurrentLayer} />
+        <MapLayersControl
+          baseLayers={Object.keys(TELEMETRY_LAYERS) as LayerKey[]}
+          activeLayer={currentLayer}
+          onSelectLayer={(k) => setCurrentLayer(k as TelemetryLayerKey)}
+          showTerrain={showTerrain}
+          onToggleTerrain={() => setShowTerrain(!showTerrain)}
+          extra={<OfflineAreaDownload bounds={mapBounds} activeLayer={currentLayer} />}
+        />
         <button
           onClick={() => setFollowVehicle(!followVehicle)}
           className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
@@ -2058,28 +2077,13 @@ const TelemetryMap2D = React.memo(function TelemetryMap2D() {
           </svg>
           Mission
         </button>
-        <button
-          onClick={() => setShowTerrain(!showTerrain)}
-          className={`px-2 py-1 text-xs rounded shadow-lg transition-colors flex items-center gap-1.5 ${
-            showTerrain
-              ? 'bg-blue-600 text-white'
-              : 'bg-surface text-content hover:bg-surface-raised'
-          }`}
-          title="Toggle terrain elevation heatmap"
-        >
-          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-4 3 3 4-6 7 7" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 17h18" />
-          </svg>
-          Height
-        </button>
-        <div className="border-t border-subtle my-0.5" />
-        <OverlayToggles />
-        <OfflineAreaDownload bounds={mapBounds} activeLayer={currentLayer} />
       </div>
 
       {/* Airspace legend */}
       <AirspaceLegendWrapper />
+
+      {/* Wind timeline bar */}
+      <WindControlsWrapper />
 
       {/* API key dialog */}
       <ApiKeyDialog />

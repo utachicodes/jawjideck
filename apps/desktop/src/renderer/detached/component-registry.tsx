@@ -26,6 +26,7 @@ import { MapPanel } from '../components/panels/MapPanel';
 import { TelemetryDashboard } from '../components/telemetry/TelemetryDashboard';
 import { MavlinkInspectorView } from '../components/inspector/MavlinkInspectorView';
 import { InspectorGraphsView } from '../components/inspector/InspectorGraphsView';
+import { ObjectEditorApp } from '../area-editor/ObjectEditorApp';
 
 export interface DetachedComponentDef {
   /** React component to render. Receives `props` as-is from the URL. */
@@ -50,6 +51,7 @@ export const COMPONENT_REGISTRY: Record<string, DetachedComponentDef> = {
   messages: { Component: MessagesPanel as ComponentType<Record<string, unknown>>, defaultBounds: { width: 560, height: 420 } },
   map: { Component: MapPanel as ComponentType<Record<string, unknown>>, defaultBounds: { width: 960, height: 720 } },
   'telemetry-dashboard': { Component: TelemetryDashboard as ComponentType<Record<string, unknown>>, defaultBounds: { width: 1280, height: 800 } },
+  'area-editor': { Component: ObjectEditorApp as ComponentType<Record<string, unknown>>, defaultBounds: { width: 1400, height: 900 } },
 };
 
 export function getDetachedComponent(componentId: string): DetachedComponentDef | undefined {

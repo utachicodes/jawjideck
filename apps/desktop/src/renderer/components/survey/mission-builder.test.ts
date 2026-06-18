@@ -126,4 +126,44 @@ describe('surveyToMissionItems', () => {
       expect(item.seq).toBe(i);
     });
   });
+
+  describe('cameraOffOutside', () => {
+    // A 2-line (4-waypoint) grid result: start/end pairs.
+    function twoLineResult(): SurveyResult {
+      return {
+        ...makeSurveyResult(),
+        waypoints: [
+          { lat: -35.360, lng: 149.160 }, { lat: -35.360, lng: 149.170 }, // line 0
+          { lat: -35.361, lng: 149.170 }, { lat: -35.361, lng: 149.160 }, // line 1
+        ],
+      };
+    }
+
+    it('off (default): one continuous trigger + final disable', () => {
+      const items = surveyToMissionItems(twoLineResult(), makeConfig('relative'));
+      const on = items.filter((i) => i.command === MAV_CMD.DO_SET_CAM_TRIGG_DIST && i.param1 > 0);
+      const off = items.filter((i) => i.command === MAV_CMD.DO_SET_CAM_TRIGG_DIST && i.param1 === 0);
+      expect(on).toHaveLength(1);
+      expect(off).toHaveLength(1);
+    });
+
+    it('on: arms at each line entry, disarms at each exit (camera off on turns)', () => {
+      const items = surveyToMissionItems(twoLineResult(), { ...makeConfig('relative'), pattern: 'grid', cameraOffOutside: true });
+      const on = items.filter((i) => i.command === MAV_CMD.DO_SET_CAM_TRIGG_DIST && i.param1 > 0);
+      const off = items.filter((i) => i.command === MAV_CMD.DO_SET_CAM_TRIGG_DIST && i.param1 === 0);
+      expect(on).toHaveLength(2);            // one arm per line entry
+      expect(off.length).toBeGreaterThanOrEqual(2); // one disarm per exit (+ final disable)
+      // A disarm (cam off) sits between the two lines' waypoints, so no photos
+      // are taken during the turn-around.
+      const seqOfWp2 = items.find((i) => i.command === MAV_CMD.NAV_WAYPOINT && i.latitude === -35.361 && i.longitude === 149.170)!.seq;
+      const disarmBefore = items.some((i) => i.command === MAV_CMD.DO_SET_CAM_TRIGG_DIST && i.param1 === 0 && i.seq < seqOfWp2);
+      expect(disarmBefore).toBe(true);
+    });
+
+    it('on but corridor pattern: not bracketed (single trigger)', () => {
+      const items = surveyToMissionItems(twoLineResult(), { ...makeConfig('relative'), pattern: 'corridor', cameraOffOutside: true });
+      const on = items.filter((i) => i.command === MAV_CMD.DO_SET_CAM_TRIGG_DIST && i.param1 > 0);
+      expect(on).toHaveLength(1);
+    });
+  });
 });

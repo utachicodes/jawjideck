@@ -37,6 +37,31 @@ export function surveyToMissionItems(
   const isManual = !!(config.camera.manualCorridorWidth && config.camera.manualCorridorWidth > 0);
   const isReverseAlt = isManual && config.groundPattern === 'reverse-alternating';
 
+  // Camera-off-outside: trigger only along the scan lines and switch the camera
+  // off during the turn-arounds. Grid/crosshatch emit waypoints as line
+  // start/end PAIRS, so an even index is a line entry (camera on) and the
+  // following odd index is the exit (camera off). Only meaningful for camera
+  // flights on those patterns.
+  const bracketCamera =
+    !isManual &&
+    !!config.cameraOffOutside &&
+    (config.pattern === 'grid' || config.pattern === 'crosshatch');
+  const triggerDist = result.stats.photoSpacing > 0 ? result.stats.photoSpacing : 10;
+  const camTrigg = (dist: number): MissionItem => ({
+    seq: 0, // re-stamped below via seq++
+    frame: MAV_FRAME.GLOBAL_RELATIVE_ALT,
+    command: MAV_CMD.DO_SET_CAM_TRIGG_DIST,
+    current: false,
+    autocontinue: true,
+    param1: dist,
+    param2: 0,
+    param3: dist > 0 ? 1 : 0, // trigger once immediately when arming
+    param4: 0,
+    latitude: 0,
+    longitude: 0,
+    altitude: 0,
+  });
+
   // 0. NAV_TAKEOFF — aircraft only. Rovers/mowers skip this.
   if (!isManual) {
     items.push({
@@ -134,23 +159,16 @@ export function surveyToMissionItems(
       });
 
       // DO_SET_CAM_TRIGG_DIST — aircraft only. Mower has no camera to trigger.
-      if (!isManual) {
-        const triggerDist = result.stats.photoSpacing > 0 ? result.stats.photoSpacing : 10;
-        items.push({
-          seq: seq++,
-          frame: MAV_FRAME.GLOBAL_RELATIVE_ALT,
-          command: MAV_CMD.DO_SET_CAM_TRIGG_DIST,
-          current: false,
-          autocontinue: true,
-          param1: triggerDist,      // Trigger distance in meters
-          param2: 0,
-          param3: 1,                // Trigger once immediately
-          param4: 0,
-          latitude: 0,
-          longitude: 0,
-          altitude: 0,
-        });
+      // Skipped when bracketing per-line (the brackets below own the trigger).
+      if (!isManual && !bracketCamera) {
+        items.push({ ...camTrigg(triggerDist), seq: seq++ });
       }
+    }
+
+    // Per-line camera bracketing: arm at each line entry (even index), disarm
+    // at each line exit (odd index), so no photos fire during the turns.
+    if (bracketCamera) {
+      items.push({ ...camTrigg(i % 2 === 0 ? triggerDist : 0), seq: seq++ });
     }
   }
 

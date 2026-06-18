@@ -460,6 +460,8 @@ export const IPC_CHANNELS = {
   MODULE_CHECK_UPDATES: 'module:check-updates',
   MODULE_PROGRESS: 'module:progress',
   MODULE_DEEP_LINK_INSTALL: 'module:deep-link-install',
+  // ardudeck://open?view=<id> -> navigate the renderer to a built-in view
+  NAV_DEEP_LINK_OPEN: 'nav:deep-link-open',
 
   // Module Host (runtime API exposed to loaded modules)
   MODULE_HOST_LIST_LOADED: 'module-host:list-loaded',
@@ -471,6 +473,7 @@ export const IPC_CHANNELS = {
   MODULE_HOST_PTY_RESIZE: 'module-host:pty-resize',
 
   // Tile Cache (offline maps)
+  TILE_CACHE_GET_TILE: 'tile-cache:get-tile',
   TILE_CACHE_GET_STATS: 'tile-cache:get-stats',
   TILE_CACHE_CLEAR: 'tile-cache:clear',
   TILE_CACHE_DOWNLOAD_REGION: 'tile-cache:download-region',
@@ -564,6 +567,8 @@ export const IPC_CHANNELS = {
   OVERLAY_GET_AIRPORTS: 'overlay:get-airports',
   OVERLAY_GET_API_KEY: 'overlay:get-api-key',
   OVERLAY_SET_API_KEY: 'overlay:set-api-key',
+  OVERLAY_GET_WIND: 'overlay:get-wind',
+  OVERLAY_GEOCODE: 'overlay:geocode',
 
   // Log download & diagnostics
   LOG_LIST_REQUEST: 'log:list-request',
@@ -586,12 +591,33 @@ export const IPC_CHANNELS = {
   LOG_PARSE_PROGRESS: 'log:parse-progress',
   LOG_PARSE_COMPLETE: 'log:parse-complete',
   LOG_AI_ANALYZE: 'log:ai-analyze',
+  /** One round-trip of the Claude tool-use loop: renderer drives the loop and
+   *  executes tools against the parsed log locally; main just proxies the HTTP
+   *  call so the API key never leaves the main process. */
+  LOG_AI_CLAUDE_TOOL: 'log:ai-claude-tool',
   LOG_CHAT_SAVE: 'log:chat-save',
   LOG_CHAT_LOAD: 'log:chat-load',
   LOG_RECENT_GET: 'log:recent-get',
   LOG_RECENT_ADD: 'log:recent-add',
   LOG_RECENT_REMOVE: 'log:recent-remove',
   LOG_RECENT_CLEAR: 'log:recent-clear',
+
+  // Area Editor (separate window)
+  AREA_EDITOR_OPEN: 'area-editor:open',
+  /** Renderer (editor window) → main: commit the drawn polygon. */
+  AREA_EDITOR_COMMIT: 'area-editor:commit',
+  /** Main → renderer (main window): deliver the committed polygon. */
+  AREA_EDITOR_AREA_RECEIVED: 'area-editor:area-received',
+  /** Renderer (editor window) → main: commit multiple polygons with optional holes. */
+  AREA_EDITOR_COMMIT_AREAS: 'area-editor:commit-areas',
+  /** Main → renderer (main window): deliver multiple committed polygons. */
+  AREA_EDITOR_AREAS_RECEIVED: 'area-editor:areas-received',
+  /** Renderer (main window) → main: report the current map viewport so the
+   * Area Editor opens centered on the same location. */
+  MAP_VIEWPORT_REPORT: 'map:viewport-report',
+
+  // KML / KMZ area export
+  EXPORT_AREAS_KML: 'export:areas-kml',
 } as const;
 
 export type IpcChannels = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];

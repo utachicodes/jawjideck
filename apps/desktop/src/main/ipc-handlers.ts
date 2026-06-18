@@ -20,7 +20,7 @@ import {
 import { registerCompanionIpcHandlers } from './companion/companion-ipc-handlers.js';
 import { registerDroneBridgeIpcHandlers } from './dronebridge/dronebridge-ipc-handlers.js';
 import { setupOverlayHandlers, getApiKey } from './overlays/overlay-ipc-handlers.js';
-import { getAllWindows } from './window-manager.js';
+import { getAllWindows, getMainWindow } from './window-manager.js';
 import {
   MAVLinkParser,
   type MAVLinkPacket,
@@ -160,6 +160,7 @@ import {
   type VirtualRCState,
 } from './simulators/index.js';
 import type { SitlConfig, SitlStatus, ArduPilotSitlConfig, ArduPilotSitlStatus, ArduPilotVehicleType, ArduPilotReleaseTrack, ArduPilotSitlBinaryInfo } from '../shared/ipc-channels.js';
+import { openAreaEditorWindow, setMainMapViewport } from './area-editor-window.js';
 
 // =============================================================================
 // Legacy Board Detection
@@ -281,6 +282,7 @@ const signingStore = new Store<{
 
 // Parameter history storage (version control per board)
 import type { ParamChange, ParamCheckpoint, BoardParamHistory } from '../shared/param-history-types.js';
+import { areasToKml, type ExportArea } from '../shared/kml-export.js';
 const paramHistoryStore = new Store<{ boards: Record<string, BoardParamHistory> }>({
   name: 'param-history',
   defaults: { boards: {} },
@@ -8545,6 +8547,46 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     }
   });
 
+  // Claude tool-use loop proxy. The renderer owns the loop (it holds the parsed
+  // log and executes tools locally); this handler just forwards one Messages
+  // call with the API key attached and returns the raw content + stop_reason.
+  ipcMain.handle(IPC_CHANNELS.LOG_AI_CLAUDE_TOOL, async (_, args: {
+    system: string;
+    messages: unknown[];
+    tools: unknown[];
+  }): Promise<{ success: boolean; content?: unknown[]; stop_reason?: string; error?: string }> => {
+    const apiKey = getApiKey('ai-claude');
+    if (!apiKey) {
+      return { success: false, error: 'No API key configured for claude. Add it in Settings.' };
+    }
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 4096,
+          system: args.system,
+          tools: args.tools,
+          messages: args.messages,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        return { success: false, error: `Claude API error ${res.status}: ${body}` };
+      }
+      const json = await res.json() as { content: unknown[]; stop_reason: string };
+      return { success: true, content: json.content, stop_reason: json.stop_reason };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg };
+    }
+  });
+
   // ─── AI Chat Persistence ────────────────────────────────────────────────────
 
   ipcMain.handle(IPC_CHANNELS.LOG_CHAT_SAVE, (_, args: {
@@ -8585,6 +8627,78 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     recentLogsStore.set('logs', []);
   });
 
+  // Area Editor window
+  ipcMain.handle(IPC_CHANNELS.AREA_EDITOR_OPEN, () => {
+    openAreaEditorWindow();
+  });
+
+  // Main window reports its current map viewport so the Area Editor can open on
+  // the same location (fire-and-forget on every camera move).
+  ipcMain.on(IPC_CHANNELS.MAP_VIEWPORT_REPORT, (_event, v: { lat: number; lng: number; zoom: number }) => {
+    if (v && Number.isFinite(v.lat) && Number.isFinite(v.lng) && Number.isFinite(v.zoom)) setMainMapViewport(v);
+  });
+
+  // Area Editor commit: editor window sends finished polygon; main delivers it
+  // to the main window so it can activate the survey workflow.
+  ipcMain.handle(IPC_CHANNELS.AREA_EDITOR_COMMIT, (_event, payload: { polygon: Array<{ lat: number; lng: number }> }) => {
+    const main = getMainWindow();
+    if (!main || main.isDestroyed() || main.webContents.isDestroyed()) return;
+    main.webContents.send(IPC_CHANNELS.AREA_EDITOR_AREA_RECEIVED, payload);
+  });
+
+  // Area Editor multi-area commit: editor window sends multiple polygons (each
+  // with optional holes); main delivers them to the main window in one go.
+  ipcMain.handle(IPC_CHANNELS.AREA_EDITOR_COMMIT_AREAS, (_event, payload: { areas: Array<{ polygon: Array<{ lat: number; lng: number }>; holes?: Array<Array<{ lat: number; lng: number }>>; name?: string; kind?: 'area' | 'corridor'; corridorWidth?: number; config?: Record<string, unknown> }> }) => {
+    const main = getMainWindow();
+    if (!main || main.isDestroyed() || main.webContents.isDestroyed()) return;
+    main.webContents.send(IPC_CHANNELS.AREA_EDITOR_AREAS_RECEIVED, payload);
+    // Bring the main window forward so the user sees the survey land in the planner.
+    if (main.isMinimized()) main.restore();
+    main.show();
+    main.focus();
+  });
+
+  // KML / KMZ area export
+  ipcMain.handle(IPC_CHANNELS.EXPORT_AREAS_KML, async (_, { areas, format }: { areas: ExportArea[]; format: 'kml' | 'kmz' }): Promise<{ success: boolean; filePath?: string; error?: string }> => {
+    try {
+      const isKmz = format === 'kmz';
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: 'Export Areas',
+        defaultPath: isKmz ? 'areas.kmz' : 'areas.kml',
+        filters: isKmz
+          ? [
+              { name: 'KMZ Archive', extensions: ['kmz'] },
+              { name: 'All Files', extensions: ['*'] },
+            ]
+          : [
+              { name: 'KML File', extensions: ['kml'] },
+              { name: 'All Files', extensions: ['*'] },
+            ],
+      });
+
+      if (result.canceled || !result.filePath) {
+        return { success: false, error: 'Cancelled' };
+      }
+
+      const kmlString = areasToKml(areas);
+      const fs = await import('fs/promises');
+
+      if (isKmz) {
+        const AdmZip = (await import('adm-zip')).default;
+        const zip = new AdmZip();
+        zip.addFile('doc.kml', Buffer.from(kmlString, 'utf-8'));
+        await fs.writeFile(result.filePath, zip.toBuffer());
+      } else {
+        await fs.writeFile(result.filePath, kmlString, 'utf-8');
+      }
+
+      return { success: true, filePath: result.filePath };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, error: message };
+    }
+  });
+
 }
 
 async function callAiProvider(
@@ -8602,7 +8716,7 @@ async function callAiProvider(
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 2048,
         system,
         messages,

@@ -7,6 +7,7 @@ import { DebugConsole } from '../debug/DebugConsole';
 import { UpdateBanner } from './UpdateBanner';
 import { ArmDisarmButton } from './ArmDisarmButton';
 import { ScriptHealthBadge } from '../script-installer/ScriptHealthBadge';
+import { QuickLaunchMenu } from './QuickLaunchMenu';
 import iconImage from '../../assets/icon.png';
 
 interface AppShellProps {
@@ -113,6 +114,9 @@ export function AppShell({ children }: AppShellProps) {
               </span>
             </div>
           )}
+
+          {/* Quick Launch: open self-contained tools in their own window. */}
+          <QuickLaunchMenu />
         </div>
       </header>
 

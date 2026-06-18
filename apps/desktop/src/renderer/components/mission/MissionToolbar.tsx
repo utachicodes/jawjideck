@@ -661,6 +661,20 @@ export function MissionToolbar({ onResetLayout, showToast }: MissionToolbarProps
             </svg>
           </button>
         )}
+        {activeMode === 'mission' && (
+          <button
+            onClick={() => { window.electronAPI?.openAreaEditor?.().catch(() => undefined); }}
+            className="p-1.5 rounded bg-surface-raised text-content hover:brightness-125 transition-colors"
+            data-tip="Open the Area Editor in a separate window"
+          >
+            {/* pencil-ruler glyph - open the area editor */}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 11l6.5-6.5a2 2 0 012.828 2.828L11.828 14H9v-3z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21h18" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 17l4-4" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Spacer */}

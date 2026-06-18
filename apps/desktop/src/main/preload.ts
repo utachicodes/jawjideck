@@ -6,6 +6,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { IPC_CHANNELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type SettingsStoreSchema, type MSPConnectOptions, type MSPConnectionState, type MSPTelemetryData, type SitlConfig, type SitlStatus, type SitlExitData, type VirtualRCState, type ArduPilotSitlConfig, type ArduPilotSitlStatus, type ArduPilotSitlExitData, type ArduPilotSitlDownloadProgress, type ArduPilotSitlBinaryInfo, type ArduPilotFrameCatalog, type ArduPilotVehicleType, type ArduPilotReleaseTrack, type AppUpdateInfo, type SigningStatus, type TelemetrySpeed, type StatusMessage, type TileCacheStats, type TileCacheDownloadProgress, type TileCacheSettings, type TileCacheDownloadRegion, type CompanionConnectOptions, type CompanionConnectionIpcState, type CompanionDiscoveryResult } from '../shared/ipc-channels.js';
 import type { DetachedWindowInfo, OpenDetachedRequest } from '../shared/window-types.js';
+import type { ExportArea } from '../shared/kml-export.js';
 import type { SystemInfo, NetworkInfo, MetricsData, ProcessInfo, LogEntry, FileEntry, ServiceInfo, ServiceAction, ContainerInfo, ContainerAction, ExtensionInfo } from '@ardudeck/companion-types';
 import type { InstalledModule, ModuleProgress, UpdateAvailable } from '../shared/module-types.js';
 import type { ParamChange, ParamCheckpoint } from '../shared/param-history-types.js';
@@ -20,7 +21,8 @@ import type { DetectedBoard, FirmwareVersion, FlashProgress, FlashResult, Firmwa
 import type { CalibrationData, CalibrationProgressEvent, CalibrationCompleteEvent } from '../shared/calibration-types.js';
 import type { MissionSummary, StoredMission, SaveMissionPayload, FlightLog, MissionListFilter, MissionSortOptions } from '../shared/mission-library-types.js';
 import type { DroneBridgeInfo, DroneBridgeStats, DroneBridgeSettings, DroneBridgeClients, DroneBridgeDetected } from '../shared/dronebridge-types.js';
-import type { RainViewerMeta, AirspaceData, AirportData } from '../shared/overlay-types.js';
+import type { RainViewerMeta, AirspaceData, AirportData, GeocodeResult } from '../shared/overlay-types.js';
+import type { WindField, WindFetchParams } from '../shared/wind-types.js';
 
 type TelemetryUpdate =
   | { type: 'attitude'; data: AttitudeData }
@@ -43,6 +45,24 @@ interface TelemetryBatch {
   rcChannels?: RcChannelsData;
 }
 import type { SerialPortInfo, ScanResult } from '@ardudeck/comms';
+
+/** A shape committed from the Area Editor: a closed area or an open corridor. */
+interface CommitArea {
+  polygon: Array<{ lat: number; lng: number }>;
+  holes?: Array<Array<{ lat: number; lng: number }>>;
+  name?: string;
+  /** 'corridor' marks an open centerline (linear survey); absent/'area' = closed polygon. */
+  kind?: 'area' | 'corridor';
+  /** Corridor swath width in meters (only meaningful when kind === 'corridor'). */
+  corridorWidth?: number;
+  /**
+   * The Area Editor's survey generation config (camera, overlaps, altitude,
+   * pattern params) minus the polygon. Carried so the mission reproduces the
+   * exact survey the editor's briefing showed, instead of re-deriving it with
+   * the planner's own config. Loosely typed: it is the renderer's SurveyConfig.
+   */
+  config?: Record<string, unknown>;
+}
 
 /**
  * Exposed API for renderer process
@@ -640,6 +660,16 @@ const api = {
     systemContext: string;
   }): Promise<{ success: boolean; response?: string; error?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.LOG_AI_ANALYZE, args),
+
+  /** Proxy a single Claude Messages call (with tools) for the renderer-driven
+   *  tool-use loop. `messages` carries Claude-native content blocks (text +
+   *  tool_use + tool_result); the renderer executes tools against the log. */
+  logAiClaudeTool: (args: {
+    system: string;
+    messages: unknown[];
+    tools: unknown[];
+  }): Promise<{ success: boolean; content?: unknown[]; stop_reason?: string; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LOG_AI_CLAUDE_TOOL, args),
 
   logChatSave: (args: {
     logPath: string;
@@ -1623,6 +1653,11 @@ const api = {
   // Tile Cache (Offline Maps)
   // =============================================================================
 
+  // Fetch raw PNG bytes for a tile-cache:// URL. Used by detached windows'
+  // MapLibre addProtocol handler, which cannot fetch the privileged scheme.
+  tileCacheGetTile: (url: string): Promise<ArrayBuffer | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TILE_CACHE_GET_TILE, url),
+
   tileCacheGetStats: (): Promise<TileCacheStats> =>
     ipcRenderer.invoke(IPC_CHANNELS.TILE_CACHE_GET_STATS),
 
@@ -1696,6 +1731,12 @@ const api = {
       callback(payload);
     ipcRenderer.on(IPC_CHANNELS.MODULE_DEEP_LINK_INSTALL, handler);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.MODULE_DEEP_LINK_INSTALL, handler);
+  },
+
+  onNavDeepLinkOpen: (callback: (payload: { view: string }) => void) => {
+    const handler = (_: unknown, payload: { view: string }) => callback(payload);
+    ipcRenderer.on(IPC_CHANNELS.NAV_DEEP_LINK_OPEN, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.NAV_DEEP_LINK_OPEN, handler);
   },
 
   // =============================================================================
@@ -1904,10 +1945,53 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_GET_AIRSPACE, params),
   getAirports: (params: { lat: number; lon: number; zoom: number }): Promise<{ error?: string; data: AirportData[] }> =>
     ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_GET_AIRPORTS, params),
+  getWindField: (params: WindFetchParams): Promise<WindField | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_GET_WIND, params),
+  geocodeSearch: (query: string): Promise<GeocodeResult[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_GEOCODE, query),
   getApiKey: (service: string): Promise<{ hasKey: boolean; key: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_GET_API_KEY, service),
   setApiKey: (service: string, key: string): Promise<{ success: boolean }> =>
     ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_SET_API_KEY, service, key),
+
+  // Area Editor (separate window)
+  openAreaEditor: (): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.AREA_EDITOR_OPEN),
+
+  /** Report the main window's current map viewport so the Area Editor opens on
+   *  the same location. Fire-and-forget. */
+  reportMapViewport: (v: { lat: number; lng: number; zoom: number }): void =>
+    ipcRenderer.send(IPC_CHANNELS.MAP_VIEWPORT_REPORT, v),
+
+  /** Send the finished polygon from the editor window to main, which forwards
+   *  it to the main window via AREA_EDITOR_AREA_RECEIVED. */
+  commitArea: (polygon: Array<{ lat: number; lng: number }>): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.AREA_EDITOR_COMMIT, { polygon }),
+
+  /** Subscribe to incoming area payloads in the main window. Returns an
+   *  unsubscribe function matching the existing on* pattern. */
+  onAreaReceived: (callback: (data: { polygon: Array<{ lat: number; lng: number }> }) => void): (() => void) => {
+    const handler = (_: unknown, data: { polygon: Array<{ lat: number; lng: number }> }) => callback(data);
+    ipcRenderer.on(IPC_CHANNELS.AREA_EDITOR_AREA_RECEIVED, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.AREA_EDITOR_AREA_RECEIVED, handler);
+  },
+
+  /** Send multiple finished shapes (areas or corridors) from the editor window
+   *  to main, which forwards them to the main window via AREA_EDITOR_AREAS_RECEIVED.
+   *  `kind: 'corridor'` + `corridorWidth` mark a linear (centerline) survey. */
+  commitAreas: (areas: Array<CommitArea>): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.AREA_EDITOR_COMMIT_AREAS, { areas }),
+
+  /** Subscribe to incoming multi-area payloads in the main window. Returns an
+   *  unsubscribe function matching the existing on* pattern. */
+  onAreasReceived: (callback: (data: { areas: Array<CommitArea> }) => void): (() => void) => {
+    const handler = (_: unknown, data: { areas: Array<CommitArea> }) => callback(data);
+    ipcRenderer.on(IPC_CHANNELS.AREA_EDITOR_AREAS_RECEIVED, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.AREA_EDITOR_AREAS_RECEIVED, handler);
+  },
+
+  exportAreasKml: (areas: ExportArea[], format: 'kml' | 'kmz'): Promise<{ success: boolean; filePath?: string; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.EXPORT_AREAS_KML, { areas, format }),
 };
 
 // Expose to renderer

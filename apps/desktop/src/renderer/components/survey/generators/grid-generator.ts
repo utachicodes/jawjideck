@@ -15,7 +15,7 @@
  * 11. Compute camera footprints at each photo position
  */
 import type { LatLng, SurveyConfig, SurveyResult } from '../survey-types';
-import { latLngToLocal, localToLatLng, polygonCentroid, rotatePoint } from '../geo-math';
+import { latLngToLocal, localToLatLng, polygonCentroid, rotatePoint, offsetPolygon } from '../geo-math';
 import { clipScanLines, routeScanSegments } from '../polygon-clip';
 import { computeSurveyStats, getEffectiveFootprint, getEffectiveSpacing } from '../survey-stats';
 
@@ -62,10 +62,30 @@ export function generateGrid(config: SurveyConfig): SurveyResult {
   const angleRad = -gridAngle * (Math.PI / 180); // Negative to align scan lines
 
   // Convert polygon to local rotated coords
-  const localPoly = polygon.map(v => {
+  let localPoly = polygon.map(v => {
     const local = latLngToLocal(origin, v);
     return rotatePoint(local, angleRad);
   });
+
+  // Margin: buffer the polygon before scanning. Positive grows the surveyed
+  // area outward, negative shrinks it inward. offsetPolygon's positive distance
+  // SHRINKS, so we negate. Guard against an over-shrink that collapses or
+  // flips the ring (keep the original polygon if the offset is degenerate).
+  const margin = config.margin ?? 0;
+  if (margin !== 0) {
+    const buffered = offsetPolygon(localPoly, -margin);
+    const a0 = Math.abs(signedArea2D(localPoly));
+    const a1 = buffered.length >= 3 ? Math.abs(signedArea2D(buffered)) : 0;
+    const sameWinding =
+      buffered.length >= 3 && Math.sign(signedArea2D(buffered)) === Math.sign(signedArea2D(localPoly));
+    // Area must move in the expected direction (grow increases it, shrink
+    // decreases it). A wild miter spike from over-shrinking trips this and we
+    // keep the original polygon.
+    const areaOk = margin > 0 ? a1 > a0 : a1 < a0 && a1 > 1;
+    if (sameWinding && areaOk) {
+      localPoly = buffered;
+    }
+  }
 
   // No-fly holes get the same transform so scan-line clipping can carve them out.
   const localHoles = (config.holes ?? [])
@@ -90,6 +110,25 @@ export function generateGrid(config: SurveyConfig): SurveyResult {
     clipScanLines(localPoly, lineSpacing, effectiveOvershoot, localHoles),
     lineSpacing,
   );
+
+  // Plane mode: make every turn a clean 180°. Each turn joins one line's exit
+  // to the next line's entry (both on the same side); extend whichever is
+  // shorter so the two share an offset and the aircraft flies a symmetric
+  // racetrack turn instead of cutting a diagonal. Copter/mower turn in place,
+  // so leave the geometry untouched.
+  if (!isManual && config.gridMode === 'plane') {
+    for (let i = 0; i + 1 < clippedLines.length; i++) {
+      const a = clippedLines[i]!;
+      const b = clippedLines[i + 1]!;
+      if (a.x2 >= a.x1) {
+        const outer = Math.max(a.x2, b.x1); // turn on the right — extend to the rightmost
+        a.x2 = outer; b.x1 = outer;
+      } else {
+        const outer = Math.min(a.x2, b.x1); // turn on the left — extend to the leftmost
+        a.x2 = outer; b.x1 = outer;
+      }
+    }
+  }
 
   if (clippedLines.length === 0) {
     return { waypoints: [], photoPositions: [], footprints: [], stats: emptyStats(config) };
@@ -155,6 +194,17 @@ export function generateGrid(config: SurveyConfig): SurveyResult {
   const stats = computeSurveyStats(config, waypoints, photoPositions, clippedLines.length);
 
   return { waypoints, photoPositions, footprints, stats };
+}
+
+/** Shoelace signed area of a local ring; sign indicates winding. */
+function signedArea2D(pts: { x: number; y: number }[]): number {
+  let a = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i]!;
+    const q = pts[(i + 1) % pts.length]!;
+    a += p.x * q.y - q.x * p.y;
+  }
+  return a / 2;
 }
 
 function emptyStats(config: SurveyConfig) {

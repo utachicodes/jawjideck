@@ -1,8 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useSurveyStore } from './survey-store';
+import { useMissionStore } from './mission-store';
+import { isSurveyGroup } from '../../shared/mission-group-types';
 
-/** Reset store state before each test */
+/** Reset both stores before each test */
 function resetStore() {
+  useMissionStore.setState({ groups: [], missionItems: [], isDirty: false });
   useSurveyStore.setState({
     drawMode: 'none',
     drawingVertices: [],
@@ -153,6 +156,84 @@ describe('survey-store', () => {
       useSurveyStore.setState({ polygon: null });
       useSurveyStore.getState().updateVertex(0, 0, 0);
       expect(useSurveyStore.getState().polygon).toBeNull();
+    });
+  });
+
+  describe('addSurveyAreasFromPolygons', () => {
+    // A real square polygon large enough that the grid generator produces waypoints.
+    // Side ~1 km so the 80 m altitude / ~30 m line spacing yields meaningful rows.
+    const square1 = [
+      { lat: -35.360, lng: 149.160 },
+      { lat: -35.370, lng: 149.160 },
+      { lat: -35.370, lng: 149.170 },
+      { lat: -35.360, lng: 149.170 },
+    ];
+    const square2 = [
+      { lat: -35.380, lng: 149.160 },
+      { lat: -35.390, lng: 149.160 },
+      { lat: -35.390, lng: 149.170 },
+      { lat: -35.380, lng: 149.170 },
+    ];
+
+    it('returns empty array when given no areas', () => {
+      const ids = useSurveyStore.getState().addSurveyAreasFromPolygons([]);
+      expect(ids).toEqual([]);
+    });
+
+    it('skips areas with fewer than 3 points', () => {
+      const ids = useSurveyStore.getState().addSurveyAreasFromPolygons([
+        { polygon: [{ lat: -35.36, lng: 149.16 }, { lat: -35.37, lng: 149.16 }] },
+      ]);
+      expect(ids).toEqual([]);
+      expect(useMissionStore.getState().groups).toHaveLength(0);
+    });
+
+    it('adds two areas in one atomic call and returns two ids', () => {
+      const ids = useSurveyStore.getState().addSurveyAreasFromPolygons([
+        { polygon: square1 },
+        { polygon: square2 },
+      ]);
+      expect(ids).toHaveLength(2);
+      expect(ids[0]).toBeTruthy();
+      expect(ids[1]).toBeTruthy();
+      expect(ids[0]).not.toBe(ids[1]);
+
+      const { groups } = useMissionStore.getState();
+      expect(groups.filter(isSurveyGroup)).toHaveLength(2);
+    });
+
+    it('opens the first group in the survey panel', () => {
+      const ids = useSurveyStore.getState().addSurveyAreasFromPolygons([
+        { polygon: square1 },
+        { polygon: square2 },
+      ]);
+      const surveyState = useSurveyStore.getState();
+      expect(surveyState.isActive).toBe(true);
+      expect(surveyState.editingGroupId).toBe(ids[0]);
+    });
+
+    it('respects custom names', () => {
+      const ids = useSurveyStore.getState().addSurveyAreasFromPolygons([
+        { polygon: square1, name: 'Zone A' },
+        { polygon: square2, name: 'Zone B' },
+      ]);
+      expect(ids).toHaveLength(2);
+      const { groups } = useMissionStore.getState();
+      const surveyGroups = groups.filter(isSurveyGroup);
+      expect(surveyGroups.some((g) => g.name === 'Zone A')).toBe(true);
+      expect(surveyGroups.some((g) => g.name === 'Zone B')).toBe(true);
+    });
+
+    it('all items belong to their respective groups', () => {
+      const ids = useSurveyStore.getState().addSurveyAreasFromPolygons([
+        { polygon: square1 },
+        { polygon: square2 },
+      ]);
+      const { missionItems } = useMissionStore.getState();
+      const group0Items = missionItems.filter((it) => it.groupId === ids[0]);
+      const group1Items = missionItems.filter((it) => it.groupId === ids[1]);
+      expect(group0Items.length).toBeGreaterThan(0);
+      expect(group1Items.length).toBeGreaterThan(0);
     });
   });
 });

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type { TelemetrySpeed, BoardStats, PersistedSurveyPreset } from '../../shared/ipc-channels.js';
+import type { CameraPreset } from '../components/survey/survey-types';
 import type { FirmwareSource } from '../../shared/firmware-types.js';
 import type { NonDefaultColorKey } from '../components/parameters/non-default-palette.js';
 import { DEFAULT_NON_DEFAULT_COLOR } from '../components/parameters/non-default-palette.js';
@@ -193,6 +194,12 @@ export const DEFAULT_SURVEY_PERFORMANCE: SurveyPerformance = {
 export type DisplayUnits = 'small' | 'large';
 
 /**
+ * Survey measurement system for the Area Editor briefing readouts.
+ * 'metric' = hectares + m/km, 'imperial' = acres + ft/mi.
+ */
+export type SurveyUnits = 'metric' | 'imperial';
+
+/**
  * Experience level controls visibility of educational UI elements
  */
 export type ExperienceLevel = 'beginner' | 'advanced';
@@ -349,6 +356,10 @@ interface SettingsStore {
   displayUnits: DisplayUnits;
   setDisplayUnits: (units: DisplayUnits) => void;
 
+  // Survey measurement system (Area Editor briefing)
+  surveyUnits: SurveyUnits;
+  setSurveyUnits: (units: SurveyUnits) => void;
+
   // Theme
   theme: ThemePreference;
   setTheme: (theme: ThemePreference) => void;
@@ -375,6 +386,12 @@ interface SettingsStore {
   removeSurveyPreset: (id: string) => void;
   setLastSurveyPresetId: (id: string | null) => void;
   setSurveySavedConfig: (config: Record<string, unknown> | null) => void;
+
+  // User-saved camera presets (added to the camera dropdown). Built-in cameras
+  // live in code (camera-presets.ts); this is the user slice, keyed by name.
+  userCameraPresets: CameraPreset[];
+  saveCameraPreset: (camera: CameraPreset) => void;
+  removeCameraPreset: (name: string) => void;
 
   // Computed
   getActiveVehicle: () => VehicleProfile | null;
@@ -780,6 +797,7 @@ export const useSettingsStore = create<SettingsStore>()(
   preferredFirmwareSource: 'ardupilot' as FirmwareSource,
   telemetrySpeed: 'normal' as TelemetrySpeed,
   displayUnits: 'small' as DisplayUnits,
+  surveyUnits: 'metric' as SurveyUnits,
   theme: 'dark' as ThemePreference,
   nonDefaultHighlightColor: DEFAULT_NON_DEFAULT_COLOR,
   experienceLevel: null as ExperienceLevel | null,
@@ -805,6 +823,18 @@ export const useSettingsStore = create<SettingsStore>()(
   },
   setLastSurveyPresetId: (id: string | null) => {
     set({ lastSurveyPresetId: id });
+  },
+
+  userCameraPresets: [] as CameraPreset[],
+  saveCameraPreset: (camera: CameraPreset) => {
+    set((s) => {
+      // Replace any existing entry with the same name so re-saving updates it.
+      const others = s.userCameraPresets.filter((c) => c.name !== camera.name);
+      return { userCameraPresets: [...others, camera] };
+    });
+  },
+  removeCameraPreset: (name: string) => {
+    set((s) => ({ userCameraPresets: s.userCameraPresets.filter((c) => c.name !== name) }));
   },
   setSurveySavedConfig: (config) => {
     set({ surveySavedConfig: config });
@@ -879,6 +909,7 @@ export const useSettingsStore = create<SettingsStore>()(
           preferredFirmwareSource: ((settings as unknown as Record<string, unknown>).preferredFirmwareSource as FirmwareSource) || 'ardupilot',
           telemetrySpeed: ((settings as unknown as Record<string, unknown>).telemetrySpeed as TelemetrySpeed) || 'normal',
           displayUnits: ((settings as unknown as Record<string, unknown>).displayUnits as DisplayUnits) || 'small',
+          surveyUnits: ((settings as unknown as Record<string, unknown>).surveyUnits as SurveyUnits) || 'metric',
           theme: ((settings as unknown as Record<string, unknown>).theme as ThemePreference) || 'dark',
           nonDefaultHighlightColor: ((settings as unknown as Record<string, unknown>).nonDefaultHighlightColor as NonDefaultColorKey) || DEFAULT_NON_DEFAULT_COLOR,
           experienceLevel: ((settings as unknown as Record<string, unknown>).experienceLevel as ExperienceLevel) || null,
@@ -895,6 +926,7 @@ export const useSettingsStore = create<SettingsStore>()(
           surveyPresets: (settings.surveyPresets ?? []) as PersistedSurveyPreset[],
           lastSurveyPresetId: settings.lastSurveyPresetId ?? null,
           surveySavedConfig: (settings.surveySavedConfig as Record<string, unknown> | undefined) ?? null,
+          userCameraPresets: ((settings as unknown as Record<string, unknown>).userCameraPresets as CameraPreset[] | undefined) ?? [],
           _isInitialized: true,
         });
       } else {
@@ -924,6 +956,7 @@ export const useSettingsStore = create<SettingsStore>()(
         preferredFirmwareSource: state.preferredFirmwareSource,
         telemetrySpeed: state.telemetrySpeed,
         displayUnits: state.displayUnits,
+        surveyUnits: state.surveyUnits,
         theme: state.theme,
         nonDefaultHighlightColor: state.nonDefaultHighlightColor,
         ...(state.experienceLevel ? { experienceLevel: state.experienceLevel } : {}),
@@ -937,6 +970,7 @@ export const useSettingsStore = create<SettingsStore>()(
         surveyPresets: state.surveyPresets,
         ...(state.lastSurveyPresetId ? { lastSurveyPresetId: state.lastSurveyPresetId } : {}),
         ...(state.surveySavedConfig ? { surveySavedConfig: state.surveySavedConfig } : {}),
+        userCameraPresets: state.userCameraPresets,
       };
       await window.electronAPI?.saveSettings(payload);
     } catch (error) {
@@ -1165,6 +1199,10 @@ export const useSettingsStore = create<SettingsStore>()(
     set({ displayUnits: units });
   },
 
+  setSurveyUnits: (units) => {
+    set({ surveyUnits: units });
+  },
+
   setTheme: (theme) => {
     set({ theme });
   },
@@ -1234,6 +1272,7 @@ useSettingsStore.subscribe(
     preferredFirmwareSource: state.preferredFirmwareSource,
     telemetrySpeed: state.telemetrySpeed,
     displayUnits: state.displayUnits,
+    surveyUnits: state.surveyUnits,
     theme: state.theme,
     nonDefaultHighlightColor: state.nonDefaultHighlightColor,
     experienceLevel: state.experienceLevel,
@@ -1247,6 +1286,7 @@ useSettingsStore.subscribe(
     surveyPresets: state.surveyPresets,
     lastSurveyPresetId: state.lastSurveyPresetId,
     surveySavedConfig: state.surveySavedConfig,
+    userCameraPresets: state.userCameraPresets,
   }),
   (curr, prev) => {
     // Only save if initialized and something changed
@@ -1264,6 +1304,7 @@ useSettingsStore.subscribe(
         curr.preferredFirmwareSource !== prev.preferredFirmwareSource ||
         curr.telemetrySpeed !== prev.telemetrySpeed ||
         curr.displayUnits !== prev.displayUnits ||
+        curr.surveyUnits !== prev.surveyUnits ||
         curr.theme !== prev.theme ||
         curr.experienceLevel !== prev.experienceLevel ||
         curr.experienceLevelVersion !== prev.experienceLevelVersion ||
@@ -1275,7 +1316,8 @@ useSettingsStore.subscribe(
         curr.aiWarningDismissed !== prev.aiWarningDismissed ||
         curr.surveyPresets !== prev.surveyPresets ||
         curr.lastSurveyPresetId !== prev.lastSurveyPresetId ||
-        curr.surveySavedConfig !== prev.surveySavedConfig
+        curr.surveySavedConfig !== prev.surveySavedConfig ||
+        curr.userCameraPresets !== prev.userCameraPresets
       ) {
         debouncedSave();
       }

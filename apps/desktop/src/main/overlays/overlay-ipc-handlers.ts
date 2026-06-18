@@ -4,6 +4,9 @@ import { IPC_CHANNELS } from '../../shared/ipc-channels.js';
 import type { OverlayFetchParams } from '../../shared/overlay-types.js';
 import { getRainViewerMeta } from './rainviewer.js';
 import { fetchAirspace, fetchAirports } from './openaip.js';
+import { fetchWindField } from './open-meteo-wind.js';
+import { geocodeSearch } from './geocode.js';
+import type { WindFetchParams } from '../../shared/wind-types.js';
 
 // ─── API Key Store (encrypted) ───────────────────────────────────────────────
 
@@ -53,6 +56,14 @@ export function setupOverlayHandlers(): void {
     if (!key) return { error: 'no-key', data: [] };
     const data = await fetchAirspace(params, key);
     return { data };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.OVERLAY_GET_WIND, async (_event, params: WindFetchParams) => {
+    return fetchWindField(params);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.OVERLAY_GEOCODE, async (_event, query: string) => {
+    return geocodeSearch(query);
   });
 
   ipcMain.handle(IPC_CHANNELS.OVERLAY_GET_AIRPORTS, async (_event, params: OverlayFetchParams) => {

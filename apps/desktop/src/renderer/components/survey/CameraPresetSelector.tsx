@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { CameraPreset } from './survey-types';
 import { CAMERA_PRESET_GROUPS, CUSTOM_CAMERA, MANUAL_CAMERA } from './camera-presets';
+import { useSettingsStore } from '../../stores/settings-store';
 
 interface CameraPresetSelectorProps {
   value: CameraPreset;
@@ -14,6 +15,12 @@ export function CameraPresetSelector({ value, onChange }: CameraPresetSelectorPr
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const userCameraPresets = useSettingsStore((s) => s.userCameraPresets);
+  const removeCameraPreset = useSettingsStore((s) => s.removeCameraPreset);
+
+  const savedMatches = userCameraPresets.filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase()),
+  );
 
   // Close on click outside
   useEffect(() => {
@@ -95,6 +102,41 @@ export function CameraPresetSelector({ value, onChange }: CameraPresetSelectorPr
               ))}
             </div>
           ))}
+
+          {/* User-saved cameras — appear in their own group with a delete affordance. */}
+          {savedMatches.length > 0 && (
+            <div>
+              <div className="px-3 py-1 text-[10px] font-medium text-content-secondary uppercase tracking-wider bg-surface-input">
+                Saved
+              </div>
+              {savedMatches.map((preset) => (
+                <div
+                  key={preset.name}
+                  className={`group flex items-center hover:bg-purple-600/20 transition-colors ${
+                    value.name === preset.name ? 'bg-purple-600/10' : ''
+                  }`}
+                >
+                  <button
+                    onClick={() => { onChange({ ...preset }); setIsOpen(false); }}
+                    className={`flex-1 px-3 py-1.5 text-left text-xs ${
+                      value.name === preset.name ? 'text-purple-300' : 'text-content'
+                    }`}
+                  >
+                    {preset.name}
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); removeCameraPreset(preset.name); }}
+                    className="opacity-0 group-hover:opacity-100 px-2 text-content-tertiary hover:text-red-400 transition-opacity"
+                    title="Delete saved camera"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Custom & Manual options — both are user-defined, but Custom still
               uses camera optics (sensor/focal) while Manual skips them entirely
