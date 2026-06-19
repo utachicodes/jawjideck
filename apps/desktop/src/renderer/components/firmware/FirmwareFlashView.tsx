@@ -201,9 +201,11 @@ function SerialPortPicker({
  */
 function BootloaderChecklist({
   canFlash,
+  isConnected,
   onReady,
 }: {
   canFlash: boolean;
+  isConnected: boolean;
   onReady: () => void;
 }) {
   const [jumperRemoved, setJumperRemoved] = useState(false);
@@ -289,8 +291,18 @@ function BootloaderChecklist({
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
-        {allChecked ? 'Start Flashing' : 'Complete checklist to continue'}
+        {!allChecked
+          ? 'Complete checklist to continue'
+          : isConnected
+            ? 'Disconnect from the board first'
+            : 'Start Flashing'}
       </button>
+
+      {allChecked && isConnected && (
+        <p className="mt-2 text-xs text-amber-300/90 text-center">
+          The board is still connected on the left. Disconnect it (banner above) to enable flashing.
+        </p>
+      )}
     </div>
   );
 }
@@ -452,7 +464,7 @@ export function FirmwareFlashView() {
   } = store;
 
   // Get connection state to auto-detect board when connected
-  const { connectionState } = useConnectionStore();
+  const { connectionState, disconnect } = useConnectionStore();
   const isConnected = connectionState.isConnected;
   const connectedBoardId = connectionState.boardId;
   const connectedProtocol = connectionState.protocol;
@@ -682,6 +694,12 @@ export function FirmwareFlashView() {
                       'Board info auto-detected from active connection'
                     )}
                   </p>
+                  <button
+                    onClick={() => { void disconnect(); }}
+                    className="mt-3 px-3 py-1.5 text-sm font-medium bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 rounded-lg transition-colors"
+                  >
+                    Disconnect now to enable flashing
+                  </button>
                 </div>
               </div>
             </div>
@@ -1247,6 +1265,7 @@ export function FirmwareFlashView() {
             {detectedBoard?.inBootloader && !isFlashing && flashState !== 'complete' && (
               <BootloaderChecklist
                 canFlash={canFlash}
+                isConnected={isConnected}
                 onReady={startFlash}
               />
             )}

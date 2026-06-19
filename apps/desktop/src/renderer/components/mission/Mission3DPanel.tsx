@@ -2,8 +2,10 @@ import { useEffect, useRef, useState, useMemo, useCallback, type ReactNode } fro
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-// Use pre-built CSP worker to avoid Vite esbuild __publicField error
-maplibregl.setWorkerUrl('/maplibre-worker.js');
+// Use pre-built CSP worker to avoid Vite esbuild __publicField error.
+// Resolve relative to the document: a leading-slash path 404s under file:// in
+// packaged builds (see ObjectEditorMap.tsx), breaking the MapLibre worker.
+maplibregl.setWorkerUrl(new URL('maplibre-worker.js', document.baseURI).href);
 import { useMissionStore } from '../../stores/mission-store';
 import { useTelemetryStore } from '../../stores/telemetry-store';
 import { useConnectionStore } from '../../stores/connection-store';
