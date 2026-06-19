@@ -16,7 +16,9 @@ import 'uplot/dist/uPlot.min.css';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-maplibregl.setWorkerUrl('/maplibre-worker.js');
+// Resolve relative to the document: a leading-slash path 404s under file:// in
+// packaged builds (see ObjectEditorMap.tsx), breaking the MapLibre worker.
+maplibregl.setWorkerUrl(new URL('maplibre-worker.js', document.baseURI).href);
 import { createFlightPathThreeJsLayer } from './flight-threejs-layer';
 import { useLogStore } from '../../stores/log-store';
 

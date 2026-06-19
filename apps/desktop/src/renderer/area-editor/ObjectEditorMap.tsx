@@ -15,7 +15,13 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { MAP_LAYERS, type LayerKey } from '../../shared/map-layers';
 import { useAreaEditorLayersStore, type AreaEditorOverlayId } from './area-editor-layers-store';
 
-maplibregl.setWorkerUrl('/maplibre-worker.js');
+// Resolve the worker relative to the current document, not the server root.
+// In dev the window loads from http://localhost (so '/maplibre-worker.js' works),
+// but in packaged builds it loads via file://, where a leading-slash path resolves
+// to the filesystem root and 404s - killing the MapLibre worker. Raster tiles still
+// render (decoded on the main thread), but GeoJSON sources (draw objects, overlays)
+// silently fail, which looks like "only the satellite shows, can't draw or toggle layers".
+maplibregl.setWorkerUrl(new URL('maplibre-worker.js', document.baseURI).href);
 
 // Detached windows can't fetch the privileged tile-cache:// scheme directly;
 // pull tile bytes from the main process over IPC instead (runs on the renderer
