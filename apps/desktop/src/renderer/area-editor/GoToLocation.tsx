@@ -4,7 +4,7 @@
  * main via Nominatim). Flies the map to the chosen spot. Commercial pilots use
  * this to jump straight to a job site by parcel coordinates or address.
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type maplibregl from 'maplibre-gl';
 import type { GeocodeResult } from '../../shared/overlay-types';
 
@@ -28,33 +28,65 @@ export function GoToLocation({ map }: Props): JSX.Element {
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState<GeocodeResult[] | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  // Set when we programmatically change the query (after picking a result) so
+  // the live-search effect doesn't immediately re-query for the chosen label.
+  const skipSearchRef = useRef(false);
 
   const flyTo = useCallback((lng: number, lat: number) => {
     map?.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 15), duration: 800 });
   }, [map]);
 
-  const reset = () => { setResults(null); setMsg(null); };
+  const closeResults = () => { setResults(null); setMsg(null); };
 
+  const pick = useCallback((r: GeocodeResult) => {
+    flyTo(r.lon, r.lat);
+    skipSearchRef.current = true;
+    setQ(r.label.split(',')[0] ?? '');
+    setResults(null);
+    setMsg(null);
+  }, [flyTo]);
+
+  // Live, debounced geocoding as the user types. Coordinates resolve locally
+  // (no network); short or empty queries just clear the dropdown.
+  useEffect(() => {
+    if (skipSearchRef.current) { skipSearchRef.current = false; return; }
+    const query = q.trim();
+    setMsg(null);
+    if (!query || parseLatLng(query) || query.length < 3) { setResults(null); setBusy(false); return; }
+    let cancelled = false;
+    const t = setTimeout(() => {
+      setBusy(true);
+      window.electronAPI.geocodeSearch(query)
+        .then((hits) => {
+          if (cancelled) return;
+          setResults(hits);
+          setMsg(hits.length === 0 ? 'No match found' : null);
+        })
+        .catch(() => { if (!cancelled) setMsg('Search failed'); })
+        .finally(() => { if (!cancelled) setBusy(false); });
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [q]);
+
+  // Enter: coordinates fly immediately; otherwise jump to the top result
+  // (fetching now if the debounce hasn't resolved yet).
   const submit = useCallback(async () => {
-    reset();
     const query = q.trim();
     if (!query || !map) return;
-
     const coord = parseLatLng(query);
-    if (coord) { flyTo(coord[0], coord[1]); return; }
-
+    if (coord) { flyTo(coord[0], coord[1]); closeResults(); return; }
+    if (results && results.length > 0) { pick(results[0]!); return; }
     setBusy(true);
     try {
       const hits = await window.electronAPI.geocodeSearch(query);
       if (hits.length === 0) { setMsg('No match found'); return; }
-      if (hits.length === 1) { flyTo(hits[0]!.lon, hits[0]!.lat); return; }
-      setResults(hits);
+      pick(hits[0]!);
     } catch {
       setMsg('Search failed');
     } finally {
       setBusy(false);
     }
-  }, [q, map, flyTo]);
+  }, [q, map, results, flyTo, pick]);
 
   // Top-center: clears the zoom/compass control (top-left) and Layers (top-right).
   return (
@@ -65,8 +97,8 @@ export function GoToLocation({ map }: Props): JSX.Element {
         </svg>
         <input
           value={q}
-          onChange={(e) => { setQ(e.target.value); reset(); }}
-          onKeyDown={(e) => { if (e.key === 'Enter') void submit(); else if (e.key === 'Escape') reset(); }}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') void submit(); else if (e.key === 'Escape') closeResults(); }}
           placeholder="Go to place or lat, lon"
           aria-label="Go to location"
           className="flex-1 min-w-0 bg-transparent text-xs text-content placeholder:text-content-tertiary focus:outline-none"
@@ -85,7 +117,7 @@ export function GoToLocation({ map }: Props): JSX.Element {
             <button
               key={`${r.lat},${r.lon},${i}`}
               type="button"
-              onClick={() => { flyTo(r.lon, r.lat); reset(); }}
+              onClick={() => pick(r)}
               title={r.label}
               className="w-full text-left px-2.5 py-1.5 text-[11px] text-content-secondary hover:bg-surface-raised hover:text-content transition-colors truncate"
             >

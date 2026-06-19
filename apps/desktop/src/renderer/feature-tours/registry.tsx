@@ -175,6 +175,62 @@ export const FEATURE_TOURS: FeatureTour[] = [
       },
     ],
   },
+  {
+    id: 'quick-launch-033',
+    view: 'telemetry',
+    version: '0.33',
+    title: 'New: Quick Launch & the Area Editor',
+    blurb:
+      'Pop tools into their own windows from the header, and jump straight into the new Area Editor for drawing survey areas and corridors.',
+    steps: [
+      {
+        selector: '[data-tour="welcome-cards"]',
+        // Only shown on the disconnected welcome screen; skipped once connected.
+        predicate: present('[data-tour="welcome-cards"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Jump straight into a tool</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              No vehicle connected? These cards open the tools that work offline -
+              {' '}<strong>Mission Planning</strong>, the new <strong>Area Editor</strong>,
+              {' '}<strong>SITL</strong>, <strong>Flight Log Analysis</strong>,
+              {' '}<strong>Firmware Flash</strong> and your <strong>Mission Library</strong>.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="quick-launch"]',
+        predicate: present('[data-tour="quick-launch"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Quick Launch - tools in their own window</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Open the <strong>MAVLink Inspector</strong> or <strong>Telemetry Dashboard</strong> in a
+              separate window - ideal for a <strong>second monitor</strong> while you keep planning or
+              tuning in the main window. Each stays live alongside the rest of the app.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="quick-launch"]',
+        predicate: present('[data-tour="quick-launch"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Meet the Area Editor</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              The new <strong>Area Editor</strong> opens from here: a full-window map for drawing
+              survey <strong>areas and corridors</strong> - multi-polygon, holes, KML import, a live
+              {' '}<strong>flight briefing</strong> (toggle hectares/acres), and a
+              {' '}<strong>go-to</strong> search to fly to any site. <strong>Send to mission</strong>
+              {' '}drops it straight into the planner.
+            </p>
+          </div>
+        ),
+      },
+    ],
+  },
 ];
 
 export function getToursForView(view: string): FeatureTour[] {

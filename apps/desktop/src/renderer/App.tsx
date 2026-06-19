@@ -781,7 +781,7 @@ function App() {
 
             {/* Feature cards - quick links to the most-used tools. Every card
                 works without a connected vehicle. Defined in WELCOME_CARDS. */}
-            <div className="grid grid-cols-3 auto-rows-fr gap-3 text-left">
+            <div data-tour="welcome-cards" className="grid grid-cols-3 auto-rows-fr gap-3 text-left">
               {WELCOME_CARDS.map((card) => {
                 const s = WELCOME_CARD_STYLES[card.color];
                 return (

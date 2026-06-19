@@ -76,6 +76,7 @@ export function QuickLaunchMenu() {
   return (
     <div ref={ref} className="relative">
       <button
+        data-tour="quick-launch"
         onClick={() => setOpen((o) => !o)}
         className="group flex items-center gap-1.5 pl-2.5 pr-2 py-1.5 rounded-lg bg-surface border border-subtle hover:border-teal-500/40 hover:bg-surface-raised transition-colors"
         title="Quick Launch — open tools in their own window"
