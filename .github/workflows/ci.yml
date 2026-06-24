@@ -29,7 +29,7 @@ jobs:
         run: pnpm lint
 
       - name: Typecheck
-        run: pnpm --filter @ardudeck/desktop typecheck
+        run: pnpm --filter @Jawji/desktop typecheck
 
   test:
     runs-on: ubuntu-latest

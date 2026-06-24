@@ -4,7 +4,7 @@ import { useSettingsStore, type DefaultSitlType } from '../../stores/settings-st
 import { useSitlStore } from '../../stores/sitl-store';
 import { useArduPilotSitlStore } from '../../stores/ardupilot-sitl-store';
 import { useSigningStore, initSigningListener } from '../../stores/signing-store';
-import type { SerialPortInfo } from '@ardudeck/comms';
+import type { SerialPortInfo } from '@jawji/comms';
 import { formatPortDisplayName } from '../../utils/usb-device-names';
 import { DriverAssistant } from './DriverAssistant';
 import { RecentConnectionsButton } from './RecentConnectionsButton';

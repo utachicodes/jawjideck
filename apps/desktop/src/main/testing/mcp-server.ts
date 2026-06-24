@@ -34,7 +34,7 @@ let transport: SSEServerTransport | null = null;
 
 export async function startMcpServer(): Promise<{ port: number }> {
   const server = new McpServer({
-    name: 'ardudeck',
+    name: 'Jawji',
     version: '1.0.0',
   });
 
@@ -42,7 +42,7 @@ export async function startMcpServer(): Promise<{ port: number }> {
 
   server.tool(
     'screenshot',
-    'Capture a screenshot of the ArduDeck window. Saves JPEG to ~/.ardudeck/screenshots/ and returns the file path. Use the Read tool to view the image.',
+    'Capture a screenshot of the Jawji window. Saves JPEG to ~/.jawji/screenshots/ and returns the file path. Use the Read tool to view the image.',
     { region: z.object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() }).optional() },
     async (params) => {
       const filePath = await screenshot(params as any);
@@ -102,7 +102,7 @@ export async function startMcpServer(): Promise<{ port: number }> {
 
   server.tool(
     'get_app_info',
-    'Get ArduDeck app info: version, platform, electron version, connected device, available stores.',
+    'Get Jawji app info: version, platform, electron version, connected device, available stores.',
     {},
     async () => {
       const result = await getAppInfoTool();
@@ -168,7 +168,7 @@ export async function startMcpServer(): Promise<{ port: number }> {
 
   server.tool(
     'propose_parameters',
-    'Propose one or more ArduPilot parameter changes. The user sees a review modal in ArduDeck and must click Apply. Returns { ok, applied, failed, rebootRequired, rejected } once they act. Blocked while vehicle is armed. Certain identity/motor-topology params are denylisted. Use this for tuning suggestions — NOT for arming, mode changes, or any mid-flight action.',
+    'Propose one or more ArduPilot parameter changes. The user sees a review modal in Jawji and must click Apply. Returns { ok, applied, failed, rebootRequired, rejected } once they act. Blocked while vehicle is armed. Certain identity/motor-topology params are denylisted. Use this for tuning suggestions — NOT for arming, mode changes, or any mid-flight action.',
     {
       proposals: z.array(
         z.object({
@@ -268,7 +268,7 @@ export async function startMcpServer(): Promise<{ port: number }> {
 
   server.tool(
     'navigate',
-    'Switch to a different ArduDeck view (e.g., "telemetry", "parameters", "mission", "firmware").',
+    'Switch to a different Jawji view (e.g., "telemetry", "parameters", "mission", "firmware").',
     { view: z.string() },
     async (params) => {
       const result = await navigateTool(params);
@@ -329,7 +329,7 @@ export async function startMcpServer(): Promise<{ port: number }> {
     httpServer.on('request', async (req, res) => {
       if (req.url === '/health') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: 'ok', name: 'ardudeck' }));
+        res.end(JSON.stringify({ status: 'ok', name: 'Jawji' }));
         return;
       }
 

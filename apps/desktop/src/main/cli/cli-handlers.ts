@@ -8,7 +8,7 @@
 import { ipcMain, BrowserWindow, dialog, app } from 'electron';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
-import type { Transport } from '@ardudeck/comms';
+import type { Transport } from '@jawji/comms';
 import { IPC_CHANNELS } from '../../shared/ipc-channels.js';
 
 // =============================================================================
@@ -288,7 +288,7 @@ export async function exitCliMode(): Promise<boolean> {
   try {
     if (wasCliActive) {
       // Schedule auto-reconnect BEFORE sending exit (board will reboot)
-      const scheduleReconnect = (globalThis as Record<string, unknown>).__ardudeck_scheduleReconnect as
+      const scheduleReconnect = (globalThis as Record<string, unknown>).__Jawji_scheduleReconnect as
         ((options: { reason: string; delayMs: number; timeoutMs?: number; maxAttempts?: number }) => void) | undefined;
       if (scheduleReconnect) {
         scheduleReconnect({
@@ -415,7 +415,7 @@ export async function sendCliCommand(command: string): Promise<void> {
 
   // If exit command, schedule reconnect and clean up state
   if (isExitCommand && cliModeActive) {
-    const scheduleReconnect = (globalThis as Record<string, unknown>).__ardudeck_scheduleReconnect as
+    const scheduleReconnect = (globalThis as Record<string, unknown>).__Jawji_scheduleReconnect as
       ((options: { reason: string; delayMs: number; timeoutMs?: number; maxAttempts?: number }) => void) | undefined;
     if (scheduleReconnect) {
       scheduleReconnect({
@@ -441,7 +441,7 @@ export async function sendCliCommand(command: string): Promise<void> {
 
   // If save command, schedule reconnect and clean up state (save also reboots)
   if (isSaveCommand && cliModeActive) {
-    const scheduleReconnect = (globalThis as Record<string, unknown>).__ardudeck_scheduleReconnect as
+    const scheduleReconnect = (globalThis as Record<string, unknown>).__Jawji_scheduleReconnect as
       ((options: { reason: string; delayMs: number; timeoutMs?: number; maxAttempts?: number }) => void) | undefined;
     if (scheduleReconnect) {
       scheduleReconnect({

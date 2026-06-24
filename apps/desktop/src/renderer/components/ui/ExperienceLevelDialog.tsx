@@ -11,7 +11,7 @@ export function ExperienceLevelDialog({ onSelect }: ExperienceLevelDialogProps) 
       <div className="bg-surface-input rounded-2xl border border-subtle w-full max-w-lg mx-4 shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="px-6 pt-6 pb-2 text-center">
-          <h2 className="text-lg font-semibold text-content">Welcome to ArduDeck</h2>
+          <h2 className="text-lg font-semibold text-content">Welcome to Jawji</h2>
           <p className="text-sm text-content-secondary mt-1">
             Choose your experience level to tailor the interface
           </p>

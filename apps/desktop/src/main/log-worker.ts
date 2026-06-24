@@ -1,5 +1,5 @@
 import { parentPort } from 'node:worker_threads';
-import { createDataFlashParser, runHealthChecks } from '@ardudeck/dataflash-parser';
+import { createDataFlashParser, runHealthChecks } from '@jawji/dataflash-parser';
 
 if (!parentPort) {
   throw new Error('log-worker must be run as a worker thread');

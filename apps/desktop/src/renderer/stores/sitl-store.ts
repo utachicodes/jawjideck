@@ -712,7 +712,7 @@ export const useSitlStore = create<SitlStore>()(
           appendOutput('========== SIMULATION READY ==========\n');
           appendOutput('X-Plane is now controlled by iNav SITL.\n');
           appendOutput('Make sure X-Plane Data Output is configured to send to 127.0.0.1:49000\n');
-          appendOutput('Connect ArduDeck to TCP 127.0.0.1:5760 to access telemetry.\n');
+          appendOutput('Connect Jawji to TCP 127.0.0.1:5760 to access telemetry.\n');
 
         } else {
           // FlightGear flow: FlightGear → Bridge → SITL
@@ -752,7 +752,7 @@ export const useSitlStore = create<SitlStore>()(
 
           appendOutput('========== SIMULATION READY ==========\n');
           appendOutput('FlightGear is now controlled by iNav SITL.\n');
-          appendOutput('Connect ArduDeck to TCP 127.0.0.1:5760 to access telemetry.\n');
+          appendOutput('Connect Jawji to TCP 127.0.0.1:5760 to access telemetry.\n');
         }
 
         return true;

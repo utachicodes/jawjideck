@@ -50,11 +50,11 @@ Load a `.param` file and compare it against the current FC values. A **Compare**
 - Select All / Deselect All buttons
 - An Apply button for the selected parameters
 
-After applying, ArduDeck writes the values to flash. If parameters require a reboot, ArduDeck runs an automatic reboot cycle (up to 3 cycles) to ensure all values take effect. A summary shows how many parameters were applied, failed, or still pending.
+After applying, Jawji writes the values to flash. If parameters require a reboot, Jawji runs an automatic reboot cycle (up to 3 cycles) to ensure all values take effect. A summary shows how many parameters were applied, failed, or still pending.
 
 ## Parameter History
 
-ArduDeck auto-checkpoints your parameters before every write to flash. The **History** button in the configuration header shows all checkpoints with timestamps. You can restore any previous checkpoint to roll back changes.
+Jawji auto-checkpoints your parameters before every write to flash. The **History** button in the configuration header shows all checkpoints with timestamps. You can restore any previous checkpoint to roll back changes.
 
 Per-parameter history is also available by clicking the history icon on individual rows.
 

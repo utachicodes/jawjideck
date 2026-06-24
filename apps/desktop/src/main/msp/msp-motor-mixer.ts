@@ -9,7 +9,7 @@ import {
   deserializeMotorMixerRules,
   serializeMotorMixerRule,
   type MSPMotorMixerRule,
-} from '@ardudeck/msp-ts';
+} from '@jawji/msp-ts';
 import { ctx } from './msp-context.js';
 import {
   sendMspV2Request,

@@ -11,7 +11,7 @@ import {
   deserializeLogEntry,
   deserializeLogData,
   type LogEntry,
-} from '@ardudeck/mavlink-ts';
+} from '@jawji/mavlink-ts';
 
 /** Total wait for the FIRST chunk of a burst - FC may need a moment to start. */
 const LOG_TIMEOUT_MS = 5000;

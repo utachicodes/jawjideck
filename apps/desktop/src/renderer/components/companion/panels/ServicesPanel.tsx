@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useCompanionStore } from '../../../stores/companion-store';
 import { PanelContainer, SectionTitle } from '../../panels/panel-utils';
-import type { ServiceInfo, ServiceAction } from '@ardudeck/companion-types';
+import type { ServiceInfo, ServiceAction } from '@jawji/companion-types';
 
 const STATUS_COLORS: Record<string, { dot: string; text: string; bg: string }> = {
   running: { dot: 'bg-emerald-400', text: 'text-emerald-400', bg: 'bg-emerald-500/10' },

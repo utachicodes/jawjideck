@@ -1,20 +1,20 @@
 {
-  "name": "ardudeck",
+  "name": "jawji",
   "version": "0.0.33-alpha",
   "private": true,
-  "description": "ArduDeck - Modern Ground Control Station",
+  "description": "Jawji - Modern Ground Control Station",
   "author": {
     "name": "Ruben M",
-    "url": "https://github.com/rubenCodeforges"
+    "url": "https://github.com/utachicodes"
   },
   "license": "GPL-3.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rubenCodeforges/ardudeck.git"
+    "url": "https://github.com/utachicodes/jawjideck.git"
   },
-  "homepage": "https://github.com/rubenCodeforges/ardudeck#readme",
+  "homepage": "https://github.com/utachicodes/jawjideck#readme",
   "bugs": {
-    "url": "https://github.com/rubenCodeforges/ardudeck/issues"
+    "url": "https://github.com/utachicodes/jawjideck/issues"
   },
   "keywords": [
     "ardupilot",
@@ -31,7 +31,7 @@
     "typescript"
   ],
   "scripts": {
-    "start": "pnpm --filter @ardudeck/desktop dev",
+    "start": "pnpm --filter @jawji/desktop dev",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
@@ -40,7 +40,7 @@
     "generate": "turbo run generate",
     "clean": "turbo run clean && rm -rf node_modules",
     "sync-version": "node -e \"const r=require('./package.json'),d=require('./apps/desktop/package.json');d.version=r.version;require('fs').writeFileSync('./apps/desktop/package.json',JSON.stringify(d,null,2)+'\\n')\"",
-    "package": "pnpm sync-version && pnpm --filter @ardudeck/desktop package",
+    "package": "pnpm sync-version && pnpm --filter @jawji/desktop package",
     "sitl:build": "./tools/build-sitl-mac-arm64.sh",
     "sitl:publish": "./tools/build-sitl-mac-arm64.sh --publish",
     "prepare": "husky"

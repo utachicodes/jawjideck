@@ -286,10 +286,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
       canNavWp: navWpMapping !== undefined && navWpMapping.auxChannel !== null,
     });
 
-    console.log('[FlightControl] Mode mappings loaded:', mappings.length, 'configured modes (from', ranges.length, 'total)');
-    mappings.forEach(m => {
-      console.log(`  - ${m.name} (boxId=${m.boxId}): AUX${m.auxChannel !== null ? m.auxChannel + 1 : 'NONE'}, range ${m.rangeStart}-${m.rangeEnd}`);
-    });
   },
 
   // Clear mode mappings (on disconnect) - also resets channels
@@ -307,28 +303,19 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
   startOverride: () => {
     const { isOverrideActive, channels } = get();
     if (isOverrideActive) {
-      console.log('[FlightControl] RC override already active, skipping start');
       return;
     }
-
-    console.log('[FlightControl] Starting RC override with channels:', channels.slice(0, 8).join(','));
 
     // Send RC values immediately
     window.electronAPI.mspSetRawRc(channels).catch(() => {});
 
     // Track interval calls for debugging
     let intervalCallCount = 0;
-    let errorCount = 0;
 
     // Start interval to keep sending - fire and forget, no await!
     const interval = setInterval(() => {
       intervalCallCount++;
       const currentChannels = get().channels;
-
-      // Log every 300th call (every 30 seconds at 100ms interval) - reduced logging frequency
-      if (intervalCallCount % 300 === 0) {
-        console.log(`[FlightControl] RC interval #${intervalCallCount}, ch: ${currentChannels.slice(0, 8).join(',')}`);
-      }
 
       // Fire and forget - don't await, don't block
       window.electronAPI.mspSetRawRc(currentChannels).catch(() => {});
@@ -350,7 +337,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
       isOverrideActive: false,
       overrideInterval: null,
     });
-    console.log('[FlightControl] Stopped RC override');
   },
 
   // High-level: ARM
@@ -358,7 +344,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
   arm: async () => {
     const { canArm, modeMappings, channels, isOverrideActive } = get();
     if (!canArm) {
-      console.error('[FlightControl] Cannot arm: ARM mode not configured');
       return false;
     }
 
@@ -374,7 +359,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
     disarmedChannels[channelIndex] = lowValue;
     disarmedChannels[2] = 1000; // Throttle low (index 2)
 
-    console.log(`[FlightControl] Arming step 1: Setting AUX${armMapping.auxChannel + 1} OFF (${lowValue}) first`);
     set({ channels: disarmedChannels });
 
     // Start override if not already active
@@ -383,7 +367,11 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
     }
 
     // Send disarmed state and wait for FC to register it
-    await window.electronAPI.mspSetRawRc(disarmedChannels);
+    try {
+      await window.electronAPI.mspSetRawRc(disarmedChannels);
+    } catch (e) {
+      // mspSetRawRc failed
+    }
     await new Promise(r => setTimeout(r, 300)); // Wait 300ms for FC to see switch OFF
 
     // Step 2: Now toggle arm switch ON
@@ -391,7 +379,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
     const armedChannels = [...disarmedChannels];
     armedChannels[channelIndex] = midpoint;
 
-    console.log(`[FlightControl] Arming step 2: Toggling AUX${armMapping.auxChannel + 1} ON (${midpoint})`);
     set({ channels: armedChannels });
 
     // Also set Virtual RC for SITL bridge
@@ -403,7 +390,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
         throttle: normalizedThrottle,
         [auxKey]: normalizedAux,
       });
-      console.log(`[FlightControl] Virtual RC set: throttle=${normalizedThrottle}, ${auxKey}=${normalizedAux}`);
     } catch (e) {
       // Virtual RC might not be available (not SITL)
     }
@@ -415,7 +401,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
   disarm: async () => {
     const { canArm, modeMappings, channels } = get();
     if (!canArm) {
-      console.error('[FlightControl] Cannot disarm: ARM mode not configured');
       return false;
     }
 
@@ -427,8 +412,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
 
     // AUX channel index: auxChannel 0 = channel index 4 (AUX1)
     const channelIndex = armMapping.auxChannel + 4;
-
-    console.log(`[FlightControl] Disarming: Setting AUX${armMapping.auxChannel + 1} (ch ${channelIndex}) to ${lowValue}`);
 
     // Update channels
     const newChannels = [...channels];
@@ -449,7 +432,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
         throttle: normalizedThrottle,
         [auxKey]: normalizedAux,
       });
-      console.log(`[FlightControl] Virtual RC set: throttle=${normalizedThrottle}, ${auxKey}=${normalizedAux}`);
     } catch (e) {
       // Virtual RC might not be available (not SITL)
     }
@@ -469,8 +451,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
 
     const mapping = modeMappings.find((m) => m.boxId === boxId);
     if (!mapping || mapping.auxChannel === null) {
-      console.error(`[FlightControl] Cannot activate mode ${boxId}: not configured on FC`);
-      console.log(`[FlightControl] Available modes:`, modeMappings.map(m => `${m.boxId}:${m.name}`).join(', '));
       return false;
     }
 
@@ -480,24 +460,16 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
     // AUX channel index: auxChannel 0 = channel index 4 (AUX1)
     const channelIndex = mapping.auxChannel + 4;
 
-    console.log(`[FlightControl] Activating ${mapping.name} (boxId=${boxId})`);
-    console.log(`[FlightControl]   Mapping: AUX${mapping.auxChannel + 1}, range ${mapping.rangeStart}-${mapping.rangeEnd}, midpoint=${midpoint}`);
-    console.log(`[FlightControl]   Current channels[${channelIndex}]=${channels[channelIndex]}, setting to ${midpoint}`);
-
     // Update channels
     const newChannels = [...channels];
     newChannels[channelIndex] = midpoint;
-
-    console.log(`[FlightControl]   New AUX values: AUX1=${newChannels[4]}, AUX2=${newChannels[5]}, AUX3=${newChannels[6]}, AUX4=${newChannels[7]}`);
 
     set({ channels: newChannels });
 
     // Send immediately if override is already active, otherwise start override
     if (isOverrideActive) {
-      console.log(`[FlightControl]   Override active, sending RC immediately`);
       await window.electronAPI.mspSetRawRc(newChannels);
     } else {
-      console.log(`[FlightControl]   Starting override`);
       get().startOverride();
     }
 
@@ -510,7 +482,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
 
     const mapping = modeMappings.find((m) => m.boxId === boxId);
     if (!mapping || mapping.auxChannel === null) {
-      console.error(`[FlightControl] Cannot deactivate mode ${boxId}: not configured`);
       return false;
     }
 
@@ -519,8 +490,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
 
     // AUX channel index: auxChannel 0 = channel index 4 (AUX1)
     const channelIndex = mapping.auxChannel + 4;
-
-    console.log(`[FlightControl] Deactivating ${mapping.name}: Setting AUX${mapping.auxChannel + 1} (ch ${channelIndex}) to ${lowValue}`);
 
     // Update channels
     const newChannels = [...channels];
@@ -539,11 +508,9 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
   // Load mode ranges from FC via MSP
   loadModeRanges: async () => {
     try {
-      console.log('[FlightControl] Loading mode ranges from FC...');
       const ranges = await window.electronAPI.mspGetModeRanges();
 
       if (!ranges || !Array.isArray(ranges)) {
-        console.warn('[FlightControl] Failed to load mode ranges from FC');
         // Apply SITL fallback if we're in SITL mode
         get().applySitlFallbackMappings();
         return false;
@@ -555,7 +522,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
       );
 
       if (configuredRanges.length === 0) {
-        console.warn('[FlightControl] No configured mode ranges found');
         // Apply SITL fallback if we're in SITL mode
         get().applySitlFallbackMappings();
         return false;
@@ -567,7 +533,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
 
       return true;
     } catch (error) {
-      console.error('[FlightControl] Failed to load mode ranges:', error);
       // Apply SITL fallback if we're in SITL mode
       get().applySitlFallbackMappings();
       return false;
@@ -577,7 +542,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
   // Apply fallback SITL mode mappings when MSP_MODE_RANGES fails
   // These match what "Setup for SITL Testing" configures via CLI
   applySitlFallbackMappings: () => {
-    console.log('[FlightControl] Applying SITL fallback mode mappings...');
     // Default SITL configuration (from FlightControlPanel's configureSitlForTesting):
     // aux 0 0 0 1700 2100 0 -> ARM on AUX1 (1700-2100)
     // aux 1 1 1 1300 1700 0 -> ANGLE on AUX2 (1300-1700)
@@ -593,8 +557,6 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
     ];
 
     get().setModeMappings(sitlFallbackModes);
-    console.log('[FlightControl] SITL fallback applied - using default mode mappings');
-    console.log('[FlightControl] NOTE: These assume you ran "Setup for SITL Testing" or configured modes via CLI');
   },
 }));
 

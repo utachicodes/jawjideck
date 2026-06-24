@@ -98,7 +98,7 @@ export function DetachedRoot(): JSX.Element {
  * the two affordances every detached window needs:
  *   - left: a "Dock back" action that closes this detached window (and lets
  *     the docked sibling, if any, take over)
- *   - right: a pin toggle that keeps the window above ArduDeck's main window
+ *   - right: a pin toggle that keeps the window above Jawji's main window
  *
  * Kept short (28px) so it doesn't eat into the panel content, and styled to
  * blend into the OS title bar above it. No center title — the OS title bar
@@ -142,7 +142,7 @@ function DetachedChrome({ title }: { title: string }): JSX.Element {
         onClick={dockBack}
         className="h-5 px-2 inline-flex items-center gap-1 text-[11px] rounded text-content-secondary hover:text-content hover:bg-surface-raised transition-colors"
         style={{ ['WebkitAppRegion' as never]: 'no-drag' as never }}
-        title={`Close this window and return to ArduDeck`}
+        title={`Close this window and return to Jawji`}
       >
         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -162,7 +162,7 @@ function DetachedChrome({ title }: { title: string }): JSX.Element {
             : 'text-content-tertiary hover:text-content hover:bg-surface-raised'
         }`}
         style={{ ['WebkitAppRegion' as never]: 'no-drag' as never }}
-        title={pinned ? 'Pinned on top — click to unpin' : 'Keep this window on top of ArduDeck'}
+        title={pinned ? 'Pinned on top — click to unpin' : 'Keep this window on top of Jawji'}
         aria-label="Toggle always on top"
       >
         {pinned ? (

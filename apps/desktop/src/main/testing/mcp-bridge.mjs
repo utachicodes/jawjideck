@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 /**
- * Stdio-to-SSE bridge for the ArduDeck test driver MCP server.
+ * Stdio-to-SSE bridge for the Jawji test driver MCP server.
  *
  * Claude Code spawns this as a child process (stdio transport).
- * It reads ~/.ardudeck/mcp.json on each connection attempt to find the
+ * It reads ~/.jawji/mcp.json on each connection attempt to find the
  * dynamic SSE port, then proxies MCP messages between stdio and SSE.
  *
- * Reconnects automatically when ArduDeck restarts (new port in discovery file).
+ * Reconnects automatically when Jawji restarts (new port in discovery file).
  */
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-const DISCOVERY_PATH = join(homedir(), '.ardudeck', 'mcp.json');
+const DISCOVERY_PATH = join(homedir(), '.jawji', 'mcp.json');
 const RETRY_INTERVAL = 2000;
 
 let sessionUrl = null;
@@ -33,7 +33,7 @@ async function connectSSE() {
 
     const discovery = readDiscovery();
     if (!discovery?.sseUrl) {
-      process.stderr.write('[ardudeck-mcp-bridge] Waiting for ArduDeck (no discovery file)...\n');
+      process.stderr.write('[jawji-mcp-bridge] Waiting for Jawji (no discovery file)...\n');
       await new Promise(r => setTimeout(r, RETRY_INTERVAL));
       continue;
     }
@@ -44,7 +44,7 @@ async function connectSSE() {
       });
 
       if (!response.ok) {
-        process.stderr.write(`[ardudeck-mcp-bridge] SSE ${response.status}, retrying...\n`);
+        process.stderr.write(`[jawji-mcp-bridge] SSE ${response.status}, retrying...\n`);
         await new Promise(r => setTimeout(r, RETRY_INTERVAL));
         continue;
       }
@@ -56,7 +56,7 @@ async function connectSSE() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
-          process.stderr.write('[ardudeck-mcp-bridge] SSE stream ended, reconnecting...\n');
+          process.stderr.write('[jawji-mcp-bridge] SSE stream ended, reconnecting...\n');
           break;
         }
 
@@ -73,7 +73,7 @@ async function connectSSE() {
             if (eventType === 'endpoint') {
               sessionUrl = new URL(data, discovery.url).href;
               connected = true;
-              process.stderr.write(`[ardudeck-mcp-bridge] Connected: ${sessionUrl}\n`);
+              process.stderr.write(`[jawji-mcp-bridge] Connected: ${sessionUrl}\n`);
             } else if (eventType === 'message') {
               process.stdout.write(data + '\n');
             }
@@ -82,7 +82,7 @@ async function connectSSE() {
         }
       }
     } catch (err) {
-      process.stderr.write(`[ardudeck-mcp-bridge] Connection error: ${err.message}, retrying...\n`);
+      process.stderr.write(`[jawji-mcp-bridge] Connection error: ${err.message}, retrying...\n`);
     }
 
     await new Promise(r => setTimeout(r, RETRY_INTERVAL));
@@ -122,10 +122,10 @@ async function sendMessage(line) {
       body: line,
     });
     if (!resp.ok) {
-      process.stderr.write(`[ardudeck-mcp-bridge] POST ${resp.status}\n`);
+      process.stderr.write(`[jawji-mcp-bridge] POST ${resp.status}\n`);
     }
   } catch (err) {
-    process.stderr.write(`[ardudeck-mcp-bridge] POST error: ${err.message}\n`);
+    process.stderr.write(`[jawji-mcp-bridge] POST error: ${err.message}\n`);
   }
 }
 

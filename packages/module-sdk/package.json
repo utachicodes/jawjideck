@@ -1,7 +1,7 @@
 {
-  "name": "@ardudeck/module-sdk",
+  "name": "@jawji/module-sdk",
   "version": "0.1.0",
-  "description": "SDK for building ArduDeck modules",
+  "description": "SDK for building Jawji modules",
   "license": "MIT",
   "type": "module",
   "main": "./src/index.ts",
@@ -25,5 +25,5 @@
   "peerDependenciesMeta": {
     "esbuild": { "optional": true }
   },
-  "keywords": ["ardudeck", "module", "sdk", "electron", "plugin"]
+  "keywords": ["jawji", "module", "sdk", "electron", "plugin"]
 }

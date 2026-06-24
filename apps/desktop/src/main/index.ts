@@ -56,7 +56,7 @@ process.on('unhandledRejection', (reason: unknown) => {
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
-// Single-instance lock so ardudeck:// deep links route to the running app
+// Single-instance lock so jawji:// deep links route to the running app
 // instead of spawning a second one.
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
@@ -68,8 +68,8 @@ let mainWindowRef: BrowserWindow | null = null;
 setupDeepLinks(() => mainWindowRef);
 
 // Set app name early to ensure consistent userData path in dev mode
-// This ensures electron-store saves to %APPDATA%/ardudeck/ instead of %APPDATA%/Electron/
-app.name = 'ardudeck';
+// This ensures electron-store saves to %APPDATA%/Jawji/ instead of %APPDATA%/Electron/
+app.name = 'Jawji';
 
 // Register tile-cache:// scheme BEFORE app.ready (Electron requirement)
 registerTileCacheScheme();
@@ -169,9 +169,9 @@ app.whenReady().then(() => {
     handleStartupArgs(process.argv);
     // Dev: macOS can't OS-register the scheme for an unpackaged build, so allow
     // testing the deep-link path by feeding a URL in directly.
-    //   ARDUDECK_DEEPLINK="ardudeck://open?view=mission" npm run dev
-    if (isDev && process.env['ARDUDECK_DEEPLINK']) {
-      deliverDeepLinkUrl(process.env['ARDUDECK_DEEPLINK']);
+    //   JAWJI_DEEPLINK="jawji://open?view=mission" npm run dev
+    if (isDev && process.env['JAWJI_DEEPLINK']) {
+      deliverDeepLinkUrl(process.env['JAWJI_DEEPLINK']);
     }
   });
 

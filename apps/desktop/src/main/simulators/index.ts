@@ -1,7 +1,7 @@
 /**
  * Simulators Module
  *
- * Exports all simulator-related functionality for ArduDeck.
+ * Exports all simulator-related functionality for Jawji.
  */
 
 export {

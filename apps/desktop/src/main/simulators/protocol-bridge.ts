@@ -19,7 +19,7 @@
 
 import dgram from 'dgram';
 
-// FlightGear output packet structure (matches ardudeck-out.xml)
+// FlightGear output packet structure (matches jawji-out.xml)
 // 22 doubles = 176 bytes
 interface FlightGearSensorData {
   latitude: number;         // deg
@@ -46,7 +46,7 @@ interface FlightGearSensorData {
   simTime: number;          // sec
 }
 
-// FlightGear input packet structure (matches ardudeck-in.xml)
+// FlightGear input packet structure (matches jawji-in.xml)
 // 8 doubles = 64 bytes
 interface FlightGearControlData {
   aileron: number;          // -1 to +1

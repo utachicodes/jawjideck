@@ -1,14 +1,14 @@
 /**
- * ardudeck:// deep-link handling.
+ * jawji:// deep-link handling.
  *
  * Two actions are handled:
- *   ardudeck://install?slug=<slug>&name=<name>&key=<license-key>
+ *   jawji://install?slug=<slug>&name=<name>&key=<license-key>
  *     - validate the key's signature offline, then hand to the renderer to
  *       confirm with the user before installing.
- *   ardudeck://open?view=<viewId>
+ *   jawji://open?view=<viewId>
  *     - navigate the renderer to a built-in view (no validation needed; the
  *       renderer rejects unknown/unavailable views).
- *   ardudeck://open?tool=area-editor
+ *   jawji://open?tool=area-editor
  *     - open a standalone tool that lives in its own window (not a renderer
  *       view), e.g. the Area Editor. Handled entirely in main.
  */
@@ -18,7 +18,7 @@ import { verifyLicenseKey } from './license-validator.js';
 import { openAreaEditorWindow } from '../area-editor-window.js';
 import { IPC_CHANNELS } from '../../shared/ipc-channels.js';
 
-const PROTOCOL = 'ardudeck';
+const PROTOCOL = 'Jawji';
 
 let getWindow: (() => BrowserWindow | null) | null = null;
 // A deep link can arrive before the window/renderer is ready (cold start via
@@ -66,7 +66,7 @@ export function handleStartupArgs(argv: string[]): void {
 
 /**
  * Route a deep-link URL as if the OS had delivered it. Used in dev (via the
- * ARDUDECK_DEEPLINK env var) to test the handler without OS scheme registration,
+ * JAWJI_DEEPLINK env var) to test the handler without OS scheme registration,
  * which is unavailable for an unpackaged macOS build.
  */
 export function deliverDeepLinkUrl(url: string): void {

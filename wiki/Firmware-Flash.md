@@ -6,7 +6,7 @@ The Firmware Flash view lets you update or change the firmware on your flight co
 
 | Source | Vehicle Types | Notes |
 |--------|--------------|-------|
-| ArduPilot | Copter, Plane, VTOL, Rover, Boat, Sub | Primary firmware for ArduDeck |
+| ArduPilot | Copter, Plane, VTOL, Rover, Boat, Sub | Primary firmware for Jawji |
 | PX4 | Copter, Plane, VTOL, Rover, Boat, Sub | Alternative autopilot stack |
 | Betaflight | Copter | FPV racing/freestyle firmware |
 | iNav | Copter, Plane, Rover, Boat | Navigation-focused firmware |
@@ -16,7 +16,7 @@ The Firmware Flash view lets you update or change the firmware on your flight co
 
 ### Step 1: Detect Your Board
 
-Connect your flight controller via USB. ArduDeck scans for the board automatically and displays:
+Connect your flight controller via USB. Jawji scans for the board automatically and displays:
 - Port name
 - Board name (if identified)
 - Current firmware and version
@@ -47,12 +47,12 @@ On success, a confirmation message appears. Unplug and reconnect your board to s
 
 Some boards use a USB-serial adapter (CP2102, FTDI, CH340) instead of native USB. These boards can't enter bootloader mode via software -- you need to physically short the boot pads on the board.
 
-If flashing fails on a USB-serial board, ArduDeck automatically opens the **Boot Pad Wizard**, a step-by-step guide:
+If flashing fails on a USB-serial board, Jawji automatically opens the **Boot Pad Wizard**, a step-by-step guide:
 
 1. **Disconnect** your board from USB
 2. **Short the boot pads** -- Find the pads labeled "BOOT" or "BT" near the MCU. Use tweezers or a jumper wire to connect them
 3. **Reconnect USB** while keeping the pads shorted
-4. **Wait for detection** -- ArduDeck probes serial ports for the STM32 bootloader
+4. **Wait for detection** -- Jawji probes serial ports for the STM32 bootloader
 5. **Remove the jumper** before flashing (keep USB connected)
 6. **Flash** -- Confirm and flash the firmware
 
@@ -69,7 +69,7 @@ Toggle Advanced Mode to access additional features:
 
 ## Post-Flash Behavior
 
-After flashing iNav with an Airplane vehicle type, ArduDeck automatically configures the mixer for airplane mode. For all other combinations, the board boots with default settings.
+After flashing iNav with an Airplane vehicle type, Jawji automatically configures the mixer for airplane mode. For all other combinations, the board boots with default settings.
 
 ## Firmware Switch Warning
 

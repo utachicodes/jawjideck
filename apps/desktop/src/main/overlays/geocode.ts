@@ -10,7 +10,7 @@
 import type { GeocodeResult } from '../../shared/overlay-types.js';
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
-const USER_AGENT = 'ArduDeck Area Editor (https://ardudeck.com)';
+const USER_AGENT = 'Jawji Area Editor (https://jawji.space)';
 
 export async function geocodeSearch(query: string): Promise<GeocodeResult[]> {
   const q = query.trim();

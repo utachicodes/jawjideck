@@ -171,7 +171,7 @@ export default function CliTerminal({ onReady }: CliTerminalProps) {
     };
 
     term.writeln(`${C}╔${'═'.repeat(W)}╗${R}`);
-    term.writeln(line(`  ${Y}ArduDeck CLI Terminal${R}`, 23));
+    term.writeln(line(`  ${Y}Jawji CLI Terminal${R}`, 23));
     term.writeln(`${C}╠${'═'.repeat(W)}╣${R}`);
     term.writeln(line(`  Type ${G}help${R} for available commands`, 34));
     term.writeln(line(`  Type ${G}dump${R} for full config (autocomplete)`, 42));

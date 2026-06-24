@@ -3,7 +3,7 @@ import { useLogStore } from '../../stores/log-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import { HealthCheckCard } from './HealthCheckCard';
 import { AiWarningDialog } from './AiAnalysisPanel';
-import type { ExplorerPreset, HealthCheckResult } from '@ardudeck/dataflash-parser';
+import type { ExplorerPreset, HealthCheckResult } from '@jawji/dataflash-parser';
 
 function computeFlightStats(log: ReturnType<typeof useLogStore.getState>['currentLog']) {
   if (!log) return null;

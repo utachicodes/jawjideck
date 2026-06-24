@@ -1,5 +1,5 @@
 {
-  "name": "@ardudeck/msp-ts",
+  "name": "@jawji/msp-ts",
   "version": "0.1.0",
   "description": "TypeScript MSP protocol library for Betaflight/iNav/Cleanflight",
   "type": "module",

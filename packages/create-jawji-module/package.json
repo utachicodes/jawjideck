@@ -1,0 +1,9 @@
+{
+  "name": "create-jawji-module",
+  "version": "0.1.0",
+  "description": "Scaffold a new Jawji module project",
+  "type": "module",
+  "bin": { "create-jawji-module": "bin/create.mjs" },
+  "files": ["bin", "template"],
+  "license": "MIT"
+}

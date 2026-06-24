@@ -3,7 +3,7 @@ import * as ReactDomClient from 'react-dom/client';
 
 declare global {
   interface Window {
-    __ardudeckHost?: {
+    __jawjiHost?: {
       react: typeof React;
       reactDom: typeof ReactDomClient;
     };
@@ -11,5 +11,5 @@ declare global {
 }
 
 export function installReactGlobal(): void {
-  window.__ardudeckHost = { react: React, reactDom: ReactDomClient };
+  window.__jawjiHost = { react: React, reactDom: ReactDomClient };
 }

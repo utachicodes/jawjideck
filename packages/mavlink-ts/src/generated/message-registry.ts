@@ -1,4 +1,4 @@
-import type { MessageInfo } from '@ardudeck/mavlink-ts';
+import type { MessageInfo } from '@jawji/mavlink-ts';
 
 import { serializeHeartbeat, deserializeHeartbeat } from './messages/heartbeat.js';
 import { serializeSysStatus, deserializeSysStatus } from './messages/sys-status.js';

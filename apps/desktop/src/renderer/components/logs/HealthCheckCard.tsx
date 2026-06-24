@@ -1,4 +1,4 @@
-import type { HealthCheckResult, CheckStatus } from '@ardudeck/dataflash-parser';
+import type { HealthCheckResult, CheckStatus } from '@jawji/dataflash-parser';
 
 const STATUS_STYLES: Record<CheckStatus, { bg: string; border: string; icon: string; text: string }> = {
   pass: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', icon: 'text-emerald-400', text: 'text-emerald-400' },

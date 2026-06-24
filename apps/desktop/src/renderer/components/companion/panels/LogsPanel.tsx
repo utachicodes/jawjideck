@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useCompanionStore } from '../../../stores/companion-store';
 import { PanelContainer } from '../../panels/panel-utils';
-import type { LogLevel } from '@ardudeck/companion-types';
+import type { LogLevel } from '@jawji/companion-types';
 
 const LOG_LEVEL_COLORS: Record<LogLevel, { text: string; bg: string; border: string }> = {
   debug: { text: 'text-content-secondary', bg: 'bg-gray-600/20', border: 'border-l-gray-600' },

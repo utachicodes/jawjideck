@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import type { MSPModeRange } from '@ardudeck/msp-ts';
+import type { MSPModeRange } from '@jawji/msp-ts';
 import { MODE_INFO, AUX_CHANNELS } from '../presets/mode-presets';
 import RcChannelBar from './RcChannelBar';
 import { HelpCircle, Pencil, Trash2, Settings2 } from 'lucide-react';

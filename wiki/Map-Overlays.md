@@ -1,6 +1,6 @@
 # Map Overlays
 
-ArduDeck's telemetry and mission planning maps support several overlay layers that can be toggled independently. All overlay data is cached to minimize API calls and support offline use.
+Jawji's telemetry and mission planning maps support several overlay layers that can be toggled independently. All overlay data is cached to minimize API calls and support offline use.
 
 ## Weather Radar
 
@@ -50,5 +50,5 @@ Airspace Zones and Aviation Charts require a free OpenAIP API key:
 
 1. Go to [openaip.net](https://www.openaip.net/) and create a free account
 2. Navigate to your account settings to find your API key
-3. In ArduDeck, go to **Settings > Map Overlays** and paste your key
+3. In Jawji, go to **Settings > Map Overlays** and paste your key
 4. Alternatively, the API key dialog appears automatically when you first enable an OpenAIP overlay

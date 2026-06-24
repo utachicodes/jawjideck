@@ -1,6 +1,6 @@
 # Configuration
 
-The Configuration view is where you tune and configure your flight controller. ArduDeck automatically routes you to the right interface based on your connected firmware.
+The Configuration view is where you tune and configure your flight controller. Jawji automatically routes you to the right interface based on your connected firmware.
 
 ## Configuration Routing
 
@@ -10,7 +10,7 @@ The Configuration view is where you tune and configure your flight controller. A
 | iNav 2.1+ / Betaflight 4.0+ | MSP | MSP Config tabs |
 | iNav < 2.1 / Betaflight < 4.0 / Cleanflight | CLI over MSP | Legacy CLI-powered GUI |
 
-You don't need to select this manually. ArduDeck detects the protocol and firmware version on connect and shows the correct interface.
+You don't need to select this manually. Jawji detects the protocol and firmware version on connect and shows the correct interface.
 
 ## Tab Overview
 
@@ -41,7 +41,7 @@ The configuration header bar provides global actions that apply across all tabs:
 
 - **Refresh** -- Re-download all parameters from the flight controller
 - **Reboot** -- Send a reboot command to the flight controller
-- **History** -- View parameter change checkpoints. ArduDeck auto-checkpoints before every write to flash, so you can always roll back
+- **History** -- View parameter change checkpoints. Jawji auto-checkpoints before every write to flash, so you can always roll back
 - **Save All Changes** -- Write modified parameters to flash. Opens a confirmation dialog showing every parameter that will change (old value and new value). Parameters that require a reboot are marked with a badge
 
 When parameters require a reboot to take effect, a banner appears at the top listing the affected parameters with a Reboot button.

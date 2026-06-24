@@ -35,7 +35,7 @@ const FRAMES_DIR = () => path.join(app.getPath('userData'), 'sitl-frames');
  * file. The binary dir on macOS contains spaces and `@`, but native fopen
  * handles those fine — only ArduPilot's homegrown path translation does not.
  */
-const STAGED_FRAME_FILENAME = 'ardudeck-sitl-frame.json';
+const STAGED_FRAME_FILENAME = 'jawji-sitl-frame.json';
 
 /**
  * Stage a custom frame for SITL launch. Writes the frame JSON (with our
@@ -100,7 +100,7 @@ export async function listCustomFrames(): Promise<SitlCustomFrameMeta[]> {
       // Read just enough to surface the display name; cheap.
       const raw = await readFile(fullPath, 'utf-8');
       const parsed = JSON.parse(raw);
-      const name = typeof parsed.__ardudeck_name === 'string' ? parsed.__ardudeck_name : id;
+      const name = typeof parsed.__jawji_name === 'string' ? parsed.__jawji_name : id;
       out.push({ id, name, updatedAt: st.mtime.toISOString(), path: fullPath });
     } catch {
       // skip corrupt entries
@@ -118,7 +118,7 @@ export async function loadCustomFrame(id: string): Promise<SitlCustomFrameRecord
     const validation = validateFrame(stripMeta(parsed));
     if (!validation.ok) return null;
     const st = await stat(file);
-    const name = typeof parsed.__ardudeck_name === 'string' ? parsed.__ardudeck_name : id;
+    const name = typeof parsed.__jawji_name === 'string' ? parsed.__jawji_name : id;
     return {
       id,
       name,
@@ -133,14 +133,14 @@ export async function loadCustomFrame(id: string): Promise<SitlCustomFrameRecord
 
 /**
  * Save (create or update) a frame. Returns the meta record. The file on disk
- * carries the user's display name in a __ardudeck_name field (ignored by SITL,
+ * carries the user's display name in a __jawji_name field (ignored by SITL,
  * which only reads the documented physics fields).
  */
 export async function saveCustomFrame(name: string, frame: SitlCustomFrame, existingId?: string): Promise<SitlCustomFrameRecord> {
   const dir = await ensureDir();
   const id = existingId || slugify(name);
   const file = path.join(dir, `${id}.json`);
-  const payload = { __ardudeck_name: name, ...frame };
+  const payload = { __jawji_name: name, ...frame };
   await writeFile(file, JSON.stringify(payload, null, 2), 'utf-8');
   const st = await stat(file);
   return { id, name, updatedAt: st.mtime.toISOString(), path: file, frame };
@@ -180,7 +180,7 @@ export async function importCustomFrame(): Promise<{ ok: true; record: SitlCusto
       return { ok: false, error: `Invalid frame: ${validation.errors.join(', ')}` };
     }
     const baseName = path.basename(sourcePath, '.json');
-    const displayName = typeof parsed.__ardudeck_name === 'string' ? parsed.__ardudeck_name : baseName;
+    const displayName = typeof parsed.__jawji_name === 'string' ? parsed.__jawji_name : baseName;
     const record = await saveCustomFrame(displayName, validation.frame);
     return { ok: true, record };
   } catch (err) {
@@ -191,7 +191,7 @@ export async function importCustomFrame(): Promise<{ ok: true; record: SitlCusto
 
 /**
  * Save dialog → write the requested frame to user-chosen path. Strips our
- * internal __ardudeck_name field so the exported JSON is a pure ArduPilot
+ * internal __jawji_name field so the exported JSON is a pure ArduPilot
  * frame file usable directly via --model.
  */
 export async function exportCustomFrame(id: string): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
@@ -214,7 +214,7 @@ export async function exportCustomFrame(id: string): Promise<{ ok: true; path: s
   }
 }
 
-function stripMeta<T extends Record<string, unknown>>(obj: T): Omit<T, '__ardudeck_name'> {
-  const { __ardudeck_name: _, ...rest } = obj;
+function stripMeta<T extends Record<string, unknown>>(obj: T): Omit<T, '__jawji_name'> {
+  const { __jawji_name: _, ...rest } = obj;
   return rest;
 }

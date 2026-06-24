@@ -35,25 +35,25 @@ importers:
 
   apps/desktop:
     dependencies:
-      '@ardudeck/comms':
+      '@jawji/comms':
         specifier: workspace:*
         version: link:../../packages/comms
-      '@ardudeck/companion-types':
+      '@jawji/companion-types':
         specifier: workspace:*
         version: link:../../packages/companion-types
-      '@ardudeck/dataflash-parser':
+      '@jawji/dataflash-parser':
         specifier: workspace:^
         version: link:../../packages/dataflash-parser
-      '@ardudeck/mavlink-ts':
+      '@jawji/mavlink-ts':
         specifier: workspace:*
         version: link:../../packages/mavlink-ts
-      '@ardudeck/module-sdk':
+      '@jawji/module-sdk':
         specifier: workspace:*
         version: link:../../packages/module-sdk
-      '@ardudeck/msp-ts':
+      '@jawji/msp-ts':
         specifier: workspace:*
         version: link:../../packages/msp-ts
-      '@ardudeck/stm32-dfu':
+      '@jawji/stm32-dfu':
         specifier: workspace:*
         version: link:../../packages/stm32-dfu
       '@reactour/tour':
@@ -199,9 +199,42 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
 
-  packages/ardudeck-agent:
+  packages/comms:
     dependencies:
-      '@ardudeck/companion-types':
+      '@jawji/mavlink-ts':
+        specifier: workspace:*
+        version: link:../mavlink-ts
+      serialport:
+        specifier: ^12.0.0
+        version: 12.0.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20.10.5
+        version: 20.19.27
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
+  packages/companion-types:
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
+  packages/create-jawji-module: {}
+
+  packages/dataflash-parser:
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)
+
+  packages/jawji-agent:
+    dependencies:
+      '@jawji/companion-types':
         specifier: workspace:*
         version: link:../companion-types
       bonjour-service:
@@ -247,39 +280,6 @@ importers:
       vitest:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.19.3)
-
-  packages/comms:
-    dependencies:
-      '@ardudeck/mavlink-ts':
-        specifier: workspace:*
-        version: link:../mavlink-ts
-      serialport:
-        specifier: ^12.0.0
-        version: 12.0.0
-    devDependencies:
-      '@types/node':
-        specifier: ^20.10.5
-        version: 20.19.27
-      typescript:
-        specifier: ^5.3.3
-        version: 5.9.3
-
-  packages/companion-types:
-    devDependencies:
-      typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
-
-  packages/create-ardudeck-module: {}
-
-  packages/dataflash-parser:
-    devDependencies:
-      typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
-      vitest:
-        specifier: ^3.0.0
-        version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)
 
   packages/mavlink-ts:
     devDependencies:
@@ -1588,6 +1588,7 @@ packages:
   '@xmldom/xmldom@0.8.11':
     resolution: {integrity: sha512-cQzWCtO6C8TQiYl1ruKNn2U6Ao4o4WBBcbL61yJl84x+j5sOWWFU9X7DpND8XZG3daDppSsigMdfAIl2upQBRw==}
     engines: {node: '>=10.0.0'}
+    deprecated: this version has critical issues, please update to the latest version
 
   '@xterm/addon-fit@0.11.0':
     resolution: {integrity: sha512-jYcgT6xtVYhnhgxh3QgYDnnNMYTcf8ElbxxFzX0IZo+vabQqSPAjC3c1wJrKB5E19VwQei89QCiZZP86DCPF7g==}
@@ -4260,6 +4261,7 @@ packages:
 
   uuid@10.0.0:
     resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   uuid@11.1.0:

@@ -1,14 +1,14 @@
 /**
  * Per-FC script installation registry.
  *
- * Persistence layer for tracking which flight controllers have ArduDeck Lua
- * scripts installed, what version, and what changes ArduDeck has made on each.
+ * Persistence layer for tracking which flight controllers have Jawji Lua
+ * scripts installed, what version, and what changes Jawji has made on each.
  *
  * Keyed by autopilot UID (the unique ID from AUTOPILOT_VERSION). Never sent
  * over the network. Used to:
  *  - Skip the install prompt for FCs that already have the script (silent path)
- *  - Show "ArduDeck on this vehicle" audit page (full transparency)
- *  - Enable a clean uninstall that reverts every parameter change ArduDeck made
+ *  - Show "Jawji on this vehicle" audit page (full transparency)
+ *  - Enable a clean uninstall that reverts every parameter change Jawji made
  */
 
 import Store from 'electron-store';
@@ -34,7 +34,7 @@ const store = new Store<RegistrySchema>({
  * Stable string ID for an autopilot. ArduPilot's AUTOPILOT_VERSION exposes a
  * uid2 (16 bytes) and uid (uint64); we hex-encode whichever is available.
  *
- * For ArduDeck callers, just pass the already-formatted ID string from the
+ * For Jawji callers, just pass the already-formatted ID string from the
  * connection-state metadata - this module doesn't care how you derived it,
  * only that it uniquely identifies one FC.
  */
@@ -91,7 +91,7 @@ export function appendAudit(uid: string, type: AuditEventType, summary: string, 
 }
 
 /**
- * Record a parameter change ArduDeck made. Used both for the audit trail and
+ * Record a parameter change Jawji made. Used both for the audit trail and
  * to enable revert-on-uninstall.
  */
 export function recordParamChange(uid: string, change: ParamChange): void {
@@ -131,8 +131,8 @@ export function buildFreshEntry(args: {
         type: 'install',
         timestamp: now,
         summary: method === 'manual'
-          ? `Detected ArduDeck commands v${args.scriptVersion} (manually installed - script heartbeat received)`
-          : `Installed ArduDeck commands v${args.scriptVersion}`,
+          ? `Detected Jawji commands v${args.scriptVersion} (manually installed - script heartbeat received)`
+          : `Installed Jawji commands v${args.scriptVersion}`,
       },
     ],
   };

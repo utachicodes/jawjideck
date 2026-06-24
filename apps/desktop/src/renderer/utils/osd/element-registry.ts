@@ -133,7 +133,7 @@ export const ELEMENT_REGISTRY: OsdElementDefinition[] = [
     category: 'general',
     description: 'User-configured aircraft name',
     previewSymbol: SYM.HEADING,
-    previewText: 'ARDUDECK',
+    previewText: 'Jawji',
     size: { width: 10, height: 1 },
     defaultPosition: { x: 10, y: 15, enabled: false },
     betaflightIndex: 8,

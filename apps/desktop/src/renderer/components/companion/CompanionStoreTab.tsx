@@ -244,7 +244,7 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
     setFlashResult(null);
     setFlashProgress({ state: 'preparing', progress: 0, message: 'Releasing serial port...' });
 
-    // Release the port if ArduDeck is holding it open (e.g. connection panel)
+    // Release the port if Jawji is holding it open (e.g. connection panel)
     try { await window.electronAPI?.disconnect(); } catch { /* not connected, fine */ }
     // Small delay for OS to release the port
     await new Promise((r) => setTimeout(r, 500));

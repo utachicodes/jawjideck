@@ -43,7 +43,7 @@ const RATE_PRESETS = {
 };
 
 // Custom profile storage
-const RATE_PROFILES_KEY = 'ardudeck_legacy_rate_profiles';
+const RATE_PROFILES_KEY = 'Jawji_legacy_rate_profiles';
 
 function loadCustomProfiles(): Record<string, { name: string; data: typeof RATE_PRESETS.beginner.rates }> {
   try {

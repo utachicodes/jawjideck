@@ -17,7 +17,7 @@ import {
   deserializeInavStatus,
   boxNamesFromBoxIds,
   type MSPModeRange,
-} from '@ardudeck/msp-ts';
+} from '@jawji/msp-ts';
 import { ctx } from './msp-context.js';
 import {
   sendMspRequest,

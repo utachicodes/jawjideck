@@ -5,7 +5,7 @@
  * Uses iNav MSP2 COMMON_SETTING commands.
  */
 
-import { MSP2 } from '@ardudeck/msp-ts';
+import { MSP2 } from '@jawji/msp-ts';
 import { ctx } from './msp-context.js';
 import { sendMspV2RequestWithPayload } from './msp-transport.js';
 

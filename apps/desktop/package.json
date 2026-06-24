@@ -1,20 +1,20 @@
 {
-  "name": "@ardudeck/desktop",
+  "name": "@jawji/desktop",
   "version": "0.0.33",
-  "description": "ArduDeck - Desktop Application",
+  "description": "Jawji - Desktop Application",
   "author": {
-    "name": "rubenCodeforges",
-    "email": "ruben@codeforges.com"
+    "name": "utachicodes",
+    "email": "utachicodes@gmail.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/rubenCodeforges/ardudeck.git"
+    "url": "https://github.com/utachicodes/jawjideck.git"
   },
   "main": "./out/main/index.js",
   "type": "module",
   "scripts": {
     "dev": "electron-vite dev",
-    "dev:deeplink": "ARDUDECK_DEEPLINK=\"${ARDUDECK_DEEPLINK:-ardudeck://open?view=mission}\" electron-vite dev",
+    "dev:deeplink": "JAWJI_DEEPLINK=\"${JAWJI_DEEPLINK:-jawji://open?view=mission}\" electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "package": "electron-builder",
@@ -24,13 +24,13 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@ardudeck/comms": "workspace:*",
-    "@ardudeck/companion-types": "workspace:*",
-    "@ardudeck/dataflash-parser": "workspace:^",
-    "@ardudeck/mavlink-ts": "workspace:*",
-    "@ardudeck/module-sdk": "workspace:*",
-    "@ardudeck/msp-ts": "workspace:*",
-    "@ardudeck/stm32-dfu": "workspace:*",
+    "@jawji/comms": "workspace:*",
+    "@jawji/companion-types": "workspace:*",
+    "@jawji/dataflash-parser": "workspace:^",
+    "@jawji/mavlink-ts": "workspace:*",
+    "@jawji/module-sdk": "workspace:*",
+    "@jawji/msp-ts": "workspace:*",
+    "@jawji/stm32-dfu": "workspace:*",
     "@reactour/tour": "^3.8.0",
     "@tanstack/react-virtual": "^3.13.23",
     "@xterm/addon-fit": "^0.11.0",
@@ -82,13 +82,13 @@
     "zod": "^4.3.6"
   },
   "build": {
-    "appId": "com.ardudeck.desktop",
-    "productName": "ArduDeck",
+    "appId": "com.jawji.desktop",
+    "productName": "Jawji",
     "protocols": [
       {
-        "name": "ArduDeck",
+        "name": "Jawji",
         "schemes": [
-          "ardudeck"
+          "jawji"
         ]
       }
     ],
@@ -97,8 +97,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "rubenCodeforges",
-        "repo": "ardudeck"
+        "owner": "utachicodes",
+        "repo": "jawjideck"
       }
     ],
     "directories": {

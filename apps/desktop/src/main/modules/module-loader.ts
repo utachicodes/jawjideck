@@ -1,7 +1,7 @@
 import { pathToFileURL } from 'node:url';
 import { join } from 'node:path';
 import { access } from 'node:fs/promises';
-import type { MainHostApi, ModuleMainExports } from '@ardudeck/module-sdk';
+import type { MainHostApi, ModuleMainExports } from '@jawji/module-sdk';
 
 export async function loadModuleMain(
   installPath: string,

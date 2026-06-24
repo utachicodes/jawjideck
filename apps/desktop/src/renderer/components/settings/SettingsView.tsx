@@ -2064,7 +2064,7 @@ function ExperimentalFeaturesSection() {
                 <div className="text-xs text-content-secondary mt-0.5">
                   Unlocks <strong>Orbit</strong> and <strong>Land at point</strong> in the map command popup
                   (the popup defaults to <strong>Move</strong> only). Also enables the optional <strong>Lua script
-                  installer</strong> for flight controllers that lack native CIRCLE mode - ArduDeck can write a
+                  installer</strong> for flight controllers that lack native CIRCLE mode - Jawji can write a
                   small script to the FC's SD card after explicit consent and source-code preview.
                   <span className="block mt-1 text-rose-400">
                     Triggers flight-mode changes and may modify parameters. Bench-test every command before flight.
@@ -2095,7 +2095,7 @@ function ScriptInstallerActions() {
   return (
     <div className="mt-3 pt-3 border-t border-subtle/50 flex items-center justify-between">
       <span className="text-[11px] text-content-tertiary">
-        Manage and review ArduDeck-installed scripts on the connected vehicle
+        Manage and review Jawji-installed scripts on the connected vehicle
       </span>
       <button
         onClick={() => setModalOpen(true)}
@@ -2138,7 +2138,7 @@ function AboutSection() {
       <section className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-5">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-content">ArduDeck</h3>
+            <h3 className="text-lg font-semibold text-content">Jawji</h3>
             <p className="text-sm text-content-secondary mt-0.5">
               v{currentVersion || '...'}
             </p>
@@ -2146,7 +2146,7 @@ function AboutSection() {
 
           <div className="flex items-center gap-3">
             <a
-              href="https://github.com/rubenCodeforges/ardudeck"
+              href="https://github.com/utachicodes/jawjideck"
               target="_blank"
               rel="noopener noreferrer"
               className="px-3 py-1.5 text-xs text-content-secondary hover:text-content border border-border hover:border-border rounded-lg transition-colors"

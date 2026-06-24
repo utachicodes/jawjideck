@@ -436,7 +436,7 @@ function TemplateDetailView({
               <p className="text-[11px] text-content-secondary">1. Download the SD card image</p>
               <p className="text-[11px] text-content-secondary">2. Flash to MicroSD using Raspberry Pi Imager or Balena Etcher</p>
               <p className="text-[11px] text-content-secondary">3. Insert SD card and power on the board</p>
-              <p className="text-[11px] text-content-secondary">4. Connect to the board's WiFi and open ArduDeck's companion view</p>
+              <p className="text-[11px] text-content-secondary">4. Connect to the board's WiFi and open Jawji's companion view</p>
             </div>
             {template.installCommand && (
               <div>

@@ -7,7 +7,7 @@
  * NOT STM32 DFU or STM32 ROM bootloader — this is ArduPilot's own bootloader
  */
 
-import { SerialTransport, listSerialPorts } from '@ardudeck/comms';
+import { SerialTransport, listSerialPorts } from '@jawji/comms';
 import * as fs from 'fs/promises';
 import * as zlib from 'zlib';
 import { BrowserWindow } from 'electron';

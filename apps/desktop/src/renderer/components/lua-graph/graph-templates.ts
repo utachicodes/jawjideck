@@ -2695,18 +2695,18 @@ export const GRAPH_TEMPLATES: GraphTemplate[] = [
     },
   },
 
-  // ─── ArduDeck Heartbeat Beacon ────────────────────────────────
+  // ─── Jawji Heartbeat Beacon ────────────────────────────────
   // The minimum-viable FC-side script: publish a NAMED_VALUE_FLOAT every
   // second so the GCS can confirm the script is loaded and running.
-  // This is the same pattern ArduDeck's own ardudeck_commands.lua uses for AD_HB.
+  // This is the same pattern Jawji's own jawji_commands.lua uses for AD_HB.
   {
     id: 'ad-heartbeat-beacon',
-    name: 'ArduDeck Heartbeat Beacon',
+    name: 'Jawji Heartbeat Beacon',
     description: 'Publish a NAMED_VALUE_FLOAT heartbeat every second so the GCS can confirm the script is alive (mirrors the AD_HB pattern).',
     category: 'FC Script',
     graph: {
       version: 1,
-      name: 'ArduDeck Heartbeat Beacon',
+      name: 'Jawji Heartbeat Beacon',
       description: 'Publish AD_HB once per second',
       runIntervalMs: 100,
       createdAt: '2025-01-01T00:00:00.000Z',

@@ -17,7 +17,7 @@ import { create } from 'zustand';
 // the main barrel re-exports `core/signing.js` which uses `node:crypto`, and
 // Vite externalizes that for the renderer producing a runtime error. The
 // registry subpath gives us just the decoders we need.
-import { getMessageInfo } from '@ardudeck/mavlink-ts/registry';
+import { getMessageInfo } from '@jawji/mavlink-ts/registry';
 
 export interface PacketEvent {
   msgid: number;

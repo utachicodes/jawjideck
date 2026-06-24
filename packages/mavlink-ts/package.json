@@ -1,5 +1,5 @@
 {
-  "name": "@ardudeck/mavlink-ts",
+  "name": "@jawji/mavlink-ts",
   "version": "0.1.0",
   "description": "TypeScript MAVLink protocol library",
   "type": "module",

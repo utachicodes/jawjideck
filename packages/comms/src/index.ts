@@ -1,5 +1,5 @@
 /**
- * @ardudeck/comms
+ * @jawji/comms
  * Communication transport layer for MAVLink connections
  */
 

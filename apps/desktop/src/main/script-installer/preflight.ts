@@ -1,5 +1,5 @@
 /**
- * Preflight checks for installing ArduDeck commands onto a flight controller.
+ * Preflight checks for installing Jawji commands onto a flight controller.
  *
  * Reads the FC parameters and current vehicle state, then evaluates each
  * requirement from the script manifest. Returns a structured list the UI

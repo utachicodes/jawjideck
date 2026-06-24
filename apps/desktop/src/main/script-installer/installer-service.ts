@@ -1,5 +1,5 @@
 /**
- * Installer state machine for ArduDeck Lua scripts.
+ * Installer state machine for Jawji Lua scripts.
  *
  * Owns the install flow end-to-end:
  *   preflight → awaiting_consent → (configuring_params → rebooting)*
@@ -296,7 +296,7 @@ async function runFlow(state: InternalState) {
     // we ask one quick question (≤1.5 s) and route to manual install
     // immediately if the answer is "no can do".
     const path = `/APM/scripts/${bundle.manifest.filename}`;
-    const probePath = `/APM/scripts/.ardudeck_probe_${Date.now()}`;
+    const probePath = `/APM/scripts/.jawji_probe_${Date.now()}`;
     emitter({ phase: 'probing_capability' });
     const probe = await adapter.probeWritability(probePath);
     if (probe.verdict !== 'writable') {

@@ -27,7 +27,7 @@ import {
   type MSPVtxConfig,
   type OsdConfigData,
   type MSPRxConfig,
-} from '@ardudeck/msp-ts';
+} from '@jawji/msp-ts';
 import { ctx } from './msp-context.js';
 import {
   sendMspRequest,

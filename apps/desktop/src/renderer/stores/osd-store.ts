@@ -244,11 +244,8 @@ export const useOsdStore = create<OsdStore>((set, get) => ({
       } | null;
 
       if (!config || config.elements.length === 0) {
-        console.log('[OSD] No OSD config returned from FC');
         return false;
       }
-
-      console.log('[OSD] Loaded', config.elements.length, 'element positions from FC');
 
       // Build BF index map from registry
       const BF_INDEX_MAP = buildBfIndexMap();
@@ -265,19 +262,16 @@ export const useOsdStore = create<OsdStore>((set, get) => ({
             enabled: element.visible,
           };
           updatedCount++;
-          console.log(`[OSD] Element ${ourId}: (${element.x}, ${element.y}) ${element.visible ? 'visible' : 'hidden'}`);
         }
       }
 
       if (updatedCount > 0) {
         set({ elementPositions: newPositions });
         get().updateScreenBuffer();
-        console.log('[OSD] Updated', updatedCount, 'element positions from FC');
       }
 
       return updatedCount > 0;
     } catch (err) {
-      console.error('[OSD] Failed to load positions from FC:', err);
       return false;
     }
   },

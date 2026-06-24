@@ -14,6 +14,8 @@ describe('loadModuleMain', () => {
       dataDir: '/tmp/x',
       readData: async () => undefined,
       writeData: async () => {},
+      secureRead: async () => undefined,
+      secureWrite: async () => {},
       log: logSpy,
       onRendererMessage: () => () => {},
     };
@@ -28,6 +30,8 @@ describe('loadModuleMain', () => {
       dataDir: '/tmp/x',
       readData: async () => undefined,
       writeData: async () => {},
+      secureRead: async () => undefined,
+      secureWrite: async () => {},
       log: () => {},
       onRendererMessage: () => () => {},
     };

@@ -4,7 +4,7 @@
  * saveEeprom, calibrate, reboot, resetMspCliFlags, resetSitlAutoConfig.
  */
 
-import { MSP, deserializeCalibrationData, type MSPCalibrationData } from '@ardudeck/msp-ts';
+import { MSP, deserializeCalibrationData, type MSPCalibrationData } from '@jawji/msp-ts';
 import { ctx } from './msp-context.js';
 import { sendMspRequest, withConfigLock } from './msp-transport.js';
 import { stopMspTelemetry } from './msp-telemetry.js';
@@ -97,7 +97,7 @@ export async function saveEepromViaCli(): Promise<boolean> {
 
     await new Promise(r => setTimeout(r, 500));
 
-    const scheduleReconnect = (globalThis as Record<string, unknown>).__ardudeck_scheduleReconnect as
+    const scheduleReconnect = (globalThis as Record<string, unknown>).__Jawji_scheduleReconnect as
       ((options: { reason: string; delayMs: number; timeoutMs?: number; maxAttempts?: number }) => void) | undefined;
 
     if (scheduleReconnect) {
@@ -293,7 +293,7 @@ export async function reboot(autoReconnect = true): Promise<boolean> {
 
   try {
     if (autoReconnect) {
-      const scheduleReconnect = (globalThis as Record<string, unknown>).__ardudeck_scheduleReconnect as
+      const scheduleReconnect = (globalThis as Record<string, unknown>).__Jawji_scheduleReconnect as
         ((options: { reason: string; delayMs: number; timeoutMs?: number; maxAttempts?: number }) => void) | undefined;
 
       if (scheduleReconnect) {

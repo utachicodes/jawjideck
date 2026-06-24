@@ -4,7 +4,7 @@ This directory contains the binaries for firmware flashing tools.
 
 ## STM32 DFU Flashing
 
-STM32 DFU flashing is now handled natively using the `@ardudeck/stm32-dfu` package.
+STM32 DFU flashing is now handled natively using the `@Jawji/stm32-dfu` package.
 No external `dfu-util` binary is required - the app uses libusb bindings directly.
 
 ## Required Binaries (AVR/Legacy Boards Only)

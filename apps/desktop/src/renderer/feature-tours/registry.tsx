@@ -43,7 +43,7 @@ export const FEATURE_TOURS: FeatureTour[] = [
             <div className="text-sm font-semibold">Corridor surveys</div>
             <p className="text-xs leading-relaxed opacity-90">
               Under the <strong>Survey</strong> button, pick <strong>Corridor</strong> for linear
-              jobs - roads, rail, power lines, pipelines. Draw a centerline and ArduDeck lays
+              jobs - roads, rail, power lines, pipelines. Draw a centerline and Jawji lays
               parallel strips along it. Pick <strong>Plane</strong> (racetrack turns at sharp bends)
               or <strong>Copter</strong> (turns on the spot), and set width, strip count and overlap.
             </p>

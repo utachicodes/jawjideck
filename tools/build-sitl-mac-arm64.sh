@@ -5,7 +5,7 @@
 # git history of .github/workflows/build-sitl.yml), so we build locally on the
 # same hardware our users run on.
 #
-# What ArduDeck consumes:
+# What Jawji consumes:
 #   GitHub Releases tag:  sitl-v{X.Y.Z}
 #   Asset name format:    {arducopter|arduplane|ardurover|ardusub}-macos-arm64
 #   Pinned in code:       apps/desktop/src/main/sitl/ardupilot-sitl-downloader.ts

@@ -19,7 +19,7 @@ export interface FileParamDiff {
 }
 
 // localStorage key for persisting favourites across sessions
-const FAVOURITES_STORAGE_KEY = 'ardudeck-param-favourites';
+const FAVOURITES_STORAGE_KEY = 'jawji-param-favourites';
 
 function loadFavourites(): Set<string> {
   try {

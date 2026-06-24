@@ -3,8 +3,8 @@
  *
  * Downloads pre-built SITL binaries per platform:
  *
- * macOS (ARM64/x64): Native binaries from ArduDeck GitHub releases
- *   https://github.com/rubenCodeforges/ardudeck/releases/download/sitl-v{ver}/{binary}-macos-{arch}
+ * macOS (ARM64/x64): Native binaries from Jawji GitHub releases
+ *   https://github.com/rubenCodeforges/Jawji/releases/download/sitl-v{ver}/{binary}-macos-{arch}
  *
  * Linux x64: Native ELF from firmware.ardupilot.org
  *   https://firmware.ardupilot.org/{Vehicle}/{track}/SITL_x86_64_linux_gnu/{binary}
@@ -27,7 +27,7 @@ import { IPC_CHANNELS } from '../../shared/ipc-channels.js';
 
 // ── URL sources ──────────────────────────────────────────────────────────────
 
-const GITHUB_RELEASES_URL = 'https://github.com/rubenCodeforges/ardudeck/releases/download';
+const GITHUB_RELEASES_URL = 'https://github.com/rubenCodeforges/Jawji/releases/download';
 const FIRMWARE_BASE_URL = 'https://firmware.ardupilot.org';
 const CYGWIN_BASE_URL = 'https://firmware.ardupilot.org/Tools/MissionPlanner/sitl';
 

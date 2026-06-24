@@ -224,8 +224,8 @@ const RATE_PRESETS: Record<string, {
 };
 
 // Custom profile storage keys
-const PID_PROFILES_KEY = 'ardudeck_pid_profiles';
-const RATE_PROFILES_KEY = 'ardudeck_rate_profiles';
+const PID_PROFILES_KEY = 'Jawji_pid_profiles';
+const RATE_PROFILES_KEY = 'Jawji_rate_profiles';
 
 // Load custom profiles from localStorage
 function loadCustomProfiles<T>(key: string): Record<string, { name: string; data: T }> {
@@ -400,7 +400,7 @@ function PresetSelector<T extends Record<string, { name: string; description: st
  * Calculate rate (deg/s) at a given stick position.
  * Formulas match Betaflight Configurator's RateCurve.js exactly.
  *
- * ArduDeck stores raw U8 values (0-255). BF Configurator stores decimals (divided by 100).
+ * Jawji stores raw U8 values (0-255). BF Configurator stores decimals (divided by 100).
  * Each rate type scales these differently before applying the formula.
  *
  * @param stick - Stick position 0..1 (positive half only)
@@ -432,9 +432,9 @@ function calculateRate(stick: number, rcRate: number, superRate: number, expo: n
 
     case 1: { // Raceflight — from getRaceflightRates()
       // BF scales: rate*100, rcRate*1000, expo*100
-      const rateF = superRate;     // ArduDeck raw 40 = BF 0.40*100
-      const rcRateF = rcRate * 10; // ArduDeck raw 80 = BF 0.80*1000
-      const expoF = expo;          // ArduDeck raw 20 = BF 0.20*100
+      const rateF = superRate;     // Jawji raw 40 = BF 0.40*100
+      const rcRateF = rcRate * 10; // Jawji raw 80 = BF 0.80*1000
+      const expoF = expo;          // Jawji raw 20 = BF 0.20*100
 
       let angularVel = (1 + 0.01 * expoF * (stick * stick - 1.0)) * stick;
       angularVel = angularVel * (rcRateF + Math.abs(angularVel) * rcRateF * rateF * 0.01);
@@ -455,8 +455,8 @@ function calculateRate(stick: number, rcRate: number, superRate: number, expo: n
 
     case 3: { // Actual — from getActualRates()
       // BF scales: rate*1000, rcRate*1000 (both are deg/s)
-      const maxRate = superRate * 10;   // ArduDeck raw 40 → 400 deg/s
-      const centerRate = rcRate * 10;   // ArduDeck raw 80 → 800 deg/s
+      const maxRate = superRate * 10;   // Jawji raw 40 → 400 deg/s
+      const centerRate = rcRate * 10;   // Jawji raw 80 → 800 deg/s
       const expoF = expo / 100;
 
       const expof = absStick * (Math.pow(stick, 5) * expoF + stick * (1 - expoF));
@@ -466,8 +466,8 @@ function calculateRate(stick: number, rcRate: number, superRate: number, expo: n
 
     case 4: { // Quick — from getQuickRates()
       // BF scales: rate*1000 only
-      const rateF = superRate * 10;            // ArduDeck raw 40 → 400 deg/s
-      let rcRateF = (rcRate / 100) * 200;      // ArduDeck raw 80 → 160 deg/s
+      const rateF = superRate * 10;            // Jawji raw 40 → 400 deg/s
+      let rcRateF = (rcRate / 100) * 200;      // Jawji raw 80 → 160 deg/s
       const expoF = expo / 100;
       const rateClamped = Math.max(rateF, rcRateF);
 

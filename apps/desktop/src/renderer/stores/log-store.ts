@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import type { HealthCheckResult } from '@ardudeck/dataflash-parser';
+import type { HealthCheckResult } from '@jawji/dataflash-parser';
 
 export interface AiChatMessage {
   role: 'user' | 'assistant';

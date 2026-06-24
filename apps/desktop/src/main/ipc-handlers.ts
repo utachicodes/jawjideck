@@ -16,7 +16,7 @@ import {
   type Transport,
   type SerialPortInfo,
   type ScanResult,
-} from '@ardudeck/comms';
+} from '@jawji/comms';
 import { registerCompanionIpcHandlers } from './companion/companion-ipc-handlers.js';
 import { registerDroneBridgeIpcHandlers } from './dronebridge/dronebridge-ipc-handlers.js';
 import { setupOverlayHandlers, getApiKey } from './overlays/overlay-ipc-handlers.js';
@@ -92,7 +92,7 @@ import {
   REQUEST_DATA_STREAM_ID,
   REQUEST_DATA_STREAM_CRC_EXTRA,
   type ParamValue,
-} from '@ardudeck/mavlink-ts';
+} from '@jawji/mavlink-ts';
 import { IPC_CHANNELS, SEVERITY_LABELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type LayoutStoreSchema, type SettingsStoreSchema, type SigningStatus, type TelemetrySpeed } from '../shared/ipc-channels.js';
 import { initAutoUpdater, checkForUpdates, downloadUpdate, installUpdate } from './updater.js';
 import type { ParamValuePayload, ParameterProgress } from '../shared/parameter-types.js';
@@ -121,11 +121,11 @@ import {
   serializeFileTransferProtocol,
   FILE_TRANSFER_PROTOCOL_ID,
   FILE_TRANSFER_PROTOCOL_CRC_EXTRA,
-} from '@ardudeck/mavlink-ts';
+} from '@jawji/mavlink-ts';
 import { LogDownloadManager, type LogListEntry } from './mavlink-log/index.js';
 import { decodeServoOutputRaw } from './servo-output-decode.js';
 import { writeFile, readFile } from 'node:fs/promises';
-import { createDataFlashParser, runHealthChecks } from '@ardudeck/dataflash-parser';
+import { createDataFlashParser, runHealthChecks } from '@jawji/dataflash-parser';
 import { sitlProcess } from './sitl/sitl-process.js';
 import { ardupilotSitlProcess, ardupilotSitlDownloader, ardupilotRcSender } from './sitl/index.js';
 import {
@@ -1401,7 +1401,7 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
     case MSG_NAMED_VALUE_FLOAT: {
       // NAMED_VALUE_FLOAT (251):
       //   timeBootMs(U32)@0, value(F32)@4, name(char[10])@8
-      // ArduDeck's installed Lua scripts publish a heartbeat here ('AD_HB');
+      // Jawji's installed Lua scripts publish a heartbeat here ('AD_HB');
       // the script-installer's heartbeat-tracker watches for it.
       try {
         const value = readFloat(payload, 4);
@@ -2787,7 +2787,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       currentTransport = null;
       mavlinkParser = null;
       resetMavlinkDiagCache();
-      resetHeartbeat();   // clear ArduDeck script-heartbeat state across FC swaps
+      resetHeartbeat();   // clear Jawji script-heartbeat state across FC swaps
       connectionState.isConnected = false;
       connectionState.isWaitingForHeartbeat = false;
       sendLog(mainWindow, 'info', 'Connection closed');
@@ -3123,7 +3123,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   // Export scheduleReconnect for use by MSP handlers
   // We'll make it available via a global reference since MSP handlers are in separate file
-  (globalThis as Record<string, unknown>).__ardudeck_scheduleReconnect = scheduleReconnect;
+  (globalThis as Record<string, unknown>).__Jawji_scheduleReconnect = scheduleReconnect;
 
   // IPC handler to cancel reconnection (user requested)
   ipcMain.handle(IPC_CHANNELS.RECONNECT_CANCEL, async (): Promise<void> => {
@@ -4863,7 +4863,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   });
 
   // MAV_CMD_USER_1..5 via COMMAND_INT - dispatches to FC-side Lua script handlers.
-  // Used by ArduDeck's installed scripts (e.g. orbit) to receive structured
+  // Used by Jawji's installed scripts (e.g. orbit) to receive structured
   // commands with full lat/lon precision + 4 float params.
   ipcMain.handle(IPC_CHANNELS.MAVLINK_USER_COMMAND, async (
     _, cmdId: number, lat: number, lon: number, alt: number,
@@ -4928,7 +4928,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       // FTP. Probe = check the working dir is writable.
       if (connectionState.isSitl) {
         const cfg = ardupilotSitlProcess.currentConfig;
-        if (!cfg) return { verdict: 'no_response' as const, detail: 'SITL is connected but ArduDeck has lost track of the launcher config - restart SITL from the connection panel.' };
+        if (!cfg) return { verdict: 'no_response' as const, detail: 'SITL is connected but Jawji has lost track of the launcher config - restart SITL from the connection panel.' };
         try {
           const binaryPath = ardupilotSitlProcess.getBinaryPath(cfg.vehicleType, cfg.releaseTrack);
           const fs = await import('fs/promises');
@@ -4937,7 +4937,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
           const scriptsDir = path.join(path.dirname(binaryPath), 'scripts');
           await fs.mkdir(scriptsDir, { recursive: true });
           // Quick write+delete probe to confirm permissions.
-          const probe = path.join(scriptsDir, '.ardudeck_probe');
+          const probe = path.join(scriptsDir, '.jawji_probe');
           await fs.writeFile(probe, '');
           await fs.unlink(probe);
           return { verdict: 'writable' as const };
@@ -5061,7 +5061,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         // existing reconnect machinery captures the connection options while
         // the connection is still alive (it reads connectionState).
         scheduleReconnect({
-          reason: 'ArduDeck script install: applying parameter change',
+          reason: 'Jawji script install: applying parameter change',
           delayMs: 4000,    // typical FC boot time
           timeoutMs: timeoutSec * 1000,
           maxAttempts: 20,
@@ -5139,7 +5139,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         //     throws; silent failures here were the previous bug.
         sendLog(mainWindow, 'info', 'SITL: restarting process to load the new script…');
         scheduleReconnect({
-          reason: 'ArduDeck script install: restarting SITL to load script',
+          reason: 'Jawji script install: restarting SITL to load script',
           delayMs: 8000,
           timeoutMs: 60000,
           maxAttempts: 40,
@@ -5194,7 +5194,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   // when a previously-unknown vehicle starts publishing the AD_HB heartbeat.
   // This closes the loop for users who side-loaded the script manually:
   // they don't need to reopen any dialog, the registry just notices the
-  // heartbeat and treats the FC as having ArduDeck commands installed.
+  // heartbeat and treats the FC as having Jawji commands installed.
   subscribeHealth((health) => {
     safeSend(mainWindow, IPC_CHANNELS.SCRIPT_HEALTH_CHANGED, health);
     if (health.status === 'present') {
@@ -5213,7 +5213,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         installMethod: 'manual',
       });
       scriptRegistry.setEntry(entry);
-      sendLog(mainWindow, 'info', `Detected manually-installed ArduDeck script v${health.version} on ${uid}`);
+      sendLog(mainWindow, 'info', `Detected manually-installed Jawji script v${health.version} on ${uid}`);
     }
   });
 
@@ -5281,7 +5281,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     try {
       const bundle = getScriptBundle();
       const result = await dialog.showSaveDialog(mainWindow, {
-        title: 'Save ArduDeck Lua Script',
+        title: 'Save Jawji Lua Script',
         defaultPath: bundle.manifest.filename,
         filters: [
           { name: 'Lua Script', extensions: ['lua'] },
@@ -5797,7 +5797,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
       // Header with vehicle type and timestamp for cross-vehicle-type safety
       const header = [
-        `# ArduDeck Parameter File`,
+        `# Jawji Parameter File`,
         vehicleType ? `# Vehicle: ${vehicleType}` : null,
         `# Date: ${new Date().toISOString()}`,
         `# Parameters: ${params.length}`,
@@ -5935,7 +5935,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle(IPC_CHANNELS.PARAM_SAVE_TO_PATH, async (_, params: Array<{ id: string; value: number }>, filePath: string, vehicleType?: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const header = [
-        `# ArduDeck Parameter File`,
+        `# Jawji Parameter File`,
         vehicleType ? `# Vehicle: ${vehicleType}` : null,
         `# Date: ${new Date().toISOString()}`,
         `# Parameters: ${params.length}`,
@@ -7132,7 +7132,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     error?: string;
   }> => {
     try {
-      const { listSerialPorts } = await import('@ardudeck/comms');
+      const { listSerialPorts } = await import('@jawji/comms');
       const ports = await listSerialPorts();
       return {
         success: true,
@@ -7197,7 +7197,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     firmwareVersion?: string;
     error?: string;
   }> => {
-    const { SerialTransport } = await import('@ardudeck/comms');
+    const { SerialTransport } = await import('@jawji/comms');
     const {
       MAVLinkParser,
       serializeV1,
@@ -7207,7 +7207,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       COMMAND_LONG_ID,
       COMMAND_LONG_CRC_EXTRA,
       serializeCommandLong,
-    } = await import('@ardudeck/mavlink-ts');
+    } = await import('@jawji/mavlink-ts');
     const { getBoardInfoFromVersion } = await import('../shared/board-ids.js');
 
     const MAV_CMD_REQUEST_MESSAGE = 512;
@@ -7451,7 +7451,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     // Try MAVLink first (ArduPilot/PX4)
     try {
       sendLog(mainWindow, 'debug', 'Trying MAVLink...');
-      const { SerialTransport } = await import('@ardudeck/comms');
+      const { SerialTransport } = await import('@jawji/comms');
       const {
         MAVLinkParser,
         serializeV1,
@@ -7461,7 +7461,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         COMMAND_LONG_ID,
         COMMAND_LONG_CRC_EXTRA,
         serializeCommandLong,
-      } = await import('@ardudeck/mavlink-ts');
+      } = await import('@jawji/mavlink-ts');
       const { getBoardInfoFromVersion } = await import('../shared/board-ids.js');
 
       const transport = new SerialTransport(port, { baudRate: 115200 });
@@ -8247,8 +8247,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       // Show save dialog
       const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
         title: 'Save Bug Report',
-        defaultPath: `ardudeck-report-${Date.now()}.deckreport`,
-        filters: [{ name: 'DeckReport Files', extensions: ['deckreport'] }],
+        defaultPath: `Jawji-report-${Date.now()}.jawjireport`,
+        filters: [{ name: 'JawjiReport Files', extensions: ['jawjireport'] }],
       });
 
       if (canceled || !filePath) {
@@ -8316,7 +8316,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         title: 'Save Lua Graph',
         defaultPath: `${(graph as any)?.name || 'untitled'}.adgraph`,
         filters: [
-          { name: 'ArduDeck Graph', extensions: ['adgraph'] },
+          { name: 'Jawji Graph', extensions: ['adgraph'] },
           { name: 'All Files', extensions: ['*'] },
         ],
       });
@@ -8334,7 +8334,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       const result = await dialog.showOpenDialog(mainWindow, {
         title: 'Open Lua Graph',
         filters: [
-          { name: 'ArduDeck Graph', extensions: ['adgraph'] },
+          { name: 'Jawji Graph', extensions: ['adgraph'] },
           { name: 'All Files', extensions: ['*'] },
         ],
         properties: ['openFile'],
@@ -8959,7 +8959,7 @@ function formatQgcPlan(items: MissionItem[]): string {
   const plan = {
     fileType: 'Plan',
     geoFence: { circles: [], polygons: [], version: 2 },
-    groundStation: 'ArduDeck',
+    groundStation: 'Jawji',
     mission: {
       cruiseSpeed: 15,
       firmwareType: 3, // ArduPilot
@@ -9036,7 +9036,7 @@ function parseQgcPlan(content: string): MissionItem[] {
  * Format: seq cmd frame p1 p2 p3 p4 lat lon alt
  */
 function formatFenceFile(items: FenceItem[]): string {
-  const lines = ['# ArduDeck Fence File v1'];
+  const lines = ['# Jawji Fence File v1'];
   lines.push('# seq cmd frame p1 p2 p3 p4 lat lon alt');
 
   for (const item of items) {
@@ -9103,7 +9103,7 @@ function parseFenceFile(content: string): FenceItem[] {
  * Format: seq cmd frame p1 p2 p3 p4 lat lon alt
  */
 function formatRallyFile(items: RallyItem[]): string {
-  const lines = ['# ArduDeck Rally Points File v1'];
+  const lines = ['# Jawji Rally Points File v1'];
   lines.push('# seq cmd frame p1 p2 p3 p4 lat lon alt');
 
   for (const item of items) {

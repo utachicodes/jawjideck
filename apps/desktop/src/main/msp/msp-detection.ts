@@ -5,7 +5,7 @@
  */
 
 import { BrowserWindow } from 'electron';
-import type { Transport } from '@ardudeck/comms';
+import type { Transport } from '@jawji/comms';
 import {
   MSPParser,
   MSP,
@@ -13,7 +13,7 @@ import {
   deserializeFcVariant,
   deserializeFcVersion,
   deserializeBoardInfo,
-} from '@ardudeck/msp-ts';
+} from '@jawji/msp-ts';
 import { ctx } from './msp-context.js';
 import { sendMspRequest, handleMspResponse } from './msp-transport.js';
 import { setCliTransport, isCliModeActive } from '../cli/cli-handlers.js';

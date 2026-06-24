@@ -29,14 +29,14 @@ function getPublicKey() {
 
 /**
  * Verify a license key's Ed25519 signature and decode the payload.
- * Format: ARDUDECK.{base64url(payload)}.{base64url(signature)}
+ * Format: JAWJI.{base64url(payload)}.{base64url(signature)}
  * (dot separator: base64url alphabet contains `-` and `_` so they cannot split the key)
  */
 export function verifyLicenseKey(
   key: string,
 ): { valid: boolean; payload?: LicensePayload; error?: string } {
   const parts = key.split('.');
-  if (parts.length !== 3 || parts[0] !== 'ARDUDECK') {
+  if (parts.length !== 3 || parts[0] !== 'Jawji') {
     return { valid: false, error: 'Invalid key format' };
   }
 

@@ -1,6 +1,6 @@
 /**
  * Companion Connection Manager
- * WebSocket client that connects to the ArduDeck Agent daemon
+ * WebSocket client that connects to the Jawji Agent daemon
  * running on a companion computer (Raspberry Pi, Jetson, etc.)
  */
 
@@ -8,14 +8,14 @@ import WebSocket from 'ws';
 import { BrowserWindow } from 'electron';
 import { IPC_CHANNELS } from '../../shared/ipc-channels.js';
 import type { CompanionConnectionIpcState } from '../../shared/ipc-channels.js';
-import { AGENT_DEFAULT_PORT } from '@ardudeck/companion-types';
+import { AGENT_DEFAULT_PORT } from '@jawji/companion-types';
 import type {
   WsMessage,
   HelloMessage,
   MetricsData,
   ProcessInfo,
   LogEntry,
-} from '@ardudeck/companion-types';
+} from '@jawji/companion-types';
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
 

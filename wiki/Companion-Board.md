@@ -1,6 +1,6 @@
 # Companion Board Support
 
-ArduDeck includes tools for setting up and managing companion computers. The companion view is organized into three tabs: **Store**, **DroneBridge**, and **Dashboard**.
+Jawji includes tools for setting up and managing companion computers. The companion view is organized into three tabs: **Store**, **DroneBridge**, and **Dashboard**.
 
 > Enable the companion view in **Settings > Experimental Features > Companion Board Support**.
 
@@ -19,7 +19,7 @@ Browse pre-configured templates for popular companion boards. The store is the d
 
 ### ESP32 Flashing
 
-Flash ESP32 boards directly from ArduDeck via USB:
+Flash ESP32 boards directly from Jawji via USB:
 
 1. Select a template (e.g., DroneBridge WiFi)
 2. Connect your ESP32 via USB
@@ -60,7 +60,7 @@ Monitor and configure DroneBridge ESP32 devices on your network.
 
 ## Dashboard Tab
 
-Full companion computer management when the ArduDeck Agent is installed.
+Full companion computer management when the Jawji Agent is installed.
 
 ### Panels
 
@@ -87,9 +87,9 @@ The dashboard uses a dockview-based layout system:
 
 ### Connecting
 
-1. Install the ArduDeck Agent on your companion:
+1. Install the Jawji Agent on your companion:
    ```
-   curl -fsSL https://ardudeck.com/agent/install.sh | bash
+   curl -fsSL https://Jawji.com/agent/install.sh | bash
    ```
 2. Note the pairing token shown after installation
 3. In the Dashboard tab, enter the companion's IP and token

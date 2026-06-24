@@ -1,5 +1,5 @@
 /**
- * Read-only React Flow viewer for ArduDeck-shipped script graphs.
+ * Read-only React Flow viewer for Jawji-shipped script graphs.
  *
  * Renders the existing GraphNodeComponent so visual styling stays consistent
  * with the editor, but all editing affordances are disabled: nodes/edges can't

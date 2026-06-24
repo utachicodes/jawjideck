@@ -1,5 +1,5 @@
 /**
- * Heartbeat tracker for ArduDeck-managed Lua scripts.
+ * Heartbeat tracker for Jawji-managed Lua scripts.
  *
  * Listens for the script's NAMED_VALUE_FLOAT 'AD_HB' = SCRIPT_VERSION beacon.
  * The script publishes this every ~1 second. We track the most recent value

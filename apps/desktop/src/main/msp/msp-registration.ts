@@ -20,7 +20,7 @@ import type {
   MSPGpsRescuePids,
   MSPFilterConfig,
   MSPVtxConfig,
-} from '@ardudeck/msp-ts';
+} from '@jawji/msp-ts';
 import { IPC_CHANNELS } from '../../shared/ipc-channels.js';
 import { initCliHandlers, setCliModeChangeCallback } from '../cli/cli-handlers.js';
 import { ctx } from './msp-context.js';
@@ -141,7 +141,7 @@ export function registerMspHandlers(window: BrowserWindow): void {
 
   // Serial port configuration
   ipcMain.handle(IPC_CHANNELS.MSP_GET_SERIAL_CONFIG, async () => getSerialConfig());
-  ipcMain.handle(IPC_CHANNELS.MSP_SET_SERIAL_CONFIG, async (_event, config: import('@ardudeck/msp-ts').MSPSerialConfig) => setSerialConfig(config));
+  ipcMain.handle(IPC_CHANNELS.MSP_SET_SERIAL_CONFIG, async (_event, config: import('@jawji/msp-ts').MSPSerialConfig) => setSerialConfig(config));
 
   // RX Map (channel mapping)
   ipcMain.handle(IPC_CHANNELS.MSP_GET_RX_MAP, async () => getRxMap());
@@ -149,7 +149,7 @@ export function registerMspHandlers(window: BrowserWindow): void {
 
   // RC Deadband
   ipcMain.handle(IPC_CHANNELS.MSP_GET_RC_DEADBAND, async () => getRcDeadband());
-  ipcMain.handle(IPC_CHANNELS.MSP_SET_RC_DEADBAND, async (_event, config: import('@ardudeck/msp-ts').MSPRcDeadband) => setRcDeadband(config));
+  ipcMain.handle(IPC_CHANNELS.MSP_SET_RC_DEADBAND, async (_event, config: import('@jawji/msp-ts').MSPRcDeadband) => setRcDeadband(config));
 
   // Generic settings API (read/write any CLI setting via MSP)
   ipcMain.handle(IPC_CHANNELS.MSP_GET_SETTING, async (_event, name: string) => getSetting(name));

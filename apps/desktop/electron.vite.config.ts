@@ -8,7 +8,7 @@ import react from '@vitejs/plugin-react';
 // externalizeDepsPlugin + electron-builder.
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin({ exclude: ['electron-store', '@ardudeck/dataflash-parser', '@ardudeck/module-sdk'] })],
+    plugins: [externalizeDepsPlugin({ exclude: ['electron-store', '@jawji/dataflash-parser', '@jawji/module-sdk'] })],
     build: {
       rollupOptions: {
         input: {
@@ -18,7 +18,7 @@ export default defineConfig({
     },
   },
   preload: {
-    plugins: [externalizeDepsPlugin({ exclude: ['electron-store', '@ardudeck/module-sdk'] })],
+    plugins: [externalizeDepsPlugin({ exclude: ['electron-store', '@jawji/module-sdk'] })],
     build: {
       rollupOptions: {
         input: {

@@ -647,7 +647,7 @@ function App() {
     void useModuleStore.getState().loadModules();
   }, []);
 
-  // ardudeck://open?view=<id> deep link -> navigate, but only to a real view
+  // jawji://open?view=<id> deep link -> navigate, but only to a real view
   // whose capability (if any) is enabled.
   const enabledCapabilitySlugs = useEnabledCapabilitySlugs();
   useEffect(() => {
@@ -768,11 +768,11 @@ function App() {
           <div className="text-center max-w-2xl">
             {/* Logo */}
             <div className="mx-auto w-48 h-48 mb-6 rounded-3xl overflow-hidden">
-              <img src={logoImage} alt="ArduDeck" className="w-full h-full object-cover" />
+              <img src={logoImage} alt="Jawji" className="w-full h-full object-cover" />
             </div>
 
             <h2 className="text-2xl font-semibold text-content mb-3">
-              Welcome to ArduDeck
+              Welcome to Jawji
             </h2>
             <p className="text-content-secondary mb-8 leading-relaxed max-w-md mx-auto">
               Connect to your flight controller using the panel on the left,
@@ -895,7 +895,7 @@ function App() {
         </main>
       </div>
 
-      {/* Deep-link module install prompt (ardudeck://install) */}
+      {/* Deep-link module install prompt (jawji://install) */}
       <DeepLinkInstallPrompt />
 
       {/* Vehicle type mismatch dialog */}

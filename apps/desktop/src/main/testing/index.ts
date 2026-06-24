@@ -7,9 +7,9 @@ import { mkdirSync } from 'fs';
 import { setMainWindow } from './tools';
 import { startMcpServer, stopMcpServer } from './mcp-server';
 
-// Fixed well-known path: ~/.ardudeck/mcp.json
+// Fixed well-known path: ~/.jawji/mcp.json
 // Predictable for all consumers (orchestrator, bridge script, Claude Code).
-const DISCOVERY_DIR = join(homedir(), '.ardudeck');
+const DISCOVERY_DIR = join(homedir(), '.jawji');
 const DISCOVERY_FILE = 'mcp.json';
 
 let discoveryPath: string | null = null;
@@ -20,7 +20,7 @@ export async function initTestingMcp(mainWindow: BrowserWindow): Promise<void> {
   try {
     const { port } = await startMcpServer();
 
-    // Write discovery file to ~/.ardudeck/mcp.json
+    // Write discovery file to ~/.jawji/mcp.json
     mkdirSync(DISCOVERY_DIR, { recursive: true });
     discoveryPath = join(DISCOVERY_DIR, DISCOVERY_FILE);
 
@@ -29,8 +29,8 @@ export async function initTestingMcp(mainWindow: BrowserWindow): Promise<void> {
       url: `http://127.0.0.1:${port}`,
       sseUrl: `http://127.0.0.1:${port}/sse`,
       messagesUrl: `http://127.0.0.1:${port}/messages`,
-      name: 'ardudeck',
-      description: 'ArduDeck MCP: read vehicle state, parameters, messages; drive UI for tests.',
+      name: 'Jawji',
+      description: 'Jawji MCP: read vehicle state, parameters, messages; drive UI for tests.',
     };
 
     writeFileSync(discoveryPath, JSON.stringify(discoveryContent, null, 2));

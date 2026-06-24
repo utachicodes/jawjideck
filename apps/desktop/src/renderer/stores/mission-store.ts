@@ -665,15 +665,20 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
       set({ error: 'No waypoints in this group to save' });
       return false;
     }
-    const result = await window.electronAPI?.saveMissionToFile(items);
-    if (result?.success) {
-      set({ lastSuccessMessage: `Saved ${items.length} waypoints to file` });
-      return true;
+    try {
+      const result = await window.electronAPI?.saveMissionToFile(items);
+      if (result?.success) {
+        set({ lastSuccessMessage: `Saved ${items.length} waypoints to file` });
+        return true;
+      }
+      if (result?.error && result.error !== 'Cancelled') {
+        set({ error: result.error });
+      }
+      return false;
+    } catch (e) {
+      set({ error: String(e) });
+      return false;
     }
-    if (result?.error && result.error !== 'Cancelled') {
-      set({ error: result.error });
-    }
-    return false;
   },
 
   clearMissionFromFC: async () => {
@@ -1443,7 +1448,7 @@ useMissionStore.subscribe((state) => {
 // ── Autosave / crash recovery ────────────────────────────────────────────────
 // Debounced mirror of the working mission to localStorage so a crash or an
 // accidental close doesn't lose hours of survey prep. Restored on next launch.
-const AUTOSAVE_KEY = 'ardudeck:mission-autosave';
+const AUTOSAVE_KEY = 'jawji:mission-autosave';
 let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function clearMissionAutosave(): void {

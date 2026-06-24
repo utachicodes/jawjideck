@@ -371,7 +371,7 @@ function CalibrationVerificationCard({ verification }: { verification: Calibrati
           </svg>
           <div>
             <p className="text-sm font-medium text-amber-400 mb-1">Could not verify calibration</p>
-            <p className="text-xs text-amber-600">{verification.error ?? 'Parameter readback failed.'} The flight controller still reported success, but ArduDeck could not confirm the new values were written.</p>
+            <p className="text-xs text-amber-600">{verification.error ?? 'Parameter readback failed.'} The flight controller still reported success, but Jawji could not confirm the new values were written.</p>
           </div>
         </div>
       </div>
@@ -405,7 +405,7 @@ function CalibrationVerificationCard({ verification }: { verification: Calibrati
           <p className={`text-xs ${palette.sub}`}>
             {isUnchanged
               ? 'The flight controller reported success but the tracked parameters did not change. This usually means the calibration silently failed - try again, and if the values still do not move, check the FC logs.'
-              : 'ArduDeck re-read the relevant parameters from the flight controller and confirmed they changed.'}
+              : 'Jawji re-read the relevant parameters from the flight controller and confirmed they changed.'}
           </p>
 
           <button

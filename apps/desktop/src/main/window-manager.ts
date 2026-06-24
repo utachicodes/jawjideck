@@ -350,7 +350,7 @@ export function setupWindowManagerIpc(): void {
   });
 
   // Always-on-top: toggle for the caller window. Uses 'floating' level so
-  // the window stays above ArduDeck's main window but not above other apps
+  // the window stays above Jawji's main window but not above other apps
   // (matches what users expect from a pinned inspector — it floats over the
   // primary GCS without being a global HUD).
   ipcMain.handle(IPC_CHANNELS.WINDOW_SET_ALWAYS_ON_TOP_SELF, async (event, on: boolean) => {

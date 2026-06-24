@@ -1,6 +1,6 @@
-# @ardudeck/module-sdk
+# @Jawji/module-sdk
 
-SDK for building ArduDeck modules.
+SDK for building Jawji modules.
 
 ## Install
 
@@ -9,7 +9,7 @@ From an external repo:
 ```json
 {
   "devDependencies": {
-    "@ardudeck/module-sdk": "github:codeforges/ardudeck#master&path:packages/module-sdk"
+    "@Jawji/module-sdk": "github:codeforges/Jawji#master&path:packages/module-sdk"
   }
 }
 ```
@@ -17,7 +17,7 @@ From an external repo:
 Or bootstrap a new module with the generator:
 
 ```bash
-node packages/create-ardudeck-module/bin/create.mjs my-module
+node packages/create-Jawji-module/bin/create.mjs my-module
 ```
 
 ## Manifest (`module.json`)
@@ -39,7 +39,7 @@ Slug must match `^[a-z][a-z0-9]*(\.[a-z][a-z0-9-]*)+$`. Version must be semver.
 ## Renderer entry
 
 ```tsx
-import type { RendererHostApi } from '@ardudeck/module-sdk';
+import type { RendererHostApi } from '@Jawji/module-sdk';
 
 export async function activate(host: RendererHostApi) {
   host.log('info', 'activated');
@@ -50,7 +50,7 @@ export async function activate(host: RendererHostApi) {
 ## Main entry
 
 ```ts
-import type { MainHostApi } from '@ardudeck/module-sdk';
+import type { MainHostApi } from '@Jawji/module-sdk';
 
 export async function activate(host: MainHostApi) {
   host.onRendererMessage('doThing', async () => ({ result: 'ok' }));
@@ -61,7 +61,7 @@ export async function activate(host: MainHostApi) {
 
 ```js
 import { build } from 'esbuild';
-import { ardudeckModulePlugin } from '@ardudeck/module-sdk/esbuild';
+import { JawjiModulePlugin } from '@Jawji/module-sdk/esbuild';
 
 await build({
   entryPoints: ['src/renderer/index.tsx'],
@@ -70,12 +70,12 @@ await build({
   format: 'esm',
   target: 'es2022',
   jsx: 'automatic',
-  plugins: [ardudeckModulePlugin()],
+  plugins: [JawjiModulePlugin()],
   outfile: 'dist/renderer.js',
 });
 ```
 
-The plugin rewrites `react`, `react-dom`, and `react-dom/client` imports to the host's `window.__ardudeckHost.*` globals so your module shares the host's React instance (required for hooks to work).
+The plugin rewrites `react`, `react-dom`, and `react-dom/client` imports to the host's `window.__JawjiHost.*` globals so your module shares the host's React instance (required for hooks to work).
 
 ## Host API
 
