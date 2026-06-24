@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import type { RendererHostApi } from '@ardudeck/module-sdk';
+import type { RendererHostApi } from '@jawji/module-sdk';
 import { useTelemetryStore } from '../stores/telemetry-store';
 import { useConnectionStore } from '../stores/connection-store';
 import { useNavigationStore } from '../stores/navigation-store';

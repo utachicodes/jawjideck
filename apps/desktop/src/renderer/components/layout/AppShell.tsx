@@ -42,10 +42,7 @@ export function AppShell({ children }: AppShellProps) {
       {/* Header */}
       <header className="h-14 border-b border-subtle bg-surface-nav backdrop-blur-sm flex items-center shrink-0 relative z-50">
         {/* Logo sits in a nav-rail-width slot so it lines up with the sidebar icons */}
-        <div className="w-14 flex items-center justify-center shrink-0">
-          <img src={iconImage} alt="ArduDeck" className="h-8 w-8 rounded-md object-cover" />
-        </div>
-        <h1 className="text-lg font-semibold text-content">ArduDeck</h1>
+        <img src={iconImage} alt="Jawji" className="w-9 h-9 ml-2.5 rounded-lg object-cover shrink-0" />
 
         <div className="ml-auto flex items-center gap-4 pr-6">
           {/* Version badge */}
@@ -53,7 +50,7 @@ export function AppShell({ children }: AppShellProps) {
             <button
               onClick={() => setView('settings')}
               className="flex items-center gap-1.5 text-content-tertiary hover:text-content-secondary transition-colors"
-              title="About ArduDeck"
+              title="About Jawji"
             >
               <span className="text-xs">v{currentVersion}</span>
               {(status === 'available' || status === 'downloaded') && (

@@ -176,13 +176,13 @@ export async function collectLogs(hours = 24, maxEntries = 5000): Promise<FileLo
 export function collectSystemInfo(): SystemInfo {
   // Read package.json for app version
   let appVersion = 'unknown';
-  let appName = 'ardudeck';
+  let appName = 'Jawji';
   try {
     const packagePath = join(app.getAppPath(), 'package.json');
     if (existsSync(packagePath)) {
       const pkg = JSON.parse(readFileSync(packagePath, 'utf-8'));
       appVersion = pkg.version || 'unknown';
-      appName = pkg.name || 'ardudeck';
+      appName = pkg.name || 'Jawji';
     }
   } catch {
     // Ignore errors

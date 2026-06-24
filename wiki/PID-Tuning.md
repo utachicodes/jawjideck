@@ -1,6 +1,6 @@
 # PID Tuning
 
-The PID Tuning tab lets you adjust proportional, integral, derivative, and feedforward gains for each axis. ArduDeck auto-detects your PID parameter scheme based on firmware version and shows the correct parameters.
+The PID Tuning tab lets you adjust proportional, integral, derivative, and feedforward gains for each axis. Jawji auto-detects your PID parameter scheme based on firmware version and shows the correct parameters.
 
 ## Layout
 
@@ -21,7 +21,7 @@ Each slider shows the gain name, current value, and a hint describing its effect
 
 ## PID Schemes
 
-ArduDeck detects the correct parameter scheme automatically:
+Jawji detects the correct parameter scheme automatically:
 
 | Firmware | Parameters | Feedforward |
 |----------|-----------|-------------|

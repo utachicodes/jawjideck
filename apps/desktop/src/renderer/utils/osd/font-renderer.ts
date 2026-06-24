@@ -12,7 +12,7 @@ import {
   OsdCharacter,
   OSD_CHAR_WIDTH,
   OSD_CHAR_HEIGHT,
-} from '@ardudeck/msp-ts';
+} from '@jawji/msp-ts';
 
 // Re-export for convenience
 export { OSD_CHAR_WIDTH, OSD_CHAR_HEIGHT };

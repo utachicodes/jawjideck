@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { TileCacheDownloadRegion } from '../../shared/ipc-channels';
 
-const api = (window as any).electronAPI;
+const api = window.electronAPI;
 
 interface TileCacheState {
   regions: TileCacheDownloadRegion[];

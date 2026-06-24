@@ -273,7 +273,7 @@ export default function ReportBugView() {
               </ul>
               <p className="mt-3"><strong className="text-content-secondary">Encryption:</strong></p>
               <p className="ml-2">
-                The report is securely encrypted and can only be decrypted by the ArduDeck development team.
+                The report is securely encrypted and can only be decrypted by the Jawji development team.
               </p>
             </div>
           )}
@@ -288,7 +288,7 @@ export default function ReportBugView() {
             className="mt-1 w-4 h-4 rounded border-border bg-surface-input text-blue-500 focus:ring-blue-500/50"
           />
           <div className="text-sm text-content">
-            I understand that the collected data will be encrypted and shared with the ArduDeck development team
+            I understand that the collected data will be encrypted and shared with the Jawji development team
             for debugging purposes. No personal information beyond what is listed above will be included.
           </div>
         </label>
@@ -344,7 +344,7 @@ export default function ReportBugView() {
 
         {/* Info about the file */}
         <p className="text-xs text-content-secondary text-center">
-          The report will be saved as a <code className="bg-surface-input px-1 rounded">.deckreport</code> file
+          The report will be saved as a <code className="bg-surface-input px-1 rounded">.jawjireport</code> file
           that you can share with the development team.
         </p>
       </div>

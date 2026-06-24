@@ -239,7 +239,7 @@ function EmptyState() {
       <h3 className="text-lg font-medium text-content mb-2">No modules installed</h3>
       <p className="text-sm text-content-secondary max-w-sm leading-relaxed">
         Enter a license key above to activate and download your modules.
-        License keys are provided when you purchase modules from the ArduDeck marketplace.
+        License keys are provided when you purchase modules from the Jawji marketplace.
       </p>
     </div>
   );
@@ -292,7 +292,7 @@ export function ModuleManagerView() {
     if (result.success) {
       setKeyInput('');
       // Newly installed modules are only loaded into the running app at
-      // startup, so the module won't appear until ArduDeck restarts.
+      // startup, so the module won't appear until Jawji restarts.
       setRestartRequired(true);
       // Refresh updates
       checkUpdates();
@@ -350,7 +350,7 @@ export function ModuleManagerView() {
                 value={keyInput}
                 onChange={(e) => setKeyInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="ARDUDECK.xxxxxxxx.xxxxxxxx"
+                placeholder="JAWJI.xxxxxxxx.xxxxxxxx"
                 disabled={activating}
                 className="w-full px-3 py-2.5 bg-surface-input border border-subtle rounded-lg text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50 font-mono"
                 spellCheck={false}
@@ -396,7 +396,7 @@ export function ModuleManagerView() {
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-medium text-amber-300">Restart required</h3>
               <p className="text-sm text-content-secondary mt-0.5">
-                Module installed. ArduDeck must restart before it appears.
+                Module installed. Jawji must restart before it appears.
               </p>
             </div>
             <button

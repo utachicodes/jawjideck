@@ -1,6 +1,6 @@
 import type { ProfileSnapshot } from './types.js';
 
-const STORAGE_KEY = 'ardudeck-profile-snapshots-v1';
+const STORAGE_KEY = 'jawji-profile-snapshots-v1';
 const MAX_PER_PROFILE = 50;
 
 interface SnapshotFile {

@@ -2,7 +2,7 @@
  * Minimal Lua syntax highlighter.
  *
  * Regex-based tokenizer - no parser - so it's small (no library dep) and
- * fast enough to highlight the full ArduDeck script (a few hundred lines)
+ * fast enough to highlight the full Jawji script (a few hundred lines)
  * on every render. Single-pass over the whole source so multi-line tokens
  * (block strings/comments) are handled correctly.
  *

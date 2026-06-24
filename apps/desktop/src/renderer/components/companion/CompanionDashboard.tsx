@@ -324,7 +324,7 @@ function DroneBridgeUsbReader() {
     setReading(true);
     setResult(null);
 
-    // Disconnect first in case ArduDeck holds the port
+    // Disconnect first in case Jawji holds the port
     try { await window.electronAPI?.disconnect(); } catch { /* fine */ }
     await new Promise((r) => setTimeout(r, 300));
 
@@ -623,16 +623,16 @@ function DashboardTab() {
             </svg>
           </div>
           <div>
-            <h3 className="text-sm font-medium text-content">ArduDeck Agent Not Connected</h3>
+            <h3 className="text-sm font-medium text-content">Jawji Agent Not Connected</h3>
             <p className="text-xs text-content-secondary mt-2 max-w-sm mx-auto">
-              Install the ArduDeck Agent on your companion computer to enable real-time metrics, terminal access, and service management.
+              Install the Jawji Agent on your companion computer to enable real-time metrics, terminal access, and service management.
             </p>
           </div>
 
           <div className="bg-surface rounded-xl border border-subtle p-5 text-left space-y-4">
             <h4 className="text-xs font-medium text-content">Quick Install</h4>
             <div className="bg-surface-input rounded-lg px-3 py-2 font-mono text-xs text-content-secondary select-all">
-              curl -fsSL https://ardudeck.com/agent/install.sh | bash
+              curl -fsSL https://jawji.space/agent/install.sh | bash
             </div>
             <DashboardConnectForm />
           </div>

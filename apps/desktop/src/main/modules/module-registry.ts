@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { parseModuleManifest, type ModuleManifest } from '@ardudeck/module-sdk';
+import { parseModuleManifest, type ModuleManifest } from '@jawji/module-sdk';
 import { getInstalledModules } from './module-manager.js';
 import { loadModuleMain } from './module-loader.js';
 import { createMainHostApi } from './module-host-main.js';

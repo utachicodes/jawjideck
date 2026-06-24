@@ -1,5 +1,5 @@
 /**
- * HTTP client for the ArduDeck Marketplace API.
+ * HTTP client for the Jawji Marketplace API.
  * Handles activation, heartbeat, update checks, and bundle downloads.
  */
 
@@ -15,7 +15,7 @@ import type {
   CheckUpdatesResponse,
 } from '../../shared/module-types.js';
 
-const DEFAULT_BASE_URL = 'https://ardudeck-marketplace.herokuapp.com';
+const DEFAULT_BASE_URL = 'https://jawji-marketplace.herokuapp.com';
 const DEV_BASE_URL = 'http://localhost:3012';
 
 function getBaseUrl(): string {

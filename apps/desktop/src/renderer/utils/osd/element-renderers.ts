@@ -84,7 +84,7 @@ export const DEFAULT_DEMO_VALUES: DemoTelemetry = {
   cellCount: 3,
   mahDrawn: 850,
   powerWatts: 100,
-  craftName: 'ARDUDECK',
+  craftName: 'Jawji',
   flightMode: 'ANGLE',
   isArmed: true,
   baroTemp: 32,

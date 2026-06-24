@@ -31,7 +31,7 @@ module.exports = async function afterPack({ electronPlatformName, appOutDir }) {
   if (electronPlatformName === 'darwin') {
     const unpackedDir = path.join(
       appOutDir,
-      'ArduDeck.app',
+      'Jawji.app',
       'Contents',
       'Resources',
       'app.asar.unpacked'
@@ -41,7 +41,7 @@ module.exports = async function afterPack({ electronPlatformName, appOutDir }) {
 
   // Linux: wrap executable with --no-sandbox
   if (electronPlatformName === 'linux') {
-    const execName = '@ardudeckdesktop';
+    const execName = '@Jawjidesktop';
     const execPath = path.join(appOutDir, execName);
     const binPath = path.join(appOutDir, `${execName}.bin`);
 

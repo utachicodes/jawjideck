@@ -29,7 +29,7 @@ import { detectPidScheme, buildPresetParams, buildAccelParams, buildPlaneScheme,
 type ControllerSet = 'vtol' | 'fixedwing';
 
 // Storage key for custom profiles
-const PID_PROFILES_KEY = 'ardudeck_mavlink_pid_profiles';
+const PID_PROFILES_KEY = 'Jawji_mavlink_pid_profiles';
 
 const PidTuningTab: React.FC = () => {
   const { parameters, setParameter, fetchParameters, isLoading } = useParameterStore();

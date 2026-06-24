@@ -150,7 +150,7 @@ function MissionModeControls() {
 
 /**
  * Save / Export dropdown for the mission toolbar. Consolidates the three "where
- * does this plan go" destinations behind one obvious button: the ArduDeck
+ * does this plan go" destinations behind one obvious button: the Jawji
  * library (groups-aware) and the two file formats. A floppy-disk glyph keeps it
  * visually distinct from the FC up/down-arrow transfer buttons. Dropdown is
  * portalled so a clipping toolbar ancestor can't hide it.
@@ -209,7 +209,7 @@ function SaveMenu({
               className="w-full text-left px-3 py-2 text-xs text-content hover:bg-surface-input transition-colors"
             >
               <span className="font-medium text-purple-300">Save to Library</span>
-              <span className="block text-[10px] text-content-tertiary mt-0.5">Keep the whole plan in ArduDeck (groups + surveys, editable)</span>
+              <span className="block text-[10px] text-content-tertiary mt-0.5">Keep the whole plan in Jawji (groups + surveys, editable)</span>
             </button>
             <div className="my-1 h-px bg-subtle" />
             <button

@@ -91,7 +91,7 @@ async function fetchGitHubAssetSize(owner: string, repo: string, tag: string, as
   return new Promise((resolve) => {
     const url = `https://api.github.com/repos/${owner}/${repo}/releases/tags/${tag}`;
 
-    https.get(url, { headers: { 'User-Agent': 'ArduDeck-GCS' } }, (res) => {
+    https.get(url, { headers: { 'User-Agent': 'Jawji-GCS' } }, (res) => {
       if (res.statusCode !== 200) {
         resolve(undefined);
         return;
@@ -545,7 +545,7 @@ const bfVersionsCache = new Map<string, { data: FirmwareVersion[]; fetchedAt: nu
 function fetchJson<T = any>(url: string): Promise<T> {
   return new Promise((resolve, reject) => {
     const parsedUrl = new URL(url);
-    https.get(parsedUrl, { headers: { 'User-Agent': 'ArduDeck-GCS' } }, (res) => {
+    https.get(parsedUrl, { headers: { 'User-Agent': 'Jawji-GCS' } }, (res) => {
       if (res.statusCode !== 200) {
         res.resume();
         reject(new Error(`HTTP ${res.statusCode} for ${url}`));
@@ -574,7 +574,7 @@ function postJson<T = any>(url: string, body: Record<string, any>): Promise<T> {
       path: parsedUrl.pathname + parsedUrl.search,
       method: 'POST',
       headers: {
-        'User-Agent': 'ArduDeck-GCS',
+        'User-Agent': 'Jawji-GCS',
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(payload),
       },

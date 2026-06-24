@@ -27,7 +27,7 @@ import {
   gpsToDecimalDegrees,
   serializeMsp2SensorGps,
   type MSP2SensorGpsData,
-} from '@ardudeck/msp-ts';
+} from '@jawji/msp-ts';
 import { protocolBridge } from '../simulators/index.js';
 import { isCliModeActive } from '../cli/cli-handlers.js';
 import { IPC_CHANNELS } from '../../shared/ipc-channels.js';

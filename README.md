@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="apps/desktop/resources/banner.png" alt="ArduDeck" />
+  <img src="apps/desktop/resources/banner.png" alt="Jawji" />
 </p>
 
 <p align="center">
@@ -9,9 +9,9 @@
   <a href="https://reactjs.org/"><img src="https://img.shields.io/badge/React-18-61DAFB?logo=react" alt="React" /></a>
   <a href="https://mavlink.io/"><img src="https://img.shields.io/badge/MAVLink-v1%2Fv2-green" alt="MAVLink" /></a>
   <a href="https://github.com/iNavFlight/inav/wiki/MSP-V2"><img src="https://img.shields.io/badge/MSP-v1%2Fv2-orange" alt="MSP" /></a>
-  <a href="https://codecov.io/gh/rubenCodeforges/ardudeck"><img src="https://codecov.io/gh/rubenCodeforges/ardudeck/branch/master/graph/badge.svg" alt="Coverage" /></a>
+  <a href="https://codecov.io/gh/utachicodes/Jawji"><img src="https://codecov.io/gh/utachicodes/Jawji/branch/master/graph/badge.svg" alt="Coverage" /></a>
   <a href="https://discord.gg/JX2JdVXPPC"><img src="https://img.shields.io/badge/Discord-Join%20Us-5865F2?logo=discord&logoColor=white" alt="Discord" /></a>
-  <a href="https://ardudeck.com"><img src="https://img.shields.io/badge/Website-ardudeck.com-22d3ee" alt="Website" /></a>
+  <a href="https://Jawji.com"><img src="https://img.shields.io/badge/Website-Jawji.com-22d3ee" alt="Website" /></a>
 </p>
 
 <p align="center">
@@ -23,9 +23,9 @@
   <a href="https://adlerblix.de" target="_blank" rel="noopener noreferrer"><img src="docs/sponsors/adlerblix.svg" alt="Adlerblix - optical aerial surveying" height="40" /></a>
 </p>
 
-> **ALPHA SOFTWARE** - ArduDeck is under active development. Features may be incomplete, unstable, or change without notice. **Use at your own risk** and always have a backup configuration tool available. We appreciate early testers - [join our Discord](https://discord.gg/JX2JdVXPPC) for support and updates, or [report bugs](#bug-reporting) to help improve the project!
+> **ALPHA SOFTWARE** - Jawji is under active development. Features may be incomplete, unstable, or change without notice. **Use at your own risk** and always have a backup configuration tool available. We appreciate early testers - [join our Discord](https://discord.gg/JX2JdVXPPC) for support and updates, or [report bugs](#bug-reporting) to help improve the project!
 
-ArduDeck is a next-generation ground control station built with Electron, React, and TypeScript. It provides real-time telemetry, parameter management, PID tuning, and mission planning for drones and vehicles running ArduPilot, Betaflight, or iNav firmware.
+Jawji is a next-generation ground control station built with Electron, React, and TypeScript. It provides real-time telemetry, parameter management, PID tuning, and mission planning for drones and vehicles running ArduPilot, Betaflight, or iNav firmware.
 
 > **One app for all your flight controllers** - Cross-platform (Windows, macOS, Linux), modern UI, supports both MAVLink and MSP protocols.
 
@@ -208,7 +208,7 @@ ArduDeck is a next-generation ground control station built with Electron, React,
 
 ### SITL Simulator & FlightGear Bridge
 
-> **Now Available** - ArduPilot SITL runs natively in ArduDeck on macOS, Windows, and Linux. Pick a vehicle type (Copter, Plane, Rover, Sub) and frame, choose a release track, and ArduDeck downloads and launches the real ArduPilot firmware, then connects automatically. Virtual RC control, custom frame physics, and an optional FlightGear bridge are included.
+> **Now Available** - ArduPilot SITL runs natively in Jawji on macOS, Windows, and Linux. Pick a vehicle type (Copter, Plane, Rover, Sub) and frame, choose a release track, and Jawji downloads and launches the real ArduPilot firmware, then connects automatically. Virtual RC control, custom frame physics, and an optional FlightGear bridge are included.
 
 **What is this?** SITL (Software In The Loop) lets you run real flight controller firmware on your computer - no drone required! Perfect for:
 - **Learning** - Practice mission planning and configuration without risking a crash
@@ -216,12 +216,12 @@ ArduDeck is a next-generation ground control station built with Electron, React,
 - **Development** - Test new features without leaving your desk
 
 **How it works:**
-1. ArduDeck downloads and runs the actual ArduPilot, iNav, or Betaflight firmware as a desktop application
+1. Jawji downloads and runs the actual ArduPilot, iNav, or Betaflight firmware as a desktop application
 2. The simulated flight controller behaves exactly like real hardware
 3. You can configure PIDs, modes, missions - everything works!
 4. Optionally connect to **FlightGear** (free flight simulator) to see your virtual aircraft fly
 
-**FlightGear Integration** - If you have [FlightGear](https://www.flightgear.org/) installed, ArduDeck automatically detects it and can bridge the simulator to your SITL session. Watch your configured aircraft respond to your mission in a realistic 3D environment!
+**FlightGear Integration** - If you have [FlightGear](https://www.flightgear.org/) installed, Jawji automatically detects it and can bridge the simulator to your SITL session. Watch your configured aircraft respond to your mission in a realistic 3D environment!
 
 > **TL;DR**: Test your drone configuration on your computer before flying for real. Break things in simulation, not in the field!
 
@@ -479,19 +479,19 @@ ArduDeck is a next-generation ground control station built with Electron, React,
 
 | Platform | Format | Link |
 |----------|--------|------|
-| **Windows** | Installer (.exe) | [Latest Release](https://github.com/rubenCodeforges/ardudeck/releases/latest) |
-| **Windows** | Portable (.exe) | [Latest Release](https://github.com/rubenCodeforges/ardudeck/releases/latest) |
-| **macOS** | DMG (Apple Silicon) | [Latest Release](https://github.com/rubenCodeforges/ardudeck/releases/latest) |
-| **Linux** | AppImage | [Latest Release](https://github.com/rubenCodeforges/ardudeck/releases/latest) |
-| **Linux** | .deb | [Latest Release](https://github.com/rubenCodeforges/ardudeck/releases/latest) |
+| **Windows** | Installer (.exe) | [Latest Release](https://github.com/utachicodes/Jawji/releases/latest) |
+| **Windows** | Portable (.exe) | [Latest Release](https://github.com/utachicodes/Jawji/releases/latest) |
+| **macOS** | DMG (Apple Silicon) | [Latest Release](https://github.com/utachicodes/Jawji/releases/latest) |
+| **Linux** | AppImage | [Latest Release](https://github.com/utachicodes/Jawji/releases/latest) |
+| **Linux** | .deb | [Latest Release](https://github.com/utachicodes/Jawji/releases/latest) |
 
 **Getting started:** Download the installer for your platform, install, plug in your flight controller via USB, and you're ready to go.
 
-> **Linux AppImage note:** On Ubuntu 24.04+ and other recent distros, the AppImage may not launch because `libfuse2` is no longer installed by default. Install it with `sudo apt install libfuse2`, or run with `APPIMAGE_EXTRACT_AND_RUN=1 ./ArduDeck-*.AppImage` to skip the FUSE requirement. Alternatively, use the `.deb` package which has no such dependency.
+> **Linux AppImage note:** On Ubuntu 24.04+ and other recent distros, the AppImage may not launch because `libfuse2` is no longer installed by default. Install it with `sudo apt install libfuse2`, or run with `APPIMAGE_EXTRACT_AND_RUN=1 ./Jawji-*.AppImage` to skip the FUSE requirement. Alternatively, use the `.deb` package which has no such dependency.
 >
-> **Note on code signing:** ArduDeck binaries are currently unsigned. On macOS, you may see a Gatekeeper warning — right-click the app and select "Open", or run `xattr -cr /Applications/ArduDeck.app` in Terminal. On Windows, SmartScreen may show a warning — click "More info" then "Run anyway". We plan to obtain code signing certificates once the project reaches a meaningful user base to justify the cost.
+> **Note on code signing:** Jawji binaries are currently unsigned. On macOS, you may see a Gatekeeper warning — right-click the app and select "Open", or run `xattr -cr /Applications/Jawji.app` in Terminal. On Windows, SmartScreen may show a warning — click "More info" then "Run anyway". We plan to obtain code signing certificates once the project reaches a meaningful user base to justify the cost.
 >
-> **Auto-updates:** On Windows and Linux, ArduDeck supports seamless in-app updates — download and install with a single click. On macOS, because the app is not yet code-signed, in-app downloads are blocked by Gatekeeper. ArduDeck will still notify you when a new version is available and open the release page for manual download. Once we obtain an Apple Developer certificate, macOS will get full auto-update support automatically.
+> **Auto-updates:** On Windows and Linux, Jawji supports seamless in-app updates — download and install with a single click. On macOS, because the app is not yet code-signed, in-app downloads are blocked by Gatekeeper. Jawji will still notify you when a new version is available and open the release page for manual download. Once we obtain an Apple Developer certificate, macOS will get full auto-update support automatically.
 
 ---
 
@@ -499,7 +499,7 @@ ArduDeck is a next-generation ground control station built with Electron, React,
 
 > **Not a developer?** You don't need this section. Just [download the latest release](#download--install) above.
 
-The instructions below are only for contributors who want to modify ArduDeck's source code and submit pull requests.
+The instructions below are only for contributors who want to modify Jawji's source code and submit pull requests.
 
 ### Prerequisites
 
@@ -510,8 +510,8 @@ The instructions below are only for contributors who want to modify ArduDeck's s
 
 ```bash
 # Fork the repo on GitHub first, then clone your fork
-git clone https://github.com/<your-username>/ardudeck.git
-cd ardudeck
+git clone https://github.com/<your-username>/Jawji.git
+cd Jawji
 
 # Install dependencies
 pnpm install
@@ -555,7 +555,7 @@ pnpm package
 
 Got an old **SPRacing F3**, **Naze32**, or other F3-era board collecting dust? **We've got you covered.**
 
-While other configurators have abandoned these classic boards, ArduDeck provides a **fully-featured graphical interface** - not just CLI access, but the **same modern UI experience** as newer boards:
+While other configurators have abandoned these classic boards, Jawji provides a **fully-featured graphical interface** - not just CLI access, but the **same modern UI experience** as newer boards:
 
 | Board Era | Firmware Support | Configuration |
 |-----------|------------------|---------------|
@@ -568,7 +568,7 @@ These boards were the **workhorses of the FPV revolution**. They flew millions o
 
 ### Full GUI for Legacy Boards
 
-No command-line typing required! ArduDeck automatically detects legacy boards and presents a **complete graphical interface**:
+No command-line typing required! Jawji automatically detects legacy boards and presents a **complete graphical interface**:
 
 - **PID Tuning Tab** - Sliders and inputs for P/I/D/FF, just like modern boards
 - **Rates Tab** - Visual rate configuration with expo curves
@@ -594,7 +594,7 @@ The GUI talks to your board via CLI commands under the hood - you get the **conv
 
 ## Bug Reporting
 
-Found a bug? We want to hear about it! ArduDeck includes a built-in bug reporting tool that makes it easy to share diagnostic information with the development team.
+Found a bug? We want to hear about it! Jawji includes a built-in bug reporting tool that makes it easy to share diagnostic information with the development team.
 
 <p align="center">
   <a href="docs/screenshots/bug-report-screen.png?raw=true">
@@ -612,7 +612,7 @@ Found a bug? We want to hear about it! ArduDeck includes a built-in bug reportin
    - **App logs** - Recent application logs (always recommended)
    - **Board dump** - Flight controller configuration (requires connected board, will trigger reboot)
 4. **Review the data** - See exactly what will be collected before sending
-5. **Generate report** - Creates an encrypted `.deckreport` file
+5. **Generate report** - Creates an encrypted `.jawjireport` file
 6. **Send to developers** - Share the file via GitHub issue or email
 
 ### What Gets Collected
@@ -626,7 +626,7 @@ Found a bug? We want to hear about it! ArduDeck includes a built-in bug reportin
 ### Privacy & Security
 
 - **You control what's shared** - Choose what to include, preview before sending
-- **Encrypted reports** - Only the ArduDeck dev team can decrypt `.deckreport` files
+- **Encrypted reports** - Only the Jawji dev team can decrypt `.jawjireport` files
 - **No automatic uploads** - You decide when and how to share the file
 
 ---
@@ -666,7 +666,7 @@ Found a bug? We want to hear about it! ArduDeck includes a built-in bug reportin
 
 ## Contributing
 
-Contributions are welcome! If you'd like to help improve ArduDeck, see the [Development](#development-contributors-only) section above for build instructions.
+Contributions are welcome! If you'd like to help improve Jawji, see the [Development](#development-contributors-only) section above for build instructions.
 
 1. Fork the repository on GitHub
 2. Clone **your fork** (not the main repo)
@@ -675,13 +675,13 @@ Contributions are welcome! If you'd like to help improve ArduDeck, see the [Deve
 5. Push to the branch (`git push origin feature/amazing-feature`)
 6. Open a Pull Request
 
-> **Just want to use ArduDeck?** You don't need to fork or clone anything. [Download the latest release](#download--install) instead.
+> **Just want to use Jawji?** You don't need to fork or clone anything. [Download the latest release](#download--install) instead.
 
 ---
 
 ## Sponsors
 
-ArduDeck is supported by companies that contribute hardware, time, or resources to the project.
+Jawji is supported by companies that contribute hardware, time, or resources to the project.
 
 - [Adlerblix](https://adlerblix.de) - Optical aerial surveying - photogrammetry, RTK precision, large-area mapping. (Germany)
 
@@ -706,5 +706,5 @@ This project is licensed under the **GPL-3.0** - see the [LICENSE](LICENSE) file
 ---
 
 <p align="center">
-  Made with ❤️ by <a href="https://github.com/rubenCodeforges">Codeforges</a>
+  Made with ❤️ by <a href="https://github.com/utachicodes">Codeforges</a>
 </p>

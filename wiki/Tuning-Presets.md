@@ -1,6 +1,6 @@
 # Tuning Presets
 
-The Tuning tab provides one-click presets and fine-tuning controls for vehicle behavior. Instead of adjusting individual parameters, you can select a skill level or mission type and ArduDeck sets multiple parameters at once.
+The Tuning tab provides one-click presets and fine-tuning controls for vehicle behavior. Instead of adjusting individual parameters, you can select a skill level or mission type and Jawji sets multiple parameters at once.
 
 ## Skill Level Presets
 

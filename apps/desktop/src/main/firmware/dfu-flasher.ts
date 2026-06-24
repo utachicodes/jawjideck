@@ -1,6 +1,6 @@
 /**
  * DFU Flasher
- * Native STM32 DFU flashing using @ardudeck/stm32-dfu
+ * Native STM32 DFU flashing using @jawji/stm32-dfu
  */
 
 import * as fs from 'fs/promises';
@@ -18,7 +18,7 @@ import {
   STM32_FLASH_START,
   type FirmwareImage,
   type FlashProgress as DfuProgress,
-} from '@ardudeck/stm32-dfu';
+} from '@jawji/stm32-dfu';
 import { rebootToBootloaderCli, rebootToBootloaderMavlink } from './msp-detector.js';
 import { acquireFlashLock, releaseFlashLock } from './flash-guard.js';
 

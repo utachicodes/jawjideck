@@ -29,7 +29,7 @@ import {
  * eliminating the need to configure each system separately.
  */
 
-import type { MSPModeRange } from '@ardudeck/msp-ts';
+import type { MSPModeRange } from '@jawji/msp-ts';
 import { BOX_ID } from '../../modes/presets/mode-presets';
 import {
   PLATFORM_TYPE,

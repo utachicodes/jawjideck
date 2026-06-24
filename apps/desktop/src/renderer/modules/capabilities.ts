@@ -19,7 +19,7 @@ export interface Capability {
 }
 
 export const CAPABILITIES: Capability[] = [
-  // Example (not active): { slug: 'com.ardudeck.area-editor', viewId: 'mission' },
+  // Example (not active): { slug: 'com.jawji.area-editor', viewId: 'mission' },
 ];
 
 const GATED_VIEWS: ReadonlyMap<ViewId, string> = new Map(

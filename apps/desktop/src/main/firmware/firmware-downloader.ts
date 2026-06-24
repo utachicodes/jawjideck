@@ -13,7 +13,7 @@ import { IPC_CHANNELS } from '../../shared/ipc-channels.js';
 import type { FirmwareVersion, FlashProgress } from '../../shared/firmware-types.js';
 
 // Firmware download directory
-const FIRMWARE_CACHE_DIR = path.join(os.tmpdir(), 'ardudeck-firmware');
+const FIRMWARE_CACHE_DIR = path.join(os.tmpdir(), 'jawji-firmware');
 
 /**
  * Get local path for cached firmware file

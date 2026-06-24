@@ -327,7 +327,7 @@ class ArduPilotSitlProcessManager {
 
       // Build the --defaults stack: upstream autotest params first (so
       // frame-specific defaults like Q_ENABLE / Q_FRAME_CLASS land), then
-      // our ArduDeck overlay on top so user tweaks (sim wind, batt, terrain)
+      // our Jawji overlay on top so user tweaks (sim wind, batt, terrain)
       // win on conflicts. ArduPilot loads `--defaults a,b,c` left-to-right
       // with later files overriding earlier — same semantics Mission Planner
       // relies on for its identity.parm overlay.
@@ -351,7 +351,7 @@ class ArduPilotSitlProcessManager {
         config.simBattCapAh,
       );
       if (overlay && !config.defaultsFile) {
-        const overlayPath = path.join(path.dirname(binaryPath), 'ardudeck-defaults.parm');
+        const overlayPath = path.join(path.dirname(binaryPath), 'Jawji-defaults.parm');
         await writeFile(overlayPath, overlay, 'utf-8');
         defaultsStack.push(overlayPath);
       }

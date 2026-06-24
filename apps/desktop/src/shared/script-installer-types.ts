@@ -1,7 +1,7 @@
 /**
- * Shared types for the ArduDeck FC-side script installer.
+ * Shared types for the Jawji FC-side script installer.
  *
- * ArduDeck installs Lua scripts onto the flight controller's SD card to add
+ * Jawji installs Lua scripts onto the flight controller's SD card to add
  * commands the autopilot doesn't natively support (e.g. Orbit when MODE_CIRCLE
  * is disabled in the build). This module defines the public contracts shared
  * between the main-process installer service and the renderer install UI.
@@ -19,18 +19,18 @@
  * MAVLink command IDs reserved for user / scripted commands.
  * ArduPilot Lua scripts can register handlers for MAV_CMD_USER_1..5.
  *
- * The ArduDeck script funnels everything through MAV_CMD_USER_1 and uses
+ * The Jawji script funnels everything through MAV_CMD_USER_1 and uses
  * COMMAND_INT param4 as a sub-command discriminator (see SUB_CMD below).
  * That gives us unlimited commands without burning more MAV_CMD slots.
  */
 export const USER_CMD = {
-  AD: 31010,        // MAV_CMD_USER_1 - ArduDeck dispatcher
+  AD: 31010,        // MAV_CMD_USER_1 - Jawji dispatcher
   ORBIT: 31010,     // legacy alias - everything still maps to USER_1
 } as const;
 
 /**
  * Sub-command IDs sent in COMMAND_INT param4. Must stay in sync with
- * SUB_CMD_* constants in src/main/lua-scripts/ardudeck_commands.lua.
+ * SUB_CMD_* constants in src/main/lua-scripts/jawji_commands.lua.
  */
 export const SUB_CMD = {
   ORBIT:      0,
@@ -77,7 +77,7 @@ export interface CommandModule {
 }
 
 /**
- * Manifest of the script bundle ArduDeck ships in this app version.
+ * Manifest of the script bundle Jawji ships in this app version.
  * Computed at build time from the Lua source file.
  */
 export interface ScriptManifest {
@@ -160,7 +160,7 @@ export interface FcRegistryEntry {
   auditLog: AuditEntry[];
   /**
    * How the script got onto the FC:
-   *   'ftp'    - ArduDeck wrote it via MAVLink-FTP
+   *   'ftp'    - Jawji wrote it via MAVLink-FTP
    *   'manual' - User side-loaded the file (we picked it up via heartbeat)
    *   'unknown' - Pre-existing entry from before this field was tracked
    */
@@ -171,7 +171,7 @@ export interface ParamChange {
   param: string;
   before: number;
   after: number;
-  /** ISO timestamp of when ArduDeck made this change. */
+  /** ISO timestamp of when Jawji made this change. */
   timestamp: string;
   /** Whether the original value can be restored on uninstall. */
   revertible: boolean;
@@ -242,7 +242,7 @@ export type InstallErrorCode =
  * Renderer → main IPC requests for the installer.
  */
 export interface InstallerApi {
-  /** Read the manifest of the script ArduDeck would install. Pure - no FC contact. */
+  /** Read the manifest of the script Jawji would install. Pure - no FC contact. */
   getManifest(): Promise<ScriptManifest>;
 
   /** Read the Lua source code (for the preview pane). */

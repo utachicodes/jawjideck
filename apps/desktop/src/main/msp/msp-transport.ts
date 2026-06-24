@@ -11,7 +11,7 @@ import {
   buildMspV2Request,
   buildMspV2RequestWithPayload,
   deserializeRxMap,
-} from '@ardudeck/msp-ts';
+} from '@jawji/msp-ts';
 import { isCliModeActive } from '../cli/cli-handlers.js';
 import { ctx } from './msp-context.js';
 

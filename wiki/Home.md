@@ -1,6 +1,6 @@
-# ArduDeck
+# Jawji
 
-ArduDeck is a cross-platform ground control station for ArduPilot, Betaflight, and iNav flight controllers. It replaces the legacy Mission Planner (C#/.NET WinForms) with a modern Electron + React desktop app. Connect via USB serial, TCP, or UDP, configure your vehicle, plan missions, flash firmware, and monitor telemetry in real time.
+Jawji is a cross-platform ground control station for ArduPilot, Betaflight, and iNav flight controllers. It replaces the legacy Mission Planner (C#/.NET WinForms) with a modern Electron + React desktop app. Connect via USB serial, TCP, or UDP, configure your vehicle, plan missions, flash firmware, and monitor telemetry in real time.
 
 ## Supported Firmware
 

@@ -4,7 +4,7 @@
  * For boards connected via USB-serial adapter (not native USB)
  */
 
-import { SerialTransport, listSerialPorts } from '@ardudeck/comms';
+import { SerialTransport, listSerialPorts } from '@jawji/comms';
 import * as fs from 'fs/promises';
 import * as zlib from 'zlib';
 import { BrowserWindow } from 'electron';

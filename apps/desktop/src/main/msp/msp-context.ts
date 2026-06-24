@@ -6,8 +6,8 @@
  */
 
 import type { BrowserWindow } from 'electron';
-import type { Transport } from '@ardudeck/comms';
-import { MSPParser, type MSPInavPid } from '@ardudeck/msp-ts';
+import type { Transport } from '@jawji/comms';
+import { MSPParser, type MSPInavPid } from '@jawji/msp-ts';
 import { IPC_CHANNELS } from '../../shared/ipc-channels.js';
 
 // Constants

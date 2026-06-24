@@ -152,7 +152,6 @@ export const useReceiverStore = create<ReceiverState>((set, get) => ({
         const result = await window.electronAPI?.mspGetRc();
         if (result?.channels) {
           if (!loggedOnce) {
-            console.log(`[ReceiverStore] MSP_RC: ${result.channels.length} channels:`, result.channels.join(','));
             loggedOnce = true;
           }
           const now = Date.now();
@@ -205,14 +204,12 @@ export const useReceiverStore = create<ReceiverState>((set, get) => ({
 
       // Load RX map
       const rxMap = await window.electronAPI?.mspGetRxMap();
-      console.log('[ReceiverStore] RX map from FC:', rxMap);
       if (rxMap) {
         set({ rxMap: [...rxMap], rxMapOriginal: [...rxMap] });
       }
 
       // Load RC deadband
       const deadband = await window.electronAPI?.mspGetRcDeadband();
-      console.log('[ReceiverStore] RC deadband from FC:', deadband);
       if (deadband) {
         set({
           deadband: deadband.deadband,
@@ -224,12 +221,10 @@ export const useReceiverStore = create<ReceiverState>((set, get) => ({
           originalAltHoldDeadband: deadband.altHoldDeadband,
           originalDeadbandThrottle: deadband.deadbandThrottle,
         });
-      } else {
-        console.warn('[ReceiverStore] RC deadband fetch returned null — FC may not support MSP_RC_DEADBAND or transport closed');
       }
       set({ configLoaded: true });
     } catch (error) {
-      console.error('[ReceiverStore] loadConfig failed:', error);
+      // loadConfig failed
     } finally {
       set({ isLoading: false });
     }
@@ -242,7 +237,7 @@ export const useReceiverStore = create<ReceiverState>((set, get) => ({
         set({ rxMap: [...rxMap], rxMapOriginal: [...rxMap] });
       }
     } catch (error) {
-      console.error('[ReceiverStore] loadRxMap failed:', error);
+      // loadRxMap failed
     }
   },
 
@@ -306,7 +301,6 @@ export const useReceiverStore = create<ReceiverState>((set, get) => ({
 
       return success;
     } catch (error) {
-      console.error('[ReceiverStore] saveConfig failed:', error);
       return false;
     } finally {
       set({ isSaving: false });

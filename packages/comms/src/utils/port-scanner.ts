@@ -6,7 +6,7 @@
 
 import { SerialTransport, listSerialPorts } from '../transports/serial-transport.js';
 import { SerialPortInfo } from '../interfaces/transport.js';
-import { MAVLinkParser, type MAVLinkPacket } from '@ardudeck/mavlink-ts';
+import { MAVLinkParser, type MAVLinkPacket } from '@jawji/mavlink-ts';
 
 /**
  * Baud rates to try when scanning (order matters - most common first)

@@ -183,10 +183,9 @@ export const useQuickSetupStore = create<QuickSetupState>((set, get) => ({
       if (mixer) {
         currentPlatform = mixer.platformType;
         currentPlatformName = platformNames[mixer.platformType] ?? 'Unknown';
-        console.log(`[QuickSetup] Current platform: ${currentPlatformName} (${currentPlatform})`);
       }
     } catch (err) {
-      console.warn('[QuickSetup] Failed to fetch current platform:', err);
+      // Failed to fetch platform
     }
 
     set({
@@ -283,7 +282,6 @@ export const useQuickSetupStore = create<QuickSetupState>((set, get) => ({
     // Check platform mismatch immediately
     if (currentPlatform !== null && preset.aircraft.platformType !== currentPlatform) {
       const requiredName = platformNames[preset.aircraft.platformType] ?? 'Unknown';
-      console.log(`[QuickSetup] Platform mismatch: FC is ${currentPlatformName}, preset needs ${requiredName}`);
 
       set({
         selectedPreset: preset,
@@ -398,7 +396,6 @@ export const useQuickSetupStore = create<QuickSetupState>((set, get) => ({
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to apply preset';
-      console.error('[QuickSetup] Apply failed:', msg);
       set({
         isApplying: false,
         applyError: msg,
@@ -470,13 +467,11 @@ export const useQuickSetupStore = create<QuickSetupState>((set, get) => ({
         attemptDelayMs: 2000,
         initialDelayMs: 4000,
         onAttempt: (attempt, maxAttempts) => {
-          console.log(`[QuickSetup] Reconnect attempt ${attempt}/${maxAttempts}`);
         },
       });
 
       if (reconnected) {
         // Successfully reconnected - update platform state
-        console.log('[QuickSetup] Reconnected after platform change, updating platform state');
         const platformNames = ['Multirotor', 'Airplane', 'Helicopter', 'Tricopter', 'Rover', 'Boat'];
 
         set({
@@ -493,7 +488,6 @@ export const useQuickSetupStore = create<QuickSetupState>((set, get) => ({
         // CRITICAL: Continue applying the preset after platform change
         // The applyPreset() function was interrupted when platform mismatch was detected.
         // Now that platform is changed, we must call it again to complete the setup.
-        console.log('[QuickSetup] Platform change complete, continuing with preset application');
         // Small delay to let UI update before starting apply process
         await new Promise((r) => setTimeout(r, 500));
         // Call applyPreset to continue the setup
@@ -507,7 +501,6 @@ export const useQuickSetupStore = create<QuickSetupState>((set, get) => ({
         useConnectionStore.getState().setPlatformChangeInProgress(false);
       }
     } catch (err) {
-      console.error('[QuickSetup] Platform change error:', err);
       set({
         platformChangeState: 'error',
         platformChangeError: err instanceof Error ? err.message : 'Unknown error during platform change',
@@ -560,11 +553,9 @@ async function reconnectWithRetry(options: {
   if (prevState.isSitl) {
     // SITL connection - use TCP to localhost
     connectOptions = { type: 'tcp', host: '127.0.0.1', tcpPort: 5760, protocol: 'msp' };
-    console.log('[QuickSetup] Will reconnect via TCP (SITL)');
   } else if (prevState.portPath) {
     // Serial connection - use stored port path
     connectOptions = { type: 'serial', port: prevState.portPath, protocol: 'msp' };
-    console.log(`[QuickSetup] Will reconnect via serial: ${prevState.portPath}`);
   } else if (prevState.transport) {
     // Parse transport string as fallback
     // Format: "TCP 127.0.0.1:5760" or "/dev/ttyUSB0 @ 115200"
@@ -572,42 +563,34 @@ async function reconnectWithRetry(options: {
       const match = prevState.transport.match(/TCP\s+([^:]+):(\d+)/i);
       if (match) {
         connectOptions = { type: 'tcp', host: match[1]!, tcpPort: parseInt(match[2]!, 10), protocol: 'msp' };
-        console.log(`[QuickSetup] Will reconnect via TCP: ${match[1]}:${match[2]}`);
       } else {
         // Default TCP
         connectOptions = { type: 'tcp', host: '127.0.0.1', tcpPort: 5760, protocol: 'msp' };
-        console.log('[QuickSetup] Will reconnect via TCP (default)');
       }
     } else {
       // Assume serial - extract port from transport string like "/dev/ttyUSB0 @ 115200"
       const port = prevState.transport.split('@')[0]?.trim();
       if (port) {
         connectOptions = { type: 'serial', port, protocol: 'msp' };
-        console.log(`[QuickSetup] Will reconnect via serial: ${port}`);
       } else {
         // Last resort - try TCP
         connectOptions = { type: 'tcp', host: '127.0.0.1', tcpPort: 5760, protocol: 'msp' };
-        console.log('[QuickSetup] Will reconnect via TCP (fallback)');
       }
     }
   } else {
     // No connection info available - default to TCP (likely SITL dev environment)
     connectOptions = { type: 'tcp', host: '127.0.0.1', tcpPort: 5760, protocol: 'msp' };
-    console.log('[QuickSetup] Will reconnect via TCP (no previous connection info)');
   }
 
   // Initial delay for board to reboot
-  console.log(`[QuickSetup] Waiting ${initialDelayMs}ms for board to reboot...`);
   await new Promise((r) => setTimeout(r, initialDelayMs));
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     onAttempt?.(attempt, maxAttempts);
-    console.log(`[QuickSetup] Reconnect attempt ${attempt}/${maxAttempts}...`);
 
     // Check if already connected
     const state = useConnectionStore.getState().connectionState;
     if (state.isConnected) {
-      console.log('[QuickSetup] Already connected!');
       return true;
     }
 
@@ -619,15 +602,13 @@ async function reconnectWithRetry(options: {
       await new Promise((r) => setTimeout(r, 500));
       const newState = useConnectionStore.getState().connectionState;
       if (newState.isConnected) {
-        console.log('[QuickSetup] Reconnected successfully!');
         // Wait for board to fully initialize after platform change
         // Older F3 boards need more time to stabilize
-        console.log('[QuickSetup] Waiting for board to stabilize...');
         await new Promise((r) => setTimeout(r, 2000));
         return true;
       }
     } catch (err) {
-      console.warn(`[QuickSetup] Connect attempt ${attempt} failed:`, err);
+      // Connect attempt failed
     }
 
     // Wait before next attempt
@@ -636,7 +617,6 @@ async function reconnectWithRetry(options: {
     }
   }
 
-  console.error('[QuickSetup] Failed to reconnect after all attempts');
   return false;
 }
 
@@ -716,13 +696,11 @@ async function applyPresetViaMsp(
       const testRead = await window.electronAPI?.mspGetStatus();
       if (!testRead) {
         // Still blocked, try exiting again with longer wait
-        console.warn('[QuickSetup] MSP still blocked after CLI exit, retrying...');
         await window.electronAPI?.cliSendRaw('exit\n');
         await new Promise((r) => setTimeout(r, 1000));
       }
     } catch {
       // CLI mode may not be active, that's fine
-      console.log('[QuickSetup] CLI exit skipped (may not be in CLI mode)');
     }
     updateTask('completed');
     nextTask();
@@ -776,7 +754,6 @@ async function applyPresetViaMsp(
       // Set servo mixer rules for fixed-wing
       // No need to clear all slots - just overwrite what we need
       // iNav treats rate=0 as disabled, so unused slots stay disabled
-      console.log(`[QuickSetup] Setting ${preset.aircraft.servoMixerRules.length} servo mixer rules...`);
       for (let i = 0; i < preset.aircraft.servoMixerRules.length; i++) {
         const rule = preset.aircraft.servoMixerRules[i]!;
         const mspRule = {
@@ -788,14 +765,13 @@ async function applyPresetViaMsp(
           max: 0,
           box: 0, // Always active (no aux switch condition)
         };
-        console.log(`[QuickSetup] Servo rule ${i}: servo=${mspRule.targetChannel}, input=${mspRule.inputSource}, rate=${mspRule.rate}`);
         const success = await window.electronAPI?.mspSetServoMixer(i, mspRule);
         if (!success) {
-          console.warn(`[QuickSetup] Failed to set servo mixer rule ${i}`);
+          // Failed to set servo mixer rule
         }
       }
     } else if (!isFixedWing) {
-      console.log('[QuickSetup] Skipping servo mixer (multirotor - not needed)');
+      // Skipping servo mixer (multirotor - not needed)
     }
 
     updateTask('completed');
@@ -827,11 +803,9 @@ async function applyPresetViaMsp(
         }
       }
 
-      console.log(`[QuickSetup] Setting ${preset.aircraft.motorMixerRules.length} active motors, disabling ${MAX_MOTORS - preset.aircraft.motorMixerRules.length} unused slots...`);
       const motorSuccess = await window.electronAPI?.mspSetMotorMixer(motorRules);
       if (!motorSuccess) {
-        console.warn('[QuickSetup] Motor mixer MSP failed, skipping (will use defaults)');
-        // Don't try CLI fallback - it causes disconnection issues
+        // Motor mixer MSP failed, skipping (will use defaults)
       }
 
       updateTask('completed');
@@ -845,7 +819,7 @@ async function applyPresetViaMsp(
     // Check connection before failsafe
     const connBeforeFailsafe = useConnectionStore.getState().connectionState;
     if (!connBeforeFailsafe.isConnected) {
-      console.warn('[QuickSetup] Connection lost before failsafe, skipping...');
+      // Connection lost before failsafe, skipping
     } else {
       try {
         // Small delay to ensure connection is stable
@@ -878,23 +852,22 @@ async function applyPresetViaMsp(
         };
 
         if (currentFailsafe) {
-          console.log('[QuickSetup] Read current failsafe config, merging preset values');
+          // Read current failsafe config, merging preset values
         } else {
-          console.log('[QuickSetup] Could not read failsafe config, using defaults');
+          // Could not read failsafe config, using defaults
         }
 
         const failsafeSuccess = await window.electronAPI?.mspSetFailsafeConfig(failsafeConfig);
         if (failsafeSuccess) {
-          console.log('[QuickSetup] Failsafe config set via MSP');
           failsafeSet = true;
         }
       } catch (err) {
-        console.warn('[QuickSetup] MSP failsafe failed:', err);
+        // MSP failsafe failed
       }
     }
 
     if (!failsafeSet) {
-      console.warn('[QuickSetup] Could not set failsafe config, continuing anyway (user can configure manually)');
+      // Could not set failsafe config, continuing anyway (user can configure manually)
     }
     updateTask('completed');
     nextTask();
@@ -902,7 +875,7 @@ async function applyPresetViaMsp(
     // Check connection before modes - if lost, try to continue anyway
     const connBeforeModes = useConnectionStore.getState().connectionState;
     if (!connBeforeModes.isConnected) {
-      console.warn('[QuickSetup] Connection lost before mode configuration');
+      // Connection lost before mode configuration
       throw new Error('Connection lost during setup. Please reconnect and try again.');
     }
 
@@ -920,7 +893,7 @@ async function applyPresetViaMsp(
         rangeEnd: 900,
       });
       if (!success) {
-        console.warn(`[QuickSetup] Failed to clear mode slot ${i}, continuing...`);
+        // Failed to clear mode slot, continuing
         // Don't throw - continue clearing other slots
       }
       // Small delay between MSP commands to prevent serial buffer overflow
@@ -937,7 +910,7 @@ async function applyPresetViaMsp(
       const mode = preset.modes[i];
       const success = await window.electronAPI?.mspSetModeRange(i, mode);
       if (!success) {
-        console.warn(`[QuickSetup] Failed to set mode ${i}, continuing...`);
+        // Failed to set mode, continuing
         // Don't throw - continue setting other modes
       } else {
         modesSetCount++;
@@ -945,7 +918,6 @@ async function applyPresetViaMsp(
       // Small delay between MSP commands to prevent serial buffer overflow
       await new Promise((r) => setTimeout(r, 50));
     }
-    console.log(`[QuickSetup] Set ${modesSetCount}/${preset.modes.length} modes`);
     updateTask('completed');
     nextTask();
 
@@ -1026,7 +998,6 @@ async function applyPresetViaCli(
     await new Promise((r) => setTimeout(r, 500));
 
     for (const cmd of commands) {
-      console.log(`[QuickSetup CLI] Sending: ${cmd}`);
       await window.electronAPI?.cliSendRaw(cmd + '\n');
       // Small delay between commands to let FC process
       await new Promise((r) => setTimeout(r, 50));
@@ -1035,7 +1006,6 @@ async function applyPresetViaCli(
 
     // 2. Save configuration (causes reboot)
     updateTask(1, 'in_progress');
-    console.log('[QuickSetup CLI] Sending save command (will reboot)...');
     await window.electronAPI?.cliSendRaw('save\n');
     // Wait for save to complete and board to start rebooting
     await new Promise((r) => setTimeout(r, 1000));
@@ -1043,23 +1013,19 @@ async function applyPresetViaCli(
 
     // 3. Try to reconnect after reboot
     updateTask(2, 'in_progress');
-    console.log('[QuickSetup CLI] Board is rebooting, attempting reconnect...');
 
     const reconnected = await reconnectWithRetry({
       maxAttempts: 5,
       attemptDelayMs: 2000,
       initialDelayMs: 3000, // Legacy boards may need more time
       onAttempt: (attempt, maxAttempts) => {
-        console.log(`[QuickSetup CLI] Reconnect attempt ${attempt}/${maxAttempts}`);
       },
     });
 
     if (reconnected) {
-      console.log('[QuickSetup CLI] Reconnected successfully!');
       updateTask(2, 'completed');
     } else {
       // Even if reconnect fails, the config was saved - just warn the user
-      console.warn('[QuickSetup CLI] Could not reconnect automatically, but config was saved');
       updateTask(2, 'completed'); // Mark as completed anyway - config IS saved
     }
 
@@ -1071,7 +1037,6 @@ async function applyPresetViaCli(
     return true;
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'CLI apply failed';
-    console.error('[QuickSetup CLI] Error:', msg);
     set({
       isApplying: false,
       applyError: msg,

@@ -12,7 +12,7 @@
  * - Or specific bootloader entry command from running firmware
  */
 
-import { SerialTransport } from '@ardudeck/comms';
+import { SerialTransport } from '@jawji/comms';
 import { getSTM32ChipInfo, type STM32ChipInfo } from '../../shared/firmware-types.js';
 
 // STM32 USART bootloader constants

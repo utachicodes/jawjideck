@@ -1,18 +1,18 @@
 /**
- * Registers `ardudeck-module://<slug>/<path>` as a privileged protocol so
+ * Registers `jawji-module://<slug>/<path>` as a privileged protocol so
  * the renderer can dynamic-import module bundles without hitting Electron's
  * webSecurity restrictions around file:// URLs.
  *
- * Example: `ardudeck-module://ardudeck.internal.assistant/renderer.js`
+ * Example: `jawji-module://jawji.internal.assistant/renderer.js`
  * resolves to
- * `<userData>/modules/ardudeck.internal.assistant/extracted/renderer.js`.
+ * `<userData>/modules/jawji.internal.assistant/extracted/renderer.js`.
  */
 
 import { protocol, app, net } from 'electron';
 import { pathToFileURL } from 'node:url';
 import { join, resolve } from 'node:path';
 
-export const MODULE_SCHEME = 'ardudeck-module';
+export const MODULE_SCHEME = 'jawji-module';
 
 export function registerModuleSchemePrivileges(): void {
   protocol.registerSchemesAsPrivileged([

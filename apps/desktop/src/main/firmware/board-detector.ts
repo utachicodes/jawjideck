@@ -1,7 +1,7 @@
 /**
  * Board Detector
  * Enumerates serial ports and matches against known board VID/PID.
- * Uses listSerialPorts() from @ardudeck/comms (wraps the serialport npm library)
+ * Uses listSerialPorts() from @jawji/comms (wraps the serialport npm library)
  * instead of platform-specific CLI commands for reliable cross-platform detection.
  *
  * Any board with a serial port is detectable — KNOWN_BOARDS provides enrichment
@@ -9,7 +9,7 @@
  * for auto-detection via MAVLink/MSP.
  */
 
-import { listSerialPorts } from '@ardudeck/comms';
+import { listSerialPorts } from '@jawji/comms';
 import { KNOWN_BOARDS, type DetectedBoard } from '../../shared/firmware-types.js';
 import { detectSTM32Chip } from './stm32-bootloader.js';
 

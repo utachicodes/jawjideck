@@ -1,5 +1,5 @@
 var fs=require("fs");
-var d="/Users/daddy/work/ardudeck/apps/desktop/src/main/msp/";
+var d="/Users/daddy/work/jawji/apps/desktop/src/main/msp/";
 var NL=String.fromCharCode(10);
 var src=fs.readFileSync(d+"msp-handlers.ts","utf8").split(NL);
 var code=src.slice(1193,1670).join(NL);
@@ -23,7 +23,7 @@ i.push("  deserializeRcTuning,","  deserializeRcTuningInav,","  serializeRcTunin
 i.push("  deserializeInavRateProfile,","  serializeInavRateProfile,","  rcTuningToInavRateProfile,","  inavRateProfileToRcTuning,");
 i.push("  deserializeInavPid,","  serializeInavPid,","  inavPidToPid,","  pidToInavPid,","  mergeInavPid,");
 i.push("  type MSPPid,","  type MSPRcTuning,");
-i.push("} from " + String.fromCharCode(39) + "@ardudeck/msp-ts" + String.fromCharCode(39) + ";");
+i.push("} from " + String.fromCharCode(39) + "@jawji/msp-ts" + String.fromCharCode(39) + ";");
 var q=String.fromCharCode(39);
 i.push("import { ctx } from "+q+"./msp-context.js"+q+";");
 i.push("import {","  sendMspRequest,","  sendMspRequestWithPayload,","  sendMspV2Request,","  sendMspV2RequestWithPayload,","  withConfigLock,","  isCliModeBlockedError,");

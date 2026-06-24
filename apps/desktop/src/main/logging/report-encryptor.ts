@@ -1,7 +1,7 @@
 /**
  * Report Encryptor
  *
- * Implements hybrid encryption for .deckreport files:
+ * Implements hybrid encryption for .jawjireport files:
  * - AES-256-GCM for payload encryption (fast, secure)
  * - RSA-OAEP for key encryption (asymmetric, only dev team can decrypt)
  *
@@ -106,7 +106,7 @@ export function parseHeader(buffer: Buffer): DeckreportHeader | null {
 }
 
 /**
- * Encrypt a report payload and create a .deckreport file
+ * Encrypt a report payload and create a .jawjireport file
  */
 export function encryptReport(payload: ReportPayload): Buffer {
   // Serialize payload to JSON
@@ -190,7 +190,7 @@ export function getEncryptionInfo(): {
 
 /**
  * Decrypt a report (for testing only - requires private key)
- * This function is NOT used in production ArduDeck - only in DeckReport app
+ * This function is NOT used in production Jawji - only in DeckReport app
  */
 export function decryptReport(encrypted: Buffer, privateKey: string): ReportPayload | null {
   try {

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useCompanionStore } from '../../../stores/companion-store';
 import { PanelContainer, SectionTitle } from '../../panels/panel-utils';
-import type { NetworkInterface } from '@ardudeck/companion-types';
+import type { NetworkInterface } from '@jawji/companion-types';
 
 function InterfaceIcon({ type }: { type: string }) {
   if (type === 'wireless') {

@@ -8,7 +8,7 @@ import { readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { app } from 'electron';
 import Store from 'electron-store';
-import { parseModuleManifest } from '@ardudeck/module-sdk';
+import { parseModuleManifest } from '@jawji/module-sdk';
 import { verifyLicenseKey, verifyBundleSignature } from './license-validator.js';
 import * as marketplace from './marketplace-client.js';
 import { extractBundle } from './module-extract.js';
@@ -52,7 +52,7 @@ export function getDeviceId(): string {
 
 function getDeviceName(): string {
   const os = process.platform === 'darwin' ? 'macOS' : process.platform === 'win32' ? 'Windows' : 'Linux';
-  return `ArduDeck ${os}`;
+  return `Jawji \${os}`;
 }
 
 // --------------------------------------------------------------------------

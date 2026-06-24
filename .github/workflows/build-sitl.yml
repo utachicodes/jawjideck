@@ -4,8 +4,8 @@ name: Build ArduPilot SITL Binaries
 # macOS ARM64 binaries are built locally and uploaded manually.
 # Windows/Linux users can also grab binaries from firmware.ardupilot.org.
 #
-# ArduDeck downloads from:
-#   https://github.com/rubenCodeforges/ardudeck/releases/download/sitl-v{version}/{binary}
+# Jawji downloads from:
+#   https://github.com/rubenCodeforges/Jawji/releases/download/sitl-v{version}/{binary}
 
 on:
   workflow_dispatch:

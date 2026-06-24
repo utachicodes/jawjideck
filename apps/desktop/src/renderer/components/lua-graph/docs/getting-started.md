@@ -44,6 +44,6 @@ The Lua Graph Editor is a visual scripting environment for ArduPilot. Instead of
 
 ## Saving & Loading
 
-Graphs are saved as `.adgraph` JSON files. These contain the full node layout, connections, properties, and viewport position. You can share `.adgraph` files with other ArduDeck users.
+Graphs are saved as `.adgraph` JSON files. These contain the full node layout, connections, properties, and viewport position. You can share `.adgraph` files with other Jawji users.
 
 The **Export Lua** button compiles the graph and saves a standard `.lua` file that runs on ArduPilot. Copy the `.lua` file to your flight controller's `scripts/` directory on the SD card.

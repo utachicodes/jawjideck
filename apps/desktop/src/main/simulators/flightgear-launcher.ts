@@ -2,7 +2,7 @@
  * FlightGear Launcher
  *
  * Manages launching and stopping FlightGear with the correct arguments
- * for integration with ArduDeck's protocol bridge.
+ * for integration with Jawji's protocol bridge.
  */
 
 import { spawn, ChildProcess } from 'child_process';
@@ -26,7 +26,7 @@ export interface FlightGearConfig {
   timeOfDay?: 'dawn' | 'morning' | 'noon' | 'afternoon' | 'dusk' | 'evening' | 'midnight';
   season?: 'summer' | 'winter';
 
-  // Network config for ArduDeck bridge
+  // Network config for Jawji bridge
   bridgeHost?: string;        // Default: 127.0.0.1
   bridgeOutPort?: number;     // FG → Bridge (Default: 5505)
   bridgeInPort?: number;      // Bridge → FG (Default: 5506)
@@ -77,7 +77,7 @@ class FlightGearLauncher {
   }
 
   /**
-   * Get user-writable data directory for ArduDeck FlightGear files
+   * Get user-writable data directory for Jawji FlightGear files
    * This avoids permission issues when FlightGear is installed in Program Files
    */
   private getUserDataDir(): string {
@@ -95,11 +95,11 @@ class FlightGearLauncher {
       baseDir = process.env.XDG_DATA_HOME || join(process.env.HOME || '', '.local', 'share');
     }
 
-    return join(baseDir, 'ArduDeck', 'flightgear');
+    return join(baseDir, 'Jawji', 'flightgear');
   }
 
   /**
-   * Install ArduDeck protocol files to a user-writable directory
+   * Install Jawji protocol files to a user-writable directory
    * Returns the path to the data directory that should be added with --data
    */
   private installProtocolFiles(): string {
@@ -120,7 +120,7 @@ class FlightGearLauncher {
       ? join(app.getAppPath(), 'resources', 'flightgear', 'Protocol')
       : join(app.getAppPath() + '.unpacked', 'resources', 'flightgear', 'Protocol');
 
-    const files = ['ardudeck-out.xml', 'ardudeck-in.xml'];
+    const files = ['jawji-out.xml', 'jawji-in.xml'];
 
     for (const file of files) {
       const srcPath = join(resourcesPath, file);
@@ -152,7 +152,7 @@ class FlightGearLauncher {
     // This preserves access to downloaded scenery/aircraft data in user directories
 
     // Add user data directory as additional data path (for our protocol files)
-    // This allows FlightGear to find ardudeck-out.xml and ardudeck-in.xml
+    // This allows FlightGear to find jawji-out.xml and jawji-in.xml
     // without needing write access to Program Files
     args.push(`--data=${userDataDir}`);
 
@@ -183,18 +183,18 @@ class FlightGearLauncher {
       args.push(`--season=${config.season}`);
     }
 
-    // Network protocol for ArduDeck bridge
+    // Network protocol for Jawji bridge
     const host = config.bridgeHost || '127.0.0.1';
     const outPort = config.bridgeOutPort || 5505;
     const inPort = config.bridgeInPort || 5506;
     const rate = config.updateRate || 60;
 
-    // Output: FlightGear → ArduDeck (sensor data)
+    // Output: FlightGear → Jawji (sensor data)
     // Using generic protocol with our custom XML definition
-    args.push(`--generic=socket,out,${rate},${host},${outPort},udp,ardudeck-out`);
+    args.push(`--generic=socket,out,${rate},${host},${outPort},udp,Jawji-out`);
 
-    // Input: ArduDeck → FlightGear (control surfaces)
-    args.push(`--generic=socket,in,${rate},${host},${inPort},udp,ardudeck-in`);
+    // Input: Jawji → FlightGear (control surfaces)
+    args.push(`--generic=socket,in,${rate},${host},${inPort},udp,Jawji-in`);
 
     // Disable AI traffic for performance
     args.push('--disable-ai-traffic');

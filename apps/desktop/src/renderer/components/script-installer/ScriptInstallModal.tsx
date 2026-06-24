@@ -1,5 +1,5 @@
 /**
- * ArduDeck script install modal.
+ * Jawji script install modal.
  *
  * Three stages, driven by the install state machine:
  *   1. Explainer  - "this is what we're about to do" + experimental warning
@@ -151,11 +151,11 @@ function ExplainerStage({ onContinue, onCancel }: { onContinue: () => void; onCa
           <span className="px-2 py-0.5 text-[10px] font-bold tracking-wider rounded bg-rose-600/20 text-rose-400 border border-rose-600/40">
             EXPERIMENTAL
           </span>
-          <h2 className="text-lg font-semibold text-content">Install ArduDeck commands on this vehicle</h2>
+          <h2 className="text-lg font-semibold text-content">Install Jawji commands on this vehicle</h2>
         </div>
         <p className="text-sm text-content-secondary leading-relaxed">
           Some commands aren't supported natively by every flight controller build.
-          ArduDeck can install a small Lua script on this vehicle's SD card to add them.
+          Jawji can install a small Lua script on this vehicle's SD card to add them.
         </p>
       </div>
 
@@ -333,7 +333,7 @@ function ProgressStage({ phase, onCancel }: { phase: NonNullable<ReturnType<type
   return (
     <>
       <div className="px-6 py-5 border-b border-subtle">
-        <h2 className="text-base font-semibold text-content">Installing ArduDeck commands…</h2>
+        <h2 className="text-base font-semibold text-content">Installing Jawji commands…</h2>
       </div>
 
       <div className="px-6 py-6 space-y-3 flex-1 min-h-0 overflow-y-auto">
@@ -440,7 +440,7 @@ function SuccessStage({ onClose }: { onClose: () => void }) {
         <h2 className="text-base font-semibold text-emerald-400">✓ Installed</h2>
       </div>
       <div className="px-6 py-6 text-sm text-content-secondary">
-        ArduDeck commands are now available on this vehicle. The script publishes a heartbeat every second to confirm it's running.
+        Jawji commands are now available on this vehicle. The script publishes a heartbeat every second to confirm it's running.
       </div>
       <div className="px-6 py-4 border-t border-subtle flex justify-end">
         <button onClick={onClose} className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white rounded">
@@ -499,7 +499,7 @@ function ManualInstallStage({ manifest, ftpError, targetPath, onClose, onRetry }
         <ManualStep number={1} title="Download the script">
           <p className="text-content-secondary mb-2">
             Save <code className="font-mono text-content">{manifest.filename}</code> to your computer.
-            The file is byte-identical to what ArduDeck would have installed automatically.
+            The file is byte-identical to what Jawji would have installed automatically.
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -543,10 +543,10 @@ function ManualInstallStage({ manifest, ftpError, targetPath, onClose, onRetry }
         </ManualStep>
 
         {/* Step 4: come back */}
-        <ManualStep number={4} title="Come back to ArduDeck - it'll auto-detect">
+        <ManualStep number={4} title="Come back to Jawji - it'll auto-detect">
           <p className="text-content-secondary">
             Once the script starts running it publishes a heartbeat (<code className="font-mono text-content">{manifest.heartbeat.name}</code>).
-            ArduDeck listens for this and will mark Orbit as ready automatically. You don't need
+            Jawji listens for this and will mark Orbit as ready automatically. You don't need
             to reopen this dialog.
           </p>
         </ManualStep>

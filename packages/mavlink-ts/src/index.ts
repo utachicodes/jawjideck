@@ -1,5 +1,5 @@
 /**
- * @ardudeck/mavlink-ts
+ * @jawji/mavlink-ts
  * TypeScript MAVLink protocol library
  */
 

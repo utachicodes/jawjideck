@@ -12,7 +12,7 @@
  *      `Tools/autotest/`. Download each, concatenate into one combined
  *      file, return the local path.
  *   3. The caller passes that path to the SITL binary via `--defaults`,
- *      stacked behind our own ArduDeck overlay so user-tuned values win.
+ *      stacked behind our own Jawji overlay so user-tuned values win.
  *
  * Cached aggressively to userData so first-run latency is paid once per
  * machine and fully offline launches still work afterwards.

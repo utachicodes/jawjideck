@@ -845,7 +845,7 @@ function FrameCatalogStatus({
 
 /**
  * One-line summary under the dropdown showing which upstream `.parm` file(s)
- * will be stacked behind the ArduDeck overlay at launch. Builds confidence
+ * will be stacked behind the Jawji overlay at launch. Builds confidence
  * that the frame's defaults are real (esp. for tailsitter / VTOL).
  */
 function FrameDefaultsHint({ frame }: { frame: ArduPilotFrameInfo | null }) {
@@ -853,7 +853,7 @@ function FrameDefaultsHint({ frame }: { frame: ArduPilotFrameInfo | null }) {
   if (frame.defaultParamFiles.length === 0) {
     return (
       <p className="mt-1.5 text-[10px] text-content-tertiary leading-tight">
-        No upstream defaults — ArduDeck baseline only.
+        No upstream defaults — Jawji baseline only.
       </p>
     );
   }

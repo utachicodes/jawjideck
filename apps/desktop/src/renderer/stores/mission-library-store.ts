@@ -203,12 +203,12 @@ export const useMissionLibraryStore = create<MissionLibraryStore>((set, get) => 
 
   setFilter: (partial: Partial<MissionListFilter>) => {
     set((state) => ({ filter: { ...state.filter, ...partial } }));
-    get().loadMissions();
+    get().loadMissions().catch(() => {});
   },
 
   setSort: (field: MissionSortField, direction: MissionSortDirection) => {
     set({ sort: { field, direction } });
-    get().loadMissions();
+    get().loadMissions().catch(() => {});
   },
 
   setViewMode: (mode: ViewMode) => {

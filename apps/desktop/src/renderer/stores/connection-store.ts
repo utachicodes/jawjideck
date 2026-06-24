@@ -49,10 +49,18 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
   },
 
   disconnect: async () => {
-    await window.electronAPI.disconnect();
+    try {
+      await window.electronAPI.disconnect();
+    } catch (e) {
+      console.error('[ConnectionStore] disconnect failed:', e);
+    }
   },
 
   cancelReconnect: async () => {
-    await window.electronAPI.cancelReconnect();
+    try {
+      await window.electronAPI.cancelReconnect();
+    } catch (e) {
+      console.error('[ConnectionStore] cancelReconnect failed:', e);
+    }
   },
 }));

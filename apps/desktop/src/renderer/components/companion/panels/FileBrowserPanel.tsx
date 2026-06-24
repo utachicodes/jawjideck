@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useCompanionStore } from '../../../stores/companion-store';
 import { PanelContainer } from '../../panels/panel-utils';
-import type { FileEntry } from '@ardudeck/companion-types';
+import type { FileEntry } from '@jawji/companion-types';
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';

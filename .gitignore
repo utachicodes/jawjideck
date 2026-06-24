@@ -82,7 +82,7 @@ qgroundcontrol/
 # Note: Don't ignore apps/desktop/src/main/firmware/ (source code)
 /firmware/
 /firmwares/
-**/ardudeck-firmware/
+**/jawji-firmware/
 *.apj
 *.px4
 
@@ -90,7 +90,7 @@ qgroundcontrol/
 # packages/mavlink-ts/src/generated/
 
 # Electron store data
-%APPDATA%/ardudeck/
+%APPDATA%/jawji/
 
 # MAVLink logs and parameter dumps
 *.tlog
@@ -102,4 +102,4 @@ qgroundcontrol/
 inav-configurator
 
 # Dev-only test driver discovery file
-.ardudeck-mcp.json
+.jawji-mcp.json

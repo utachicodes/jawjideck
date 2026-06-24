@@ -1,5 +1,5 @@
 /**
- * @ardudeck/msp-ts
+ * @jawji/msp-ts
  *
  * TypeScript MSP protocol library for Betaflight/iNav/Cleanflight flight controllers
  */

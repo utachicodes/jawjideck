@@ -5,7 +5,7 @@
  * Each preset includes sensible mode configurations for beginners.
  */
 
-import type { MSPModeRange } from '@ardudeck/msp-ts';
+import type { MSPModeRange } from '@jawji/msp-ts';
 import type { LucideIcon } from 'lucide-react';
 import {
   Power, Square, Sunrise, Wind, ArrowUpFromLine, Home, MapPin, Map, Plane, Compass,

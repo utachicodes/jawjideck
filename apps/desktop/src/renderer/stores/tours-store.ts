@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-const STORAGE_KEY = 'ardudeck:tours:seen';
+const STORAGE_KEY = 'jawji:tours:seen';
 
 function loadSeen(): Set<string> {
   if (import.meta.env.DEV) {

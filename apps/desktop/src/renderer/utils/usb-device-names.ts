@@ -5,7 +5,7 @@
  * VID/PID keys are lowercase hex without 0x prefix: "vid:pid"
  */
 
-import type { SerialPortInfo } from '@ardudeck/comms';
+import type { SerialPortInfo } from '@jawji/comms';
 
 const USB_DEVICE_NAMES: Record<string, string> = {
   // ArduPilot ChibiOS (generic)

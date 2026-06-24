@@ -4,19 +4,19 @@
 
 | Platform | Download |
 |----------|----------|
-| Windows | [Latest Release (.exe)](https://github.com/rubenCodeforges/ardudeck/releases/latest) |
-| macOS | [Latest Release (.dmg)](https://github.com/rubenCodeforges/ardudeck/releases/latest) |
-| Linux | [Latest Release (.AppImage)](https://github.com/rubenCodeforges/ardudeck/releases/latest) |
+| Windows | [Latest Release (.exe)](https://github.com/rubenCodeforges/Jawji/releases/latest) |
+| macOS | [Latest Release (.dmg)](https://github.com/rubenCodeforges/Jawji/releases/latest) |
+| Linux | [Latest Release (.AppImage)](https://github.com/rubenCodeforges/Jawji/releases/latest) |
 
 ### Platform Notes
 
 - **Windows** -- The app is unsigned. Windows Defender may show a SmartScreen warning on first launch. Click "More info" then "Run anyway".
 - **macOS** -- The app is unsigned. Right-click the .app and select "Open" to bypass Gatekeeper on first launch.
-- **Linux** -- AppImage requires `libfuse2`. Install with `sudo apt install libfuse2` on Ubuntu/Debian. Make the AppImage executable with `chmod +x ArduDeck-*.AppImage`.
+- **Linux** -- AppImage requires `libfuse2`. Install with `sudo apt install libfuse2` on Ubuntu/Debian. Make the AppImage executable with `chmod +x Jawji-*.AppImage`.
 
 ## Connecting Your Flight Controller
 
-ArduDeck supports three connection types: Serial (USB), TCP, and UDP.
+Jawji supports three connection types: Serial (USB), TCP, and UDP.
 
 ### Serial (USB)
 
@@ -43,15 +43,15 @@ Used for telemetry radios and remote connections.
 
 1. Switch to the **UDP** tab in the Connection panel
 2. Choose a mode:
-   - **Listen (Server)** -- ArduDeck listens for incoming packets on a local port (default: `14550`)
-   - **Client (Connect)** -- ArduDeck sends to a remote device at a specified IP and port
+   - **Listen (Server)** -- Jawji listens for incoming packets on a local port (default: `14550`)
+   - **Client (Connect)** -- Jawji sends to a remote device at a specified IP and port
 3. Click **Connect**
 
 ## What Happens on Connect
 
-Once ArduDeck receives a heartbeat from your flight controller:
+Once Jawji receives a heartbeat from your flight controller:
 
-1. **Protocol detection** -- ArduDeck identifies whether the board speaks MAVLink (ArduPilot) or MSP (Betaflight/iNav)
+1. **Protocol detection** -- Jawji identifies whether the board speaks MAVLink (ArduPilot) or MSP (Betaflight/iNav)
 2. **Vehicle identification** -- Vehicle type (Copter, Plane, Rover, etc.), firmware variant, and version are read
 3. **Parameter fetch** -- All parameters are downloaded from the flight controller
 4. **UI routing** -- The configuration interface switches to the correct view for your firmware:
@@ -59,7 +59,7 @@ Once ArduDeck receives a heartbeat from your flight controller:
    - Modern iNav/Betaflight boards get the MSP configuration tabs
    - Legacy boards (iNav < 2.1, Betaflight < 4.0) get the CLI-powered GUI
 
-ArduDeck remembers your last connection settings (port, baud rate, host, etc.) and restores them on next launch.
+Jawji remembers your last connection settings (port, baud rate, host, etc.) and restores them on next launch.
 
 ## Navigation
 

@@ -59,7 +59,7 @@ const PID_PRESETS = {
 };
 
 // Custom profile storage
-const PID_PROFILES_KEY = 'ardudeck_legacy_pid_profiles';
+const PID_PROFILES_KEY = 'Jawji_legacy_pid_profiles';
 
 function loadCustomProfiles(): Record<string, { name: string; data: typeof PID_PRESETS.beginner.pids }> {
   try {

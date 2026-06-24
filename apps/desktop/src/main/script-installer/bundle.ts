@@ -1,5 +1,5 @@
 /**
- * ArduDeck script bundle - inlines the Lua source at build time and computes
+ * Jawji script bundle - inlines the Lua source at build time and computes
  * the manifest the installer + UI both reference. The SHA256 over the actual
  * source bytes is what we show in the preview, so users can verify the code
  * they see is exactly what we'll write to the FC.
@@ -7,11 +7,11 @@
 
 // Vite ?raw import: bundles the file contents as a string at build time.
 // Works in main + preload bundles since electron-vite uses Vite under the hood.
-import luaSource from '../lua-scripts/ardudeck_commands.lua?raw';
+import luaSource from '../lua-scripts/jawji_commands.lua?raw';
 import { buildScriptBundle, type ScriptBundle } from './installer-service';
 import { USER_CMD, SUB_CMD, type ScriptManifest } from '../../shared/script-installer-types';
 
-const FILENAME = 'ardudeck_commands.lua';
+const FILENAME = 'jawji_commands.lua';
 const VERSION = '1.0.0';
 
 let cached: ScriptBundle | null = null;

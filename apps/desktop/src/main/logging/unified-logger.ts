@@ -64,7 +64,7 @@ export function getLogsDir(): string {
 function generateLogFileName(): string {
   const now = new Date();
   const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  return `ardudeck-${timestamp}.jsonl`;
+  return `Jawji-${timestamp}.jsonl`;
 }
 
 /**

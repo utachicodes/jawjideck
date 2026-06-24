@@ -24,7 +24,7 @@ import { RATE_PRESETS } from './presets/mavlink-presets';
 import { detectRateScheme, buildRatePresetParams, type RateScheme } from './mavlink-pid-schemes';
 
 // Storage key for custom profiles
-const RATE_PROFILES_KEY = 'ardudeck_mavlink_rate_profiles';
+const RATE_PROFILES_KEY = 'Jawji_mavlink_rate_profiles';
 
 const RatesTab: React.FC = () => {
   const { parameters, setParameter, fetchParameters, isLoading } = useParameterStore();

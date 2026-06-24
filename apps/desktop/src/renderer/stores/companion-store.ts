@@ -8,7 +8,7 @@ import type {
   NetworkInfo,
   ContainerInfo,
   ExtensionInfo,
-} from '@ardudeck/companion-types';
+} from '@jawji/companion-types';
 import type { DroneBridgeInfo, DroneBridgeStats } from '../../shared/dronebridge-types';
 
 const MAX_LOG_ENTRIES = 500;

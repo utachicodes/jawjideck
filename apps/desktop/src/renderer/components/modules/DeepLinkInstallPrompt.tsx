@@ -8,7 +8,7 @@ interface PendingInstall {
 }
 
 /**
- * Listens for ardudeck://install deep links forwarded from the main process and
+ * Listens for Jawji://install deep links forwarded from the main process and
  * confirms with the user before installing the module + restarting. Mounted
  * once at the app root so it works regardless of the active view.
  */
@@ -48,11 +48,11 @@ export function DeepLinkInstallPrompt() {
         </div>
         <div className="px-6 py-5">
           <p className="text-sm text-content">
-            Install <span className="font-semibold">{pending.name}</span> from the ArduDeck
+            Install <span className="font-semibold">{pending.name}</span> from the Jawji
             marketplace?
           </p>
           <p className="text-sm text-content-secondary mt-2">
-            ArduDeck will restart to load it.
+            Jawji will restart to load it.
           </p>
           {error && (
             <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">

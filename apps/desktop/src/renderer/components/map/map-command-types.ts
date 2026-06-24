@@ -18,9 +18,9 @@ export type MapCommand =
 
 export type MapCommandType = MapCommand['type'];
 
-/** MAV_CMD_USER_1 - dispatcher for ArduDeck Lua sub-commands (param4 selects). */
+/** MAV_CMD_USER_1 - dispatcher for Jawji Lua sub-commands (param4 selects). */
 const USER_CMD_AD = 31010;
-/** Sub-command IDs - keep in sync with ardudeck_commands.lua SUB_CMD_*. */
+/** Sub-command IDs - keep in sync with jawji_commands.lua SUB_CMD_*. */
 const SUB_CMD = {
   ORBIT:      0,
   SPIRAL:     1,
@@ -82,7 +82,7 @@ export interface DispatchResult {
  * Dispatch a map command to the vehicle via IPC.
  *
  * For commands that can be served either by an ArduPilot built-in or by an
- * ArduDeck Lua script (currently just `orbit`), the caller decides which path
+ * Jawji Lua script (currently just `orbit`), the caller decides which path
  * to take via `preferScript`. We don't probe FC capabilities here - the popup
  * already knows whether the script is healthy via useScriptHealth.
  */

@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import type { MSPModeRange } from '@ardudeck/msp-ts';
+import type { MSPModeRange } from '@jawji/msp-ts';
 import { PRESETS, type ModePreset } from '../components/modes/presets/mode-presets';
 import { useSettingsStore } from './settings-store';
 
@@ -394,8 +394,6 @@ export const useModesWizardStore = create<ModesWizardState>((set, get) => ({
     get().stopRcPolling();
 
     try {
-      console.log('[ModesWizard] Saving modes to FC...');
-
       // First, clear existing modes by setting empty ranges
       // We need to clear up to 20 mode slots
       for (let i = 0; i < 20; i++) {
@@ -413,7 +411,6 @@ export const useModesWizardStore = create<ModesWizardState>((set, get) => ({
       // Set new modes
       for (let i = 0; i < pendingModes.length; i++) {
         const mode = pendingModes[i]!;
-        console.log(`[ModesWizard] Setting mode ${i}: boxId=${mode.boxId} aux=${mode.auxChannel} range=${mode.rangeStart}-${mode.rangeEnd}`);
         const success = await window.electronAPI?.mspSetModeRange(i, mode);
         if (!success) {
           throw new Error(`Failed to set mode ${i}`);
@@ -421,13 +418,11 @@ export const useModesWizardStore = create<ModesWizardState>((set, get) => ({
       }
 
       // Save to EEPROM
-      console.log('[ModesWizard] Saving to EEPROM...');
       const eepromSuccess = await window.electronAPI?.mspSaveEeprom();
       if (!eepromSuccess) {
         throw new Error('Modes sent but EEPROM save failed');
       }
 
-      console.log('[ModesWizard] Modes saved successfully');
       set({
         isSaving: false,
         originalModes: [...pendingModes],
@@ -442,7 +437,6 @@ export const useModesWizardStore = create<ModesWizardState>((set, get) => ({
       return true;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to save modes';
-      console.error('[ModesWizard] Save failed:', msg);
       set({
         isSaving: false,
         saveError: msg,

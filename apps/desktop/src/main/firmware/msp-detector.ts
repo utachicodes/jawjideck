@@ -3,13 +3,13 @@
  * Detects Betaflight/iNav/Cleanflight boards via MSP protocol
  */
 
-import { SerialTransport } from '@ardudeck/comms';
+import { SerialTransport } from '@jawji/comms';
 import {
   serializeV2,
   serializeCommandLong,
   COMMAND_LONG_ID,
   COMMAND_LONG_CRC_EXTRA,
-} from '@ardudeck/mavlink-ts';
+} from '@jawji/mavlink-ts';
 
 // MSP command IDs
 const MSP_FC_VARIANT = 2;

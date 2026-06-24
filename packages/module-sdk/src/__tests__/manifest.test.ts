@@ -5,7 +5,7 @@ describe('parseModuleManifest', () => {
   it('accepts a minimal valid manifest', () => {
     const result = parseModuleManifest({
       manifestVersion: 1,
-      slug: 'ardudeck.internal.assistant',
+      slug: 'jawji.internal.assistant',
       name: 'Assistant',
       version: '0.1.0',
       entry: { renderer: 'renderer.js' },

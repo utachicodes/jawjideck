@@ -29,7 +29,7 @@ export const IPC_CHANNELS = {
   /**
    * Send MAV_CMD_USER_1..5 (commands 31010..31014) via COMMAND_INT, with
    * arbitrary float params + global coordinates. Invokes handlers registered
-   * by FC-side Lua scripts (e.g. ArduDeck's orbit script).
+   * by FC-side Lua scripts (e.g. Jawji's orbit script).
    */
   MAVLINK_USER_COMMAND: 'mavlink:user-command',
 
@@ -460,7 +460,7 @@ export const IPC_CHANNELS = {
   MODULE_CHECK_UPDATES: 'module:check-updates',
   MODULE_PROGRESS: 'module:progress',
   MODULE_DEEP_LINK_INSTALL: 'module:deep-link-install',
-  // ardudeck://open?view=<id> -> navigate the renderer to a built-in view
+  // jawji://open?view=<id> -> navigate the renderer to a built-in view
   NAV_DEEP_LINK_OPEN: 'nav:deep-link-open',
 
   // Module Host (runtime API exposed to loaded modules)

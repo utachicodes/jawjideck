@@ -1,10 +1,10 @@
-# ArduDeck Contributor License Agreement (CLA)
+# Jawji Contributor License Agreement (CLA)
 
 **Version 1.0 — Effective March 2026**
 
-Thank you for your interest in contributing to ArduDeck. This Contributor License Agreement ("Agreement") clarifies the intellectual property rights granted with Contributions from any person or entity to the ArduDeck project. This is a legally binding agreement, so please read it carefully before agreeing.
+Thank you for your interest in contributing to Jawji. This Contributor License Agreement ("Agreement") clarifies the intellectual property rights granted with Contributions from any person or entity to the Jawji project. This is a legally binding agreement, so please read it carefully before agreeing.
 
-By submitting a Contribution to the ArduDeck project, you accept and agree to the following terms.
+By submitting a Contribution to the Jawji project, you accept and agree to the following terms.
 
 ---
 
@@ -12,9 +12,9 @@ By submitting a Contribution to the ArduDeck project, you accept and agree to th
 
 **"You" (or "Contributor")** means the individual or legal entity making a Contribution to the Project.
 
-**"Project"** means the ArduDeck software project, including all repositories maintained under the ArduDeck project by the Copyright Holder.
+**"Project"** means the Jawji software project, including all repositories maintained under the Jawji project by the Copyright Holder.
 
-**"Copyright Holder"** means Ruben M, the original author and sole copyright holder of ArduDeck, and any successors or assigns.
+**"Copyright Holder"** means Ruben M, the original author and sole copyright holder of Jawji, and any successors or assigns.
 
 **"Contribution"** means any original work of authorship, including any modifications to or additions to existing work, that you intentionally submit to the Project for inclusion. This includes code, documentation, configuration, tests, or any other material submitted via pull request, patch, issue, or any other mechanism.
 
@@ -29,7 +29,7 @@ You hereby grant to the Copyright Holder a perpetual, worldwide, non-exclusive, 
 This grant includes the right for the Copyright Holder to relicense your Contributions under terms other than the GPL v3, including but not limited to:
 - Proprietary or commercial licenses
 - Different open source licenses
-- The ArduDeck Marketplace Module Exception (as described in the LICENSE file)
+- The Jawji Marketplace Module Exception (as described in the LICENSE file)
 
 ---
 
@@ -65,22 +65,22 @@ You agree to notify the Copyright Holder if you become aware of any facts or cir
 
 ## 7. Why This CLA Exists
 
-ArduDeck is licensed under the GPL v3 with a Marketplace Module Exception. This exception allows third-party Modules distributed through the official ArduDeck Hangar to use proprietary licenses. To maintain this dual-licensing capability, the Copyright Holder must hold sufficient rights over all code in the project. Without this CLA, individual contributors would retain exclusive copyright over their contributions, potentially preventing the Copyright Holder from maintaining the marketplace exception or adapting licensing terms as the project evolves.
+Jawji is licensed under the GPL v3 with a Marketplace Module Exception. This exception allows third-party Modules distributed through the official Jawji Hangar to use proprietary licenses. To maintain this dual-licensing capability, the Copyright Holder must hold sufficient rights over all code in the project. Without this CLA, individual contributors would retain exclusive copyright over their contributions, potentially preventing the Copyright Holder from maintaining the marketplace exception or adapting licensing terms as the project evolves.
 
-**In plain terms:** This CLA ensures that the ArduDeck project can continue to offer its Hangar model while keeping the core open source. Your contributions remain credited to you, the project stays GPL v3, and the Hangar can function as designed.
+**In plain terms:** This CLA ensures that the Jawji project can continue to offer its Hangar model while keeping the core open source. Your contributions remain credited to you, the project stays GPL v3, and the Hangar can function as designed.
 
 ---
 
 ## 8. Agreement
 
-By submitting a pull request or other Contribution to the ArduDeck project, you signify your agreement to these terms. If you do not agree, please do not submit Contributions to the project.
+By submitting a pull request or other Contribution to the Jawji project, you signify your agreement to these terms. If you do not agree, please do not submit Contributions to the project.
 
 To explicitly record your agreement, include the following line in your first pull request description:
 
 ```
-I have read and agree to the ArduDeck Contributor License Agreement (CLA.md).
+I have read and agree to the Jawji Contributor License Agreement (CLA.md).
 ```
 
 ---
 
-**Questions?** Open an issue in the ArduDeck repository or contact the project maintainer.
+**Questions?** Open an issue in the Jawji repository or contact the project maintainer.

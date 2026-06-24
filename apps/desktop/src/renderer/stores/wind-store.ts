@@ -60,8 +60,6 @@ export const useWindStore = create<WindStore>((set, get) => ({
     const bounds = padBounds(rawBounds, 0.3);
     const token = get()._token + 1;
     set({ _token: token, loading: true, error: null, lastBounds: bounds });
-    // [wind] temporary diagnostics — remove once verified working
-    console.info('[wind] fetch start', { bounds, altitudeM: get().altitudeM });
     try {
       const field = await window.electronAPI.getWindField({ bbox: bounds, altitudeM: get().altitudeM });
       if (get()._token !== token) return; // a newer request superseded this one

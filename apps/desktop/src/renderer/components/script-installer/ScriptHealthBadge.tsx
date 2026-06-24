@@ -1,5 +1,5 @@
 /**
- * Persistent indicator that the FC-side ArduDeck Lua script is alive.
+ * Persistent indicator that the FC-side Jawji Lua script is alive.
  *
  * Always visible when the advanced-commands feature flag is on - including
  * when no heartbeat has been seen. "No badge" used to be ambiguous
@@ -130,7 +130,7 @@ function DiagnosticContent({ health, isConnected, isMavlink, onOpenInstaller }: 
           <p><span className="text-emerald-400">●</span> Script is running. Orbit + future commands will route through it for link-resilient execution.</p>
         )}
         {health.status === 'stale' && (
-          <p><span className="text-amber-400">●</span> Heartbeat went silent. The script may have crashed, the FC may have rebooted, or the link dropped. ArduDeck falls back to native commands until heartbeat resumes.</p>
+          <p><span className="text-amber-400">●</span> Heartbeat went silent. The script may have crashed, the FC may have rebooted, or the link dropped. Jawji falls back to native commands until heartbeat resumes.</p>
         )}
         {health.status === 'missing' && (
           <div className="space-y-2">

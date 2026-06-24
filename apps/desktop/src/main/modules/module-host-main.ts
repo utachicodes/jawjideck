@@ -1,7 +1,7 @@
 import { app, ipcMain, safeStorage } from 'electron';
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { MainHostApi, ModuleManifest } from '@ardudeck/module-sdk';
+import type { MainHostApi, ModuleManifest } from '@jawji/module-sdk';
 
 export function createMainHostApi(manifest: ModuleManifest): MainHostApi {
   const dataDir = join(app.getPath('userData'), 'modules', manifest.slug, 'data');

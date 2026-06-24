@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'ardudeck-sitl-profile-memory-v1';
+const STORAGE_KEY = 'jawji-sitl-profile-memory-v1';
 
 /**
  * Per-SITL-instance memory: which profile was last applied, when, and a hint

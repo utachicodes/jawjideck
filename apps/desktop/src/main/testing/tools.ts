@@ -6,7 +6,7 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { TESTING_CHANNELS } from '../../shared/testing-channels';
 
-const SCREENSHOT_DIR = join(homedir(), '.ardudeck', 'screenshots');
+const SCREENSHOT_DIR = join(homedir(), '.jawji', 'screenshots');
 mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
 let mainWindow: BrowserWindow | null = null;

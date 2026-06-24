@@ -9,7 +9,7 @@ export interface ModuleManifest {
   entry: { main?: string; renderer?: string };
   mountPoints?: MountPointName[];
   permissions?: ModulePermission[];
-  minArduDeckVersion?: string;
+  minJawjiVersion?: string;
 }
 
 const SEMVER_RE = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;

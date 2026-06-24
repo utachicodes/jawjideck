@@ -1,5 +1,5 @@
 /**
- * Read-only viewer for an ArduDeck-shipped Lua command script.
+ * Read-only viewer for an Jawji-shipped Lua command script.
  *
  * Two views, switchable via header tabs:
  *   - Graph  - hand-authored visual graph (read-only React Flow)
@@ -13,7 +13,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { tokenizeLua, tokensByLine, TOKEN_CLASS } from './lua-highlight';
 import { ScriptGraphReadonlyView } from './ScriptGraphReadonlyView';
-import { ARDUDECK_COMMANDS_NODES, ARDUDECK_COMMANDS_EDGES } from './ardudeck-commands-graph';
+import { JAWJI_COMMANDS_NODES, JAWJI_COMMANDS_EDGES } from './jawji-commands-graph';
 
 type ViewMode = 'graph' | 'source';
 
@@ -65,7 +65,7 @@ export function LuaCodePreview({ source, filename, version, sha256 }: LuaCodePre
         {/* Body */}
         {view === 'graph' ? (
           <div className="flex-1 min-h-0">
-            <ScriptGraphReadonlyView nodes={ARDUDECK_COMMANDS_NODES} edges={ARDUDECK_COMMANDS_EDGES} />
+            <ScriptGraphReadonlyView nodes={JAWJI_COMMANDS_NODES} edges={JAWJI_COMMANDS_EDGES} />
           </div>
         ) : (
           <CodeBody lineGroups={lineGroups} variant="inline" />
@@ -182,7 +182,7 @@ function FullscreenViewer({ filename, version, sha256, sizeKb, lineGroups, initi
         </div>
         {view === 'graph' ? (
           <div className="flex-1 min-h-0">
-            <ScriptGraphReadonlyView nodes={ARDUDECK_COMMANDS_NODES} edges={ARDUDECK_COMMANDS_EDGES} />
+            <ScriptGraphReadonlyView nodes={JAWJI_COMMANDS_NODES} edges={JAWJI_COMMANDS_EDGES} />
           </div>
         ) : (
           <CodeBody lineGroups={lineGroups} variant="fullscreen" />

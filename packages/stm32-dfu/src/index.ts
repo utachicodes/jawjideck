@@ -1,12 +1,12 @@
 /**
- * @ardudeck/stm32-dfu
+ * @jawji/stm32-dfu
  *
  * Native TypeScript STM32 DFU flashing library using libusb.
  * No external CLI tools required. Cross-platform (Windows, macOS, Linux).
  *
  * @example
  * ```typescript
- * import { DfuDevice, parseDfuFile, parseHexFile, loadBinFile } from '@ardudeck/stm32-dfu';
+ * import { DfuDevice, parseDfuFile, parseHexFile, loadBinFile } from '@jawji/stm32-dfu';
  *
  * // Find and flash a device
  * const device = DfuDevice.findFirst();

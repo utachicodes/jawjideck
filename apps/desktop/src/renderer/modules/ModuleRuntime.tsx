@@ -52,7 +52,7 @@ export function ModuleRuntime({ children }: { children: ReactNode }) {
         if (!rendererEntry) continue;
         // Custom protocol registered in main so Electron's webSecurity allows
         // dynamic-import from the vite-served renderer.
-        const url = `ardudeck-module://${rec.slug}/${rendererEntry}`;
+        const url = `jawji-module://${rec.slug}/${rendererEntry}`;
         console.log(`[ModuleRuntime] loading ${rec.slug} from ${url}`);
         try {
           const mod = (await import(/* @vite-ignore */ url)) as RendererExports;

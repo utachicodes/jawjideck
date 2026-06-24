@@ -25,7 +25,7 @@ export function openAreaEditorWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
-    title: 'ArduDeck Area Editor',
+    title: 'Jawji Area Editor',
     autoHideMenuBar: true,
     show: false,
     webPreferences: {

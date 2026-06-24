@@ -4,7 +4,7 @@ The Flight Modes tab assigns flight modes to switch positions on your transmitte
 
 ## Mode Channel
 
-Select which RC channel controls flight modes (channels 5-12). Click **Detect** to auto-detect: ArduDeck monitors all AUX channels and highlights the one with movement when you flip your switch.
+Select which RC channel controls flight modes (channels 5-12). Click **Detect** to auto-detect: Jawji monitors all AUX channels and highlights the one with movement when you flip your switch.
 
 ## View Modes
 

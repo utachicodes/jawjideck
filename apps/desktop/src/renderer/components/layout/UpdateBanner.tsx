@@ -37,7 +37,7 @@ export function UpdateBanner() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <span className="text-sm text-content flex-1">
-          <span className="font-medium text-blue-300">ArduDeck {versionLabel}</span> is available{nameLabel}
+          <span className="font-medium text-blue-300">Jawji {versionLabel}</span> is available{nameLabel}
         </span>
         {canAutoUpdate ? (
           <button
@@ -85,7 +85,7 @@ export function UpdateBanner() {
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
           <span className="text-sm text-content flex-1">
-            Downloading <span className="font-medium text-blue-300">ArduDeck {versionLabel}</span>
+            Downloading <span className="font-medium text-blue-300">Jawji {versionLabel}</span>
             <span className="text-content-secondary ml-2 text-xs">{bytesLabel}</span>
           </span>
           <span className="text-xs text-content-secondary tabular-nums">{progress}%</span>
@@ -107,7 +107,7 @@ export function UpdateBanner() {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
       </svg>
       <span className="text-sm text-content flex-1">
-        <span className="font-medium text-emerald-300">ArduDeck {versionLabel}</span> is ready to install
+        <span className="font-medium text-emerald-300">Jawji {versionLabel}</span> is ready to install
       </span>
       <button
         onClick={() => installUpdate()}

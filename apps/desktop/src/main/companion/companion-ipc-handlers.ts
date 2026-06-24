@@ -9,7 +9,7 @@ import { IPC_CHANNELS } from '../../shared/ipc-channels.js';
 import type { CompanionConnectOptions } from '../../shared/ipc-channels.js';
 import { companionConnection } from './companion-connection.js';
 import { startDiscovery, stopDiscovery, probeAgent } from './companion-discovery.js';
-import { AGENT_DEFAULT_PORT } from '@ardudeck/companion-types';
+import { AGENT_DEFAULT_PORT } from '@jawji/companion-types';
 import type {
   SystemInfo,
   NetworkInfo,
@@ -19,7 +19,7 @@ import type {
   ContainerInfo,
   ContainerAction,
   ExtensionInfo,
-} from '@ardudeck/companion-types';
+} from '@jawji/companion-types';
 
 // Persisted token storage (encrypted with safeStorage)
 interface CompanionTokenStore {

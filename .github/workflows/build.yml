@@ -1,4 +1,4 @@
-name: Build ArduDeck
+name: Build Jawji
 
 on:
   release:
@@ -39,7 +39,7 @@ jobs:
           fi
 
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          echo "BUILD_NAME=ArduDeck-${VERSION}-linux" >> $GITHUB_ENV
+          echo "BUILD_NAME=Jawji-${VERSION}-linux" >> $GITHUB_ENV
 
       - uses: pnpm/action-setup@v4
 
@@ -115,7 +115,7 @@ jobs:
           fi
 
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          echo "BUILD_NAME=ArduDeck-${VERSION}-mac-arm64" >> $GITHUB_ENV
+          echo "BUILD_NAME=Jawji-${VERSION}-mac-arm64" >> $GITHUB_ENV
 
       - uses: pnpm/action-setup@v4
 
@@ -197,7 +197,7 @@ jobs:
           fi
 
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          echo "BUILD_NAME=ArduDeck-${VERSION}-mac-x64" >> $GITHUB_ENV
+          echo "BUILD_NAME=Jawji-${VERSION}-mac-x64" >> $GITHUB_ENV
 
       - uses: pnpm/action-setup@v4
 
@@ -287,7 +287,7 @@ jobs:
           fi
 
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          echo "BUILD_NAME=ArduDeck-${VERSION}-win" >> $GITHUB_ENV
+          echo "BUILD_NAME=Jawji-${VERSION}-win" >> $GITHUB_ENV
 
       - uses: pnpm/action-setup@v4
 

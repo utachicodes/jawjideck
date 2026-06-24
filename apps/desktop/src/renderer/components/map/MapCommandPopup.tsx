@@ -23,7 +23,7 @@ interface MapCommandPopupProps {
 /**
  * Top-level tabs:
  *   - move:    native DO_REPOSITION (always available)
- *   - lua:     ArduDeck-Lua-script-backed commands (Orbit, Spiral, ...).
+ *   - lua:     Jawji-Lua-script-backed commands (Orbit, Spiral, ...).
  *              Only shown when the experimental flag is on. Hidden / shows
  *              install offer when the script isn't present on the FC.
  *   - land:    native NAV_LAND (gated by experimental flag for now since it
@@ -39,12 +39,12 @@ interface TabMeta {
 
 const TABS: TabMeta[] = [
   { id: 'move', label: 'Move',         activeClass: 'bg-cyan-600 text-white' },
-  { id: 'lua',  label: 'ArduDeck Lua', activeClass: 'bg-violet-600 text-white' },
+  { id: 'lua',  label: 'Jawji Lua', activeClass: 'bg-violet-600 text-white' },
   { id: 'land', label: 'Land',         activeClass: 'bg-rose-600 text-white' },
 ];
 
 /** Lua-tab sub-commands. Adding one: extend SUB_CMD in map-command-types and
- *  the dispatch table in ardudeck_commands.lua, then add an entry here. */
+ *  the dispatch table in jawji_commands.lua, then add an entry here. */
 type LuaCommandId = 'orbit' | 'spiral' | 'watchtower' | 'climbRtl' | 'reveal' | 'strafe';
 type LuaCategory = 'hold' | 'cinematic' | 'return';
 interface LuaCommandMeta {
@@ -456,7 +456,7 @@ export const MapCommandPopup: React.FC<MapCommandPopupProps> = ({
           <div className="mb-2 px-2 py-1 rounded text-[10px] flex items-center justify-between gap-2 bg-gray-800/60 border border-gray-700/60">
             <span className="text-gray-400">Execution:</span>
             {willUseScript ? (
-              <span className="text-emerald-300 font-medium">via ArduDeck script (link-resilient)</span>
+              <span className="text-emerald-300 font-medium">via Jawji script (link-resilient)</span>
             ) : luaCmd === 'orbit' && scriptHealth.status === 'stale' ? (
               <span className="text-amber-400 font-medium">native fallback (script silent)</span>
             ) : luaCmd === 'orbit' ? (
@@ -464,7 +464,7 @@ export const MapCommandPopup: React.FC<MapCommandPopupProps> = ({
             ) : scriptBlocked ? (
               <span className="text-rose-400 font-medium">unavailable - script required</span>
             ) : (
-              <span className="text-emerald-300 font-medium">via ArduDeck script</span>
+              <span className="text-emerald-300 font-medium">via Jawji script</span>
             )}
           </div>
           {scriptHealth.status === 'missing' && (

@@ -1,5 +1,5 @@
 {
-  "name": "@ardudeck/mavlink-generator",
+  "name": "@jawji/mavlink-generator",
   "version": "0.1.0",
   "description": "MAVLink XML to TypeScript code generator",
   "type": "module",

@@ -33,7 +33,7 @@ Each chemistry shows a description and sets appropriate voltage references.
 
 ### Cell Count
 
-Select the number of cells (2S through 12S). Each option shows the cell count and nominal voltage. ArduDeck estimates the current cell count from the detected voltage.
+Select the number of cells (2S through 12S). Each option shows the cell count and nominal voltage. Jawji estimates the current cell count from the detected voltage.
 
 ### Voltage Reference
 
