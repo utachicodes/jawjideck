@@ -14,7 +14,7 @@
  */
 
 import { listSerialPorts } from '@jawji/comms';
-import { DfuDevice } from '@jawji/stm32-dfu';
+import { DfuDevice, STM32_VID } from '@jawji/stm32-dfu';
 import { KNOWN_BOARDS, type DetectedBoard } from '../../shared/firmware-types.js';
 import { detectSTM32Chip } from './stm32-bootloader.js';
 
@@ -134,43 +134,53 @@ export async function detectBoards(): Promise<DetectedBoard[]> {
     }
   }
 
-  // Scan for USB DFU devices (boards in bootloader/DFU mode).
+  // Scan for USB DFU devices (boards in bootloader/DFU mode), but only when
+  // serial enumeration found nothing — DfuDevice.findAll() walks every USB
+  // device on the system and synchronously opens each one via libusb to probe
+  // its interfaces. That's fine for a board with no serial port at all (raw
+  // DFU mode), but running it unconditionally on every detection cycle means
+  // it also opens the board's own already-working serial interface (and every
+  // other USB device — hubs, keyboards, etc.), which can stall or break a
+  // normal serial connect. Scoping to the STM32 vendor ID and skipping this
+  // entirely once a serial board is already found keeps the common case safe.
   // DFU devices don't appear as serial ports — they use the USB DFU interface class
   // (0xFE/0x01/0x02) and are accessed via libusb. When a board is in DFU mode,
   // it re-enumerates as a DFU device (e.g. STM32 VID 0x0483, PID 0xDF11).
-  try {
-    const dfuDevices = DfuDevice.findAll();
-    const seenDfuVidPid = new Set<string>();
+  if (detectedBoards.length === 0) {
+    try {
+      const dfuDevices = DfuDevice.findAll(STM32_VID);
+      const seenDfuVidPid = new Set<string>();
 
-    for (const dfu of dfuDevices) {
-      const vidHex = dfu.info.vendorId.toString(16).padStart(4, '0');
-      const pidHex = dfu.info.productId.toString(16).padStart(4, '0');
-      const dfuKey = `${vidHex}:${pidHex}`;
+      for (const dfu of dfuDevices) {
+        const vidHex = dfu.info.vendorId.toString(16).padStart(4, '0');
+        const pidHex = dfu.info.productId.toString(16).padStart(4, '0');
+        const dfuKey = `${vidHex}:${pidHex}`;
 
-      // Skip if we already found this VID:PID as a serial port
-      if (serialVidPids.has(dfuKey)) continue;
+        // Skip if we already found this VID:PID as a serial port
+        if (serialVidPids.has(dfuKey)) continue;
 
-      // Deduplicate by VID:PID (multiple DFU interfaces on same device)
-      if (seenDfuVidPid.has(dfuKey)) continue;
-      seenDfuVidPid.add(dfuKey);
+        // Deduplicate by VID:PID (multiple DFU interfaces on same device)
+        if (seenDfuVidPid.has(dfuKey)) continue;
+        seenDfuVidPid.add(dfuKey);
 
-      const knownBoard = KNOWN_BOARDS[dfuKey];
+        const knownBoard = KNOWN_BOARDS[dfuKey];
 
-      const board: DetectedBoard = {
-        name: knownBoard?.name || `DFU Device (${dfuKey})`,
-        boardId: knownBoard?.boardId || 'stm32-dfu',
-        mcuType: knownBoard?.mcuType || 'STM32',
-        flasher: 'dfu',
-        usbVid: dfu.info.vendorId,
-        usbPid: dfu.info.productId,
-        inBootloader: true,
-        detectionMethod: 'dfu',
-      };
+        const board: DetectedBoard = {
+          name: knownBoard?.name || `DFU Device (${dfuKey})`,
+          boardId: knownBoard?.boardId || 'stm32-dfu',
+          mcuType: knownBoard?.mcuType || 'STM32',
+          flasher: 'dfu',
+          usbVid: dfu.info.vendorId,
+          usbPid: dfu.info.productId,
+          inBootloader: true,
+          detectionMethod: 'dfu',
+        };
 
-      detectedBoards.push(board);
+        detectedBoards.push(board);
+      }
+    } catch {
+      // DFU scanning failed — not critical, continue with serial-only results
     }
-  } catch {
-    // DFU scanning failed — not critical, continue with serial-only results
   }
 
   return detectedBoards;
