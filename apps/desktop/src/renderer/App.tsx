@@ -766,9 +766,10 @@ function App() {
       return (
         <div className="h-full flex items-center justify-center p-8">
           <div className="text-center max-w-2xl">
-            {/* Logo */}
-            <div className="mx-auto w-48 h-48 mb-6 rounded-3xl overflow-hidden">
-              <img src={logoImage} alt="Jawji" className="w-full h-full object-cover" />
+            {/* Logo is a wide wordmark (transparent bg) — let it size to its
+                natural aspect ratio instead of being cropped into a square. */}
+            <div className="mx-auto w-72 mb-6">
+              <img src={logoImage} alt="Jawji" className="w-full h-auto object-contain" />
             </div>
 
             <h2 className="text-2xl font-semibold text-content mb-3">

@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { useParameterStore } from '../../stores/parameter-store';
 import { useConnectionStore } from '../../stores/connection-store';
+import { useToursStore } from '../../stores/tours-store';
 import { formatParamValue } from '../../../shared/parameter-types';
 import PidTuningTab from './PidTuningTab';
 import RatesTab from './RatesTab';
@@ -272,6 +273,15 @@ export const MavlinkConfigView: React.FC = () => {
       setActiveTab(defaultTab);
     }
   }, [tabs, activeTab, defaultTab]);
+
+  // The Files tour highlights the FTP browser, which only renders while its
+  // tab is active — bring it forward when that tour starts.
+  const activeTourId = useToursStore((s) => s.activeTourId);
+  useEffect(() => {
+    if (activeTourId === 'files-ftp-browser') {
+      setActiveTab('files');
+    }
+  }, [activeTourId]);
 
   const activeGroup = useMemo(() => findGroupForTab(tabs, activeTab), [tabs, activeTab]);
   const [openGroupId, setOpenGroupId] = useState<string | null>(null);

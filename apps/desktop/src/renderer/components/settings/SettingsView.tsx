@@ -6,6 +6,7 @@ import { useNavigationStore } from '../../stores/navigation-store';
 import { useTelemetryStore } from '../../stores/telemetry-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useUpdateStore } from '../../stores/update-store';
+import { useToursStore } from '../../stores/tours-store';
 import { ScriptInstallModal } from '../script-installer/ScriptInstallModal';
 import { VehicleTemplatePicker } from './vehicle-profile/VehicleTemplatePicker';
 import { ApplyProfileButton } from './vehicle-profile/ApplyProfileButton';
@@ -2271,6 +2272,25 @@ function AboutSection() {
               <span className="truncate">{error}</span>
             </div>
           )}
+        </div>
+
+        {/* Replay onboarding */}
+        <div className="mt-4 pt-4 border-t border-subtle flex items-center justify-between">
+          <div>
+            <p className="text-sm text-content">Guided tour</p>
+            <p className="text-xs text-content-secondary mt-0.5">
+              Re-show the walkthroughs for every screen, one at a time.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              useToursStore.getState().resetAll();
+              useNavigationStore.getState().setView('telemetry');
+            }}
+            className="px-3 py-1.5 text-xs text-content-secondary hover:text-content border border-border hover:border-border rounded-lg transition-colors"
+          >
+            Replay tour
+          </button>
         </div>
       </section>
     </div>

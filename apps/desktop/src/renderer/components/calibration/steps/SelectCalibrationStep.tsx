@@ -240,7 +240,7 @@ export function SelectCalibrationStep() {
 
       {/* Calibration type grid */}
       {!isSensorsLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div data-tour="calibration-type-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {availableTypes.map((calType) => {
             const isAvailable = isCalibrationTypeAvailable(calType, sensors);
             const theme = CalibrationThemes[calType.id];

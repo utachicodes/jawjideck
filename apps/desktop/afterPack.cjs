@@ -25,6 +25,10 @@ async function removeDotBinDirs(dir) {
   }
 }
 
+async function removeFileOrDir(p) {
+  try { await fs.promises.rm(p, { recursive: true, force: true }); } catch {}
+}
+
 module.exports = async function afterPack({ electronPlatformName, appOutDir }) {
   // macOS: remove .bin symlink directories from unpacked asar to prevent
   // ENOENT errors during code signing (broken symlinks in @serialport etc.)
@@ -37,6 +41,28 @@ module.exports = async function afterPack({ electronPlatformName, appOutDir }) {
       'app.asar.unpacked'
     );
     await removeDotBinDirs(unpackedDir);
+  }
+
+  // Windows: trim non-English locales and cross-platform SITL/firmware binaries
+  if (electronPlatformName === 'win32') {
+    // Keep only English locale
+    const localesDir = path.join(appOutDir, 'locales');
+    try {
+      const files = await fs.promises.readdir(localesDir);
+      for (const f of files) {
+        if (f !== 'en-US.pak') await removeFileOrDir(path.join(localesDir, f));
+      }
+    } catch {}
+
+    // Remove Linux/macOS SITL binaries
+    const sitlDir = path.join(appOutDir, 'resources', 'app.asar.unpacked', 'resources', 'sitl');
+    await removeFileOrDir(path.join(sitlDir, 'linux'));
+    await removeFileOrDir(path.join(sitlDir, 'macos'));
+
+    // Remove Linux/macOS firmware binaries
+    const fwDir = path.join(appOutDir, 'resources', 'app.asar.unpacked', 'resources', 'firmware');
+    await removeFileOrDir(path.join(fwDir, 'linux'));
+    await removeFileOrDir(path.join(fwDir, 'macos'));
   }
 
   // Linux: wrap executable with --no-sandbox

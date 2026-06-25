@@ -890,17 +890,8 @@ export const useFirmwareStore = create<FirmwareStore>((set, get) => ({
       return;
     }
 
-    const port = detectedBoard?.port;
-    if (!port) {
-      set({
-        postFlashState: 'error',
-        postFlashError: 'No port found for reconnection',
-      });
-      return;
-    }
-
     // Helper to attempt connection with MSP detection
-    const tryConnect = async (): Promise<boolean> => {
+    const tryConnect = async (port: string): Promise<boolean> => {
       try {
         const result = await window.electronAPI?.connect?.({
           type: 'serial',
@@ -933,6 +924,25 @@ export const useFirmwareStore = create<FirmwareStore>((set, get) => ({
       });
       await new Promise(resolve => setTimeout(resolve, 6000));
 
+      // Re-scan for the board's serial port rather than trusting the pre-flash
+      // snapshot: a board flashed while in DFU/bootloader mode has no
+      // `detectedBoard.port` at all (DFU has no serial port), and even a board
+      // that did have one may re-enumerate on a different port after rebooting
+      // into the freshly-flashed firmware.
+      const usbResult = await window.electronAPI?.detectBoard?.();
+      const rescannedPort = usbResult?.success
+        ? usbResult.boards?.find((b) => b.port)?.port
+        : undefined;
+      const port = rescannedPort || detectedBoard?.port;
+
+      if (!port) {
+        set({
+          postFlashState: 'error',
+          postFlashError: 'No port found for reconnection',
+        });
+        return;
+      }
+
       // Step 2: Try to connect with retries
       // USB-serial chips often need multiple attempts after a flash
       const MAX_RETRIES = 3;
@@ -945,7 +955,7 @@ export const useFirmwareStore = create<FirmwareStore>((set, get) => ({
           postFlashMessage: `Connecting to board (attempt ${attempt}/${MAX_RETRIES})...`,
         });
 
-        connected = await tryConnect();
+        connected = await tryConnect(port);
         if (connected) {
           console.log(`[PostFlash] Connected on attempt ${attempt}`);
           break;
