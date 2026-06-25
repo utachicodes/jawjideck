@@ -11,7 +11,138 @@ import { hasDualVtolControllers } from '../components/mavlink-config/mavlink-pid
 // yet), so a tour degrades gracefully instead of pointing at nothing.
 const present = (selector: string) => () => !!document.querySelector(selector);
 
+// Order here drives two things: (1) which tour is offered first on a view that
+// has more than one, and (2) the order ActiveTour's "Next feature" button walks
+// an onboarding user through when they keep accepting - so it's deliberately
+// laid out to follow the app's main nav top-to-bottom (telemetry -> mission ->
+// library -> parameters -> inspector -> firmware -> osd -> sitl -> calibration)
+// rather than by when each tour was added.
 export const FEATURE_TOURS: FeatureTour[] = [
+  {
+    id: 'quick-launch-033',
+    view: 'telemetry',
+    version: '0.33',
+    title: 'New: Quick Launch & the Area Editor',
+    blurb:
+      'Pop tools into their own windows from the header, and jump straight into the new Area Editor for drawing survey areas and corridors.',
+    steps: [
+      {
+        selector: '[data-tour="welcome-cards"]',
+        // Only shown on the disconnected welcome screen; skipped once connected.
+        predicate: present('[data-tour="welcome-cards"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Jump straight into a tool</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              No vehicle connected? These cards open the tools that work offline -
+              {' '}<strong>Mission Planning</strong>, the new <strong>Area Editor</strong>,
+              {' '}<strong>SITL</strong>, <strong>Flight Log Analysis</strong>,
+              {' '}<strong>Firmware Flash</strong> and your <strong>Mission Library</strong>.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="quick-launch"]',
+        predicate: present('[data-tour="quick-launch"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Quick Launch - tools in their own window</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Open the <strong>MAVLink Inspector</strong> or <strong>Telemetry Dashboard</strong> in a
+              separate window - ideal for a <strong>second monitor</strong> while you keep planning or
+              tuning in the main window. Each stays live alongside the rest of the app.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="quick-launch"]',
+        predicate: present('[data-tour="quick-launch"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Meet the Area Editor</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              The new <strong>Area Editor</strong> opens from here: a full-window map for drawing
+              survey <strong>areas and corridors</strong> - multi-polygon, holes, KML import, a live
+              {' '}<strong>flight briefing</strong> (toggle hectares/acres), and a
+              {' '}<strong>go-to</strong> search to fly to any site. <strong>Send to mission</strong>
+              {' '}drops it straight into the planner.
+            </p>
+          </div>
+        ),
+      },
+    ],
+  },
+  {
+    id: 'telemetry-live-view-033',
+    view: 'telemetry',
+    version: '0.0.33',
+    title: 'Reading the live flight view',
+    blurb: 'The map, the flight controls, and how to switch layouts once a vehicle is connected.',
+    requires: {
+      connection: true,
+      panels: ['map', 'flightControl'],
+      preset: 'pilotView',
+      presetLabel: 'Pilot View',
+    },
+    steps: [
+      {
+        selector: '[data-tour="telemetry-map"]',
+        predicate: present('[data-tour="telemetry-map"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Live position and flight path</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Your vehicle's position, heading and trail update live. A loaded mission and its
+              waypoints draw here too, so you can watch progress against the plan.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="telemetry-map-overlays"]',
+        predicate: present('[data-tour="telemetry-map-overlays"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Map layers and camera</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Switch base layers (satellite, terrain) and toggle <strong>terrain shading</strong> here.
+              {' '}<strong>Follow vehicle</strong> keeps the camera centered on it - turn it off for a
+              free, pan-and-zoom camera.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="telemetry-flight-control"]',
+        predicate: present('[data-tour="telemetry-flight-control"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Mode, arm, and flight actions</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Current flight mode, the <strong>ARM/DISARM</strong> control, and one-click actions like
+              {' '}<strong>Takeoff</strong> and <strong>RTL/Land</strong> - tailored to what your
+              vehicle type supports.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="telemetry-layout-select"]',
+        predicate: present('[data-tour="telemetry-layout-select"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Swap the whole layout</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Jump between preset layouts (Pilot View, Mission Telemetry, SITL) or load one you saved
+              yourself - every panel rearranges to match.
+            </p>
+          </div>
+        ),
+      },
+    ],
+  },
   {
     id: 'mission-planning-alpha32',
     view: 'mission',
@@ -110,39 +241,6 @@ export const FEATURE_TOURS: FeatureTour[] = [
     ],
   },
   {
-    id: 'vtol-dual-controller-tuning-alpha32',
-    view: 'parameters',
-    version: '0.0.32',
-    title: 'Tune VTOL and fixed-wing separately',
-    blurb: 'QuadPlanes carry two controller sets. The PID tab now lets you switch which one you tune.',
-    // Only offer this on a QuadPlane that exposes both control-law sets; on any
-    // other vehicle the switch does not exist, so the tour stays hidden.
-    predicate: () => hasDualVtolControllers(useParameterStore.getState().parameters),
-    steps: [
-      {
-        selector: '[data-tour="tuning-vtol-toggle"]',
-        predicate: present('[data-tour="tuning-vtol-toggle"]'),
-        content: (
-          <div className="space-y-2">
-            <div className="text-sm font-semibold">Two controllers, one autopilot</div>
-            <p className="text-xs leading-relaxed opacity-90">
-              A QuadPlane runs separate controllers for hover and forward flight. This switch flips
-              the PID tab between the <strong>VTOL</strong> rate controller
-              {' '}(<code className="font-mono text-[11px]">Q_A_RAT_</code>) and the
-              {' '}<strong>fixed-wing</strong> controller
-              {' '}(<code className="font-mono text-[11px]">RLL_RATE_</code> /
-              {' '}<code className="font-mono text-[11px]">RLL2SRV_</code>).
-            </p>
-            <p className="text-xs leading-relaxed opacity-90">
-              The sliders, presets and profiles all follow your choice, so you can tune each set
-              without leaving the page.
-            </p>
-          </div>
-        ),
-      },
-    ],
-  },
-  {
     id: 'flight-info-alpha32-5',
     view: 'mission',
     version: '0.0.32.5',
@@ -176,55 +274,302 @@ export const FEATURE_TOURS: FeatureTour[] = [
     ],
   },
   {
-    id: 'quick-launch-033',
-    view: 'telemetry',
-    version: '0.33',
-    title: 'New: Quick Launch & the Area Editor',
-    blurb:
-      'Pop tools into their own windows from the header, and jump straight into the new Area Editor for drawing survey areas and corridors.',
+    id: 'mission-library-intro-033',
+    view: 'library',
+    version: '0.0.33',
+    title: 'Your saved missions',
+    blurb: 'Every mission and survey you save lives here - searchable, taggable, and ready to reload.',
     steps: [
       {
-        selector: '[data-tour="welcome-cards"]',
-        // Only shown on the disconnected welcome screen; skipped once connected.
-        predicate: present('[data-tour="welcome-cards"]'),
+        selector: '[data-tour="library-import"]',
+        predicate: present('[data-tour="library-import"]'),
         content: (
           <div className="space-y-2">
-            <div className="text-sm font-semibold">Jump straight into a tool</div>
+            <div className="text-sm font-semibold">Import from file</div>
             <p className="text-xs leading-relaxed opacity-90">
-              No vehicle connected? These cards open the tools that work offline -
-              {' '}<strong>Mission Planning</strong>, the new <strong>Area Editor</strong>,
-              {' '}<strong>SITL</strong>, <strong>Flight Log Analysis</strong>,
-              {' '}<strong>Firmware Flash</strong> and your <strong>Mission Library</strong>.
+              Bring in a <strong>.waypoints</strong> or <strong>.plan</strong> file from Mission
+              Planner or QGroundControl - it's added to your library, ready to fly or edit.
             </p>
           </div>
         ),
       },
       {
-        selector: '[data-tour="quick-launch"]',
-        predicate: present('[data-tour="quick-launch"]'),
+        selector: '[data-tour="library-search"]',
+        predicate: present('[data-tour="library-search"]'),
         content: (
           <div className="space-y-2">
-            <div className="text-sm font-semibold">Quick Launch - tools in their own window</div>
+            <div className="text-sm font-semibold">Find it fast</div>
             <p className="text-xs leading-relaxed opacity-90">
-              Open the <strong>MAVLink Inspector</strong> or <strong>Telemetry Dashboard</strong> in a
-              separate window - ideal for a <strong>second monitor</strong> while you keep planning or
-              tuning in the main window. Each stays live alongside the rest of the app.
+              Search by name, then filter by <strong>vehicle</strong> or <strong>tag</strong> and
+              sort - useful once you've got more than a handful of saved plans.
+            </p>
+          </div>
+        ),
+      },
+    ],
+  },
+  {
+    id: 'vtol-dual-controller-tuning-alpha32',
+    view: 'parameters',
+    version: '0.0.32',
+    title: 'Tune VTOL and fixed-wing separately',
+    blurb: 'QuadPlanes carry two controller sets. The PID tab now lets you switch which one you tune.',
+    // Only offer this on a QuadPlane that exposes both control-law sets; on any
+    // other vehicle the switch does not exist, so the tour stays hidden.
+    predicate: () => hasDualVtolControllers(useParameterStore.getState().parameters),
+    steps: [
+      {
+        selector: '[data-tour="tuning-vtol-toggle"]',
+        predicate: present('[data-tour="tuning-vtol-toggle"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Two controllers, one autopilot</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              A QuadPlane runs separate controllers for hover and forward flight. This switch flips
+              the PID tab between the <strong>VTOL</strong> rate controller
+              {' '}(<code className="font-mono text-[11px]">Q_A_RAT_</code>) and the
+              {' '}<strong>fixed-wing</strong> controller
+              {' '}(<code className="font-mono text-[11px]">RLL_RATE_</code> /
+              {' '}<code className="font-mono text-[11px]">RLL2SRV_</code>).
+            </p>
+            <p className="text-xs leading-relaxed opacity-90">
+              The sliders, presets and profiles all follow your choice, so you can tune each set
+              without leaving the page.
+            </p>
+          </div>
+        ),
+      },
+    ],
+  },
+  {
+    id: 'files-ftp-browser',
+    view: 'parameters',
+    version: '0.0.33',
+    title: 'Browse files over MAVLink-FTP',
+    blurb: 'Download logs, dataflash, and scripts straight off the flight controller - no SD card removal needed.',
+    requires: { connection: true },
+    steps: [
+      {
+        selector: '[data-tour="ftp-path-bar"]',
+        // No predicate: the Files tab is activated when this tour starts (see
+        // MavlinkConfigView), and mutationObservables lets the highlight snap to
+        // it once the tab mounts.
+        mutationObservables: ['[data-tour="ftp-path-bar"]'],
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">The FC's filesystem, in the app</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Click the breadcrumb to move between directories, <strong>Upload</strong> a file (e.g.
+              a Lua script) straight to the FC, and use each row's icons to <strong>rename</strong>,
+              {' '}<strong>delete</strong>, or <strong>download</strong> a file - all over
+              MAVLink-FTP, no SD card swap required.
+            </p>
+          </div>
+        ),
+      },
+    ],
+  },
+  {
+    id: 'inspector-tour-033',
+    view: 'inspector',
+    version: '0.0.33',
+    title: 'Get to know the MAVLink Inspector',
+    blurb: 'Every message on the link, live rates, and click-to-graph any numeric field.',
+    steps: [
+      {
+        selector: '[data-tour="inspector-stats"]',
+        predicate: present('[data-tour="inspector-stats"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Every MAVLink message, live</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Total message types, combined rate in <strong>Hz</strong> and <strong>bandwidth</strong>
+              {' '}update in real time as packets arrive. <strong>Pause</strong> freezes the view to
+              inspect a moment; <strong>Clear</strong> wipes captured history.
             </p>
           </div>
         ),
       },
       {
-        selector: '[data-tour="quick-launch"]',
-        predicate: present('[data-tour="quick-launch"]'),
+        selector: '[data-tour="inspector-filters"]',
+        predicate: present('[data-tour="inspector-filters"]'),
         content: (
           <div className="space-y-2">
-            <div className="text-sm font-semibold">Meet the Area Editor</div>
+            <div className="text-sm font-semibold">Narrow the firehose</div>
             <p className="text-xs leading-relaxed opacity-90">
-              The new <strong>Area Editor</strong> opens from here: a full-window map for drawing
-              survey <strong>areas and corridors</strong> - multi-polygon, holes, KML import, a live
-              {' '}<strong>flight briefing</strong> (toggle hectares/acres), and a
-              {' '}<strong>go-to</strong> search to fly to any site. <strong>Send to mission</strong>
-              {' '}drops it straight into the planner.
+              Search by message name, or filter to one <strong>sysid</strong>/<strong>compid</strong>
+              {' '}- handy on a link carrying multiple vehicles or components.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="inspector-tree"]',
+        predicate: present('[data-tour="inspector-tree"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Expand a message, graph a field</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Click a message to expand its fields. Any numeric field gets a small graph icon - click
+              it to start plotting that value live.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="inspector-graph-workspace"]',
+        predicate: present('[data-tour="inspector-graph-workspace"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Your graphs live here</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Each graphed field becomes a tab. Drag tabs together for a multi-graph view, or pop a
+              group out into its own window for a second monitor.
+            </p>
+          </div>
+        ),
+      },
+    ],
+  },
+  {
+    id: 'firmware-flash-intro-033',
+    view: 'firmware',
+    version: '0.0.33',
+    title: 'Flashing firmware',
+    blurb: 'Detect a board over USB (including DFU/bootloader mode), pick a source, and flash.',
+    steps: [
+      {
+        selector: '[data-tour="firmware-detect"]',
+        predicate: present('[data-tour="firmware-detect"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Plug in and detect</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Connect the board over USB - normal mode, MSP/MAVLink bootloader, or raw DFU are all
+              detected automatically. The board's name, MCU, and current firmware show here once found.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="firmware-source"]',
+        predicate: present('[data-tour="firmware-source"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Pick a firmware source</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              ArduPilot, PX4, Betaflight, iNav, or load your own <strong>.bin/.hex/.apj</strong> with
+              {' '}<strong>Custom</strong>. Cross-flashing between sources (e.g. Betaflight to iNav)
+              is supported.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="firmware-flash-button"]',
+        predicate: present('[data-tour="firmware-flash-button"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Flash</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Once a board, version, and (if needed) target are selected, this downloads the firmware
+              and writes it - progress and any errors show right here.
+            </p>
+          </div>
+        ),
+      },
+    ],
+  },
+  {
+    id: 'osd-simulator-intro-033',
+    view: 'osd',
+    version: '0.0.33',
+    title: 'Designing your OSD layout',
+    blurb: 'Preview your on-screen display and drag elements into place before you ever plug in goggles.',
+    steps: [
+      {
+        selector: '[data-tour="osd-mode-select"]',
+        predicate: present('[data-tour="osd-mode-select"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Demo, Live, or Edit</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              <strong>Demo</strong> shows sample values, <strong>Live</strong> uses real telemetry
+              from a connected vehicle, and <strong>Edit Layout</strong> lets you drag elements
+              around the canvas.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="osd-element-browser"]',
+        predicate: present('[data-tour="osd-element-browser"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Every element you can place</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Battery voltage, GPS, flight mode, and more - pick one, then switch to
+              {' '}<strong>Edit Layout</strong> mode and drag it anywhere on the canvas.
+            </p>
+          </div>
+        ),
+      },
+    ],
+  },
+  {
+    id: 'sitl-simulator-intro-033',
+    view: 'sitl',
+    version: '0.0.33',
+    title: 'Flying without hardware',
+    blurb: 'Launch a virtual ArduPilot or iNav flight controller and connect to it just like a real board.',
+    steps: [
+      {
+        selector: '[data-tour="sitl-vehicle-type"]',
+        predicate: present('[data-tour="sitl-vehicle-type"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Pick a vehicle type</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              SITL simulates the airframe's physics too, so choose copter, plane, rover, or sub
+              before launching - it changes how the simulated vehicle flies.
+            </p>
+          </div>
+        ),
+      },
+      {
+        selector: '[data-tour="sitl-start-button"]',
+        predicate: present('[data-tour="sitl-start-button"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Download once, launch anytime</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              First run downloads the SITL binary for your vehicle. After that, <strong>Start</strong>
+              {' '}boots it instantly - connect over TCP at{' '}
+              <code className="font-mono text-[11px]">127.0.0.1:5760</code> from the sidebar.
+            </p>
+          </div>
+        ),
+      },
+    ],
+  },
+  {
+    id: 'calibration-intro-033',
+    view: 'calibration',
+    version: '0.0.33',
+    title: 'Calibrating sensors',
+    blurb: 'Walks you through accelerometer, compass, gyro, and optical flow calibration step by step.',
+    requires: { connection: true },
+    steps: [
+      {
+        selector: '[data-tour="calibration-type-grid"]',
+        predicate: present('[data-tour="calibration-type-grid"]'),
+        content: (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Pick what needs calibrating</div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Cards only appear for sensors your flight controller actually has. A warning badge
+              means arming is currently blocked on that calibration - pick it to walk through the
+              steps.
             </p>
           </div>
         ),

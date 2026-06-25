@@ -300,7 +300,7 @@ export default function ArduPilotSitlTab() {
       )}
 
       {/* Vehicle Type Selection */}
-      <div className="bg-surface-input border border-subtle rounded-lg p-4">
+      <div data-tour="sitl-vehicle-type" className="bg-surface-input border border-subtle rounded-lg p-4">
         <h3 className="text-sm font-medium text-content mb-3">Vehicle Type</h3>
         <div className="grid grid-cols-4 gap-2">
           {VEHICLE_TYPE_OPTIONS.map((opt) => (
@@ -495,7 +495,7 @@ export default function ArduPilotSitlTab() {
       </div>
 
       {/* Binary Status & Download */}
-      <div className="bg-surface-input border border-subtle rounded-lg p-4">
+      <div data-tour="sitl-start-button" className="bg-surface-input border border-subtle rounded-lg p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-2 h-2 rounded-full ${binaryInfo?.exists ? 'bg-green-400' : 'bg-amber-400'}`} />
