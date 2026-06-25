@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { useNavigationStore, type ViewId } from '../../stores/navigation-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useSettingsStore, type ThemePreference } from '../../stores/settings-store';
@@ -54,16 +55,6 @@ const navItems: NavItem[] = [
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
           d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-      </svg>
-    ),
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     ),
   },
@@ -167,6 +158,29 @@ const logsNavItem: NavItem = {
 // Future navigation items (disabled placeholders)
 const futureItems: (Omit<NavItem, 'id'> & { id: string })[] = [];
 
+// Logical grouping for the rail. Items in the same group render together;
+// a subtle separator is drawn wherever the group changes. This gives the
+// icon-only rail visual hierarchy without labels.
+//   1 = flight operations · 2 = tools & simulation · 3 = hardware & data
+const NAV_GROUPS: Record<string, number> = {
+  telemetry: 1,
+  mission: 1,
+  library: 1,
+  parameters: 1,
+  calibration: 1,
+  inspector: 2,
+  firmware: 2,
+  osd: 2,
+  sitl: 2,
+  'lua-graph': 2,
+  modules: 2,
+  cli: 2,
+  companion: 3,
+  logs: 3,
+};
+
+const groupOf = (id: string): number => NAV_GROUPS[id] ?? 99;
+
 interface NavigationRailProps {
   onViewChange?: (viewId: ViewId) => void;
 }
@@ -213,41 +227,46 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
 
   return (
     <nav className="w-14 h-full bg-surface-nav border-r border-subtle flex flex-col items-center py-3 gap-1">
-      {/* Active navigation items */}
-      {visibleNavItems.map((item) => (
-        <button
-          key={item.id}
-          onClick={() => !item.disabled && handleClick(item.id)}
-          disabled={item.disabled}
-          className={`
-            relative w-10 h-10 rounded-lg flex items-center justify-center
-            transition-all duration-200 group
-            ${item.disabled
-              ? 'text-content-disabled cursor-not-allowed'
-              : currentView === item.id
-                ? 'bg-blue-500/20 text-blue-400'
-                : 'text-content-tertiary hover:text-content-secondary hover:bg-surface-raised'
-            }
-          `}
-          title={item.label}
-        >
-          {/* Active indicator */}
-          {currentView === item.id && !item.disabled && (
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-400 rounded-r" />
-          )}
-          {item.icon}
+      {/* Active navigation items, clustered into groups with separators */}
+      {visibleNavItems.map((item, index) => {
+        const prev = visibleNavItems[index - 1];
+        const showSeparator = prev && groupOf(prev.id) !== groupOf(item.id);
 
-          {/* Tooltip */}
-          <div className={`absolute left-full ml-2 px-2 py-1 bg-surface-raised text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg ${item.disabled ? 'text-content-tertiary' : 'text-content'}`}>
-            {item.label}
-          </div>
-        </button>
-      ))}
+        return (
+          <Fragment key={item.id}>
+            {showSeparator && <div className="w-6 h-px bg-surface-raised my-1.5" />}
+            <button
+              onClick={() => !item.disabled && handleClick(item.id)}
+              disabled={item.disabled}
+              className={`
+                relative w-10 h-10 rounded-lg flex items-center justify-center
+                transition-all duration-200 group
+                ${item.disabled
+                  ? 'text-content-disabled cursor-not-allowed'
+                  : currentView === item.id
+                    ? 'bg-blue-500/20 text-blue-400'
+                    : 'text-content-tertiary hover:text-content-secondary hover:bg-surface-raised'
+                }
+              `}
+              title={item.label}
+            >
+              {/* Active indicator */}
+              {currentView === item.id && !item.disabled && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-400 rounded-r" />
+              )}
+              {item.icon}
 
-      {/* Separator */}
-      <div className="w-6 h-px bg-surface-raised my-2" />
+              {/* Tooltip */}
+              <div className={`absolute left-full ml-2 px-2 py-1 bg-surface-raised text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg ${item.disabled ? 'text-content-tertiary' : 'text-content'}`}>
+                {item.label}
+              </div>
+            </button>
+          </Fragment>
+        );
+      })}
 
       {/* Future items (disabled) */}
+      {futureItems.length > 0 && <div className="w-6 h-px bg-surface-raised my-2" />}
       {futureItems.map((item) => (
         <button
           key={item.id}
@@ -266,6 +285,31 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
 
       {/* Spacer */}
       <div className="flex-1" />
+
+      {/* Settings — lives with the bottom utility controls */}
+      <button
+        onClick={() => handleClick('settings')}
+        className={`
+          relative w-10 h-10 rounded-lg flex items-center justify-center
+          transition-all duration-200 group mb-1
+          ${currentView === 'settings'
+            ? 'bg-blue-500/20 text-blue-400'
+            : 'text-content-tertiary hover:text-content-secondary hover:bg-surface-raised'
+          }
+        `}
+        title="Settings"
+      >
+        {currentView === 'settings' && (
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-400 rounded-r" />
+        )}
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <div className="absolute left-full ml-2 px-2 py-1 bg-surface-raised text-content text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
+          Settings
+        </div>
+      </button>
 
       {/* Theme toggle */}
       <ThemeToggle />

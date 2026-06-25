@@ -41,8 +41,9 @@ export function AppShell({ children }: AppShellProps) {
     <div className="h-screen flex flex-col bg-surface-base">
       {/* Header */}
       <header className="h-14 border-b border-subtle bg-surface-nav backdrop-blur-sm flex items-center shrink-0 relative z-50">
-        {/* Logo sits in a nav-rail-width slot so it lines up with the sidebar icons */}
-        <img src={iconImage} alt="Jawji" className="w-9 h-9 ml-2.5 rounded-lg object-cover shrink-0" />
+        {/* Logo is a wide wordmark (transparent bg) — size by height and let width
+            follow its natural aspect ratio so it isn't cropped into a square. */}
+        <img src={iconImage} alt="Jawji" className="h-7 w-auto ml-3 object-contain shrink-0" />
 
         <div className="ml-auto flex items-center gap-4 pr-6">
           {/* Version badge */}
