@@ -67,7 +67,10 @@ module.exports = async function afterPack({ electronPlatformName, appOutDir }) {
 
   // Linux: wrap executable with --no-sandbox
   if (electronPlatformName === 'linux') {
-    const execName = '@Jawjidesktop';
+    // Must match electron-builder's default Linux executable name: the
+    // package.json `name` field, sanitized and lowercased (see
+    // app-builder-lib's LinuxPackager.executableName) — not `productName`.
+    const execName = '@jawjidesktop';
     const execPath = path.join(appOutDir, execName);
     const binPath = path.join(appOutDir, `${execName}.bin`);
 
