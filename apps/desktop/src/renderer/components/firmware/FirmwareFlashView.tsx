@@ -55,19 +55,44 @@ function isPopularBoard(name: string): boolean {
 function SuggestedBoards({
   mcuType,
   onSelectBoard,
+  onSearch,
   disabled,
 }: {
   mcuType: string;
   onSelectBoard: (board: BoardInfo) => void;
+  onSearch?: (query: string) => void;
   disabled?: boolean;
 }) {
-  const suggested = useMemo(() => getSuggestedBoards(mcuType), [mcuType]);
+  // If MCU is generic (no family info), just show a prompt to pick manually
+  const mcuFamily = mcuType.replace('STM32', '').split('/')[0] || '';
+  const isGeneric = !mcuFamily || mcuType === 'STM32' || mcuType === 'Unknown';
+
+  const suggested = useMemo(
+    () => (isGeneric ? [] : getSuggestedBoards(mcuType)),
+    [mcuType, isGeneric],
+  );
+
+  if (isGeneric) {
+    return (
+      <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
+        <div className="flex items-start gap-2 text-blue-300 text-sm">
+          <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>
+            Board is in DFU/bootloader mode — MCU family not yet identified.{' '}
+            <strong>Search for your board above</strong> to continue.
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   if (suggested.length === 0) {
     return (
       <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/30">
-        <div className="flex items-center gap-2 text-amber-400 text-sm">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="flex items-start gap-2 text-amber-400 text-sm">
+          <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -76,7 +101,16 @@ function SuggestedBoards({
             />
           </svg>
           <span>
-            Detected {mcuType} but no known boards in database. Please select manually.
+            Detected {mcuType} but no known boards in database.{' '}
+            {onSearch && (
+              <button
+                onClick={() => onSearch(mcuFamily)}
+                className="underline hover:text-amber-300 transition-colors"
+              >
+                Search "{mcuFamily}"
+              </button>
+            )}{' '}
+            or select manually above.
           </span>
         </div>
       </div>
@@ -420,6 +454,7 @@ export function FirmwareFlashView() {
     setSelectedSource,
     autoSetSource,
     setSelectedBoard,
+    setBoardSearchQuery,
     setSelectedVersionGroup,
     setSelectedVersion,
     setIncludeBeta,
@@ -706,7 +741,7 @@ export function FirmwareFlashView() {
           )}
 
           {/* Board Detection Card */}
-          <div className="bg-surface-input rounded-xl border border-subtle p-5">
+          <div data-tour="firmware-detect" className="bg-surface-input rounded-xl border border-subtle p-5">
             <div className="flex items-center gap-2 mb-4">
               <svg
                 className="w-5 h-5 text-content-secondary"
@@ -816,11 +851,16 @@ export function FirmwareFlashView() {
               )}
             </div>
 
-            {/* Suggested boards when MCU detected via bootloader */}
-            {detectedBoard?.detectionMethod === 'bootloader' && detectedBoard.detectedMcu && (
+            {/* Suggested boards when a board is in bootloader/DFU mode.
+                In these modes we can only read the chip (or nothing at all),
+                not the board model — so help the user narrow it down. */}
+            {(detectedBoard?.detectionMethod === 'bootloader' ||
+              detectedBoard?.detectionMethod === 'dfu' ||
+              detectedBoard?.inBootloader) && !selectedBoard && (
               <SuggestedBoards
-                mcuType={detectedBoard.detectedMcu}
+                mcuType={detectedBoard.detectedMcu || detectedBoard.mcuType || 'STM32'}
                 onSelectBoard={setSelectedBoard}
+                onSearch={setBoardSearchQuery}
                 disabled={isFlashing}
               />
             )}
@@ -842,7 +882,7 @@ export function FirmwareFlashView() {
           <div className="h-px bg-surface-raised" />
 
           {/* Firmware Source */}
-          <div>
+          <div data-tour="firmware-source">
             <label className="block text-sm font-medium text-content-secondary mb-3">
               Firmware Source
             </label>
@@ -1308,7 +1348,7 @@ export function FirmwareFlashView() {
               if (!showFlashButton) return null;
 
               return (
-                <div className="flex gap-3">
+                <div data-tour="firmware-flash-button" className="flex gap-3">
                   <button
                     onClick={startFlash}
                     disabled={!canFlash}

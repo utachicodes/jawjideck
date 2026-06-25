@@ -109,7 +109,7 @@ export function OsdView() {
         <h1 className="text-sm font-semibold text-content">OSD Simulator</h1>
         <div className="flex items-center gap-3">
           {/* Mode selector */}
-          <div className="flex items-center gap-1.5">
+          <div data-tour="osd-mode-select" className="flex items-center gap-1.5">
             <label className="text-[10px] text-content-secondary">Mode:</label>
             <select
               value={mode}
@@ -170,7 +170,7 @@ export function OsdView() {
       {/* 3-column body */}
       <div className="flex flex-1 overflow-hidden min-h-0">
         {/* LEFT: Element browser */}
-        <div className="w-48 border-r border flex flex-col overflow-hidden shrink-0">
+        <div data-tour="osd-element-browser" className="w-48 border-r border flex flex-col overflow-hidden shrink-0">
           <OsdElementBrowser
             selectedElement={selectedElement}
             onSelect={setSelectedElement}

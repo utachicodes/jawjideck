@@ -393,6 +393,9 @@ export function ConnectionPanel() {
         {/* SITL Quick Start - only show when not connected */}
         {!connectionState.isConnected && !connectionState.isWaitingForHeartbeat && (
           <div className="space-y-0">
+            <div className="text-[10px] font-medium uppercase tracking-wider text-content-tertiary mb-2">
+              Quick Start
+            </div>
             <button
               onClick={anySitlRunning ? handleSitlConnect : handleSitlQuickStart}
               disabled={anySitlStarting || isConnecting || ardupilotIsDownloading}
@@ -516,19 +519,25 @@ export function ConnectionPanel() {
           </div>
         )}
 
-        {/* Connection type tabs */}
-        <div className="tab-group">
-          {(['serial', 'tcp', 'udp'] as const).map((type) => (
-            <button
-              key={type}
-              onClick={() => setConnectionType(type)}
-              className={`tab ${connectionType === type ? 'tab-active' : ''}`}
-            >
-              {type.toUpperCase()}
-            </button>
-          ))}
-        </div>
+        {/* Manual connection */}
+        <div className={!connectionState.isConnected && !connectionState.isWaitingForHeartbeat ? 'pt-4 border-t border-subtle' : ''}>
+          <div className="text-[10px] font-medium uppercase tracking-wider text-content-tertiary mb-2">
+            Manual Connection
+          </div>
 
+          {/* Connection type tabs */}
+          <div className="tab-group">
+            {(['serial', 'tcp', 'udp'] as const).map((type) => (
+              <button
+                key={type}
+                onClick={() => setConnectionType(type)}
+                className={`tab ${connectionType === type ? 'tab-active' : ''}`}
+              >
+                {type.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Serial settings */}
         {connectionType === 'serial' && (

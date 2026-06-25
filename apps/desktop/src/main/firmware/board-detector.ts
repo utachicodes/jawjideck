@@ -7,15 +7,20 @@
  * Any board with a serial port is detectable — KNOWN_BOARDS provides enrichment
  * (nicer names, flasher hints), but unmatched ports are still included as candidates
  * for auto-detection via MAVLink/MSP.
+ *
+ * Also scans for USB DFU devices (e.g. boards in DFU/bootloader mode) using the
+ * @jawji/stm32-dfu library. DFU devices don't appear as serial ports — they use
+ * libusb directly with USB interface class 0xFE/0x01/0x02.
  */
 
 import { listSerialPorts } from '@jawji/comms';
+import { DfuDevice } from '@jawji/stm32-dfu';
 import { KNOWN_BOARDS, type DetectedBoard } from '../../shared/firmware-types.js';
 import { detectSTM32Chip } from './stm32-bootloader.js';
 
 /**
  * Detect connected flight controller boards by enumerating serial ports
- * and matching VID/PID against KNOWN_BOARDS.
+ * and matching VID/PID against KNOWN_BOARDS, plus scanning for USB DFU devices.
  *
  * Flow:
  * 1. List all serial ports (with VID/PID metadata from serialport library)
@@ -24,10 +29,16 @@ import { detectSTM32Chip } from './stm32-bootloader.js';
  * 4. If no match but VID is 1209 (ArduPilot pid.codes) → create ArduPilot ChibiOS entry
  * 5. If no match at all → include as unidentified board for auto-detection
  * 6. Ports without VID/PID (e.g. Bluetooth, built-in) are skipped
+ * 7. Scan for USB DFU devices (boards in bootloader/DFU mode) — these don't
+ *    appear as serial ports, they use the USB DFU class (0xFE/0x01/0x02)
  */
 export async function detectBoards(): Promise<DetectedBoard[]> {
   const ports = await listSerialPorts();
   const detectedBoards: DetectedBoard[] = [];
+
+  // Track serial-port VID:PID to avoid duplicating DFU entries for boards
+  // that expose both a serial port AND a DFU interface (composite USB).
+  const serialVidPids = new Set<string>();
 
   // Deduplicate by VID:PID — composite USB devices may enumerate multiple serial
   // interfaces (e.g. MAVLink + SLCAN) sharing the same VID:PID.
@@ -42,6 +53,9 @@ export async function detectBoards(): Promise<DetectedBoard[]> {
     const vid = port.vendorId.toLowerCase();
     const pid = port.productId.toLowerCase();
     const key = `${vid}:${pid}`;
+
+    // Track for DFU dedup
+    serialVidPids.add(key);
 
     // Deduplicate composite USB devices
     if (seenVidPid.has(key)) continue;
@@ -118,6 +132,45 @@ export async function detectBoards(): Promise<DetectedBoard[]> {
 
       detectedBoards.push(board);
     }
+  }
+
+  // Scan for USB DFU devices (boards in bootloader/DFU mode).
+  // DFU devices don't appear as serial ports — they use the USB DFU interface class
+  // (0xFE/0x01/0x02) and are accessed via libusb. When a board is in DFU mode,
+  // it re-enumerates as a DFU device (e.g. STM32 VID 0x0483, PID 0xDF11).
+  try {
+    const dfuDevices = DfuDevice.findAll();
+    const seenDfuVidPid = new Set<string>();
+
+    for (const dfu of dfuDevices) {
+      const vidHex = dfu.info.vendorId.toString(16).padStart(4, '0');
+      const pidHex = dfu.info.productId.toString(16).padStart(4, '0');
+      const dfuKey = `${vidHex}:${pidHex}`;
+
+      // Skip if we already found this VID:PID as a serial port
+      if (serialVidPids.has(dfuKey)) continue;
+
+      // Deduplicate by VID:PID (multiple DFU interfaces on same device)
+      if (seenDfuVidPid.has(dfuKey)) continue;
+      seenDfuVidPid.add(dfuKey);
+
+      const knownBoard = KNOWN_BOARDS[dfuKey];
+
+      const board: DetectedBoard = {
+        name: knownBoard?.name || `DFU Device (${dfuKey})`,
+        boardId: knownBoard?.boardId || 'stm32-dfu',
+        mcuType: knownBoard?.mcuType || 'STM32',
+        flasher: 'dfu',
+        usbVid: dfu.info.vendorId,
+        usbPid: dfu.info.productId,
+        inBootloader: true,
+        detectionMethod: 'dfu',
+      };
+
+      detectedBoards.push(board);
+    }
+  } catch {
+    // DFU scanning failed — not critical, continue with serial-only results
   }
 
   return detectedBoards;

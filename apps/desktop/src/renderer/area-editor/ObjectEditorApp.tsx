@@ -195,7 +195,7 @@ export function ObjectEditorApp(): JSX.Element {
       {/* Top bar */}
       <div className="flex-shrink-0 h-12 flex items-center gap-3 px-3 border-b border-subtle bg-surface">
         <div className="flex items-center gap-2 shrink-0">
-          <img src={logoImage} alt="Jawji" className="h-7 w-7 rounded-md object-cover" />
+          <img src={logoImage} alt="Jawji" className="h-6 w-auto object-contain" />
         </div>
 
         {/* Context options for the active tool */}
