@@ -9,6 +9,14 @@ on:
         description: 'Release tag to upload artifacts to (e.g. v0.0.2-alpha). Leave empty for build-only.'
         required: false
         type: string
+      platforms:
+        description: 'Platforms to build'
+        required: false
+        type: choice
+        default: 'all'
+        options:
+          - all
+          - windows
 
 permissions:
   contents: write
@@ -19,6 +27,7 @@ env:
 jobs:
   build-linux:
     runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || inputs.platforms == 'all'
     steps:
       - uses: actions/checkout@v4
 
@@ -97,6 +106,7 @@ jobs:
 
   build-mac-arm64:
     runs-on: macos-latest
+    if: github.event_name != 'workflow_dispatch' || inputs.platforms == 'all'
     steps:
       - uses: actions/checkout@v4
 
@@ -179,6 +189,7 @@ jobs:
 
   build-mac-x64:
     runs-on: macos-15-intel
+    if: github.event_name != 'workflow_dispatch' || inputs.platforms == 'all'
     steps:
       - uses: actions/checkout@v4
 
