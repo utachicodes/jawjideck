@@ -105,6 +105,10 @@ export async function initAutoUpdater(win: BrowserWindow): Promise<void> {
   });
 
   autoUpdater.on('error', (err) => {
+    if (err.message?.includes('No published versions')) {
+      sendStatus({ status: 'not-available' });
+      return;
+    }
     sendStatus({
       status: 'error',
       error: err.message,
@@ -125,8 +129,10 @@ export function checkForUpdates(): void {
     sendStatus({ status: 'not-available' });
     return;
   }
-  autoUpdater.checkForUpdates().catch(() => {
-    // Error already handled by 'error' event
+  autoUpdater.checkForUpdates().catch((err) => {
+    if (err?.message?.includes('No published versions')) {
+      sendStatus({ status: 'not-available' });
+    }
   });
 }
 
