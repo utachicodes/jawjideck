@@ -343,7 +343,13 @@ jobs:
   release:
     needs: [build-linux, build-mac-arm64, build-mac-x64, build-windows]
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' || inputs.release_tag != ''
+    # Upload whatever platforms succeeded rather than requiring all four — a
+    # platform-specific failure (e.g. macOS signing secrets not configured)
+    # shouldn't block shipping the platforms that did build.
+    if: |
+      always() &&
+      (github.event_name == 'release' || inputs.release_tag != '') &&
+      (needs.build-linux.result == 'success' || needs.build-mac-arm64.result == 'success' || needs.build-mac-x64.result == 'success' || needs.build-windows.result == 'success')
     permissions:
       contents: write
     steps:
@@ -367,13 +373,24 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # nullglob: patterns for platforms that didn't build (e.g. macOS
+          # without signing secrets) expand to nothing instead of being
+          # passed to `gh` as a literal, nonexistent filename.
+          shopt -s nullglob
+          files=(
+            artifacts/**/*.AppImage
+            artifacts/**/*.deb
+            artifacts/**/*.dmg
+            artifacts/**/*.zip
+            artifacts/**/*.exe
+            artifacts/**/latest*.yml
+            artifacts/**/*.blockmap
+          )
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No artifacts found to upload" >&2
+            exit 1
+          fi
           gh release upload "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --clobber \
-            artifacts/**/*.AppImage \
-            artifacts/**/*.deb \
-            artifacts/**/*.dmg \
-            artifacts/**/*.zip \
-            artifacts/**/*.exe \
-            artifacts/**/latest*.yml \
-            artifacts/**/*.blockmap
+            "${files[@]}"
