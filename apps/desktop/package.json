@@ -135,6 +135,12 @@
         "portable"
       ]
     },
+    "nsis": {
+      "artifactName": "${productName}-${version}-${os}-${arch}-setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-${os}-${arch}-portable.${ext}"
+    },
     "mac": {
       "icon": "resources/icon.icns",
       "category": "public.app-category.developer-tools",

@@ -17,6 +17,7 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 
 ### Fixed
 - Broken wiki links: missing `MAVLink Signing` page (now written), and stale repo URLs in the wiki sidebar footer.
+- Windows portable build: `artifactName` had no token distinguishing the NSIS installer from the portable target, so both built to the same filename and the portable .exe silently never made it into releases (confirmed missing from the v0.0.34 release too).
 
 ## [0.0.34] - 2026-06-25
 
