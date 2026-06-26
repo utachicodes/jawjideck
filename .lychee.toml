@@ -1,0 +1,18 @@
+# Config for the Links workflow (.github/workflows/links.yml)
+# https://github.com/lycheeverse/lychee
+
+timeout = 20
+retry_wait_time = 5
+max_retries = 3
+
+exclude_all_private = true
+
+exclude = [
+  # Templated placeholder in contributor setup instructions, not a real URL
+  "github\\.com/<your-username>",
+  # Discord invite links routinely block automated HEAD/GET requests
+  "^https://discord\\.gg/",
+]
+
+# Some hosts (shields.io, GitHub raw) rate-limit or briefly throttle bots
+accept = [100, 200, 201, 202, 203, 204, 206, 301, 302, 303, 307, 308, 429]

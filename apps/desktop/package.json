@@ -1,6 +1,6 @@
 {
   "name": "@jawji/desktop",
-  "version": "0.0.33-alpha",
+  "version": "0.0.35",
   "description": "Jawji - Desktop Application",
   "author": {
     "name": "utachicodes",
@@ -134,6 +134,12 @@
         "nsis",
         "portable"
       ]
+    },
+    "nsis": {
+      "artifactName": "${productName}-${version}-${os}-${arch}-setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-${os}-${arch}-portable.${ext}"
     },
     "mac": {
       "icon": "resources/icon.icns",

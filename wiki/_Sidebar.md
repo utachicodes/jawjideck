@@ -32,5 +32,5 @@
 
 ---
 
-- [Releases](https://github.com/rubenCodeforges/Jawji/releases)
-- [Report a Bug](https://github.com/rubenCodeforges/Jawji/issues)
+- [Releases](https://github.com/utachicodes/jawjideck/releases)
+- [Report a Bug](https://github.com/utachicodes/jawjideck/issues)

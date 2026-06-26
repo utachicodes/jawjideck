@@ -392,6 +392,124 @@ function RcStatusIndicator({ isActive }: { isActive: boolean }) {
   );
 }
 
+// 10Hz matches the MSP RC override cadence (flight-control-store.ts) —
+// fast enough for stick feel, slow enough not to flood a slow radio link.
+const MANUAL_OVERRIDE_INTERVAL_MS = 100;
+
+/**
+ * Manual Stick Control (MAVLink) - drives RC1-4 (Roll/Pitch/Throttle/Yaw)
+ * via RC_CHANNELS_OVERRIDE, the same mechanism StickTestPanel uses to bench
+ * mixer outputs. Opt-in only and starts centered/throttle-low: unlike the
+ * MSP path (which auto-starts on connect because the GCS *is* the RC link
+ * for those firmwares), ArduPilot vehicles normally fly on a real RC link,
+ * so this must never start streaming on its own.
+ */
+function ManualStickControl() {
+  const [active, setActive] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [roll, setRoll] = useState(1500);
+  const [pitch, setPitch] = useState(1500);
+  const [throttle, setThrottle] = useState(1000);
+  const [yaw, setYaw] = useState(1500);
+
+  const stickRef = useRef({ roll, pitch, throttle, yaw });
+  stickRef.current = { roll, pitch, throttle, yaw };
+
+  // Stream the override while active.
+  useEffect(() => {
+    if (!active) return;
+    const tick = () => {
+      const s = stickRef.current;
+      void window.electronAPI?.rcOverrideSet?.(s.roll, s.pitch, s.throttle, s.yaw);
+    };
+    tick();
+    const id = setInterval(tick, MANUAL_OVERRIDE_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [active]);
+
+  // Release on unmount so we never leave the FC expecting an override that
+  // stopped arriving (e.g. user navigates away mid-flight).
+  useEffect(() => {
+    return () => { void window.electronAPI?.rcOverrideRelease?.(); };
+  }, []);
+
+  const handleToggle = async () => {
+    if (active) {
+      setBusy(true);
+      setActive(false);
+      setRoll(1500); setPitch(1500); setThrottle(1000); setYaw(1500);
+      try {
+        await window.electronAPI?.rcOverrideRelease?.();
+      } finally {
+        setBusy(false);
+      }
+    } else {
+      // Centered + throttle-low — matches idle stick position, no sudden
+      // jump when the override takes over from the physical RC link.
+      setRoll(1500); setPitch(1500); setThrottle(1000); setYaw(1500);
+      setActive(true);
+    }
+  };
+
+  const centerSticks = () => {
+    setRoll(1500);
+    setPitch(1500);
+    setYaw(1500);
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-default">
+      <button
+        onClick={handleToggle}
+        disabled={busy}
+        title="Overrides RC1-4 from the GCS — the physical transmitter is ignored on those channels while this is on."
+        className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg transition-all
+          ${active
+            ? 'bg-pink-500/10 border border-pink-500/30'
+            : 'bg-surface border border-subtle hover:border-default'}`}
+      >
+        <div className="flex items-center gap-2">
+          <svg className={`w-3.5 h-3.5 ${active ? 'text-pink-400' : 'text-content-secondary'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7 4v16M17 4v16M3 8l4-4 4 4M21 16l-4 4-4-4" />
+          </svg>
+          <span className={`text-[11px] font-medium ${active ? 'text-pink-300' : 'text-content'}`}>
+            {busy ? (active ? 'Releasing…' : 'Starting…') : active ? 'Manual Control: ON' : 'Manual Stick Control'}
+          </span>
+        </div>
+        <div className={`w-7 h-3.5 rounded-full transition-colors relative ${active ? 'bg-pink-500' : 'bg-surface-raised'}`}>
+          <div className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white shadow transition-transform ${active ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+        </div>
+      </button>
+
+      {active && (
+        <div className="mt-2 p-2 bg-surface-raised rounded-lg border border-subtle">
+          <div className="mb-2 text-[10px] text-pink-300/80 leading-tight">
+            Overriding RC1-4. The physical transmitter is ignored on these channels until you turn this off.
+          </div>
+          <div className="flex items-center justify-center gap-4">
+            <ThrottleGauge value={throttle} onChange={setThrottle} />
+            <JoystickControl
+              x={roll}
+              y={pitch}
+              onChangeX={setRoll}
+              onChangeY={setPitch}
+              label="Roll / Pitch"
+              xLabel="R"
+              yLabel="P"
+            />
+          </div>
+          <button
+            onClick={centerSticks}
+            className="mt-2 w-full py-1 text-[11px] text-content-secondary hover:text-content bg-surface hover:bg-surface-raised rounded transition-colors"
+          >
+            Center Sticks
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // =============================================================================
 // Helper Functions
 // =============================================================================
@@ -803,6 +921,8 @@ function MavlinkFlightControl() {
                 ))}
               </div>
             )}
+
+            <ManualStickControl />
           </div>
         ) : (
           /* Vertical layout for side panels — compact to reclaim vertical
@@ -1045,6 +1165,8 @@ function MavlinkFlightControl() {
                 <div className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white shadow transition-transform ${forceArm ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
               </div>
             </button>
+
+            <ManualStickControl />
 
             <div className="flex-1" />
           </div>
