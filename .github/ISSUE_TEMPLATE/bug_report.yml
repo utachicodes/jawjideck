@@ -1,0 +1,58 @@
+name: Bug Report
+description: Report a problem with Jawji
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. If you can, generate a `.jawjireport` from
+        **Help > Report Bug** inside the app first — it collects sanitized logs
+        and system info that make this much faster to diagnose.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Connect to ...
+        2. Open ...
+        3. Click ...
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Jawji version
+      placeholder: e.g. 0.0.34
+    validations:
+      required: true
+
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Connection / firmware
+      options:
+        - ArduPilot (MAVLink)
+        - Betaflight (MSP)
+        - iNav (MSP)
+        - SITL
+        - Not applicable
+    validations:
+      required: false
+
+  - type: textarea
+    id: report
+    attributes:
+      label: .jawjireport / logs
+      description: Attach the generated `.jawjireport` file, or paste relevant logs.
+    validations:
+      required: false

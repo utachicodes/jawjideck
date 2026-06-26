@@ -1,0 +1,45 @@
+name: Links
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - '**/*.md'
+      - '.github/workflows/links.yml'
+      - '.lychee.toml'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - '**/*.md'
+      - '.github/workflows/links.yml'
+      - '.lychee.toml'
+  schedule:
+    - cron: '0 6 * * 1' # weekly, Monday 06:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check links and anchors in docs
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --config .lychee.toml
+            README.md
+            CHANGELOG.md
+            wiki/**/*.md
+            apps/desktop/src/renderer/components/**/*.md
+            packages/**/*.md
+          fail: true
+
+      # lychee only understands standard Markdown links/URLs — it silently
+      # skips GitHub-wiki-style [[Page Name]] links, which is most of the
+      # internal navigation in wiki/*.md. This catches those separately.
+      - name: Check [[wiki links]]
+        run: node tools/check-wiki-links.mjs

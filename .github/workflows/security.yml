@@ -1,0 +1,69 @@
+name: Security
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  schedule:
+    - cron: '0 6 * * 1' # weekly, Monday 06:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan for leaked credentials
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # Non-blocking: the existing dependency tree has a backlog of
+      # transitive high/critical advisories (electron-builder, vite,
+      # dockerode, MCP SDK). Until those are triaged this reports findings
+      # without failing unrelated PRs. Remove continue-on-error once the
+      # backlog is cleared to make this a real gate.
+      - name: Audit dependencies (high/critical)
+        continue-on-error: true
+        run: pnpm audit --audit-level high
+
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:javascript-typescript'

@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <strong>A modern, cross-platform ground control station for ArduPilot, Betaflight, and iNav.</strong>
+  <strong>A modern ground control station for ArduPilot, Betaflight, and iNav.</strong>
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 
 Jawji is a next-generation ground control station built with Electron, React, and TypeScript. It provides real-time telemetry, parameter management, PID tuning, and mission planning for drones and vehicles running ArduPilot, Betaflight, or iNav firmware.
 
-> **One app for all your flight controllers** - Cross-platform (Windows, macOS, Linux), modern UI, supports both MAVLink and MSP protocols.
+> **One app for all your flight controllers** - Windows, modern UI, supports both MAVLink and MSP protocols.
 
 ---
 
@@ -36,6 +36,7 @@ Jawji is a next-generation ground control station built with Electron, React, an
 - [Features](#features)
 - [Screenshots](#screenshots)
 - [Download & Install](#download--install)
+- [Architecture](#architecture)
 - [Development (Contributors Only)](#development-contributors-only)
 - [Supported Vehicles](#supported-vehicles)
 - [Veteran Board Support](#️-veteran-board-support)
@@ -477,21 +478,34 @@ Jawji is a next-generation ground control station built with Electron, React, an
 
 **Most users should download a pre-built release.** No need to clone or build anything.
 
+> **Windows only.** Jawji currently ships pre-built releases for Windows only. The source is cross-platform (Electron/React), so contributors can still build and run it from source on macOS or Linux — see [Development](#development-contributors-only).
+
 | Platform | Format | Link |
 |----------|--------|------|
-| **Windows** | Installer (.exe) | [Latest Release](https://github.com/utachicodes/Jawji/releases/latest) |
-| **Windows** | Portable (.exe) | [Latest Release](https://github.com/utachicodes/Jawji/releases/latest) |
-| **macOS** | DMG (Apple Silicon) | [Latest Release](https://github.com/utachicodes/Jawji/releases/latest) |
-| **Linux** | AppImage | [Latest Release](https://github.com/utachicodes/Jawji/releases/latest) |
-| **Linux** | .deb | [Latest Release](https://github.com/utachicodes/Jawji/releases/latest) |
+| **Windows** | Installer (.exe) | [Latest Release](https://github.com/utachicodes/jawjideck/releases/latest) |
+| **Windows** | Portable (.exe) | [Latest Release](https://github.com/utachicodes/jawjideck/releases/latest) |
 
-**Getting started:** Download the installer for your platform, install, plug in your flight controller via USB, and you're ready to go.
+**Getting started:** Download the installer, install, plug in your flight controller via USB, and you're ready to go.
 
-> **Linux AppImage note:** On Ubuntu 24.04+ and other recent distros, the AppImage may not launch because `libfuse2` is no longer installed by default. Install it with `sudo apt install libfuse2`, or run with `APPIMAGE_EXTRACT_AND_RUN=1 ./Jawji-*.AppImage` to skip the FUSE requirement. Alternatively, use the `.deb` package which has no such dependency.
+> **Note on code signing:** Jawji binaries are currently unsigned. Windows SmartScreen may show a warning — click "More info" then "Run anyway". We plan to obtain a code signing certificate once the project reaches a meaningful user base to justify the cost.
 >
-> **Note on code signing:** Jawji binaries are currently unsigned. On macOS, you may see a Gatekeeper warning — right-click the app and select "Open", or run `xattr -cr /Applications/Jawji.app` in Terminal. On Windows, SmartScreen may show a warning — click "More info" then "Run anyway". We plan to obtain code signing certificates once the project reaches a meaningful user base to justify the cost.
->
-> **Auto-updates:** On Windows and Linux, Jawji supports seamless in-app updates — download and install with a single click. On macOS, because the app is not yet code-signed, in-app downloads are blocked by Gatekeeper. Jawji will still notify you when a new version is available and open the release page for manual download. Once we obtain an Apple Developer certificate, macOS will get full auto-update support automatically.
+> **Auto-updates:** Jawji supports seamless in-app updates on Windows — download and install with a single click.
+
+---
+
+## Architecture
+
+Jawji is a pnpm monorepo built around an Electron main/renderer split:
+
+| Path | Role |
+|------|------|
+| [apps/desktop](apps/desktop) | The Electron app. `src/main` talks to flight controllers (serial/TCP/UDP) and the OS; `src/renderer` is the React/TypeScript UI; `src/main/preload.ts` + `src/shared/ipc-channels.ts` define the IPC boundary between them. |
+| [packages/mavlink-ts](packages/mavlink-ts) | Generated MAVLink v1/v2 message/enum definitions and codec used to talk to ArduPilot. |
+| [packages/msp-ts](packages/msp-ts) | MSP v1/v2 protocol implementation used to talk to Betaflight/iNav. |
+| [packages/jawji-agent](packages/jawji-agent) | Companion-board agent (ESP32/RPi/Jetson/Orange Pi) — a small Express + WebSocket server with bearer-token auth and subnet restriction, polled by the desktop app's Agent Dashboard for metrics, logs, and terminal access. |
+| [packages/module-sdk](packages/module-sdk), [packages/create-jawji-module](packages/create-jawji-module) | SDK and scaffolding for third-party Jawji modules. |
+
+Telemetry flows from the connected flight controller → `src/main` parser → IPC event → renderer Zustand stores (e.g. `telemetry-store`, `flight-control-store`) → dashboard panels. Manual control (arm/disarm, mode switching, takeoff, and — for MSP vehicles — a live joystick/throttle override) is sent the same way in reverse: renderer store → IPC → `src/main` → serial/TCP/UDP link to the vehicle.
 
 ---
 
