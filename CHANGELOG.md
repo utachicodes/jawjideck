@@ -8,8 +8,15 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 
 ## [Unreleased]
 
+## [0.0.35] - 2026-06-26
+
 ### Added
 - Manual stick control (RC_CHANNELS_OVERRIDE) for MAVLink/ArduPilot vehicles in the Flight Control panel — previously only MSP (Betaflight/iNav) vehicles had GCS-driven joystick/throttle control. Opt-in toggle; never starts automatically.
+- Bug report issue template, auto-labeled `bug`, aligned with the in-app `.jawjireport` flow.
+- `[[wiki link]]` validator (`tools/check-wiki-links.mjs`), wired into the Links CI workflow — `lychee` doesn't understand GitHub's Gollum-style `[[Page Name]]` links.
+
+### Fixed
+- Broken wiki links: missing `MAVLink Signing` page (now written), and stale repo URLs in the wiki sidebar footer.
 
 ## [0.0.34] - 2026-06-25
 
