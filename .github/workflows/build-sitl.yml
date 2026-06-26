@@ -5,7 +5,8 @@ name: Build ArduPilot SITL Binaries
 # Windows/Linux users can also grab binaries from firmware.ardupilot.org.
 #
 # Jawji downloads from:
-#   https://github.com/rubenCodeforges/Jawji/releases/download/sitl-v{version}/{binary}
+#   https://github.com/rubenCodeforges/ardudeck/releases/download/sitl-v{version}/{binary}
+# (must match GITHUB_RELEASES_URL in apps/desktop/src/main/sitl/ardupilot-sitl-downloader.ts)
 
 on:
   workflow_dispatch:
@@ -88,7 +89,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Upload Linux binaries to existing release (macOS arm64 already there from local build)
+          # Upload Linux binaries to existing release (macOS arm64 already there from local build).
+          # Explicit --repo: the downloader's GITHUB_RELEASES_URL points at
+          # rubenCodeforges/ardudeck, which doesn't have to match the repo
+          # this workflow runs from.
           for f in output/*; do
-            gh release upload "${{ env.SITL_TAG }}" "$f" --clobber || true
+            gh release upload "${{ env.SITL_TAG }}" "$f" --repo rubenCodeforges/ardudeck --clobber || true
           done

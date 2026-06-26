@@ -14,5 +14,7 @@ exclude = [
   "^https://discord\\.gg/",
 ]
 
-# Some hosts (shields.io, GitHub raw) rate-limit or briefly throttle bots
-accept = [100, 200, 201, 202, 203, 204, 206, 301, 302, 303, 307, 308, 429]
+# Some hosts (shields.io, GitHub raw) rate-limit or briefly throttle bots.
+# 403 is accepted too: sites with bot/WAF protection (jawji.com, raspberrypi.com)
+# reject lychee's request but work fine in a real browser.
+accept = [100, 200, 201, 202, 203, 204, 206, 301, 302, 303, 307, 308, 403, 429]

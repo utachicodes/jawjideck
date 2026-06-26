@@ -18,6 +18,9 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 ### Fixed
 - Broken wiki links: missing `MAVLink Signing` page (now written), and stale repo URLs in the wiki sidebar footer.
 - Windows portable build: `artifactName` had no token distinguishing the NSIS installer from the portable target, so both built to the same filename and the portable .exe silently never made it into releases (confirmed missing from the v0.0.34 release too).
+- ArduPilot SITL macOS binary downloads were 404ing: `GITHUB_RELEASES_URL` in `ardupilot-sitl-downloader.ts` pointed at a GitHub repo that doesn't exist. Corrected to the repo that actually hosts the `sitl-v*` releases.
+- Two more stale `rubenCodeforges/Jawji` URLs (nonexistent repo) in `wiki/Getting-Started.md`'s download table — corrected and trimmed to Windows-only, matching the rest of this release.
+- Links CI: `jawji.com` and `raspberrypi.com` were failing with 403 from bot/WAF protection, not because the links are actually broken — added 403 to the accepted status codes.
 
 ## [0.0.34] - 2026-06-25
 
