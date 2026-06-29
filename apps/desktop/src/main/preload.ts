@@ -756,6 +756,9 @@ const api = {
   selectFirmwareFile: (): Promise<{ success: boolean; filePath?: string; error?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.FIRMWARE_SELECT_FILE),
 
+  openFirmwareCacheFolder: (): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.FIRMWARE_OPEN_CACHE_FOLDER),
+
   enterBootloader: (): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.FIRMWARE_ENTER_BOOTLOADER),
 

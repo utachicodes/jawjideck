@@ -150,6 +150,7 @@ interface FirmwareStore {
   // Actions - Custom firmware
   selectCustomFirmware: () => Promise<void>;
   setCustomFirmwarePath: (path: string | null) => void;
+  openFirmwareCacheFolder: () => Promise<void>;
 
   // Actions - Flash
   startFlash: () => Promise<void>;
@@ -736,6 +737,14 @@ export const useFirmwareStore = create<FirmwareStore>((set, get) => ({
   },
 
   setCustomFirmwarePath: (path) => set({ customFirmwarePath: path }),
+
+  openFirmwareCacheFolder: async () => {
+    try {
+      await window.electronAPI?.openFirmwareCacheFolder?.();
+    } catch (error) {
+      console.error('Failed to open firmware cache folder:', error);
+    }
+  },
 
   // Flash operations
   startFlash: async () => {

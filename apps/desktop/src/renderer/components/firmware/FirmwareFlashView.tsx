@@ -465,6 +465,7 @@ export function FirmwareFlashView() {
     setFullChipErase,
     fetchBoards,
     selectCustomFirmware,
+    openFirmwareCacheFolder,
     startFlash,
     abortFlash,
     setFlashProgress,
@@ -708,6 +709,43 @@ export function FirmwareFlashView() {
       {/* Main Content - Single Column */}
       <div className="flex-1 overflow-auto">
         <div className="max-w-2xl mx-auto p-6 space-y-6">
+          {/* General firmware-flash safety notes */}
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div className="flex-1 text-sm text-amber-100/90 space-y-1.5">
+                <p>Please do not try to flash hardware with firmware it doesn't support.</p>
+                <p>Do not disconnect the board or turn off your computer while flashing.</p>
+                <p className="text-content-secondary text-xs">Note: The STM32 bootloader is stored in ROM — it cannot be bricked.</p>
+                <p className="text-content-secondary text-xs">Note: Make sure you have a backup; some upgrades/downgrades will wipe your configuration.</p>
+                <p className="text-content-secondary text-xs">Note: If you have problems flashing, try disconnecting all other cables/peripherals from the FC first, reboot, and update your USB/STM32 drivers.</p>
+                <p className="text-content-secondary text-xs">Note: For boards with a directly-connected USB socket (e.g. Matek H743-SLIM, Holybro Kakute), make sure you have the correct drivers installed before flashing.</p>
+                <p className="font-medium text-amber-200">Ensure you flash a firmware build appropriate for your exact target — flashing the wrong target can cause unexpected behavior.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Recovery steps for a board that's lost communication */}
+          <details className="bg-surface-input rounded-xl border border-subtle">
+            <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium text-content-secondary hover:text-content">
+              Recovery: board not responding / lost communication
+            </summary>
+            <ol className="px-4 pb-4 text-sm text-content-secondary list-decimal list-inside space-y-1">
+              <li>Power off the board.</li>
+              <li>Jumper the BOOT pins, or hold the BOOT button.</li>
+              <li>Power on — the activity LED should NOT flash if done correctly.</li>
+              <li>Make sure the correct STM32 driver (and WinUSB via Zadig, if needed) is installed for the board's bootloader USB ID.</li>
+              <li>Close any other app that might be holding the serial/USB connection open, then reopen Jawji.</li>
+              <li>Release the BOOT button (if your FC uses one rather than a jumper).</li>
+              <li>Flash with the correct firmware for your target.</li>
+              <li>Power off, then remove the BOOT jumper if used.</li>
+              <li>Power on — the activity LED should flash normally.</li>
+              <li>Reconnect as usual.</li>
+            </ol>
+          </details>
+
           {/* Warning banner when connected to a board */}
           {isConnected && (
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
@@ -1108,6 +1146,13 @@ export function FirmwareFlashView() {
                           </option>
                         ))}
                       </select>
+                      <button
+                        onClick={() => { void openFirmwareCacheFolder(); }}
+                        title="Open the folder where downloaded firmware files are saved"
+                        className="px-3 py-2 bg-surface-raised border border rounded-lg text-content-secondary hover:text-content hover:border transition-colors text-sm whitespace-nowrap"
+                      >
+                        Show in Folder
+                      </button>
                     </div>
                   ) : selectedVersionGroup && filteredVersions.length === 0 ? (
                     <div className="text-content-secondary text-sm py-2">

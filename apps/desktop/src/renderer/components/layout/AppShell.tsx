@@ -8,6 +8,7 @@ import { UpdateBanner } from './UpdateBanner';
 import { ArmDisarmButton } from './ArmDisarmButton';
 import { ScriptHealthBadge } from '../script-installer/ScriptHealthBadge';
 import { QuickLaunchMenu } from './QuickLaunchMenu';
+import { AlertTriangle, X, Loader2 } from 'lucide-react';
 import iconImage from '../../assets/icon.png';
 
 interface AppShellProps {
@@ -78,9 +79,7 @@ export function AppShell({ children }: AppShellProps) {
               }`}
             >
               {connectionState.isStale ? (
-                <svg className="w-3 h-3 text-yellow-400 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2L1 21h22L12 2zm0 6l7.53 13H4.47L12 8zm-1 4v4h2v-4h-2zm0 6v2h2v-2h-2z" />
-                </svg>
+                <AlertTriangle size={12} className="text-yellow-400 animate-pulse" />
               ) : (
                 <div className="status-dot status-dot-connected group-hover:bg-red-400" />
               )}
@@ -89,9 +88,7 @@ export function AppShell({ children }: AppShellProps) {
               }`}>
                 {connectionState.isStale ? `No data ${staleSeconds}s` : connectionState.transport}
               </span>
-              <svg className="w-3 h-3 text-content-tertiary opacity-0 group-hover:opacity-100 group-hover:text-red-400 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X size={12} className="text-content-tertiary opacity-0 group-hover:opacity-100 group-hover:text-red-400 transition-all" />
             </button>
           ) : (
             <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-surface border ${
@@ -100,10 +97,7 @@ export function AppShell({ children }: AppShellProps) {
                 : 'border-subtle'
             }`}>
               {connectionState.isWaitingForHeartbeat ? (
-                <svg className="w-2.5 h-2.5 text-yellow-400 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
+                <Loader2 size={10} className="text-yellow-400 animate-spin" />
               ) : (
                 <div className="status-dot status-dot-disconnected" />
               )}

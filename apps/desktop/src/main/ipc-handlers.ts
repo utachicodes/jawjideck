@@ -5,7 +5,7 @@
 
 import { ipcMain, BrowserWindow, dialog, app, shell, safeStorage } from 'electron';
 import { join } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 import Store from 'electron-store';
 import {
   listSerialPorts,
@@ -106,7 +106,7 @@ import type { RallyItem } from '../shared/rally-types.js';
 import type { DetectedBoard, FirmwareSource, FirmwareVehicleType, FirmwareManifest, FirmwareVersion, FlashResult, FlashOptions } from '../shared/firmware-types.js';
 import type { MotorTestStartRequest, MotorTestResponse, EscTelemetryData, EscMotorTelemetry } from '../shared/motor-test-types.js';
 import { getBoardInfoFromVersion } from '../shared/board-ids.js';
-import { detectBoards, fetchFirmwareVersions, downloadFirmware, copyCustomFirmware, flashWithDfu, flashWithAvrdude, flashWithSerialBootloader, flashWithArduPilotBootloader, getArduPilotBoards, getArduPilotVersions, getBetaflightBoards, getBetaflightVersions, resolveBetaflightDownloadUrl, getInavBoards, getInavVersions, type BoardInfo, type VersionGroup } from './firmware/index.js';
+import { detectBoards, fetchFirmwareVersions, downloadFirmware, copyCustomFirmware, getFirmwareCacheFolderPath, flashWithDfu, flashWithAvrdude, flashWithSerialBootloader, flashWithArduPilotBootloader, getArduPilotBoards, getArduPilotVersions, getBetaflightBoards, getBetaflightVersions, resolveBetaflightDownloadUrl, getInavBoards, getInavVersions, type BoardInfo, type VersionGroup } from './firmware/index.js';
 import { registerMspHandlers, tryMspDetection, startMspTelemetry, stopMspTelemetry, cleanupMspConnection, exitCliModeIfActive, autoConfigureSitlPlatform, getMspVehicleType, resetSitlAutoConfig } from './msp/index.js';
 import { initCalibrationHandlers, cleanupCalibrationHandlers, handleCalibrationStatusText, handleCalibrationCommandAck, handleIncomingCommandLong, isMavlinkCalibrationActive, cancelCalibration, type MavlinkCalibrationDeps } from './calibration/index.js';
 import { initMissionLibraryHandlers, cleanupMissionLibraryHandlers } from './mission-library/index.js';
@@ -7044,6 +7044,21 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       sendLog(mainWindow, 'info', 'Firmware flash aborted');
     }
     return { success: true };
+  });
+
+  // Open the firmware download cache folder in the OS file browser
+  ipcMain.handle(IPC_CHANNELS.FIRMWARE_OPEN_CACHE_FOLDER, async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const folderPath = getFirmwareCacheFolderPath();
+      mkdirSync(folderPath, { recursive: true });
+      const result = await shell.openPath(folderPath);
+      if (result) {
+        return { success: false, error: result };
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   });
 
   // Select custom firmware file

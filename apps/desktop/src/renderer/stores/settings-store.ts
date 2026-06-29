@@ -5,6 +5,7 @@ import type { CameraPreset } from '../components/survey/survey-types';
 import type { FirmwareSource } from '../../shared/firmware-types.js';
 import type { NonDefaultColorKey } from '../components/parameters/non-default-palette.js';
 import { DEFAULT_NON_DEFAULT_COLOR } from '../components/parameters/non-default-palette.js';
+import { mavTypeToVehicleType } from '../../shared/vehicle-type-map.js';
 
 /**
  * Vehicle type for visualization
@@ -373,6 +374,11 @@ interface SettingsStore {
   experienceLevelVersion: string | null;
   setExperienceLevel: (level: ExperienceLevel, version: string) => void;
 
+  // First-run vehicle setup — true once the user has picked their actual
+  // drone type, distinct from the placeholder "My Vehicle" default profile.
+  vehicleSetupCompleted: boolean;
+  completeVehicleSetup: () => void;
+
   // UI visibility (granular control)
   uiVisibility: UiVisibility;
   setUiVisibility: (updates: Partial<UiVisibility>) => void;
@@ -420,7 +426,7 @@ interface SettingsStore {
    * - If active profile has no boardUid → assign this board to it
    * - If active profile has a different boardUid → create new profile (cloned from active) and switch
    */
-  associateBoard: (boardUid: string, boardId?: string, boardName?: string) => string;
+  associateBoard: (boardUid: string, boardId?: string, boardName?: string, mavType?: number, vehicleType?: string) => string;
   /** Update board stats from STAT_* parameters on the active profile */
   updateBoardStats: (stats: BoardStats) => void;
 
@@ -802,6 +808,7 @@ export const useSettingsStore = create<SettingsStore>()(
   nonDefaultHighlightColor: DEFAULT_NON_DEFAULT_COLOR,
   experienceLevel: null as ExperienceLevel | null,
   experienceLevelVersion: null as string | null,
+  vehicleSetupCompleted: false,
   uiVisibility: { ...BEGINNER_UI_VISIBILITY },
 
   surveyPresets: [] as PersistedSurveyPreset[],
@@ -914,6 +921,12 @@ export const useSettingsStore = create<SettingsStore>()(
           nonDefaultHighlightColor: ((settings as unknown as Record<string, unknown>).nonDefaultHighlightColor as NonDefaultColorKey) || DEFAULT_NON_DEFAULT_COLOR,
           experienceLevel: ((settings as unknown as Record<string, unknown>).experienceLevel as ExperienceLevel) || null,
           experienceLevelVersion: ((settings as unknown as Record<string, unknown>).experienceLevelVersion as string) || null,
+          // Grandfather in existing users who already went through the old
+          // experience-only onboarding before this flag existed — don't force
+          // them through vehicle setup retroactively. Only genuinely new
+          // installs (no experienceLevel ever saved) get the new wizard.
+          vehicleSetupCompleted: !!((settings as unknown as Record<string, unknown>).vehicleSetupCompleted)
+            || !!((settings as unknown as Record<string, unknown>).experienceLevel),
           uiVisibility: {
             ...BEGINNER_UI_VISIBILITY,
             ...((settings as unknown as Record<string, unknown>).uiVisibility as Partial<UiVisibility> | undefined),
@@ -961,6 +974,7 @@ export const useSettingsStore = create<SettingsStore>()(
         nonDefaultHighlightColor: state.nonDefaultHighlightColor,
         ...(state.experienceLevel ? { experienceLevel: state.experienceLevel } : {}),
         ...(state.experienceLevelVersion ? { experienceLevelVersion: state.experienceLevelVersion } : {}),
+        vehicleSetupCompleted: state.vehicleSetupCompleted,
         uiVisibility: state.uiVisibility,
         companionUnlocked: state.companionUnlocked,
         advancedCommandsUnlocked: state.advancedCommandsUnlocked,
@@ -1035,9 +1049,17 @@ export const useSettingsStore = create<SettingsStore>()(
   },
 
   // Actions - Board association
-  associateBoard: (boardUid, boardId, boardName) => {
+  associateBoard: (boardUid, boardId, boardName, mavType, vehicleType) => {
     const state = get();
     const now = new Date().toISOString();
+
+    // Resolve the actual vehicle type from MAV_TYPE, fallback to 'copter'
+    const resolvedType: VehicleType = mavType !== undefined
+      ? (mavTypeToVehicleType[mavType] ?? 'copter')
+      : 'copter';
+
+    // Build a meaningful profile name from available data
+    const profileName = boardName || boardId || vehicleType || resolvedType;
 
     // 1. Check if any existing profile already has this boardUid
     const existingProfile = state.vehicles.find(v => v.boardUid === boardUid);
@@ -1067,13 +1089,12 @@ export const useSettingsStore = create<SettingsStore>()(
       return activeProfile.id;
     }
 
-    // 3. Active profile has a different boardUid → create a blank profile for the new board
+    // 3. Active profile has a different boardUid → create a new profile for this board
     const newId = `vehicle-${Date.now()}`;
-    const displayName = boardName || boardId || 'New Board';
     const newVehicle: VehicleProfile = {
       id: newId,
-      name: displayName,
-      type: 'copter' as VehicleType,
+      name: profileName,
+      type: resolvedType,
       weight: 500,
       batteryCells: 4,
       batteryCapacity: 1500,
@@ -1221,6 +1242,10 @@ export const useSettingsStore = create<SettingsStore>()(
     }));
   },
 
+  completeVehicleSetup: () => {
+    set({ vehicleSetupCompleted: true });
+  },
+
   setUiVisibility: (updates) => {
     set((state) => {
       const newUiVisibility = { ...state.uiVisibility, ...updates };
@@ -1277,6 +1302,7 @@ useSettingsStore.subscribe(
     nonDefaultHighlightColor: state.nonDefaultHighlightColor,
     experienceLevel: state.experienceLevel,
     experienceLevelVersion: state.experienceLevelVersion,
+    vehicleSetupCompleted: state.vehicleSetupCompleted,
     uiVisibility: state.uiVisibility,
     companionUnlocked: state.companionUnlocked,
     advancedCommandsUnlocked: state.advancedCommandsUnlocked,

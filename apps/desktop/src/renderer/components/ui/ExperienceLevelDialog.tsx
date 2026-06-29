@@ -1,6 +1,46 @@
 import { BookOpen, Zap } from 'lucide-react';
 import type { ExperienceLevel } from '../../stores/settings-store';
 
+interface ExperienceLevelCardsProps {
+  onSelect: (level: ExperienceLevel) => void;
+}
+
+// The Beginner/Advanced choice cards, factored out so OnboardingWizard's
+// second step can reuse them without duplicating the JSX.
+export function ExperienceLevelCards({ onSelect }: ExperienceLevelCardsProps) {
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      {/* Beginner */}
+      <button
+        onClick={() => onSelect('beginner')}
+        className="group text-left p-5 rounded-xl border border-subtle bg-surface hover:border-blue-500/50 hover:bg-blue-500/5 transition-all duration-200 cursor-pointer"
+      >
+        <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors">
+          <BookOpen className="w-5 h-5 text-blue-400" />
+        </div>
+        <div className="text-sm font-semibold text-content mb-1">Beginner</div>
+        <p className="text-xs text-content-secondary leading-relaxed">
+          Show tips, explanations, and guides throughout the interface to help you learn.
+        </p>
+      </button>
+
+      {/* Advanced */}
+      <button
+        onClick={() => onSelect('advanced')}
+        className="group text-left p-5 rounded-xl border border-subtle bg-surface hover:border-purple-500/50 hover:bg-purple-500/5 transition-all duration-200 cursor-pointer"
+      >
+        <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center mb-4 group-hover:bg-purple-500/20 transition-colors">
+          <Zap className="w-5 h-5 text-purple-400" />
+        </div>
+        <div className="text-sm font-semibold text-content mb-1">Advanced</div>
+        <p className="text-xs text-content-secondary leading-relaxed">
+          Clean interface with no hand-holding. Hide educational cards and inline tips.
+        </p>
+      </button>
+    </div>
+  );
+}
+
 interface ExperienceLevelDialogProps {
   onSelect: (level: ExperienceLevel) => void;
 }
@@ -18,34 +58,8 @@ export function ExperienceLevelDialog({ onSelect }: ExperienceLevelDialogProps) 
         </div>
 
         {/* Cards */}
-        <div className="p-6 grid grid-cols-2 gap-4">
-          {/* Beginner */}
-          <button
-            onClick={() => onSelect('beginner')}
-            className="group text-left p-5 rounded-xl border border-subtle bg-surface hover:border-blue-500/50 hover:bg-blue-500/5 transition-all duration-200 cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors">
-              <BookOpen className="w-5 h-5 text-blue-400" />
-            </div>
-            <div className="text-sm font-semibold text-content mb-1">Beginner</div>
-            <p className="text-xs text-content-secondary leading-relaxed">
-              Show tips, explanations, and guides throughout the interface to help you learn.
-            </p>
-          </button>
-
-          {/* Advanced */}
-          <button
-            onClick={() => onSelect('advanced')}
-            className="group text-left p-5 rounded-xl border border-subtle bg-surface hover:border-purple-500/50 hover:bg-purple-500/5 transition-all duration-200 cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center mb-4 group-hover:bg-purple-500/20 transition-colors">
-              <Zap className="w-5 h-5 text-purple-400" />
-            </div>
-            <div className="text-sm font-semibold text-content mb-1">Advanced</div>
-            <p className="text-xs text-content-secondary leading-relaxed">
-              Clean interface with no hand-holding. Hide educational cards and inline tips.
-            </p>
-          </button>
+        <div className="p-6">
+          <ExperienceLevelCards onSelect={onSelect} />
         </div>
 
         {/* Footer hint */}

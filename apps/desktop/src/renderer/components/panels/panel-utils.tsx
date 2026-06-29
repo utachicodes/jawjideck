@@ -26,6 +26,6 @@ export function StatRow({ label, value, unit, highlight = false }: { label: stri
 
 export function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h3 className="text-[10px] font-medium text-content-secondary uppercase tracking-wider mb-2">{children}</h3>
+    <h3 className="section-header-eyebrow">{children}</h3>
   );
 }

@@ -188,6 +188,7 @@ export const IPC_CHANNELS = {
   FIRMWARE_QUERY_MAVLINK: 'firmware:query-mavlink',
   FIRMWARE_QUERY_MSP: 'firmware:query-msp',
   FIRMWARE_AUTO_DETECT: 'firmware:auto-detect',
+  FIRMWARE_OPEN_CACHE_FOLDER: 'firmware:open-cache-folder',
 
   // ESP32 flashing
   ESP32_DETECT: 'esp32:detect',

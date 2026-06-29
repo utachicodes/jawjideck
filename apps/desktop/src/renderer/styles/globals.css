@@ -264,6 +264,40 @@
   .status-dot-disconnected {
     @apply bg-gray-500;
   }
+
+  /* Dense numeric readout card — Telemetry, Configure tabs, landing vehicle
+     panel all repeated this markup by hand before. */
+  .stat-card {
+    background-color: var(--bg-surface);
+    border-color: var(--border-subtle);
+    @apply border rounded-xl p-3;
+  }
+
+  .stat-card-label {
+    color: var(--text-tertiary);
+    @apply text-[10px] font-medium uppercase tracking-wider;
+  }
+
+  .stat-card-value {
+    color: var(--text-primary);
+    @apply text-lg font-semibold leading-tight mt-1;
+  }
+
+  .stat-card-unit {
+    color: var(--text-secondary);
+    @apply text-xs font-normal ml-1;
+  }
+
+  /* Eyebrow-label + title pattern, previously inlined ad hoc across ~10+ files */
+  .section-header-eyebrow {
+    color: var(--text-tertiary);
+    @apply text-[10px] font-medium uppercase tracking-wider mb-2;
+  }
+
+  .section-header-title {
+    color: var(--text-primary);
+    @apply text-base font-semibold;
+  }
 }
 
 /* Tooltips for [data-tip] elements are rendered by the GlobalTooltip React
