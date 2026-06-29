@@ -21,23 +21,7 @@ const LOG_ICONS = {
   packet: '>',
 };
 
-/** Severity → Tailwind color class */
-function severityColor(severity: number): string {
-  switch (severity) {
-    case 0: case 1: case 2: case 3:
-      return 'text-red-400';
-    case 4:
-      return 'text-yellow-400';
-    case 5:
-      return 'text-blue-400';
-    case 6:
-      return 'text-content';
-    case 7:
-      return 'text-content-secondary';
-    default:
-      return 'text-content-secondary';
-  }
-}
+import { severityColor } from '../../utils/severity-color';
 
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp);

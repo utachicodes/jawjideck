@@ -22,6 +22,7 @@ export {
   downloadFirmware,
   isFirmwareCached,
   getFirmwareCachePath,
+  getFirmwareCacheFolderPath,
   clearFirmwareCache,
   copyCustomFirmware,
 } from './firmware-downloader.js';

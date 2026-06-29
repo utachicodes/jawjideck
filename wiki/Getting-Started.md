@@ -2,17 +2,17 @@
 
 ## Download
 
+Jawji currently ships pre-built releases for Windows only.
+
 | Platform | Download |
 |----------|----------|
-| Windows | [Latest Release (.exe)](https://github.com/rubenCodeforges/Jawji/releases/latest) |
-| macOS | [Latest Release (.dmg)](https://github.com/rubenCodeforges/Jawji/releases/latest) |
-| Linux | [Latest Release (.AppImage)](https://github.com/rubenCodeforges/Jawji/releases/latest) |
+| Windows | [Latest Release (.exe)](https://github.com/utachicodes/jawjideck/releases/latest) |
 
 ### Platform Notes
 
 - **Windows** -- The app is unsigned. Windows Defender may show a SmartScreen warning on first launch. Click "More info" then "Run anyway".
-- **macOS** -- The app is unsigned. Right-click the .app and select "Open" to bypass Gatekeeper on first launch.
-- **Linux** -- AppImage requires `libfuse2`. Install with `sudo apt install libfuse2` on Ubuntu/Debian. Make the AppImage executable with `chmod +x Jawji-*.AppImage`.
+
+The source is cross-platform (Electron/React) — contributors can build and run it from source on macOS or Linux.
 
 ## Connecting Your Flight Controller
 

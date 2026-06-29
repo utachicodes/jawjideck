@@ -218,11 +218,13 @@ export const KNOWN_BOARDS: Record<string, Partial<DetectedBoard>> = {
   },
   '0483:5740': {
     // Generic STM32 VCP PID — shared by many F4 boards (SpeedyBee, Matek, etc.)
+    // This is the board's normal virtual COM port while running regular firmware,
+    // not a bootloader PID — only 0483:df11 (above) is the real DFU bootloader.
     name: 'STM32F405 Flight Controller',
     boardId: 'unknown',
     mcuType: 'STM32F405',
     flasher: 'dfu',
-    inBootloader: true,
+    inBootloader: false,
   },
 
   // Matek

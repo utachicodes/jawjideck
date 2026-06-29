@@ -7,6 +7,12 @@ max_retries = 3
 
 exclude_all_private = true
 
+# Several small/marketing sites (adlerblix.de, raspberrypi.com, jawji.com)
+# sit behind bot/WAF protection that rejects lychee's default request but
+# serves a normal page to any real browser. A realistic User-Agent clears
+# most of those without having to accept odd status codes per-domain.
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
 exclude = [
   # Templated placeholder in contributor setup instructions, not a real URL
   "github\\.com/<your-username>",
@@ -14,5 +20,7 @@ exclude = [
   "^https://discord\\.gg/",
 ]
 
-# Some hosts (shields.io, GitHub raw) rate-limit or briefly throttle bots
-accept = [100, 200, 201, 202, 203, 204, 206, 301, 302, 303, 307, 308, 429]
+# Some hosts (shields.io, GitHub raw) rate-limit or briefly throttle bots.
+# 403/415 accepted as a fallback for WAF-protected sites the User-Agent
+# above doesn't satisfy.
+accept = [100, 200, 201, 202, 203, 204, 206, 301, 302, 303, 307, 308, 403, 415, 429]

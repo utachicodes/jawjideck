@@ -177,18 +177,24 @@ if [[ $PUBLISH -eq 1 ]]; then
     exit 0
   fi
 
+  # Explicit --repo: must match GITHUB_RELEASES_URL in
+  # apps/desktop/src/main/sitl/ardupilot-sitl-downloader.ts, not whatever
+  # the local clone's "origin" remote happens to point at.
+  SITL_REPO="rubenCodeforges/ardudeck"
+
   # Create release if it doesn't exist; --clobber the assets so re-runs work.
-  if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+  if gh release view "$RELEASE_TAG" --repo "$SITL_REPO" >/dev/null 2>&1; then
     echo "  Release exists — uploading assets with --clobber"
   else
     gh release create "$RELEASE_TAG" \
+      --repo "$SITL_REPO" \
       --title "ArduPilot SITL $VERSION" \
       --notes "macOS ARM64 SITL binaries built locally from ArduPilot @ $REF." \
       --prerelease
   fi
 
   for bin in "${BINARIES[@]}"; do
-    gh release upload "$RELEASE_TAG" "$OUTDIR/${bin}-macos-arm64" --clobber
+    gh release upload "$RELEASE_TAG" "$OUTDIR/${bin}-macos-arm64" --repo "$SITL_REPO" --clobber
   done
 
   echo ""

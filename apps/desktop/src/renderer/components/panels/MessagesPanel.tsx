@@ -3,70 +3,7 @@ import { useMessagesStore } from '../../stores/messages-store';
 import { matchPreArmError } from '../../../shared/prearm-checks';
 import { PreArmParamFix } from '../prearm/PreArmParamFix';
 import { PanelContainer } from './panel-utils';
-
-/** Severity → Tailwind color class */
-function severityColor(severity: number): string {
-  switch (severity) {
-    case 0: // EMERGENCY
-    case 1: // ALERT
-    case 2: // CRITICAL
-      return 'text-red-400';
-    case 3: // ERROR
-      return 'text-red-400';
-    case 4: // WARNING
-      return 'text-yellow-400';
-    case 5: // NOTICE
-      return 'text-blue-400';
-    case 6: // INFO
-      return 'text-content';
-    case 7: // DEBUG
-      return 'text-content-secondary';
-    default:
-      return 'text-content-secondary';
-  }
-}
-
-/** Severity → left border color */
-function severityBorder(severity: number): string {
-  switch (severity) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-      return 'border-l-red-500';
-    case 4:
-      return 'border-l-yellow-500';
-    case 5:
-      return 'border-l-blue-500';
-    case 6:
-      return 'border-l-gray-500';
-    case 7:
-      return 'border-l-gray-600';
-    default:
-      return 'border-l-gray-600';
-  }
-}
-
-/** Severity badge bg color */
-function severityBadgeBg(severity: number): string {
-  switch (severity) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-      return 'bg-red-500/20 text-red-400';
-    case 4:
-      return 'bg-yellow-500/20 text-yellow-400';
-    case 5:
-      return 'bg-blue-500/20 text-blue-400';
-    case 6:
-      return 'bg-gray-500/20 text-gray-400';
-    case 7:
-      return 'bg-gray-600/20 text-gray-500';
-    default:
-      return 'bg-gray-600/20 text-gray-500';
-  }
-}
+import { severityColor, severityBorder, severityBadgeBg } from '../../utils/severity-color';
 
 function formatTime(ts: number): string {
   const d = new Date(ts);

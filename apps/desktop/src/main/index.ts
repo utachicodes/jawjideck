@@ -114,11 +114,6 @@ function createWindow(): BrowserWindow {
     return { action: 'deny' };
   });
 
-  // Open DevTools in development
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
-  }
-
   // Load the app
   if (isDev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);

@@ -5,15 +5,15 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import * as https from 'https';
 import * as http from 'http';
-import { BrowserWindow } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import { IPC_CHANNELS } from '../../shared/ipc-channels.js';
 import type { FirmwareVersion, FlashProgress } from '../../shared/firmware-types.js';
 
-// Firmware download directory
-const FIRMWARE_CACHE_DIR = path.join(os.tmpdir(), 'jawji-firmware');
+// Firmware download directory — under Documents so users can find downloaded
+// firmware files themselves, instead of the OS temp folder.
+const getFirmwareCacheDir = () => path.join(app.getPath('documents'), 'Jawji', 'Firmware');
 
 /**
  * Get local path for cached firmware file
@@ -33,7 +33,7 @@ export function getFirmwareCachePath(version: FirmwareVersion): string {
 
   const vehicle = version.vehicleType || 'unknown';
   const filename = `${vehicle}_${version.boardId || 'unknown'}_${version.version.replace(/\./g, '_')}${ext}`;
-  return path.join(FIRMWARE_CACHE_DIR, filename);
+  return path.join(getFirmwareCacheDir(), filename);
 }
 
 /**
@@ -87,7 +87,7 @@ export async function downloadFirmware(
   abortSignal?: AbortSignal
 ): Promise<string> {
   // Ensure cache directory exists
-  await fs.promises.mkdir(FIRMWARE_CACHE_DIR, { recursive: true });
+  await fs.promises.mkdir(getFirmwareCacheDir(), { recursive: true });
 
   // Handle local file paths (for bundled legacy firmware)
   if (isLocalFilePath(version.downloadUrl)) {
@@ -223,9 +223,9 @@ function formatBytes(bytes: number): string {
  */
 export async function clearFirmwareCache(): Promise<void> {
   try {
-    const files = await fs.promises.readdir(FIRMWARE_CACHE_DIR);
+    const files = await fs.promises.readdir(getFirmwareCacheDir());
     await Promise.all(
-      files.map((file) => fs.promises.unlink(path.join(FIRMWARE_CACHE_DIR, file)))
+      files.map((file) => fs.promises.unlink(path.join(getFirmwareCacheDir(), file)))
     );
   } catch {
     // Ignore errors (directory may not exist)
@@ -233,13 +233,20 @@ export async function clearFirmwareCache(): Promise<void> {
 }
 
 /**
+ * Path to the firmware cache folder (for "Show in Folder" UI affordance)
+ */
+export function getFirmwareCacheFolderPath(): string {
+  return getFirmwareCacheDir();
+}
+
+/**
  * Get firmware file from local path (for custom firmware)
  */
 export async function copyCustomFirmware(sourcePath: string): Promise<string> {
-  await fs.promises.mkdir(FIRMWARE_CACHE_DIR, { recursive: true });
+  await fs.promises.mkdir(getFirmwareCacheDir(), { recursive: true });
 
   const filename = `custom_${Date.now()}${path.extname(sourcePath)}`;
-  const destPath = path.join(FIRMWARE_CACHE_DIR, filename);
+  const destPath = path.join(getFirmwareCacheDir(), filename);
 
   await fs.promises.copyFile(sourcePath, destPath);
 

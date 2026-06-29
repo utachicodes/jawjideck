@@ -8,6 +8,25 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 
 ## [Unreleased]
 
+## [0.0.36] - 2026-06-29
+
+### Added
+- MATHIR cognitive memory MCP server integration (19 tools for agent memory).
+- Auto-release GitHub Action: pushing a `v*` tag now creates a GitHub Release with changelog notes and triggers the build workflow.
+- Architecture documentation (`docs/architecture/README.md`) covering monorepo structure, data flow, and view registry.
+- Getting started guide (`docs/guides/getting-started.md`).
+- Mock drone tool (`tools/mock-drone/`) for exercising the GCS without real hardware.
+- Settings view reorganized into tabs (Display, Vehicle, Tools, About) with a dedicated ArduPilot flight stats panel, circular gauges, weather widget, and OpenAIP key input.
+- Dashboard landing panels for recent connections and vehicle status; vehicle-type icon set (multicopter, fixed-wing, VTOL) with a shared vehicle-type map.
+- New shared UI primitives: `OnboardingWizard`, `SectionHeader`, `StatCard`, `Tabs`.
+
+### Removed
+- Betaflight dashboard components, superseded by the reorganized settings/dashboard views.
+
+### Fixed
+- New vehicle profiles now use the actual detected vehicle type (from MAVLink heartbeat) instead of defaulting to "copter". Profile name uses real board name instead of "New Board".
+- Vehicle profiles auto-populate specs (battery capacity, cell count, motor count, stall speed) from drone parameters after connection. Diff notification shown when drone values differ from profile.
+
 ## [0.0.35] - 2026-06-26
 
 ### Added
@@ -18,6 +37,9 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 ### Fixed
 - Broken wiki links: missing `MAVLink Signing` page (now written), and stale repo URLs in the wiki sidebar footer.
 - Windows portable build: `artifactName` had no token distinguishing the NSIS installer from the portable target, so both built to the same filename and the portable .exe silently never made it into releases (confirmed missing from the v0.0.34 release too).
+- ArduPilot SITL macOS binary downloads were 404ing: `GITHUB_RELEASES_URL` in `ardupilot-sitl-downloader.ts` pointed at a GitHub repo that doesn't exist. Corrected to the repo that actually hosts the `sitl-v*` releases.
+- Two more stale `rubenCodeforges/Jawji` URLs (nonexistent repo) in `wiki/Getting-Started.md`'s download table — corrected and trimmed to Windows-only, matching the rest of this release.
+- Links CI: `jawji.com`, `raspberrypi.com`, and `adlerblix.de` were failing (403/415) from bot/WAF protection, not because the links are actually broken — set a realistic User-Agent and accept 403/415 as a fallback.
 
 ## [0.0.34] - 2026-06-25
 
