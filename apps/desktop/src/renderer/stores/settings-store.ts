@@ -1058,8 +1058,13 @@ export const useSettingsStore = create<SettingsStore>()(
       ? (mavTypeToVehicleType[mavType] ?? 'copter')
       : 'copter';
 
-    // Build a meaningful profile name from available data
-    const profileName = boardName || boardId || vehicleType || resolvedType;
+    // Build a meaningful profile name from available data. resolvedType only
+    // counts as a name source when a MAV_TYPE was actually reported — it's
+    // hardcoded to 'copter' otherwise (see above), which isn't a name worth
+    // showing for an unidentified board.
+    const profileName = boardName || boardId || vehicleType
+      || (mavType !== undefined ? resolvedType : undefined)
+      || 'New Board';
 
     // 1. Check if any existing profile already has this boardUid
     const existingProfile = state.vehicles.find(v => v.boardUid === boardUid);
