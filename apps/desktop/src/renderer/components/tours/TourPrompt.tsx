@@ -1,5 +1,7 @@
 import { Sparkles, X } from 'lucide-react';
 import type { FeatureTour } from '../../feature-tours';
+import { isRecentTourVersion } from '../../feature-tours/version-utils';
+import { useUpdateStore } from '../../stores/update-store';
 
 interface TourPromptProps {
   tour: FeatureTour;
@@ -9,6 +11,9 @@ interface TourPromptProps {
 }
 
 export function TourPrompt({ tour, onAccept, onDecline, onLater }: TourPromptProps) {
+  const currentVersion = useUpdateStore((s) => s.currentVersion);
+  const isNew = isRecentTourVersion(tour.version, currentVersion);
+
   return (
     <div
       className="fixed bottom-6 right-6 z-[9999] w-[22rem] rounded-xl overflow-hidden animate-in slide-in-from-bottom-4"
@@ -29,7 +34,7 @@ export function TourPrompt({ tour, onAccept, onDecline, onLater }: TourPromptPro
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
             <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(37 99 235)' }}>
-              New in v{tour.version}
+              {isNew ? `New in v${tour.version}` : 'Feature tour'}
             </span>
           </div>
           <h3 className="text-sm font-semibold leading-tight" style={{ color: 'var(--text-primary)' }}>

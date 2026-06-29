@@ -21,7 +21,7 @@ export const FEATURE_TOURS: FeatureTour[] = [
   {
     id: 'quick-launch-033',
     view: 'telemetry',
-    version: '0.33',
+    version: '0.0.33',
     title: 'New: Quick Launch & the Area Editor',
     blurb:
       'Pop tools into their own windows from the header, and jump straight into the new Area Editor for drawing survey areas and corridors.',

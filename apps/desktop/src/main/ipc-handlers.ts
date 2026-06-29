@@ -3560,6 +3560,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       console.error('Connection failed:', error);
       const message = error instanceof Error ? error.message : 'Unknown error';
       sendLog(mainWindow, 'error', 'Connection failed', message);
+      safeSend(mainWindow, 'connection:error', message);
       currentTransport = null;
       mavlinkParser = null;
       return false;
