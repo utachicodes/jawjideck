@@ -9,6 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@jawji/comms": "workspace:*",
+    "@jawji/companion-types": "workspace:*",
+    "@jawji/dataflash-parser": "workspace:^",
+    "@jawji/mavlink-ts": "workspace:*",
+    "@jawji/module-sdk": "workspace:*",
+    "@jawji/msp-ts": "workspace:*",
     "@reactour/tour": "^3.8.0",
     "@tanstack/react-virtual": "^3.13.23",
     "@xterm/addon-fit": "^0.11.0",
