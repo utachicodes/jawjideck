@@ -1,6 +1,6 @@
 {
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter @jawji/web build",
+  "buildCommand": "pnpm turbo run build --filter=@jawji/web",
   "outputDirectory": "apps/web/dist",
   "framework": null
 }

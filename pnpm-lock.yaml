@@ -201,6 +201,24 @@ importers:
 
   apps/web:
     dependencies:
+      '@jawji/comms':
+        specifier: workspace:*
+        version: link:../../packages/comms
+      '@jawji/companion-types':
+        specifier: workspace:*
+        version: link:../../packages/companion-types
+      '@jawji/dataflash-parser':
+        specifier: workspace:^
+        version: link:../../packages/dataflash-parser
+      '@jawji/mavlink-ts':
+        specifier: workspace:*
+        version: link:../../packages/mavlink-ts
+      '@jawji/module-sdk':
+        specifier: workspace:*
+        version: link:../../packages/module-sdk
+      '@jawji/msp-ts':
+        specifier: workspace:*
+        version: link:../../packages/msp-ts
       '@reactour/tour':
         specifier: ^3.8.0
         version: 3.8.0(react@18.3.1)
