@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jawji</title>
+    <script>
+      // Web shim — provides a no-op electronAPI so the desktop renderer
+      // degrades gracefully (all IPC calls return undefined / no-op).
+      (function() {
+        function noop() {}
+        function noopAsync() { return Promise.resolve(); }
+        function noopListener(cb) { return noop; }
+        window.electronAPI = new Proxy({}, {
+          get: function(_, prop) {
+            if (typeof prop === 'string') {
+              if (prop.startsWith('on')) return noopListener;
+              return noopAsync;
+            }
+            return undefined;
+          }
+        });
+      })();
+    </script>
+  </head>
+  <body class="bg-surface-base text-content">
+    <div id="root"></div>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>
