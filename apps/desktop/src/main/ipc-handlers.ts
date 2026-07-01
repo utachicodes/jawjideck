@@ -5828,6 +5828,29 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     }
   });
 
+  // Generic text file save (native save dialog)
+  ipcMain.handle(IPC_CHANNELS.SAVE_TEXT_FILE, async (
+    _,
+    filename: string,
+    content: string,
+    filters?: Array<{ name: string; extensions: string[] }>,
+  ): Promise<{ success: boolean; filePath?: string; error?: string }> => {
+    try {
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: 'Save File',
+        defaultPath: filename,
+        filters: filters ?? [{ name: 'All Files', extensions: ['*'] }],
+      });
+      if (result.canceled || !result.filePath) {
+        return { success: false, error: 'Cancelled' };
+      }
+      await writeFile(result.filePath, content, 'utf-8');
+      return { success: true, filePath: result.filePath };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  });
+
   // Load parameters from file
   ipcMain.handle(IPC_CHANNELS.MISSION_IMPORT_AREA, async (): Promise<{ success: boolean; error?: string; format?: 'kml' | 'geojson'; content?: string; fileName?: string }> => {
     try {

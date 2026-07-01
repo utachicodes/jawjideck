@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFirmwareStore, type BoardInfo } from '../../stores/firmware-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import type { FirmwareVehicleType, FirmwareSource } from '../../../shared/firmware-types';
@@ -423,6 +423,126 @@ function isVehicleTypeSupported(type: FirmwareVehicleType, source: FirmwareSourc
   return FIRMWARE_SUPPORTED_VEHICLES[source]?.includes(type) ?? false;
 }
 
+/**
+ * Backup Config button — collects a full CLI dump (MSP) or parameter list (MAVLink)
+ * and saves it as a text file via native dialog before the user flashes new firmware.
+ */
+function ConfigBackupButton({
+  protocol,
+  fcVariant,
+  boardId,
+}: {
+  protocol: string | null | undefined;
+  fcVariant: string | null | undefined;
+  boardId: string | null | undefined;
+}) {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleBackup = useCallback(async () => {
+    setStatus('loading');
+    setErrorMsg('');
+    try {
+      const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const api = window.electronAPI;
+
+      if (protocol === 'msp') {
+        const res = await api?.reportCollectMspDump() as { success: boolean; dump?: { dump_all?: string; diff_all?: string; fc_variant?: string; fc_version?: string }; error?: string } | undefined;
+        if (!res?.success || !res.dump) {
+          throw new Error(res?.error ?? 'Dump failed');
+        }
+        const { dump_all = '', diff_all = '', fc_variant = '', fc_version = '' } = res.dump;
+        const content = [
+          `# Jawji config backup`,
+          `# FC: ${fc_variant} ${fc_version}`,
+          `# Board: ${boardId ?? 'unknown'}`,
+          `# Date: ${new Date().toISOString()}`,
+          '',
+          '# === DUMP ALL ===',
+          dump_all,
+          '',
+          '# === DIFF ALL ===',
+          diff_all,
+        ].join('\n');
+        const filename = `${fc_variant || 'msp'}_${boardId ?? 'board'}_backup_${ts}.txt`;
+        await api?.saveTextFile?.(
+          filename,
+          content,
+          [{ name: 'Text Files', extensions: ['txt'] }, { name: 'All Files', extensions: ['*'] }],
+        );
+      } else if (protocol === 'mavlink') {
+        const res = await api?.reportCollectMavlinkDump() as { success: boolean; dump?: { parameters?: Record<string, number>; fc_variant?: string; fc_version?: string }; error?: string } | undefined;
+        if (!res?.success || !res.dump) {
+          throw new Error(res?.error ?? 'Dump failed');
+        }
+        const { parameters = {}, fc_variant = '', fc_version = '' } = res.dump;
+        const lines = [
+          `# Jawji config backup`,
+          `# FC: ${fc_variant} ${fc_version}`,
+          `# Board: ${boardId ?? 'unknown'}`,
+          `# Date: ${new Date().toISOString()}`,
+          `# Parameters: ${Object.keys(parameters).length}`,
+          '',
+        ];
+        for (const [name, value] of Object.entries(parameters).sort(([a], [b]) => a.localeCompare(b))) {
+          lines.push(`${name},${parseFloat(value.toPrecision(6))}`);
+        }
+        const filename = `${fc_variant || 'mavlink'}_${boardId ?? 'board'}_params_${ts}.parm`;
+        await api?.saveTextFile?.(
+          filename,
+          lines.join('\n') + '\n',
+          [{ name: 'Parameter Files', extensions: ['parm', 'param'] }, { name: 'Text Files', extensions: ['txt'] }],
+        );
+      }
+      setStatus('done');
+      setTimeout(() => setStatus('idle'), 3000);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : String(err));
+      setStatus('error');
+    }
+  }, [protocol, fcVariant, boardId]);
+
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      <button
+        onClick={() => { void handleBackup(); }}
+        disabled={status === 'loading'}
+        className={`
+          px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors flex items-center gap-2
+          ${status === 'done'
+            ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+            : status === 'error'
+              ? 'bg-red-500/15 border-red-500/40 text-red-300'
+              : 'bg-surface border-border text-content-secondary hover:text-content hover:border'
+          }
+          disabled:opacity-60 disabled:cursor-not-allowed
+        `}
+      >
+        {status === 'loading' ? (
+          <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+        ) : status === 'done' ? (
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        ) : (
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+        )}
+        {status === 'loading' ? (protocol === 'msp' ? 'Dumping config…' : 'Collecting params…') : status === 'done' ? 'Saved!' : 'Backup Config'}
+      </button>
+      {protocol === 'msp' && status === 'idle' && (
+        <p className="text-xs text-content-tertiary">
+          MSP backup enters CLI mode — the board will reboot after saving.
+        </p>
+      )}
+      {status === 'error' && (
+        <p className="text-xs text-red-400">{errorMsg}</p>
+      )}
+    </div>
+  );
+}
+
 export function FirmwareFlashView() {
   const store = useFirmwareStore();
   const {
@@ -767,12 +887,19 @@ export function FirmwareFlashView() {
                       'Board info auto-detected from active connection'
                     )}
                   </p>
-                  <button
-                    onClick={() => { void disconnect(); }}
-                    className="mt-3 px-3 py-1.5 text-sm font-medium bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 rounded-lg transition-colors"
-                  >
-                    Disconnect now to enable flashing
-                  </button>
+                  <div className="mt-3 flex flex-wrap gap-2 items-start">
+                    <button
+                      onClick={() => { void disconnect(); }}
+                      className="px-3 py-1.5 text-sm font-medium bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 rounded-lg transition-colors"
+                    >
+                      Disconnect now to enable flashing
+                    </button>
+                    <ConfigBackupButton
+                      protocol={connectedProtocol}
+                      fcVariant={connectedFcVariant}
+                      boardId={connectedBoardId}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
