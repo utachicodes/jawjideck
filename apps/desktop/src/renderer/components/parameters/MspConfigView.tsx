@@ -24,7 +24,7 @@ import AutoLaunchTab from './AutoLaunchTab';
 // GpsRescueTab removed - GPS Rescue is now integrated into SafetyTab
 import FilterConfigTab from './FilterConfigTab';
 import VtxConfigTab from './VtxConfigTab';
-import ReceiverTab from './ReceiverTab';
+import ReceiverTab, { type ReceiverTabHandle } from './ReceiverTab';
 import PortsTab from './PortsTab';
 import ReceiverWizard from './ReceiverWizard';
 import { useReceiverStore } from '../../stores/receiver-store';
@@ -1885,6 +1885,7 @@ export function MspConfigView() {
   const [pidRatesModified, setPidRatesModified] = useState(false);
   const [safetyModified, setSafetyModified] = useState(false);
   const safetyRef = useRef<SafetyTabHandle>(null);
+  const receiverTabRef = useRef<ReceiverTabHandle>(null);
   const [currentPlatformType, setCurrentPlatformType] = useState<number>(0); // 0=multirotor, 1=airplane
   const [configActiveSensors, setConfigActiveSensors] = useState<number>(0); // Fetched once on config load
 
@@ -2283,6 +2284,16 @@ export function MspConfigView() {
         const safetySuccess = await safetyRef.current.save();
         if (!safetySuccess) {
           setError('Failed to save Safety settings');
+          return;
+        }
+      }
+
+      // Save Receiver type/protocol (MSP_SET_RX_CONFIG) if changed
+      if (receiverTabRef.current) {
+        console.log('[UI] Saving Receiver type/protocol...');
+        const receiverTypeSuccess = await receiverTabRef.current.save();
+        if (!receiverTypeSuccess) {
+          setError('Failed to save Receiver type');
           return;
         }
       }
@@ -2860,6 +2871,7 @@ export function MspConfigView() {
         {/* Receiver Tab */}
         {activeTab === 'receiver' && (
           <ReceiverTab
+            ref={receiverTabRef}
             isInav={isInav}
             modified={modified}
             setModified={setPidRatesModified}

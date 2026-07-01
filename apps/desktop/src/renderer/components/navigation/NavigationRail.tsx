@@ -1,8 +1,9 @@
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { useNavigationStore, type ViewId } from '../../stores/navigation-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useSettingsStore, type ThemePreference } from '../../stores/settings-store';
 import { isViewAvailable, useEnabledCapabilitySlugs } from '../../modules/capabilities';
+import { ChevronRight } from 'lucide-react';
 
 interface NavItem {
   id: ViewId;
@@ -11,12 +12,14 @@ interface NavItem {
   disabled?: boolean;
 }
 
-const navItems: NavItem[] = [
+// ─── Primary items — always visible ──────────────────────────────────────────
+
+const primaryItems: NavItem[] = [
   {
     id: 'telemetry',
     label: 'Telemetry',
     icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
     ),
@@ -25,7 +28,7 @@ const navItems: NavItem[] = [
     id: 'mission',
     label: 'Mission Planning',
     icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
       </svg>
     ),
@@ -34,7 +37,7 @@ const navItems: NavItem[] = [
     id: 'library',
     label: 'Mission Library',
     icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
       </svg>
     ),
@@ -43,18 +46,42 @@ const navItems: NavItem[] = [
     id: 'parameters',
     label: 'Parameters',
     icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
       </svg>
     ),
   },
+];
+
+const calibrationNavItem: NavItem = {
+  id: 'calibration',
+  label: 'Calibration',
+  icon: (
+    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    </svg>
+  ),
+};
+
+const logsNavItem: NavItem = {
+  id: 'logs',
+  label: 'Flight Logs',
+  icon: (
+    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+    </svg>
+  ),
+};
+
+// ─── Tools & Dev items — collapsible ─────────────────────────────────────────
+
+const toolsItems: NavItem[] = [
   {
     id: 'inspector',
     label: 'MAVLink Inspector',
     icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
       </svg>
     ),
   },
@@ -62,7 +89,7 @@ const navItems: NavItem[] = [
     id: 'firmware',
     label: 'Firmware',
     icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
       </svg>
     ),
@@ -71,7 +98,7 @@ const navItems: NavItem[] = [
     id: 'osd',
     label: 'OSD Simulator',
     icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 9h2M11 9h6M7 11h10" />
       </svg>
@@ -81,7 +108,7 @@ const navItems: NavItem[] = [
     id: 'sitl',
     label: 'SITL Simulator',
     icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
       </svg>
     ),
@@ -90,96 +117,55 @@ const navItems: NavItem[] = [
     id: 'lua-graph',
     label: 'Lua Graph Editor',
     icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4z" />
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 7h4M7 10v4M17 10v8M14 19h4" />
       </svg>
     ),
   },
-  // Modules: dev-only for now (marketplace still in private beta)
-  ...(import.meta.env.DEV
-    ? [
-        {
-          id: 'modules' as const,
-          label: 'Modules',
-          icon: (
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-          ),
-        },
-      ]
-    : []),
 ];
 
-// CLI nav item - only shown for MSP connections (Betaflight/iNav)
 const cliNavItem: NavItem = {
   id: 'cli',
   label: 'CLI Terminal',
   icon: (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
     </svg>
   ),
 };
 
-// Calibration nav item - shown for connected devices
-const calibrationNavItem: NavItem = {
-  id: 'calibration',
-  label: 'Calibration',
-  icon: (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-    </svg>
-  ),
-};
-
-// Companion nav item - only shown when a companion is detected
 const companionNavItem: NavItem = {
   id: 'companion',
-  label: 'Companion Computer',
+  label: 'Companion',
   icon: (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
     </svg>
   ),
 };
 
-const logsNavItem: NavItem = {
-  id: 'logs',
-  label: 'Flight Logs',
+const modulesNavItem: NavItem = {
+  id: 'modules',
+  label: 'Modules',
   icon: (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
     </svg>
   ),
 };
 
-// Future navigation items (disabled placeholders)
-const futureItems: (Omit<NavItem, 'id'> & { id: string })[] = [];
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// Logical grouping for the rail. Items in the same group render together;
-// a subtle separator is drawn wherever the group changes. This gives the
-// icon-only rail visual hierarchy without labels.
-//   1 = flight operations · 2 = tools & simulation · 3 = hardware & data
-const NAV_GROUPS: Record<string, number> = {
-  telemetry: 1,
-  mission: 1,
-  library: 1,
-  parameters: 1,
-  calibration: 1,
-  inspector: 2,
-  firmware: 2,
-  osd: 2,
-  sitl: 2,
-  'lua-graph': 2,
-  modules: 2,
-  cli: 2,
-  companion: 3,
-  logs: 3,
-};
+const TOOLS_OPEN_KEY = 'nav-tools-open';
 
-const groupOf = (id: string): number => NAV_GROUPS[id] ?? 99;
+function readToolsOpen(): boolean {
+  try { return localStorage.getItem(TOOLS_OPEN_KEY) !== 'false'; } catch { return false; }
+}
+
+function writeToolsOpen(v: boolean) {
+  try { localStorage.setItem(TOOLS_OPEN_KEY, String(v)); } catch { /* ignore */ }
+}
 
 interface NavigationRailProps {
   onViewChange?: (viewId: ViewId) => void;
@@ -188,160 +174,177 @@ interface NavigationRailProps {
 export function NavigationRail({ onViewChange }: NavigationRailProps) {
   const { currentView, setView } = useNavigationStore();
   const connectionState = useConnectionStore((s) => s.connectionState);
-
-  // Show CLI nav item only for MSP (Betaflight/iNav) connections
-  const showCli = connectionState.isConnected && connectionState.protocol === 'msp';
-
-  // Show Calibration when connected
-  const showCalibration = connectionState.isConnected;
-
-  // Build the nav items list - insert calibration after parameters (index 3)
-  const allNavItems = [...navItems];
-  if (showCalibration) {
-    // Insert after parameters (which is at index 3)
-    allNavItems.splice(4, 0, calibrationNavItem);
-  }
-  if (showCli) {
-    allNavItems.push(cliNavItem);
-  }
-  const companionUnlocked = useSettingsStore((s) => s.companionUnlocked);
-  if (companionUnlocked) {
-    allNavItems.push(companionNavItem);
-  }
-  allNavItems.push(logsNavItem);
-
-  // Hide views gated behind an activatable module that isn't enabled. With no
-  // gated capabilities defined this is a no-op (every view stays visible).
   const enabledCapabilitySlugs = useEnabledCapabilitySlugs();
-  const visibleNavItems = allNavItems.filter((item) =>
-    isViewAvailable(item.id, enabledCapabilitySlugs),
-  );
+  const companionUnlocked = useSettingsStore((s) => s.companionUnlocked);
 
-  const handleClick = (viewId: ViewId) => {
-    if (onViewChange) {
-      onViewChange(viewId);
-    } else {
-      setView(viewId);
-    }
+  const [toolsOpen, setToolsOpen] = useState(readToolsOpen);
+
+  const toggleTools = () => {
+    setToolsOpen((v) => { writeToolsOpen(!v); return !v; });
   };
 
+  const handleClick = (viewId: ViewId) => {
+    if (onViewChange) onViewChange(viewId);
+    else setView(viewId);
+  };
+
+  // Build primary list
+  const primaryList: NavItem[] = [...primaryItems];
+  if (connectionState.isConnected) primaryList.splice(4, 0, calibrationNavItem);
+  primaryList.push(logsNavItem);
+
+  // Build tools list
+  const toolsList: NavItem[] = [...toolsItems];
+  if (connectionState.isConnected && connectionState.protocol === 'msp') toolsList.push(cliNavItem);
+  if (companionUnlocked) toolsList.push(companionNavItem);
+  if (import.meta.env.DEV) toolsList.push(modulesNavItem);
+
+  // Filter by capability gates
+  const visiblePrimary = primaryList.filter((i) => isViewAvailable(i.id, enabledCapabilitySlugs));
+  const visibleTools = toolsList.filter((i) => isViewAvailable(i.id, enabledCapabilitySlugs));
+
+  const activeInTools = visibleTools.some((i) => i.id === currentView);
+
   return (
-    <nav className="w-14 h-full bg-surface-nav border-r border-subtle flex flex-col items-center py-3 gap-1">
-      {/* Active navigation items, clustered into groups with separators */}
-      {visibleNavItems.map((item, index) => {
-        const prev = visibleNavItems[index - 1];
-        const showSeparator = prev && groupOf(prev.id) !== groupOf(item.id);
+    <nav className="w-44 h-full bg-surface-nav border-r border-subtle flex flex-col py-3 overflow-y-auto overflow-x-hidden shrink-0">
 
-        return (
-          <Fragment key={item.id}>
-            {showSeparator && <div className="w-6 h-px bg-surface-raised my-1.5" />}
-            <button
-              onClick={() => !item.disabled && handleClick(item.id)}
-              disabled={item.disabled}
-              className={`
-                relative w-10 h-10 rounded-lg flex items-center justify-center
-                transition-all duration-200 group
-                ${item.disabled
-                  ? 'text-content-disabled cursor-not-allowed'
-                  : currentView === item.id
-                    ? 'bg-blue-500/20 text-blue-400'
-                    : 'text-content-tertiary hover:text-content-secondary hover:bg-surface-raised'
-                }
-              `}
-              title={item.label}
-            >
-              {/* Active indicator */}
-              {currentView === item.id && !item.disabled && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-400 rounded-r" />
-              )}
-              {item.icon}
+      {/* Primary items */}
+      <div className="flex flex-col gap-0.5 px-2">
+        {visiblePrimary.map((item) => (
+          <NavButton
+            key={item.id}
+            item={item}
+            active={currentView === item.id}
+            onClick={() => handleClick(item.id)}
+          />
+        ))}
+      </div>
 
-              {/* Tooltip */}
-              <div className={`absolute left-full ml-2 px-2 py-1 bg-surface-raised text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg ${item.disabled ? 'text-content-tertiary' : 'text-content'}`}>
-                {item.label}
-              </div>
-            </button>
-          </Fragment>
-        );
-      })}
+      {/* Tools & Dev group */}
+      {visibleTools.length > 0 && (
+        <>
+          <div className="mx-3 my-3 h-px bg-surface-raised" />
 
-      {/* Future items (disabled) */}
-      {futureItems.length > 0 && <div className="w-6 h-px bg-surface-raised my-2" />}
-      {futureItems.map((item) => (
-        <button
-          key={item.id}
-          disabled
-          className="relative w-10 h-10 rounded-lg flex items-center justify-center text-content-disabled cursor-not-allowed group"
-          title={item.label}
-        >
-          {item.icon}
+          {/* Section header — clickable to collapse */}
+          <button
+            onClick={toggleTools}
+            className="flex items-center gap-2 px-3 py-1.5 w-full text-left group"
+          >
+            <ChevronRight
+              size={13}
+              className={`text-content-tertiary transition-transform duration-200 shrink-0 ${toolsOpen ? 'rotate-90' : ''}`}
+            />
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-content-tertiary group-hover:text-content-secondary transition-colors select-none">
+              Tools
+            </span>
+            {!toolsOpen && activeInTools && (
+              <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+            )}
+          </button>
 
-          {/* Tooltip */}
-          <div className="absolute left-full ml-2 px-2 py-1 bg-surface-raised text-content-tertiary text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
-            {item.label}
-          </div>
-        </button>
-      ))}
+          {/* Tools items */}
+          {toolsOpen && (
+            <div className="flex flex-col gap-0.5 px-2 mt-0.5">
+              {visibleTools.map((item) => (
+                <NavButton
+                  key={item.id}
+                  item={item}
+                  active={currentView === item.id}
+                  onClick={() => handleClick(item.id)}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Settings — lives with the bottom utility controls */}
-      <button
-        onClick={() => handleClick('settings')}
-        className={`
-          relative w-10 h-10 rounded-lg flex items-center justify-center
-          transition-all duration-200 group mb-1
-          ${currentView === 'settings'
-            ? 'bg-blue-500/20 text-blue-400'
-            : 'text-content-tertiary hover:text-content-secondary hover:bg-surface-raised'
-          }
-        `}
-        title="Settings"
-      >
-        {currentView === 'settings' && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-400 rounded-r" />
-        )}
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-        <div className="absolute left-full ml-2 px-2 py-1 bg-surface-raised text-content text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
-          Settings
-        </div>
-      </button>
-
-      {/* Theme toggle */}
-      <ThemeToggle />
-
-      {/* Report Bug button */}
-      <button
-        onClick={() => handleClick('report')}
-        className={`
-          relative w-10 h-10 rounded-lg flex items-center justify-center
-          transition-all duration-200 group mb-2
-          ${currentView === 'report'
-            ? 'bg-red-500/20 text-red-400'
-            : 'text-content-tertiary hover:text-content-secondary hover:bg-surface-raised'
-          }
-        `}
-        title="Report a Bug"
-      >
-        {currentView === 'report' && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-red-400 rounded-r" />
-        )}
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-        <div className="absolute left-full ml-2 px-2 py-1 bg-surface-raised text-content text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
-          Report a Bug
-        </div>
-      </button>
+      {/* Bottom utilities */}
+      <div className="mx-3 mb-2 h-px bg-surface-raised" />
+      <div className="flex flex-col gap-0.5 px-2">
+        <NavButton
+          item={{ id: 'settings', label: 'Settings', icon: (
+            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          )}}
+          active={currentView === 'settings'}
+          onClick={() => handleClick('settings')}
+        />
+        <NavButton
+          item={{ id: 'report', label: 'Report a Bug', icon: (
+            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          )}}
+          active={currentView === 'report'}
+          onClick={() => handleClick('report')}
+        />
+        <ThemeToggle />
+      </div>
     </nav>
   );
 }
 
+// ─── NavButton ────────────────────────────────────────────────────────────────
+
+interface NavButtonProps {
+  item: NavItem;
+  active: boolean;
+  onClick: () => void;
+}
+
+function NavButton({ item, active, onClick }: NavButtonProps) {
+  return (
+    <button
+      onClick={() => !item.disabled && onClick()}
+      disabled={item.disabled}
+      className={`
+        relative flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium
+        transition-all duration-150 text-left
+        ${item.disabled
+          ? 'text-content-disabled cursor-not-allowed opacity-50'
+          : active
+            ? 'bg-blue-500/15 text-blue-400'
+            : 'text-content-secondary hover:text-content hover:bg-surface-raised'
+        }
+      `}
+    >
+      {/* Active left bar */}
+      {active && !item.disabled && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-400 rounded-r" />
+      )}
+      {item.icon}
+      <span className="truncate leading-none">{item.label}</span>
+    </button>
+  );
+}
+
+// ─── ThemeToggle ──────────────────────────────────────────────────────────────
+
 const THEME_CYCLE: ThemePreference[] = ['dark', 'light', 'system'];
+
+const THEME_ICONS: Record<ThemePreference, React.ReactNode> = {
+  dark: (
+    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+    </svg>
+  ),
+  light: (
+    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+    </svg>
+  ),
+  system: (
+    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+    </svg>
+  ),
+};
+
 const THEME_LABELS: Record<ThemePreference, string> = {
   dark: 'Dark theme',
   light: 'Light theme',
@@ -361,27 +364,11 @@ function ThemeToggle() {
   return (
     <button
       onClick={cycle}
-      className="relative w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 group text-content-tertiary hover:text-content-secondary hover:bg-surface-raised mb-1"
+      className="relative flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-content-secondary hover:text-content hover:bg-surface-raised transition-all duration-150 text-left"
       title={THEME_LABELS[theme]}
     >
-      {theme === 'dark' && (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-        </svg>
-      )}
-      {theme === 'light' && (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      )}
-      {theme === 'system' && (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-      )}
-      <div className="absolute left-full ml-2 px-2 py-1 bg-surface-raised text-content text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
-        {THEME_LABELS[theme]}
-      </div>
+      {THEME_ICONS[theme]}
+      <span className="truncate leading-none">{THEME_LABELS[theme]}</span>
     </button>
   );
 }

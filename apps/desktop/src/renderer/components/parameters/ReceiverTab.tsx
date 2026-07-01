@@ -5,7 +5,7 @@
  * Used by both iNav and Betaflight boards.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useReceiverStore } from '../../stores/receiver-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useSettingsStore } from '../../stores/settings-store';
@@ -29,6 +29,8 @@ import {
   BF_PROVIDERS,
   PROTOCOL_HINTS,
   BF_PROTOCOL_HINTS,
+  INAV_RECEIVER_TYPE_INDEX,
+  SERIALRX_PROVIDER_INDEX,
 } from '../../utils/receiver-constants';
 
 // =============================================================================
@@ -283,6 +285,10 @@ function ChannelMapDragRow({ rxMap, setRxMap }: { rxMap: number[]; setRxMap: (ma
 // Main Component
 // =============================================================================
 
+export interface ReceiverTabHandle {
+  save(): Promise<boolean>;
+}
+
 interface ReceiverTabProps {
   isInav: boolean;
   modified: boolean;
@@ -290,7 +296,7 @@ interface ReceiverTabProps {
   onNavigateToTab?: (tabId: string) => void;
 }
 
-export default function ReceiverTab({ isInav, modified, setModified, onNavigateToTab }: ReceiverTabProps) {
+const ReceiverTab = forwardRef<ReceiverTabHandle, ReceiverTabProps>(function ReceiverTab({ isInav, modified, setModified, onNavigateToTab }, ref) {
   const connection = useConnectionStore((s) => s.connectionState);
 
   // Hot path (10Hz) — only channels + signal status
@@ -401,6 +407,37 @@ export default function ReceiverTab({ isInav, modified, setModified, onNavigateT
       // MSP_RX_CONFIG not available
     }
   }, [isInav]);
+
+  // Persist receiverType/serialrxProvider changes to the FC via MSP_SET_RX_CONFIG.
+  // (rxMap/deadband/serialConfig are saved separately by useReceiverStore.saveConfig().)
+  const save = useCallback(async (): Promise<boolean> => {
+    try {
+      if (isInav) {
+        const providerChanged = inavSerialrxProvider !== null && inavSerialrxProvider !== originalInavProvider;
+        const typeChanged = receiverType !== null && receiverType !== originalReceiverType;
+        if (providerChanged || typeChanged) {
+          const providerIdx = inavSerialrxProvider != null ? SERIALRX_PROVIDER_INDEX[inavSerialrxProvider] : undefined;
+          const typeIdx = receiverType != null ? INAV_RECEIVER_TYPE_INDEX[receiverType] : undefined;
+          const result = await window.electronAPI?.mspSetRxConfig(providerIdx ?? 0, typeIdx);
+          if (!result) return false;
+          setOriginalInavProvider(inavSerialrxProvider);
+          setOriginalReceiverType(receiverType);
+        }
+      } else {
+        const providerChanged = bfProvider !== null && bfProvider !== originalBfProvider;
+        if (providerChanged) {
+          const result = await window.electronAPI?.mspSetRxConfig(bfProvider);
+          if (!result) return false;
+          setOriginalBfProvider(bfProvider);
+        }
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }, [isInav, inavSerialrxProvider, originalInavProvider, receiverType, originalReceiverType, bfProvider, originalBfProvider]);
+
+  useImperativeHandle(ref, () => ({ save }), [save]);
 
   const getSignalBadge = () => {
     switch (signalStatus) {
@@ -729,4 +766,6 @@ export default function ReceiverTab({ isInav, modified, setModified, onNavigateT
       </Section>
     </div>
   );
-}
+});
+
+export default ReceiverTab;
