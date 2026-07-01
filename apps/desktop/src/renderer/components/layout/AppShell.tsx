@@ -6,6 +6,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { DebugConsole } from '../debug/DebugConsole';
 import { UpdateBanner } from './UpdateBanner';
 import { ArmDisarmButton } from './ArmDisarmButton';
+import { FlightStrip } from './FlightStrip';
 import { ScriptHealthBadge } from '../script-installer/ScriptHealthBadge';
 import { QuickLaunchMenu } from './QuickLaunchMenu';
 import { AlertTriangle, X, Loader2 } from 'lucide-react';
@@ -117,6 +118,9 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Main content */}
       <div className="flex-1 overflow-hidden">{children}</div>
+
+      {/* Persistent flight controls strip */}
+      <FlightStrip />
 
       {/* Debug console */}
       <DebugConsole />

@@ -619,6 +619,9 @@ export const IPC_CHANNELS = {
 
   // KML / KMZ area export
   EXPORT_AREAS_KML: 'export:areas-kml',
+
+  // Generic text file save (native dialog)
+  SAVE_TEXT_FILE: 'save:text-file',
 } as const;
 
 export type IpcChannels = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];

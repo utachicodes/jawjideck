@@ -4,6 +4,7 @@ import { useParameterStore } from '../../../stores/parameter-store';
 import { useNavigationStore } from '../../../stores/navigation-store';
 import { useTelemetryStore } from '../../../stores/telemetry-store';
 import { useConnectionStore } from '../../../stores/connection-store';
+import { Wifi, Battery, Cpu, Satellite, AlertTriangle, RefreshCw, Download } from 'lucide-react';
 import { VehicleTemplatePicker } from '../vehicle-profile/VehicleTemplatePicker';
 import { ApplyProfileButton } from '../vehicle-profile/ApplyProfileButton';
 import { DriftBadge } from '../vehicle-profile/DriftBadge';
@@ -17,7 +18,6 @@ import { inferProfileFromParams } from '../../../lib/vehicle-templates/import';
 import { VEHICLE_ICONS, VEHICLE_TYPE_NAMES } from '../../../lib/vehicle-icons';
 import { saveParmToFile } from '../../../lib/vehicle-templates/export-parm';
 import { getTemplate, defaultTemplateForType } from '../../../lib/vehicle-templates/registry';
-import { Download } from 'lucide-react';
 import type { VehicleTemplate } from '../../../lib/vehicle-templates/types';
 import { mavTypeToVehicleType } from '../../../../shared/vehicle-type-map';
 import { CircularGauge } from '../CircularGauge';
@@ -147,6 +147,10 @@ export function VehicleTab() {
 
   return (
     <div className="space-y-4">
+
+      {/* ── Connected Drone Live Panel ── */}
+      <ConnectedDronePanel />
+
       {/* Profile Compatibility Warning */}
       {connectionState.isConnected && !profileCompatibility.compatible && activeVehicle && connectionState.fcVariant && (
         <ProfileCompatibilityBanner
@@ -299,4 +303,173 @@ function formatDistance(meters: number): string {
   if (!isFinite(meters) || meters < 0) return '--';
   if (meters >= 1000) return `${(meters / 1000).toFixed(1)} km`;
   return `${Math.round(meters)} m`;
+}
+
+// ─── Connected Drone Live Panel ───────────────────────────────────────────────
+
+function ConnectedDronePanel() {
+  const connectionState = useConnectionStore((s) => s.connectionState);
+  const battery = useTelemetryStore((s) => s.battery);
+  const gps = useTelemetryStore((s) => s.gps);
+  const flight = useTelemetryStore((s) => s.flight);
+  const sensorHealth = useTelemetryStore((s) => s.sensorHealth);
+  const [refreshing, setRefreshing] = useState(false);
+
+  if (!connectionState.isConnected) return null;
+
+  const isMavlink = connectionState.protocol === 'mavlink';
+  const isMsp = connectionState.protocol === 'msp';
+
+  const GPS_FIX = ['No Fix', 'No Fix', '2D Fix', '3D Fix', 'DGPS', 'RTK Float', 'RTK Fixed'];
+  const gpsLabel = GPS_FIX[gps?.fixType ?? 0] ?? 'Unknown';
+  const gpsColor = (gps?.fixType ?? 0) >= 3 ? 'text-emerald-400' : (gps?.fixType ?? 0) >= 2 ? 'text-amber-400' : 'text-red-400';
+
+  const battColor = (battery?.remaining ?? 0) > 50 ? 'text-emerald-400' : (battery?.remaining ?? 0) > 20 ? 'text-amber-400' : 'text-red-400';
+
+  // Active sensors (MSP bitmask: bit0=ACC bit1=BARO bit2=MAG bit3=GPS bit5=GYRO)
+  const activeSensors = flight?.activeSensors ?? 0;
+  const mspSensors = [
+    { bit: 0x01, label: 'ACC' },
+    { bit: 0x02, label: 'BARO' },
+    { bit: 0x04, label: 'MAG' },
+    { bit: 0x08, label: 'GPS' },
+    { bit: 0x20, label: 'GYRO' },
+  ];
+
+  // MAVLink sensor health
+  const SENSOR_BITS = { GYRO: 0x01, ACCEL: 0x02, MAG: 0x04, BARO: 0x08, GPS: 0x20 };
+  const mavSensors = Object.entries(SENSOR_BITS).map(([name, bit]) => ({
+    label: name,
+    ok: sensorHealth ? (sensorHealth.health & bit) !== 0 : null,
+    present: sensorHealth ? (sensorHealth.present & bit) !== 0 : false,
+  }));
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // Telemetry is pushed continuously; the spinner just signals to the user
+      // that the data on screen is live. No explicit request needed.
+      await new Promise((r) => setTimeout(r, 800));
+    } catch { /* ignore */ }
+    finally { setTimeout(() => setRefreshing(false), 1000); }
+  };
+
+  return (
+    <div className="rounded-xl border border-blue-500/25 bg-blue-500/5 p-4 space-y-3">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-sm font-semibold text-content">Connected Drone</span>
+          <span className="text-xs text-content-tertiary">
+            {connectionState.fcVariant ? `${connectionState.fcVariant}` : ''}
+            {connectionState.boardId ? ` · ${connectionState.boardId}` : ''}
+            {connectionState.transport ? ` · ${connectionState.transport}` : ''}
+          </span>
+        </div>
+        <button
+          onClick={handleRefresh}
+          className="p-1 rounded text-content-tertiary hover:text-content hover:bg-surface-raised transition-colors"
+          title="Refresh live data"
+        >
+          <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
+        </button>
+      </div>
+
+      {/* Live data grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Battery */}
+        <LiveCard
+          icon={<Battery size={15} />}
+          label="Battery"
+          value={battery ? `${battery.voltage.toFixed(1)} V` : '--'}
+          sub={battery ? `${battery.remaining}% · ${battery.current.toFixed(1)} A` : undefined}
+          color={battColor}
+        />
+
+        {/* GPS */}
+        <LiveCard
+          icon={<Satellite size={15} />}
+          label="GPS"
+          value={gpsLabel}
+          sub={gps ? `${gps.satellites} sats · HDOP ${gps.hdop.toFixed(1)}` : undefined}
+          color={gpsColor}
+        />
+
+        {/* Mode / Armed */}
+        <LiveCard
+          icon={<Wifi size={15} />}
+          label="State"
+          value={flight?.mode || '--'}
+          sub={flight?.armed ? 'ARMED' : 'Disarmed'}
+          color={flight?.armed ? 'text-red-400' : 'text-content-secondary'}
+          subColor={flight?.armed ? 'text-red-400' : 'text-emerald-400'}
+        />
+
+        {/* FC info */}
+        <LiveCard
+          icon={<Cpu size={15} />}
+          label="Firmware"
+          value={connectionState.fcVariant || '--'}
+          sub={connectionState.fcVersion || undefined}
+          color="text-content"
+        />
+      </div>
+
+      {/* Sensor health */}
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5">Sensor Health</p>
+        <div className="flex flex-wrap gap-1.5">
+          {isMsp && mspSensors.map(({ bit, label }) => {
+            const ok = (activeSensors & bit) !== 0;
+            return (
+              <span key={label} className={`px-2 py-0.5 rounded text-[10px] font-medium
+                ${ok ? 'bg-emerald-500/15 text-emerald-400' : 'bg-surface-raised text-content-tertiary'}`}>
+                {label}
+              </span>
+            );
+          })}
+          {isMavlink && mavSensors.filter((s) => s.present).map(({ label, ok }) => (
+            <span key={label} className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium
+              ${ok === true ? 'bg-emerald-500/15 text-emerald-400' : ok === false ? 'bg-red-500/15 text-red-400' : 'bg-surface-raised text-content-tertiary'}`}>
+              {ok === false && <AlertTriangle size={9} />}
+              {label}
+            </span>
+          ))}
+          {!isMavlink && !isMsp && (
+            <span className="text-[10px] text-content-tertiary">Sensor data not available for this protocol</span>
+          )}
+        </div>
+      </div>
+
+      {/* Position */}
+      {gps && gps.lat !== 0 && (
+        <div className="text-[10px] text-content-tertiary font-mono">
+          {gps.lat.toFixed(6)}, {gps.lon.toFixed(6)} · Alt {gps.alt.toFixed(1)} m
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface LiveCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  sub?: string;
+  color?: string;
+  subColor?: string;
+}
+
+function LiveCard({ icon, label, value, sub, color = 'text-content', subColor }: LiveCardProps) {
+  return (
+    <div className="bg-surface rounded-lg border border-subtle p-3 space-y-1">
+      <div className="flex items-center gap-1.5 text-content-tertiary">
+        {icon}
+        <span className="text-[10px] uppercase tracking-wider font-semibold">{label}</span>
+      </div>
+      <p className={`text-sm font-semibold leading-tight ${color}`}>{value}</p>
+      {sub && <p className={`text-[10px] leading-tight ${subColor ?? 'text-content-secondary'}`}>{sub}</p>}
+    </div>
+  );
 }

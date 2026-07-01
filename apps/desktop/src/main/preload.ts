@@ -1493,6 +1493,14 @@ const api = {
     return () => ipcRenderer.removeListener(IPC_CHANNELS.REPORT_PROGRESS, handler);
   },
 
+  /** Show a native save dialog and write text content to the chosen path */
+  saveTextFile: (
+    filename: string,
+    content: string,
+    filters?: Array<{ name: string; extensions: string[] }>,
+  ): Promise<{ success: boolean; filePath?: string; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.SAVE_TEXT_FILE, filename, content, filters),
+
   // =============================================================================
   // Calibration
   // =============================================================================
