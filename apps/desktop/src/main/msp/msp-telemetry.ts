@@ -468,9 +468,26 @@ export async function setRawRc(channels: number[]): Promise<boolean> {
     const sentThrottle = validatedChannels[2] ?? 1000;
     ctx.lastSentThrottlePercent = Math.round(Math.max(0, Math.min(100, ((sentThrottle - 1000) / 1000) * 100)));
 
-    const payload = new Uint8Array(validatedChannels.length * 2);
+    // Our channel array is always in fixed Roll/Pitch/Throttle/Yaw order
+    // (indices 0-3), but the FC's actual RC input order is whatever its
+    // RX_MAP says (e.g. a board configured for AETR expects Throttle at
+    // position 2, one configured for TAER expects it at position 0). Remap
+    // before sending so stick/throttle input lands on the channel the FC's
+    // mixer is actually reading, instead of always assuming AETR-equivalent
+    // ordering.
+    const rxMap = ctx.cachedRxMap;
+    const remapped = [...validatedChannels];
+    if (rxMap.length >= 4) {
+      const [rollPos, pitchPos, yawPos, throttlePos] = rxMap;
+      if (rollPos !== undefined) remapped[rollPos] = validatedChannels[0]!;
+      if (pitchPos !== undefined) remapped[pitchPos] = validatedChannels[1]!;
+      if (throttlePos !== undefined) remapped[throttlePos] = validatedChannels[2]!;
+      if (yawPos !== undefined) remapped[yawPos] = validatedChannels[3]!;
+    }
+
+    const payload = new Uint8Array(remapped.length * 2);
     const view = new DataView(payload.buffer);
-    validatedChannels.forEach((ch, i) => {
+    remapped.forEach((ch, i) => {
       view.setUint16(i * 2, ch, true);
     });
 

@@ -157,6 +157,19 @@ export const BTFL_MODE_NAMES: Record<number, string> = {
 // =============================================================================
 
 interface FlightControlStore {
+  // Keyboard/joystick RC control toggles — lifted out of FlightStrip so the
+  // toggle buttons can live in the header (AppShell) as a single "input
+  // method" selector, while the streaming logic and live indicators stay in
+  // FlightStrip. The two are mutually exclusive: activating one turns the
+  // other off, since both would otherwise write the same RC channels and
+  // fight each other.
+  kbActive: boolean;
+  gpActive: boolean;
+  setKbActive: (active: boolean) => void;
+  toggleKbActive: () => void;
+  setGpActive: (active: boolean) => void;
+  toggleGpActive: () => void;
+
   // RC Channel State (16 channels)
   channels: number[];
 
@@ -171,6 +184,16 @@ interface FlightControlStore {
   // RC Override State
   isOverrideActive: boolean;
   overrideInterval: ReturnType<typeof setInterval> | null;
+
+  // Receiver config check — GCS-simulated RC (MSP_SET_RAW_RC) only reaches
+  // the mixer if the FC's receiver is actually configured to read from MSP.
+  // Otherwise sticks can *look* live (attitude self-leveling still runs) while
+  // throttle and other inputs never move the motors, which is easy to
+  // mistake for a bug in this app instead of an FC config issue.
+  rxConfigChecked: boolean;
+  rxConfigIsMsp: boolean | null; // null = unknown/unsupported FC, true/false = known
+  checkRxConfig: () => Promise<void>;
+  fixRxConfigForGcs: () => Promise<boolean>;
 
   // Actions
   setChannel: (channel: number, value: number) => void;
@@ -233,6 +256,27 @@ function pwmToNormalized(pwm: number): number {
 
 export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
   // Initial state
+  kbActive: false,
+  gpActive: false,
+  setKbActive: (active) => {
+    set({ kbActive: active, gpActive: active ? false : get().gpActive });
+    if (active) get().checkRxConfig();
+  },
+  toggleKbActive: () => {
+    const next = !get().kbActive;
+    set({ kbActive: next, gpActive: next ? false : get().gpActive });
+    if (next) get().checkRxConfig();
+  },
+  setGpActive: (active) => {
+    set({ gpActive: active, kbActive: active ? false : get().kbActive });
+    if (active) get().checkRxConfig();
+  },
+  toggleGpActive: () => {
+    const next = !get().gpActive;
+    set({ gpActive: next, kbActive: next ? false : get().kbActive });
+    if (next) get().checkRxConfig();
+  },
+
   channels: [...DEFAULT_CHANNELS],
   modeMappings: [],
   modeMappingsLoaded: false,
@@ -240,6 +284,46 @@ export const useFlightControlStore = create<FlightControlStore>((set, get) => ({
   canNavWp: false,
   isOverrideActive: false,
   overrideInterval: null,
+
+  rxConfigChecked: false,
+  rxConfigIsMsp: null,
+
+  // Read MSP_RX_CONFIG once per connection and remember whether the FC's
+  // receiver is actually set to MSP. Betaflight reports this via
+  // serialrx_provider (15 = MSP); iNav has a dedicated receiver_type byte
+  // (2 = MSP) since it can run MSP RC alongside a real serial receiver.
+  checkRxConfig: async () => {
+    try {
+      const config = await window.electronAPI.mspGetRxConfig();
+      if (!config) {
+        set({ rxConfigChecked: true, rxConfigIsMsp: null });
+        return;
+      }
+      const isMsp = config.receiverType !== null
+        ? config.receiverType === 2
+        : config.serialrxProvider === 15;
+      set({ rxConfigChecked: true, rxConfigIsMsp: isMsp });
+    } catch {
+      set({ rxConfigChecked: true, rxConfigIsMsp: null });
+    }
+  },
+
+  // Switch the FC's receiver to MSP so GCS-simulated RC (joystick/keyboard/
+  // gamepad) actually reaches the mixer. iNav supports MSP alongside a real
+  // receiver (receiver_type=2); Betaflight only has one active provider at a
+  // time (serialrx_provider=15), so this will disable a physical receiver
+  // there if one was configured — that's the whole point of calling it.
+  fixRxConfigForGcs: async () => {
+    try {
+      const config = await window.electronAPI.mspGetRxConfig();
+      const isInav = config?.receiverType !== null && config?.receiverType !== undefined;
+      const ok = await window.electronAPI.mspSetRxConfig(15, isInav ? 2 : undefined);
+      if (ok) set({ rxConfigIsMsp: true });
+      return ok;
+    } catch {
+      return false;
+    }
+  },
 
   // Set single channel value
   setChannel: (channel, value) => {

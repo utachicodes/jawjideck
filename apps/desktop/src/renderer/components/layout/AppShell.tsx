@@ -2,6 +2,8 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useUpdateStore } from '../../stores/update-store';
 import { useNavigationStore } from '../../stores/navigation-store';
+import { useFlightControlStore } from '../../stores/flight-control-store';
+import { useGamepad } from '../../hooks/useGamepad';
 import { useTheme } from '../../hooks/useTheme';
 import { DebugConsole } from '../debug/DebugConsole';
 import { UpdateBanner } from './UpdateBanner';
@@ -9,8 +11,56 @@ import { ArmDisarmButton } from './ArmDisarmButton';
 import { FlightStrip } from './FlightStrip';
 import { ScriptHealthBadge } from '../script-installer/ScriptHealthBadge';
 import { QuickLaunchMenu } from './QuickLaunchMenu';
-import { AlertTriangle, X, Loader2 } from 'lucide-react';
+import { AlertTriangle, X, Loader2, Keyboard, Gamepad2 } from 'lucide-react';
 import iconImage from '../../assets/icon.png';
+
+/**
+ * Input-method selector — Keyboard and Joystick are mutually exclusive (both
+ * write the same RC channels, so running both at once would fight each
+ * other). Clicking the active one turns control off; clicking the other
+ * switches to it.
+ */
+function InputModeToggle() {
+  const connectionState = useConnectionStore((s) => s.connectionState);
+  const { kbActive, toggleKbActive, gpActive, toggleGpActive } = useFlightControlStore();
+  const gamepad = useGamepad();
+  const isConnected = connectionState?.isConnected ?? false;
+  const protocol = connectionState?.protocol;
+
+  if (!isConnected || (protocol !== 'msp' && protocol !== 'mavlink')) return null;
+
+  return (
+    <div className="flex items-center rounded-full border border-border bg-surface p-0.5 gap-0.5">
+      <button
+        onClick={toggleKbActive}
+        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide transition-colors
+          ${kbActive
+            ? 'bg-blue-500/20 text-blue-400'
+            : 'text-content-secondary hover:bg-surface-raised hover:text-content'
+          }`}
+        title="Keyboard RC control (WASD + QE + Arrows)"
+      >
+        <Keyboard size={13} />
+        <span>KB</span>
+      </button>
+      <button
+        onClick={toggleGpActive}
+        disabled={!gamepad.connected}
+        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide transition-colors
+          ${gpActive
+            ? 'bg-blue-500/20 text-blue-400'
+            : gamepad.connected
+              ? 'text-content-secondary hover:bg-surface-raised hover:text-content'
+              : 'text-content-disabled opacity-40 cursor-not-allowed'
+          }`}
+        title={gamepad.connected ? `Joystick RC control (${gamepad.name})` : 'No gamepad detected — connect a controller'}
+      >
+        <Gamepad2 size={13} />
+        <span>JOY</span>
+      </button>
+    </div>
+  );
+}
 
 interface AppShellProps {
   children: ReactNode;
@@ -67,6 +117,9 @@ export function AppShell({ children }: AppShellProps) {
 
           {/* ARM / DISARM button */}
           <ArmDisarmButton />
+
+          {/* Keyboard / Joystick RC control selector */}
+          <InputModeToggle />
 
           {/* Connection status */}
           {connectionState.isConnected ? (
