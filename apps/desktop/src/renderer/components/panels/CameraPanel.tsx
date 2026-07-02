@@ -9,8 +9,10 @@
  * future addition — see docs/superpowers/specs/2026-07-02-camera-feed-design.md.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useConnectionStore } from '../../stores/connection-store';
+import { useCameraStore } from '../../stores/camera-store';
+import { mapDetectionToOverlayRect } from './camera-overlay-math';
 import { Video, RefreshCw } from 'lucide-react';
 
 type CameraStream =
@@ -26,6 +28,12 @@ export function CameraPanel() {
   const [detectedUri, setDetectedUri] = useState<string | null>(null);
   const [streamError, setStreamError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+
+  const detections = useCameraStore((s) => s.detections);
+  const setStoreStreamUrl = useCameraStore((s) => s.setStreamUrl);
+  const clearStoreDetections = useCameraStore((s) => s.clearDetections);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [overlayTick, setOverlayTick] = useState(0); // forces re-measure on resize/load
 
   // Request MAVLink auto-detection once per mount, for MAVLink vehicles only.
   useEffect(() => {
@@ -43,6 +51,7 @@ export function CameraPanel() {
   const handleUseUrl = (url: string) => {
     setStreamError(false);
     setStream({ type: 'mjpeg', url });
+    setStoreStreamUrl(url);
   };
 
   const handleRetry = () => {
@@ -50,16 +59,65 @@ export function CameraPanel() {
     setReloadKey((k) => k + 1);
   };
 
+  // Clear the shared camera store when this panel instance unmounts, so a
+  // stale module doesn't keep drawing boxes over nothing.
+  useEffect(() => {
+    return () => {
+      setStoreStreamUrl(null);
+      clearStoreDetections();
+    };
+  }, [setStoreStreamUrl, clearStoreDetections]);
+
+  // Re-measure the overlay when the panel is resized or popped out.
+  useEffect(() => {
+    if (!imgRef.current) return;
+    const observer = new ResizeObserver(() => setOverlayTick((t) => t + 1));
+    observer.observe(imgRef.current);
+    return () => observer.disconnect();
+  }, [stream.type]);
+
   return (
     <div className="h-full w-full bg-black flex flex-col relative">
       {stream.type === 'mjpeg' && !streamError && (
-        <img
-          key={reloadKey}
-          src={stream.url}
-          onError={() => setStreamError(true)}
-          className="w-full h-full object-contain"
-          alt="Vehicle camera feed"
-        />
+        <div className="relative w-full h-full">
+          <img
+            ref={imgRef}
+            key={reloadKey}
+            src={stream.url}
+            onError={() => setStreamError(true)}
+            onLoad={() => setOverlayTick((t) => t + 1)}
+            className="w-full h-full object-contain"
+            alt="Vehicle camera feed"
+          />
+          {imgRef.current?.naturalWidth ? (
+            <svg
+              key={overlayTick}
+              className="absolute inset-0 w-full h-full pointer-events-none"
+            >
+              {detections.map((d, i) => {
+                const rect = mapDetectionToOverlayRect(
+                  d,
+                  { width: imgRef.current!.naturalWidth, height: imgRef.current!.naturalHeight },
+                  { width: imgRef.current!.clientWidth, height: imgRef.current!.clientHeight },
+                );
+                return (
+                  <g key={i}>
+                    <rect
+                      x={rect.left} y={rect.top} width={rect.width} height={rect.height}
+                      fill="none" stroke="#22d3ee" strokeWidth={2}
+                    />
+                    <text
+                      x={rect.left} y={Math.max(12, rect.top - 4)}
+                      fill="#22d3ee" fontSize={12} fontFamily="monospace"
+                    >
+                      {d.label} {(d.confidence * 100).toFixed(0)}%
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+          ) : null}
+        </div>
       )}
 
       {(stream.type === 'none' || streamError) && (
