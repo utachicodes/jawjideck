@@ -259,6 +259,7 @@ export function ModuleManagerView() {
     updates,
     loadModules,
     activateLicense,
+    installLocal,
     removeLicense,
     checkUpdates,
     setProgress,
@@ -295,6 +296,15 @@ export function ModuleManagerView() {
       // startup, so the module won't appear until Jawji restarts.
       setRestartRequired(true);
       // Refresh updates
+      checkUpdates();
+    }
+  };
+
+  const handleInstallLocal = async () => {
+    clearError();
+    const result = await installLocal();
+    if (result.success) {
+      setRestartRequired(true);
       checkUpdates();
     }
   };
@@ -373,6 +383,14 @@ export function ModuleManagerView() {
               {activating ? 'Adding…' : 'Add'}
             </button>
           </div>
+
+          <button
+            onClick={handleInstallLocal}
+            disabled={activating}
+            className="mt-3 text-xs text-content-secondary hover:text-content transition-colors disabled:opacity-50"
+          >
+            Install from folder (dev)…
+          </button>
 
           {/* Error message */}
           {error && (

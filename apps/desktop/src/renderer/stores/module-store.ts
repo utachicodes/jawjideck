@@ -13,6 +13,7 @@ interface ModuleState {
   // Actions
   loadModules: () => Promise<void>;
   activateLicense: (key: string) => Promise<{ success: boolean; error?: string }>;
+  installLocal: () => Promise<{ success: boolean; error?: string }>;
   removeLicense: (key: string) => Promise<void>;
   checkUpdates: () => Promise<void>;
   setProgress: (progress: ModuleProgress | null) => void;
@@ -47,6 +48,24 @@ export const useModuleStore = create<ModuleState>((set, get) => ({
         return result;
       }
       // Refresh module list
+      await get().loadModules();
+      set({ activating: false });
+      return result;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      set({ activating: false, error: message });
+      return { success: false, error: message };
+    }
+  },
+
+  installLocal: async () => {
+    set({ activating: true, error: null });
+    try {
+      const result = await window.electronAPI.moduleInstallLocal();
+      if (!result.success) {
+        set({ activating: false, error: result.error || 'Install failed' });
+        return result;
+      }
       await get().loadModules();
       set({ activating: false });
       return result;
