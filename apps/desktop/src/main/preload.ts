@@ -1756,6 +1756,9 @@ const api = {
   moduleActivate: (key: string): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.MODULE_ACTIVATE, key),
 
+  moduleInstallLocal: (): Promise<{ success: boolean; error?: string; module?: InstalledModule }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MODULE_INSTALL_LOCAL),
+
   moduleList: (): Promise<InstalledModule[]> =>
     ipcRenderer.invoke(IPC_CHANNELS.MODULE_LIST),
 

@@ -467,6 +467,7 @@ export const IPC_CHANNELS = {
 
   // Module Manager
   MODULE_ACTIVATE: 'module:activate',
+  MODULE_INSTALL_LOCAL: 'module:install-local',
   MODULE_LIST: 'module:list',
   MODULE_REMOVE: 'module:remove',
   MODULE_CHECK_UPDATES: 'module:check-updates',
