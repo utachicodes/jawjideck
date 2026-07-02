@@ -4,15 +4,18 @@ import { useTelemetryStore } from '../stores/telemetry-store';
 import { useConnectionStore } from '../stores/connection-store';
 import { useNavigationStore } from '../stores/navigation-store';
 import { useParameterStore } from '../stores/parameter-store';
+import { useCameraStore } from '../stores/camera-store';
 
 type RegisterFn = (slug: string, name: 'floatingOverlay', component: ComponentType) => void;
 
 export function createRendererHostApi(
   slug: string,
   register: RegisterFn,
+  moduleDir: string,
 ): RendererHostApi {
   return {
     moduleSlug: slug,
+    moduleDir,
 
     telemetry: {
       getSnapshot: () => useTelemetryStore.getState() as unknown,
@@ -53,6 +56,13 @@ export function createRendererHostApi(
         // Type 9 = MAV_PARAM_TYPE_REAL32 (float). Module callers must know this.
         await window.electronAPI.setParameter(name, value, 9);
       },
+    },
+
+    camera: {
+      getStreamUrl: () => useCameraStore.getState().streamUrl,
+      subscribe: (listener) =>
+        useCameraStore.subscribe((s) => listener(s.streamUrl)),
+      setDetections: (detections) => useCameraStore.getState().setDetections(detections),
     },
 
     pty: {
