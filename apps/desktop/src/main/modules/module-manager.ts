@@ -4,7 +4,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { readFile, rm } from 'node:fs/promises';
+import { readFile, rm, cp } from 'node:fs/promises';
 import { join } from 'node:path';
 import { app } from 'electron';
 import Store from 'electron-store';
@@ -208,6 +208,47 @@ export async function activateLicense(
   onProgress({ stage: 'complete', message: `Activated ${newModules.length} module(s)`, percent: 100 });
 
   return { success: true };
+}
+
+/**
+ * Install a module directly from a local directory (its built `dist/`
+ * output), bypassing the marketplace/license flow entirely. For locally
+ * developed modules — not part of the marketplace pipeline.
+ */
+export async function installLocalModule(sourceDir: string): Promise<InstalledModule> {
+  const manifestRaw = await readFile(join(sourceDir, 'module.json'), 'utf-8');
+  let manifestJson: unknown;
+  try {
+    manifestJson = JSON.parse(manifestRaw);
+  } catch {
+    throw new Error(`${sourceDir}/module.json is not valid JSON`);
+  }
+  const parsed = parseModuleManifest(manifestJson);
+  if (!parsed.ok) {
+    throw new Error(`Invalid manifest in ${sourceDir}: ${parsed.error}`);
+  }
+  const manifest = parsed.manifest;
+
+  const installPath = join(app.getPath('userData'), 'modules', manifest.slug, 'extracted');
+  await rm(installPath, { recursive: true, force: true });
+  await cp(sourceDir, installPath, { recursive: true });
+
+  const record: InstalledModule = {
+    slug: manifest.slug,
+    name: manifest.name,
+    version: manifest.version,
+    installedAt: new Date().toISOString(),
+    licenseKey: 'local-dev',
+    licenseType: 'perpetual',
+    bundleName: null,
+    installPath,
+    manifestVersion: manifest.manifestVersion,
+  };
+
+  const currentModules = store.get('modules');
+  store.set('modules', [...currentModules.filter((m) => m.slug !== manifest.slug), record]);
+
+  return record;
 }
 
 // --------------------------------------------------------------------------
