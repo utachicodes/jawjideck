@@ -247,6 +247,12 @@ If you later want real depth *values* (distance-at-cursor, not just a colorized 
 
 ---
 
+## Part 5 — Running AI object detection on the feed
+
+Once Part 3 or Part 4 is streaming into the Camera panel, the **AI Object Detection** module (`modules/ai-object-detection/` in this repo) can draw live bounding boxes on top of it — see that module's own README for build/install steps. It runs entirely on the machine running Jawji, not on the Pi, so no extra Pi-side setup is needed beyond having a stream already configured in the Camera panel.
+
+---
+
 ## Putting it all together
 
 Once all four parts are running simultaneously:
