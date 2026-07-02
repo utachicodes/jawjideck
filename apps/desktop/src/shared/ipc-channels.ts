@@ -74,6 +74,15 @@ export const IPC_CHANNELS = {
 
   // Connection state
   CONNECTION_STATE: 'connection:state',
+  GET_CONNECTION_STATE: 'connection:get-state',
+
+  // Fleet management
+  FLEET_GET_ROSTER: 'fleet:get-roster',
+  FLEET_ADD_VEHICLE: 'fleet:add-vehicle',
+  FLEET_UPDATE_VEHICLE: 'fleet:update-vehicle',
+  FLEET_REMOVE_VEHICLE: 'fleet:remove-vehicle',
+  FLEET_SET_FOCUSED: 'fleet:set-focused',
+  FLEET_VEHICLE_STATUS: 'fleet:vehicle-status',
 
   // Console/debug
   CONSOLE_LOG: 'console:log',
@@ -746,6 +755,40 @@ export interface ConnectionState {
   // Stats
   packetsReceived: number;
   packetsSent: number;
+}
+
+/**
+ * A vehicle entry in the fleet roster. `id` is a stable identifier
+ * independent of connection details (a roster entry can be edited without
+ * losing its identity/status history).
+ */
+export interface FleetVehicleEntry {
+  id: string;
+  name: string;
+  protocol: 'mavlink' | 'msp';
+  transportType: 'tcp' | 'udp' | 'serial';
+  host?: string;
+  port?: number;
+  serialPath?: string;
+  baudRate?: number;
+}
+
+/**
+ * Live status for one fleet vehicle, as reported by the lightweight Fleet
+ * Monitor. Intentionally minimal — this is an overview, not full telemetry.
+ */
+export interface FleetVehicleStatus {
+  vehicleId: string;
+  connected: boolean;
+  armed: boolean;
+  /** Raw MAVLink custom_mode number, or null for MSP/unknown. Not decoded to a friendly name — that requires vehicle-type context out of scope for this lightweight overview. */
+  modeNumber: number | null;
+  batteryPercent: number | null;
+  batteryVoltage: number | null;
+  lat: number | null;
+  lon: number | null;
+  lastSeenAt: number | null;
+  error: string | null;
 }
 
 /**
