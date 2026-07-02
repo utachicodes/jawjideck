@@ -20,6 +20,8 @@ export const IPC_CHANNELS = {
   MAVLINK_REBOOT: 'mavlink:reboot',
   MAVLINK_ARM_DISARM: 'mavlink:arm-disarm',
   MAVLINK_SET_MODE: 'mavlink:set-mode',
+  MAVLINK_REQUEST_VIDEO_STREAM_INFO: 'mavlink:request-video-stream-info',
+  MAVLINK_VIDEO_STREAM_INFO: 'mavlink:video-stream-info',
   MAVLINK_COMMAND_TAKEOFF: 'mavlink:command-takeoff',
   MAVLINK_COMMAND_VTOL_TAKEOFF: 'mavlink:command-vtol-takeoff',
   MAVLINK_GOTO: 'mavlink:goto',
@@ -789,6 +791,11 @@ export interface FleetVehicleStatus {
   lon: number | null;
   lastSeenAt: number | null;
   error: string | null;
+}
+
+/** A MAVLink-advertised video stream, as reported by VIDEO_STREAM_INFORMATION. */
+export interface VideoStreamInfo {
+  uri: string;
 }
 
 /**
