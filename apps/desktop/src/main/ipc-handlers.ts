@@ -82,6 +82,8 @@ import {
   serializeHeartbeat,
   HEARTBEAT_ID,
   HEARTBEAT_CRC_EXTRA,
+  VIDEO_STREAM_INFORMATION_ID,
+  deserializeVideoStreamInformation,
   serializeRcChannelsOverride,
   RC_CHANNELS_OVERRIDE_ID,
   RC_CHANNELS_OVERRIDE_CRC_EXTRA,
@@ -110,6 +112,7 @@ import { getBoardInfoFromVersion } from '../shared/board-ids.js';
 import { detectBoards, fetchFirmwareVersions, downloadFirmware, copyCustomFirmware, getFirmwareCacheFolderPath, flashWithDfu, flashWithAvrdude, flashWithSerialBootloader, flashWithArduPilotBootloader, getArduPilotBoards, getArduPilotVersions, getBetaflightBoards, getBetaflightVersions, resolveBetaflightDownloadUrl, getInavBoards, getInavVersions, type BoardInfo, type VersionGroup } from './firmware/index.js';
 import { registerMspHandlers, tryMspDetection, startMspTelemetry, stopMspTelemetry, cleanupMspConnection, exitCliModeIfActive, autoConfigureSitlPlatform, getMspVehicleType, resetSitlAutoConfig } from './msp/index.js';
 import { registerFleetHandlers } from './fleet/index.js';
+import { requestVideoStreamInfo } from './camera-feed-helpers.js';
 import { initCalibrationHandlers, cleanupCalibrationHandlers, handleCalibrationStatusText, handleCalibrationCommandAck, handleIncomingCommandLong, isMavlinkCalibrationActive, cancelCalibration, type MavlinkCalibrationDeps } from './calibration/index.js';
 import { initMissionLibraryHandlers, cleanupMissionLibraryHandlers } from './mission-library/index.js';
 import { MavlinkFtpClient, parseParamPack, PARAM_PCK_PATH, parseFtpPayload } from './mavlink-ftp/index.js';
@@ -2565,6 +2568,15 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
               sendConnectionState(mainWindow);
             }
 
+            // Handle VIDEO_STREAM_INFORMATION (msgid 269) — response to our
+            // MAV_CMD_REQUEST_MESSAGE request in MAVLINK_REQUEST_VIDEO_STREAM_INFO.
+            if (packet.msgid === VIDEO_STREAM_INFORMATION_ID) {
+              const info = deserializeVideoStreamInformation(packet.payload);
+              if (info.uri) {
+                safeSend(mainWindow, IPC_CHANNELS.MAVLINK_VIDEO_STREAM_INFO, { uri: info.uri });
+              }
+            }
+
             // Handle heartbeat (msgid 0)
             if (packet.msgid === 0) {
               // Detect MAVLink version from packet format
@@ -4698,6 +4710,25 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       sendLog(mainWindow, 'error', 'Failed to set mode', message);
+      return false;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.MAVLINK_REQUEST_VIDEO_STREAM_INFO, async (): Promise<boolean> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return false;
+    }
+    try {
+      await requestVideoStreamInfo({
+        sendMavlinkPacket,
+        writePacket: async (packet) => { await currentTransport!.write(packet); connectionState.packetsSent++; },
+        targetSystem: connectionState.systemId ?? 1,
+      });
+      sendLog(mainWindow, 'debug', 'Sent MAV_CMD_REQUEST_MESSAGE for VIDEO_STREAM_INFORMATION');
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      sendLog(mainWindow, 'error', 'Failed to request video stream info', message);
       return false;
     }
   });
