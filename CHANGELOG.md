@@ -8,6 +8,25 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 
 ## [Unreleased]
 
+### Added
+- Fleet management: a new Fleet view lets you add multiple vehicles (MAVLink and MSP) to a saved roster and monitor live status (armed/mode/battery/position) for all of them at once over lightweight, read-only connections. Every other view (Mission Planning, Parameters, Calibration, Firmware Flash, CLI, etc.) continues to operate on a single "focused" vehicle exactly as before — click Focus on any fleet tile to make it the active connection.
+- Keyboard and joystick RC control, available for both MAVLink and MSP vehicles, selectable from a mutually-exclusive KB/JOY toggle in the header (previously the two could be active simultaneously and would fight over the same RC channels).
+- Receiver-config auto-detect for MSP vehicles: on connect, Jawji now reads `MSP_RX_CONFIG` and shows a one-click "Fix" chip in the flight strip if the flight controller's receiver isn't set to MSP — without this, GCS-simulated stick input (joystick/keyboard) never reaches the motors even though arming and telemetry work fine.
+- `getConnectionState` IPC call so detached (pop-out) windows can pull the current connection snapshot on open, instead of only listening for future state-change broadcasts.
+
+### Fixed
+- **Joystick RC control was a complete no-op** — the gamepad→RC-send interval had `gamepad.axes` in its `useEffect` dependency array; since that array is a new reference every animation frame (~60Hz), the interval was torn down and recreated before its 50ms tick could ever fire. Fixed by reading live axis values through a ref instead.
+- MSP RC channel order (`RX_MAP`) was fetched from the flight controller but never applied when sending stick input back — always assumed Roll/Pitch/Throttle/Yaw order regardless of the board's actual configured order. Now remapped before every `MSP_SET_RAW_RC` send.
+- Detached "Flight Control" pop-out window showed "Connect device" forever if opened after a connection was already established, since it only listened for future connection-state broadcasts.
+- Type mismatch in the MAVLink arm/pre-arm RC override helper (`arming-helpers.ts` declared `Buffer` where the real signature returns `Uint8Array`).
+
+### Changed
+- Keyboard-control toggle moved from the bottom flight strip to the header, next to ARM/DISARM, decluttering the bottom bar; the flight strip now only shows live key/axis indicators while a mode is active.
+
+### Removed
+- OSD Simulator view and all supporting components/store/fonts.
+- Lua Graph Editor view and its editor-only components (kept the shared graph-node renderer and types still used by the Lua script installer's read-only graph preview).
+
 ## [0.0.36] - 2026-06-29
 
 ### Added
