@@ -10,8 +10,20 @@ export interface PtyCreateOptions {
   rows?: number;
 }
 
+export interface CameraDetection {
+  label: string;
+  confidence: number;
+  /** Normalized 0-1, relative to the source video frame — NOT screen pixels. */
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
 export interface RendererHostApi {
   moduleSlug: string;
+  /** Absolute filesystem path to this module's own extracted directory — use as `cwd` for `pty.create()` when the module ships its own scripts (e.g. a Python inference script). */
+  moduleDir: string;
   telemetry: {
     getSnapshot(): unknown;
     subscribe(listener: (s: unknown) => void): () => void;
@@ -28,6 +40,11 @@ export interface RendererHostApi {
     getAll(): Promise<unknown[]>;
     get(name: string): Promise<unknown>;
     set(name: string, value: number): Promise<void>;
+  };
+  camera: {
+    getStreamUrl(): string | null;
+    subscribe(listener: (url: string | null) => void): () => void;
+    setDetections(detections: CameraDetection[]): void;
   };
   pty: {
     create(opts: PtyCreateOptions): Promise<string>;

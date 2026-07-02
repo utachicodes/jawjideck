@@ -1,0 +1,10 @@
+{
+  "manifestVersion": 1,
+  "slug": "jawji.builtin.ai-object-detection",
+  "name": "AI Object Detection",
+  "version": "0.1.0",
+  "entry": { "renderer": "renderer.js" },
+  "mountPoints": [],
+  "permissions": ["pty"],
+  "minJawjiVersion": "0.0.37"
+}

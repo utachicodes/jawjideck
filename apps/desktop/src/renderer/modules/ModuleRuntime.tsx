@@ -57,7 +57,7 @@ export function ModuleRuntime({ children }: { children: ReactNode }) {
         try {
           const mod = (await import(/* @vite-ignore */ url)) as RendererExports;
           if (typeof mod.activate === 'function') {
-            const host = createRendererHostApi(rec.slug, register);
+            const host = createRendererHostApi(rec.slug, register, rec.installPath);
             await mod.activate(host);
             console.log(`[ModuleRuntime] activated ${rec.slug}`);
           } else {

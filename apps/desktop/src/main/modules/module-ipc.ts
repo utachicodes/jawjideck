@@ -3,7 +3,7 @@
  * Bridges renderer requests to module-manager orchestrator.
  */
 
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, dialog } from 'electron';
 import { IPC_CHANNELS } from '../../shared/ipc-channels.js';
 import {
   activateLicense,
@@ -11,6 +11,7 @@ import {
   removeLicense,
   checkForUpdates,
   heartbeatAll,
+  installLocalModule,
 } from './module-manager.js';
 import { getLoadedModules, loadAllModules } from './module-registry.js';
 import { killPty, resizePty, spawnPty, writePty } from './module-pty-service.js';
@@ -23,6 +24,24 @@ export function setupModuleIpc(mainWindow: BrowserWindow): void {
         mainWindow.webContents.send(IPC_CHANNELS.MODULE_PROGRESS, progress);
       });
       return result;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, error: message };
+    }
+  });
+
+  // Sideload a locally-built module (dev workflow, not the marketplace path).
+  ipcMain.handle(IPC_CHANNELS.MODULE_INSTALL_LOCAL, async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select Module Build Folder (containing module.json)',
+      properties: ['openDirectory'],
+    });
+    if (result.canceled || result.filePaths.length === 0) {
+      return { success: false, error: 'Cancelled' };
+    }
+    try {
+      const module = await installLocalModule(result.filePaths[0]!);
+      return { success: true, module };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return { success: false, error: message };
