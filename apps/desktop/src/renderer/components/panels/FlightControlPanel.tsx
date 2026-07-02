@@ -25,239 +25,209 @@ import { executeTakeoff, presentTakeoff } from './takeoff-strategies';
 // Visual Components
 // =============================================================================
 
+const JOYSTICK_SIZE = 200;
+const JOYSTICK_KNOB = 44;
+const THROTTLE_HEIGHT = 240;
+const THROTTLE_WIDTH = 64;
+
 /**
- * Throttle Gauge - Vertical bar gauge similar to battery indicator
+ * ThrottleLever — tall vertical slider with a draggable knob.
  */
-function ThrottleGauge({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const percentage = ((value - 1000) / 1000) * 100;
-  const gaugeRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
+function ThrottleLever({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const pct = ((value - 1000) / 1000) * 100;
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState(false);
 
-  // Color based on throttle level
-  const fillColor = percentage < 10 ? '#10b981' : percentage < 50 ? '#f59e0b' : '#ef4444';
-  const textColor = percentage < 10 ? 'text-emerald-400' : percentage < 50 ? 'text-amber-400' : 'text-red-400';
+  const color = pct < 10 ? '#10b981' : pct < 50 ? '#f59e0b' : '#ef4444';
+  const textColor = pct < 10 ? 'text-emerald-400' : pct < 50 ? 'text-amber-400' : 'text-red-400';
 
-  const handleInteraction = useCallback((clientY: number) => {
-    if (!gaugeRef.current) return;
-    const rect = gaugeRef.current.getBoundingClientRect();
-    const relativeY = clientY - rect.top;
-    const newPercentage = Math.max(0, Math.min(100, 100 - (relativeY / rect.height) * 100));
-    const newValue = Math.round(1000 + (newPercentage / 100) * 1000);
-    onChange(newValue);
+  // Knob Y position: top of track = 2000 (100%), bottom = 1000 (0%)
+  const trackH = THROTTLE_HEIGHT - 40; // reserve space for knob overflow
+  const knobY = ((2000 - value) / 1000) * (trackH - JOYSTICK_KNOB);
+
+  const interact = useCallback((clientY: number) => {
+    if (!trackRef.current) return;
+    const rect = trackRef.current.getBoundingClientRect();
+    const rel = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    const pwm = Math.round(2000 - rel * 1000);
+    onChange(Math.max(1000, Math.min(2000, pwm)));
   }, [onChange]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    handleInteraction(e.clientY);
-  };
+  const onDown = (e: React.MouseEvent) => { setDragging(true); interact(e.clientY); };
 
   useEffect(() => {
-    if (!isDragging) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      handleInteraction(e.clientY);
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, handleInteraction]);
+    if (!dragging) return;
+    const mv = (e: MouseEvent) => interact(e.clientY);
+    const up = () => setDragging(false);
+    document.addEventListener('mousemove', mv);
+    document.addEventListener('mouseup', up);
+    return () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); };
+  }, [dragging, interact]);
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      {/* Gauge SVG */}
+    <div className="flex flex-col items-center gap-2 select-none">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-content-secondary">THR</div>
       <div
-        ref={gaugeRef}
-        className="relative cursor-pointer select-none"
-        onMouseDown={handleMouseDown}
+        className="relative cursor-pointer"
+        style={{ width: THROTTLE_WIDTH, height: THROTTLE_HEIGHT }}
+        onMouseDown={onDown}
       >
-        <svg width="50" height="120" viewBox="0 0 50 120">
-          <defs>
-            <linearGradient id="throttleGradient" x1="0%" y1="100%" x2="0%" y2="0%">
-              <stop offset="0%" stopColor="#10b981" />
-              <stop offset="50%" stopColor="#f59e0b" />
-              <stop offset="100%" stopColor="#ef4444" />
-            </linearGradient>
-            <filter id="throttleGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-          </defs>
-
-          {/* Background track */}
-          <rect x="10" y="5" width="30" height="110" rx="4" fill="var(--bg-base)" stroke="var(--border-default)" strokeWidth="1"/>
-
-          {/* Fill level */}
-          <rect
-            x="14"
-            y={9 + (102 * (1 - percentage / 100))}
-            width="22"
-            height={102 * (percentage / 100)}
-            rx="2"
-            fill={fillColor}
-            filter="url(#throttleGlow)"
-            style={{ transition: isDragging ? 'none' : 'all 0.1s ease-out' }}
+        {/* Track background */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-5 bottom-5 w-3 rounded-full bg-black/40 border border-white/5">
+          {/* Fill */}
+          <div
+            className="absolute bottom-0 w-full rounded-full"
+            style={{
+              height: `${pct}%`,
+              background: `linear-gradient(to top, ${color}44, ${color}88)`,
+              transition: dragging ? 'none' : 'height 0.1s ease-out',
+            }}
           />
-
-          {/* Tick marks */}
-          {[0, 25, 50, 75, 100].map((tick) => (
-            <g key={tick}>
-              <line
-                x1="6"
-                y1={111 - (tick / 100) * 102}
-                x2="10"
-                y2={111 - (tick / 100) * 102}
-                stroke="#6b7280"
-                strokeWidth="1"
-              />
-              <line
-                x1="40"
-                y1={111 - (tick / 100) * 102}
-                x2="44"
-                y2={111 - (tick / 100) * 102}
-                stroke="#6b7280"
-                strokeWidth="1"
-              />
-            </g>
-          ))}
-        </svg>
+        </div>
+        {/* Tick marks */}
+        {[0, 25, 50, 75, 100].map((t) => (
+          <div key={t} className="absolute left-0 right-0 flex items-center" style={{ bottom: `${t}%`, transform: 'translateY(50%)' }}>
+            <div className="w-2 h-px bg-white/20" />
+            <div className="flex-1 h-px bg-white/10" />
+            <div className="w-2 h-px bg-white/20" />
+          </div>
+        ))}
+        {/* Knob */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2 rounded-full border-2 shadow-xl cursor-grab active:cursor-grabbing"
+          style={{
+            width: JOYSTICK_KNOB, height: JOYSTICK_KNOB,
+            top: 5 + knobY,
+            borderColor: color,
+            background: `radial-gradient(circle at 35% 35%, ${color}, ${color}99)`,
+            boxShadow: `0 0 16px ${color}55, 0 4px 12px rgba(0,0,0,0.5)`,
+            transition: dragging ? 'none' : 'top 0.1s ease-out',
+          }}
+        >
+          {/* Grip lines */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+            <div className="w-5 h-0.5 rounded-full bg-white/40" />
+            <div className="w-5 h-0.5 rounded-full bg-white/40" />
+            <div className="w-5 h-0.5 rounded-full bg-white/40" />
+          </div>
+        </div>
       </div>
-
-      {/* Value display */}
       <div className="text-center">
-        <span className={`text-xl font-bold font-mono ${textColor}`}>
-          {Math.round(percentage)}%
-        </span>
-        <div className="text-content-secondary text-[10px]">{value}us</div>
+        <div className={`text-2xl font-bold font-mono ${textColor}`}>{Math.round(pct)}%</div>
+        <div className="text-content-secondary text-[10px] font-mono">{value} us</div>
       </div>
     </div>
   );
 }
 
 /**
- * Joystick Control - 2D stick input visualization
+ * BigJoystick — large circular 2D stick pad with a visible grabbable knob.
+ * Looks and feels like an RC transmitter gimbal.
  */
-function JoystickControl({
-  x,
-  y,
-  onChangeX,
-  onChangeY,
-  label,
-  xLabel = 'X',
-  yLabel = 'Y',
+function BigJoystick({
+  x, y, onChangeX, onChangeY, label, xLabel, yLabel,
 }: {
-  x: number;
-  y: number;
-  onChangeX: (v: number) => void;
-  onChangeY: (v: number) => void;
-  label: string;
-  xLabel?: string;
-  yLabel?: string;
+  x: number; y: number;
+  onChangeX: (v: number) => void; onChangeY: (v: number) => void;
+  label: string; xLabel: string; yLabel: string;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const padRef = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState(false);
 
-  // Convert PWM (1000-2000) to normalized (-1 to 1)
-  const normalizedX = (x - 1500) / 500;
-  const normalizedY = (y - 1500) / 500;
+  const normX = (x - 1500) / 500; // -1..+1
+  const normY = (y - 1500) / 500;
 
-  // Convert to pixel position (0-80 range for 80px container)
-  const size = 80;
-  const dotSize = 16;
-  const posX = ((normalizedX + 1) / 2) * (size - dotSize);
-  const posY = ((1 - normalizedY) / 2) * (size - dotSize); // Invert Y
+  // Knob position: center-origin, clamped to circle
+  const maxR = (JOYSTICK_SIZE - JOYSTICK_KNOB) / 2;
+  const rawPxX = normX * maxR;
+  const rawPxY = -normY * maxR; // invert Y for screen coords
 
-  const handleInteraction = useCallback((clientX: number, clientY: number) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const relX = (clientX - rect.left) / rect.width;
-    const relY = (clientY - rect.top) / rect.height;
-    const newX = Math.round(1000 + Math.max(0, Math.min(1, relX)) * 1000);
-    const newY = Math.round(2000 - Math.max(0, Math.min(1, relY)) * 1000); // Invert Y
-    onChangeX(newX);
-    onChangeY(newY);
-  }, [onChangeX, onChangeY]);
+  // Clamp to circular boundary
+  const dist = Math.sqrt(rawPxX * rawPxX + rawPxY * rawPxY);
+  const clampX = dist > maxR ? (rawPxX / dist) * maxR : rawPxX;
+  const clampY = dist > maxR ? (rawPxY / dist) * maxR : rawPxY;
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    handleInteraction(e.clientX, e.clientY);
-  };
+  const interact = useCallback((clientX: number, clientY: number) => {
+    if (!padRef.current) return;
+    const rect = padRef.current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    const clamped = d > maxR ? { x: (dx / d) * maxR, y: (dy / d) * maxR } : { x: dx, y: dy };
+    onChangeX(Math.round(1500 + (clamped.x / maxR) * 500));
+    onChangeY(Math.round(1500 - (clamped.y / maxR) * 500));
+  }, [onChangeX, onChangeY, maxR]);
+
+  const onDown = (e: React.MouseEvent) => { setDragging(true); interact(e.clientX, e.clientY); };
 
   useEffect(() => {
-    if (!isDragging) return;
+    if (!dragging) return;
+    const mv = (e: MouseEvent) => interact(e.clientX, e.clientY);
+    const up = () => setDragging(false);
+    document.addEventListener('mousemove', mv);
+    document.addEventListener('mouseup', up);
+    return () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); };
+  }, [dragging, interact]);
 
-    const handleMouseMove = (e: MouseEvent) => {
-      handleInteraction(e.clientX, e.clientY);
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, handleInteraction]);
+  const cx = JOYSTICK_SIZE / 2;
+  const cy = JOYSTICK_SIZE / 2;
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="text-content-secondary text-[10px] uppercase tracking-wider">{label}</div>
-
-      {/* Joystick area */}
+    <div className="flex flex-col items-center gap-2 select-none">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-content-secondary">{label}</div>
       <div
-        ref={containerRef}
-        className="relative bg-surface-base rounded-lg border border-default cursor-crosshair select-none"
-        style={{ width: size, height: size }}
-        onMouseDown={handleMouseDown}
+        ref={padRef}
+        className="relative rounded-full cursor-crosshair"
+        style={{
+          width: JOYSTICK_SIZE, height: JOYSTICK_SIZE,
+          background: 'radial-gradient(circle, rgba(30,30,30,0.9) 0%, rgba(15,15,15,0.95) 100%)',
+          boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6), 0 0 0 2px rgba(255,255,255,0.06)',
+        }}
+        onMouseDown={onDown}
       >
-        {/* Cross-hair guides */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="absolute w-full h-px bg-border" />
-          <div className="absolute h-full w-px bg-border" />
-        </div>
-
-        {/* Dot indicator */}
+        {/* Concentric circle guides */}
+        {[0.3, 0.6, 0.9].map((s) => (
+          <div key={s} className="absolute rounded-full border border-white/[0.06]" style={{
+            width: JOYSTICK_SIZE * s, height: JOYSTICK_SIZE * s,
+            left: (JOYSTICK_SIZE - JOYSTICK_SIZE * s) / 2,
+            top: (JOYSTICK_SIZE - JOYSTICK_SIZE * s) / 2,
+          }} />
+        ))}
+        {/* Crosshair */}
+        <div className="absolute left-1/2 top-5 bottom-5 w-px bg-white/[0.08] -translate-x-px" />
+        <div className="absolute top-1/2 left-5 right-5 h-px bg-white/[0.08] -translate-y-px" />
+        {/* Center dot */}
+        <div className="absolute left-1/2 top-1/2 w-1.5 h-1.5 rounded-full bg-white/20 -translate-x-1/2 -translate-y-1/2" />
+        {/* Knob */}
         <div
-          className="absolute rounded-full bg-blue-500 shadow-lg shadow-blue-500/30 border-2 border-blue-400"
+          className="absolute rounded-full border-2 border-blue-400 shadow-2xl cursor-grab active:cursor-grabbing z-10"
           style={{
-            width: dotSize,
-            height: dotSize,
-            left: posX,
-            top: posY,
-            transition: isDragging ? 'none' : 'all 0.05s ease-out',
+            width: JOYSTICK_KNOB, height: JOYSTICK_KNOB,
+            left: cx + clampX - JOYSTICK_KNOB / 2,
+            top: cy + clampY - JOYSTICK_KNOB / 2,
+            background: 'radial-gradient(circle at 35% 35%, #3b82f6, #1d4ed8)',
+            boxShadow: '0 0 20px rgba(59,130,246,0.4), 0 4px 12px rgba(0,0,0,0.5)',
+            transition: dragging ? 'none' : 'left 0.06s ease-out, top 0.06s ease-out',
           }}
-        />
+        >
+          {/* Inner highlight */}
+          <div className="absolute inset-1 rounded-full border border-white/20" />
+          <div className="absolute top-1 left-1/2 -translate-x-1/2 w-3 h-1 rounded-full bg-white/30" />
+        </div>
       </div>
-
-      {/* Values */}
-      <div className="flex gap-3 text-[10px]">
-        <div>
-          <span className="text-content-secondary">{xLabel}:</span>
-          <span className="text-content font-mono ml-1">{x}</span>
-        </div>
-        <div>
-          <span className="text-content-secondary">{yLabel}:</span>
-          <span className="text-content font-mono ml-1">{y}</span>
-        </div>
+      <div className="flex gap-4 text-xs font-mono">
+        <span className="text-content-secondary">{xLabel}: <span className="text-content">{x}</span></span>
+        <span className="text-content-secondary">{yLabel}: <span className="text-content">{y}</span></span>
       </div>
     </div>
   );
 }
+
+// Keep the old names as aliases so existing MSP call sites still compile.
+const ThrottleGauge = ThrottleLever;
+const JoystickControl = BigJoystick;
 
 /**
  * ARM Button - Large, prominent arm/disarm control
@@ -397,38 +367,68 @@ function RcStatusIndicator({ isActive }: { isActive: boolean }) {
 const MANUAL_OVERRIDE_INTERVAL_MS = 100;
 
 /**
- * Manual Stick Control (MAVLink) - drives RC1-4 (Roll/Pitch/Throttle/Yaw)
- * via RC_CHANNELS_OVERRIDE, the same mechanism StickTestPanel uses to bench
- * mixer outputs. Opt-in only and starts centered/throttle-low: unlike the
- * MSP path (which auto-starts on connect because the GCS *is* the RC link
- * for those firmwares), ArduPilot vehicles normally fly on a real RC link,
- * so this must never start streaming on its own.
+ * Manual Stick Control (MAVLink) — full control panel with two large joysticks,
+ * throttle lever, and keyboard controls. Streams RC_CHANNELS_OVERRIDE at 10 Hz.
+ * Auto-enables for non-SITL MAVLink connections (real drones) since the
+ * GCS is the only RC source over USB.
+ *
+ * Automatically pins FLTMODE_CH to a valid mode (MANUAL) and finds + pins the
+ * arm switch channel so ArduPilot pre-arm checks pass while the GCS overrides RC.
  */
-function ManualStickControl() {
-  const [active, setActive] = useState(false);
+function ManualStickControl({ defaultActive = false }: { defaultActive?: boolean }) {
+  const [active, setActive] = useState(defaultActive);
   const [busy, setBusy] = useState(false);
   const [roll, setRoll] = useState(1500);
   const [pitch, setPitch] = useState(1500);
   const [throttle, setThrottle] = useState(1000);
   const [yaw, setYaw] = useState(1500);
+  const [kbActive, setKbActive] = useState(false);
 
   const stickRef = useRef({ roll, pitch, throttle, yaw });
   stickRef.current = { roll, pitch, throttle, yaw };
 
-  // Stream the override while active.
+  // Read FLTMODE_CH and find arm switch channel from parameters
+  const parameters = useParameterStore((s) => s.parameters);
+  const fltmodeCh = useMemo(() => {
+    const p = parameters.get('FLTMODE_CH');
+    return typeof p?.value === 'number' ? p.value : 5; // default Ch5 for copter
+  }, [parameters]);
+
+  const armSwitchCh = useMemo(() => {
+    // Scan RCx_OPTION for value 41 (Arm switch)
+    for (let ch = 5; ch <= 16; ch++) {
+      const p = parameters.get(`RC${ch}_OPTION`);
+      if (typeof p?.value === 'number' && p.value === 41) return ch;
+    }
+    return null;
+  }, [parameters]);
+
+  // Build AUX channel map: only pin FLTMODE_CH to a valid mode.
+  // Do NOT touch the arm switch — pinning it LOW disarms the drone every tick.
+  const auxChannels = useMemo(() => {
+    const aux: Record<number, number> = {};
+    // Pin FLTMODE_CH to STABILIZE (mode 0, PWM ~1000) so the pre-arm
+    // mode check passes without interfering with arm/disarm state.
+    aux[fltmodeCh] = 1000;
+    return aux;
+  }, [fltmodeCh]);
+
+  // Stream the override while active
   useEffect(() => {
     if (!active) return;
     const tick = () => {
       const s = stickRef.current;
-      void window.electronAPI?.rcOverrideSet?.(s.roll, s.pitch, s.throttle, s.yaw);
+      const result = window.electronAPI?.rcOverrideSet?.(s.roll, s.pitch, s.throttle, s.yaw, undefined, undefined, auxChannels);
+      result?.then?.((r) => {
+        if (!r?.success) console.warn('[RCOverride] failed:', r?.error);
+      });
     };
     tick();
     const id = setInterval(tick, MANUAL_OVERRIDE_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [active]);
+  }, [active, auxChannels]);
 
-  // Release on unmount so we never leave the FC expecting an override that
-  // stopped arriving (e.g. user navigates away mid-flight).
+  // Release on unmount
   useEffect(() => {
     return () => { void window.electronAPI?.rcOverrideRelease?.(); };
   }, []);
@@ -438,72 +438,179 @@ function ManualStickControl() {
       setBusy(true);
       setActive(false);
       setRoll(1500); setPitch(1500); setThrottle(1000); setYaw(1500);
-      try {
-        await window.electronAPI?.rcOverrideRelease?.();
-      } finally {
-        setBusy(false);
-      }
+      try { await window.electronAPI?.rcOverrideRelease?.(); }
+      finally { setBusy(false); }
     } else {
-      // Centered + throttle-low — matches idle stick position, no sudden
-      // jump when the override takes over from the physical RC link.
       setRoll(1500); setPitch(1500); setThrottle(1000); setYaw(1500);
       setActive(true);
+      console.log('[ManualStick] Activated — AUX channels:', auxChannels);
     }
   };
 
-  const centerSticks = () => {
-    setRoll(1500);
-    setPitch(1500);
-    setYaw(1500);
-  };
+  // Log on first render with defaultActive
+  useEffect(() => {
+    if (defaultActive) {
+      console.log('[ManualStick] defaultActive=true, fltmodeCh=', fltmodeCh, 'armSwitchCh=', armSwitchCh);
+    }
+  }, []);
+
+  const centerSticks = () => { setRoll(1500); setPitch(1500); setYaw(1500); };
+
+  // ── Keyboard control ──
+  const keysRef = useRef<Record<string, boolean>>({});
+  const [keyState, setKeyState] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!kbActive || !active) return;
+
+    const STEP = 20;
+    const onDown = (e: KeyboardEvent) => {
+      const k = e.key;
+      if (['w','a','s','d','q','e','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(k)) {
+        if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return;
+        e.preventDefault();
+        keysRef.current[k] = true;
+        setKeyState({ ...keysRef.current });
+      }
+    };
+    const onUp = (e: KeyboardEvent) => {
+      keysRef.current[e.key] = false;
+      setKeyState({ ...keysRef.current });
+    };
+
+    document.addEventListener('keydown', onDown);
+    document.addEventListener('keyup', onUp);
+
+    const id = setInterval(() => {
+      const k = keysRef.current;
+      const cur = stickRef.current;
+      let newRoll = cur.roll, newPitch = cur.pitch, newYaw = cur.yaw, newThr = cur.throttle;
+      if (k.d) newRoll = Math.min(2000, cur.roll + STEP);
+      if (k.a) newRoll = Math.max(1000, cur.roll - STEP);
+      if (k.s) newPitch = Math.min(2000, cur.pitch + STEP);
+      if (k.w) newPitch = Math.max(1000, cur.pitch - STEP);
+      if (k.q) newThr = Math.min(2000, cur.throttle + STEP);
+      if (k.e) newThr = Math.max(1000, cur.throttle - STEP);
+      if (k.ArrowRight) newYaw = Math.min(2000, cur.yaw + STEP);
+      if (k.ArrowLeft) newYaw = Math.max(1000, cur.yaw - STEP);
+      if (newRoll !== cur.roll || newPitch !== cur.pitch || newYaw !== cur.yaw || newThr !== cur.throttle) {
+        stickRef.current = { roll: newRoll, pitch: newPitch, throttle: newThr, yaw: newYaw };
+        setRoll(newRoll); setPitch(newPitch); setThrottle(newThr); setYaw(newYaw);
+      }
+    }, 50);
+
+    return () => {
+      document.removeEventListener('keydown', onDown);
+      document.removeEventListener('keyup', onUp);
+      clearInterval(id);
+    };
+  }, [kbActive, active]);
 
   return (
     <div className="mt-3 pt-3 border-t border-default">
+      {/* Toggle button */}
       <button
         onClick={handleToggle}
         disabled={busy}
         title="Overrides RC1-4 from the GCS — the physical transmitter is ignored on those channels while this is on."
-        className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg transition-all
+        className={`flex items-center justify-between w-full px-4 py-3 rounded-2xl transition-all text-base
           ${active
-            ? 'bg-pink-500/10 border border-pink-500/30'
-            : 'bg-surface border border-subtle hover:border-default'}`}
+            ? 'bg-pink-500/15 border border-pink-500/40 shadow-lg shadow-pink-500/15'
+            : 'bg-surface border-2 border-subtle hover:border-pink-500/30 hover:bg-surface-raised'}`}
       >
-        <div className="flex items-center gap-2">
-          <svg className={`w-3.5 h-3.5 ${active ? 'text-pink-400' : 'text-content-secondary'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="flex items-center gap-3">
+          <svg className={`w-5 h-5 ${active ? 'text-pink-400' : 'text-content-secondary'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M7 4v16M17 4v16M3 8l4-4 4 4M21 16l-4 4-4-4" />
           </svg>
-          <span className={`text-[11px] font-medium ${active ? 'text-pink-300' : 'text-content'}`}>
-            {busy ? (active ? 'Releasing…' : 'Starting…') : active ? 'Manual Control: ON' : 'Manual Stick Control'}
+          <span className={`text-base font-bold ${active ? 'text-pink-300' : 'text-content'}`}>
+            {busy ? (active ? 'Releasing…' : 'Starting…') : active ? 'MANUAL CONTROL ACTIVE' : 'Enable Manual Control'}
           </span>
         </div>
-        <div className={`w-7 h-3.5 rounded-full transition-colors relative ${active ? 'bg-pink-500' : 'bg-surface-raised'}`}>
-          <div className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white shadow transition-transform ${active ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+        <div className={`w-12 h-6 rounded-full transition-colors relative ${active ? 'bg-pink-500' : 'bg-surface-raised'}`}>
+          <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${active ? 'translate-x-6' : 'translate-x-0.5'}`} />
         </div>
       </button>
 
+      {/* Control panel — visible only when active */}
       {active && (
-        <div className="mt-2 p-2 bg-surface-raised rounded-lg border border-subtle">
-          <div className="mb-2 text-[10px] text-pink-300/80 leading-tight">
-            Overriding RC1-4. The physical transmitter is ignored on these channels until you turn this off.
+        <div className="mt-4 p-6 bg-gradient-to-b from-surface-raised to-surface rounded-3xl border border-pink-500/20 shadow-2xl">
+          <div className="mb-4 text-sm text-pink-300/60 text-center font-medium">
+            RC1-4 Override Active — physical TX ignored
           </div>
-          <div className="flex items-center justify-center gap-4">
-            <ThrottleGauge value={throttle} onChange={setThrottle} />
-            <JoystickControl
-              x={roll}
-              y={pitch}
-              onChangeX={setRoll}
-              onChangeY={setPitch}
-              label="Roll / Pitch"
-              xLabel="R"
-              yLabel="P"
-            />
+
+          {/* Input mode toggle: Joystick vs Keyboard */}
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <button
+              onClick={() => setKbActive(false)}
+              className={`px-4 py-1.5 rounded-xl text-sm font-bold transition-all border-2 ${
+                !kbActive ? 'bg-blue-500/20 border-blue-500/50 text-blue-300' : 'border-subtle text-content-secondary hover:bg-surface-raised'
+              }`}
+            >Joystick</button>
+            <button
+              onClick={() => setKbActive(true)}
+              className={`px-4 py-1.5 rounded-xl text-sm font-bold transition-all border-2 ${
+                kbActive ? 'bg-blue-500/20 border-blue-500/50 text-blue-300' : 'border-subtle text-content-secondary hover:bg-surface-raised'
+              }`}
+            >Keyboard (WASD)</button>
           </div>
-          <button
-            onClick={centerSticks}
-            className="mt-2 w-full py-1 text-[11px] text-content-secondary hover:text-content bg-surface hover:bg-surface-raised rounded transition-colors"
-          >
-            Center Sticks
-          </button>
+
+          {/* Joystick mode */}
+          {!kbActive && (
+            <div className="flex items-center justify-center gap-8">
+              <ThrottleLever value={throttle} onChange={setThrottle} />
+              <BigJoystick
+                x={yaw} y={throttle}
+                onChangeX={setYaw} onChangeY={setThrottle}
+                label="Left Stick" xLabel="YAW" yLabel="THR"
+              />
+              <BigJoystick
+                x={roll} y={pitch}
+                onChangeX={setRoll} onChangeY={setPitch}
+                label="Right Stick" xLabel="ROLL" yLabel="PITCH"
+              />
+            </div>
+          )}
+
+          {/* Keyboard mode */}
+          {kbActive && (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <div className="text-sm text-content-secondary text-center">
+                Use <span className="font-bold text-content">W/A/S/D</span> for roll/pitch,
+                <span className="font-bold text-content"> Q/E</span> for throttle,
+                <span className="font-bold text-content"> ←/→</span> for yaw
+              </div>
+              {/* Live values display */}
+              <div className="grid grid-cols-4 gap-4 text-center">
+                {[
+                  { label: 'ROLL', value: roll },
+                  { label: 'PITCH', value: pitch },
+                  { label: 'THR', value: throttle },
+                  { label: 'YAW', value: yaw },
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex flex-col items-center gap-1">
+                    <span className="text-xs text-content-secondary font-bold">{label}</span>
+                    <span className="text-lg font-mono font-bold text-content">{value}</span>
+                    <div className="w-20 h-2 rounded-full bg-surface-raised overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-blue-500 transition-all duration-75"
+                        style={{ width: `${((value - 1000) / 1000) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Center button */}
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={centerSticks}
+              className="px-8 py-3 text-sm font-bold text-content-secondary hover:text-white bg-surface hover:bg-blue-600 rounded-2xl transition-all border-2 border-subtle hover:border-blue-500"
+            >
+              Center All Sticks
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -585,6 +692,8 @@ function MavlinkFlightControl() {
   // connect (FCU reports FIXED_WING until reboot picks up Q_ENABLE). Pulling
   // the live Q_ENABLE param + the running SITL frame closes both gaps.
   const qEnable = useParameterStore((s) => s.parameters.get('Q_ENABLE')?.value);
+  const fsThrEnableVal = useParameterStore((s) => s.parameters.get('FS_THR_ENABLE')?.value);
+  const armingRcChecksVal = useParameterStore((s) => s.parameters.get('ARMING_RC_CHECKS')?.value);
   const sitlIsRunning = useArduPilotSitlStore((s) => s.isRunning);
   const sitlFrame = useArduPilotSitlStore((s) => s.model);
   const vehicleClass = getVehicleClass(connectionState.mavType, {
@@ -640,6 +749,42 @@ function MavlinkFlightControl() {
       }
     }
   }, [flight.armed, isLoading]);
+
+  // Auto-disable RC failsafe params when flying GCS-only (no RC receiver).
+  // This lets the drone arm and respond to RC_CHANNELS_OVERRIDE without
+  // immediately triggering an RC failsafe.
+  const autoFailsafeRef = useRef(false);
+  useEffect(() => {
+    if (autoFailsafeRef.current) return;
+    if (connectionState.protocol !== 'mavlink' || sitlIsRunning) return;
+    if (fsThrEnableVal === undefined && armingRcChecksVal === undefined) return;
+
+    autoFailsafeRef.current = true;
+
+    const tasks: Promise<boolean>[] = [];
+    const parts: string[] = [];
+    const pStore = useParameterStore.getState();
+
+    if (fsThrEnableVal !== undefined && fsThrEnableVal > 0) {
+      tasks.push(pStore.setParameter('FS_THR_ENABLE', 0));
+      parts.push('FS_THR_ENABLE=0');
+    }
+    if (armingRcChecksVal !== undefined && armingRcChecksVal > 0) {
+      tasks.push(pStore.setParameter('ARMING_RC_CHECKS', 0));
+      parts.push('ARMING_RC_CHECKS=0');
+    }
+
+    if (tasks.length > 0) {
+      setStatusMsg({ text: 'Disabling RC failsafe for GCS-only flight...', type: 'info' });
+      Promise.all(tasks).then(() => {
+        setStatusMsg({
+          text: `Auto-set: ${parts.join(', ')}${parts.some((p) => p.includes('ARMING')) ? ' — reboot FC for ARMING_RC_CHECKS to take effect' : ''}`,
+          type: 'success',
+        });
+        setTimeout(() => setStatusMsg(null), 6000);
+      });
+    }
+  }, [fsThrEnableVal, armingRcChecksVal, connectionState.protocol, sitlIsRunning]);
 
   // Extract PreArm failure reasons from STATUSTEXT messages
   const preArmReasons = useMemo(() => {
@@ -922,201 +1067,72 @@ function MavlinkFlightControl() {
               </div>
             )}
 
-            <ManualStickControl />
+            <ManualStickControl defaultActive={!sitlIsRunning} />
           </div>
         ) : (
-          /* Vertical layout for side panels — compact to reclaim vertical
-             space for other panels. Principles:
-               - No giant hero arm circle; a wide short button is enough.
-               - Status dot + state + mode + protocol live on a single line
-                 (no separate Land / MAVLink header duplicating the mode pill).
-               - Mode pills in a 4-column grid (2 rows), not free-flowing.
-               - Drop duplicate RTL / Land from Quick Actions — they're already
-                 in Flight Mode. Keep Takeoff because it has an altitude param.
-               - Mission collapses to one compact card with status + Start/Pause
-                 side-by-side, no section header.  */
-          <div className="flex flex-col h-full overflow-auto">
-            {/* Top status strip */}
-            <div className="flex items-center gap-2 mb-2 text-xs">
-              <div className={`w-2 h-2 rounded-full shrink-0 ${
+          <div className="flex flex-col h-full overflow-auto p-3 gap-3">
+
+            {/* ── STATUS BAR ── */}
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface border border-subtle">
+              <div className={`w-3 h-3 rounded-full shrink-0 ${
                 flight.armed ? 'bg-red-400 animate-pulse' : 'bg-content-tertiary'
               }`} />
-              <span className={`font-medium ${flight.armed ? 'text-red-400' : 'text-content-secondary'}`}>
+              <span className={`text-lg font-bold ${flight.armed ? 'text-red-400' : 'text-content-secondary'}`}>
                 {flight.armed ? 'ARMED' : 'DISARMED'}
               </span>
-              <span className="text-content-tertiary">·</span>
-              <span className="text-content truncate">{flight.mode || 'Unknown'}</span>
-              <span className="ml-auto text-[10px] text-content-tertiary shrink-0">MAVLink</span>
+              <span className="text-content-tertiary text-lg">·</span>
+              <span className="text-lg text-content font-medium">{flight.mode || 'Unknown'}</span>
+              <span className="ml-auto text-xs text-content-tertiary shrink-0 px-2 py-0.5 rounded bg-surface-raised">MAVLink</span>
             </div>
 
-            {/* Compact ARM row */}
+            {/* ── ARM / DISARM BUTTON ── */}
             <button
               onClick={() => handleArmDisarm()}
               disabled={isLoading}
-              className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 mb-2 rounded-lg
-                font-bold text-sm uppercase tracking-wider transition-all border-2
+              className={`w-full flex items-center justify-center gap-3 px-4 py-4 rounded-2xl
+                font-extrabold text-xl uppercase tracking-wider transition-all border-2 select-none
                 ${isLoading ? 'cursor-wait opacity-70' : 'cursor-pointer'}
                 ${flight.armed
-                  ? 'bg-red-500/15 border-red-500/50 text-red-400 hover:bg-red-500/25'
+                  ? 'bg-red-500/20 border-red-500/60 text-red-400 hover:bg-red-500/30 shadow-lg shadow-red-500/15'
                   : forceArm
-                    ? 'bg-amber-500/15 border-amber-500/50 text-amber-400 hover:bg-amber-500/25'
+                    ? 'bg-amber-500/20 border-amber-500/60 text-amber-400 hover:bg-amber-500/30 shadow-lg shadow-amber-500/15'
                     : 'bg-surface border-subtle text-content hover:bg-surface-raised hover:border-default'
                 }`}
             >
-              {isLoading
-                ? (flight.armed ? 'Disarming…' : 'Arming…')
-                : flight.armed ? 'Disarm' : forceArm ? 'Force Arm' : 'Arm'}
+              {isLoading ? (
+                <>
+                  <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  <span>{flight.armed ? 'Disarming...' : 'Arming...'}</span>
+                </>
+              ) : (
+                <>
+                  <div className={`w-3.5 h-3.5 rounded-full ${
+                    flight.armed ? 'bg-red-400 animate-pulse' : forceArm ? 'bg-amber-400' : 'bg-content-tertiary'
+                  }`} />
+                  <span>{flight.armed ? 'DISARM' : forceArm ? 'FORCE ARM' : 'ARM'}</span>
+                </>
+              )}
             </button>
 
             {statusMsg && (
-              <div className={`text-center text-[11px] font-medium mb-2 ${statusColor}`}>{statusMsg.text}</div>
+              <div className={`text-center text-sm font-semibold ${statusColor}`}>{statusMsg.text}</div>
             )}
 
-            {/* Flight Modes — rounded-rectangle grid. Pills (rounded-full)
-                don't tile cleanly in a grid and need extra horizontal padding
-                that clipped longer names. Rectangles fill their cell so text
-                fits at any column count, and they match the visual language
-                of every other control on this panel. */}
-            <div className="grid grid-cols-3 gap-1 mb-2">
-              {availableModes.map((mode) => {
-                const isActive = flight.modeNum === mode.modeNum;
-                return (
-                  <button
-                    key={mode.modeNum}
-                    onClick={() => handleSetMode(mode.modeNum)}
-                    title={mode.name}
-                    className={`px-1 py-1.5 rounded-md text-[11px] font-medium truncate
-                      transition-colors duration-150
-                      ${isActive
-                        ? 'bg-blue-500 text-white shadow-sm shadow-blue-500/30'
-                        : 'bg-surface-raised text-content hover:bg-surface-raised hover:text-white border border-transparent hover:border-default'}
-                    `}
-                  >
-                    {mode.name}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Takeoff. Label, hint and dialog copy come from the per-vehicle
-                strategy in ./takeoff-strategies.ts so the UI never describes
-                a procedure that doesn't match the dispatch path below it. */}
-            {capabilities.takeoff.supported && (
-              <button
-                onClick={() => setShowTakeoffDialog(true)}
-                disabled={flight.armed}
-                className="w-full px-2 py-1.5 mb-2 text-xs font-medium rounded-lg bg-surface border border-subtle hover:bg-surface-raised hover:border-default disabled:opacity-40 disabled:cursor-not-allowed text-content transition-all"
-                title={flight.armed ? 'Already armed — click disarm first' : takeoffPresentation.buttonHint}
-              >
-                {takeoffPresentation.buttonLabel}
-              </button>
-            )}
-
-            {/* Mission — compact 2-line card. Cramming status + buttons on a
-                single line overflowed at typical side-panel widths and made
-                button title-tooltips clip into the canvas. */}
-            <div className="mb-2 rounded-lg bg-surface border border-subtle p-1.5">
-              <div className="flex items-center justify-between mb-1 px-1">
-                <span className="text-[11px] text-content truncate">
-                  {missionLoaded
-                    ? <>
-                        {missionItems.length} wp
-                        <span className="text-content-tertiary"> · </span>
-                        {/* Arrow makes the semantics unambiguous: this is the
-                            NEXT/active waypoint, not "X complete of Y". */}
-                        <span className="font-mono text-content-secondary">
-                          {currentSeq != null
-                            ? `→ ${currentSeq + 1}/${missionItems.length}`
-                            : (isInAuto ? 'starting…' : 'idle')}
-                        </span>
-                      </>
-                    : <span className="text-content-secondary">No mission</span>}
-                </span>
-                <button
-                  onClick={() => { void fetchMission(); }}
-                  className="text-[11px] text-content-tertiary hover:text-content shrink-0"
-                  title="Reload mission from FC"
-                >⟳</button>
-              </div>
-              {missionLoaded && (
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => handleSetMode(missionModes.auto)}
-                    disabled={!flight.armed || isInAuto}
-                    className="flex-1 px-2 py-1 text-[11px] font-medium rounded bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-emerald-300 transition-all"
-                    title={!flight.armed ? 'Arm first' : 'Switch to AUTO'}
-                  >
-                    {isInAuto ? 'Running' : 'Start'}
-                  </button>
-                  {isInAuto ? (
-                    <button
-                      onClick={() => handleSetMode(missionModes.pause)}
-                      disabled={!flight.armed}
-                      className="flex-1 px-2 py-1 text-[11px] font-medium rounded bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-amber-300 transition-all"
-                    >Pause</button>
-                  ) : (
-                    <button
-                      onClick={() => handleSetMode(missionModes.auto)}
-                      disabled={!flight.armed || !isInPause}
-                      className="flex-1 px-2 py-1 text-[11px] font-medium rounded bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-blue-300 transition-all"
-                      title={isInPause ? `Resume from ${missionModes.pauseLabel}` : `Pause first`}
-                    >Resume</button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Takeoff altitude dialog — compact single-row: label, small
-                fixed-width number input, Go, and an ✕ for cancel. The
-                previous `flex-1` input hogged the row and pushed Cancel off
-                the panel. */}
-            {showTakeoffDialog && (
-              <div className="mb-2 p-1.5 bg-surface-raised rounded-lg border border-default">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-content-secondary shrink-0">
-                    {takeoffPresentation.dialogPrompt}
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={takeoffAlt}
-                    onChange={(e) => setTakeoffAlt(Math.max(1, Math.min(100, Number(e.target.value))))}
-                    className="w-14 px-1.5 py-1 text-sm font-mono bg-surface-input border border-subtle rounded text-content"
-                  />
-                  <span className="text-[11px] text-content-secondary shrink-0">m</span>
-                  <button
-                    onClick={handleTakeoff}
-                    className="ml-auto px-2.5 py-1 text-[11px] font-medium bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
-                  >
-                    Go
-                  </button>
-                  <button
-                    onClick={() => setShowTakeoffDialog(false)}
-                    className="px-1.5 py-1 text-content-secondary hover:text-content transition-colors text-sm leading-none"
-                    title="Cancel"
-                    aria-label="Cancel takeoff"
-                  >✕</button>
-                </div>
-                {takeoffPresentation.dialogNote && (
-                  <p className="mt-1 text-[10px] text-content-tertiary leading-tight">
-                    {takeoffPresentation.dialogNote}
-                  </p>
-                )}
-              </div>
-            )}
-
+            {/* ── PRE-ARM FAILURES ── */}
             {!flight.armed && preArmReasons.length > 0 && (
-              <div className="mb-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <div className="text-red-400 text-[10px] font-medium uppercase tracking-wider px-2.5 pt-2.5 pb-1.5">Pre-arm Checks Failed</div>
-                <div className="flex flex-col">
+              <div className="bg-red-500/10 border-2 border-red-500/30 rounded-2xl p-3">
+                <div className="text-red-400 text-xs font-bold uppercase tracking-wider mb-2">Arming Blocked</div>
+                <div className="flex flex-col gap-1.5">
                   {preArmReasons.map(({ reason, fix }, i) => {
                     const isExpanded = expandedPreArm.has(reason);
                     const hasFixContent = fix.params.length > 0 || fix.action || fix.navigateTo;
                     return (
                       <div key={i}>
                         <div
-                          className={`flex items-start gap-1.5 px-2.5 py-1 ${hasFixContent ? 'cursor-pointer hover:bg-red-500/5' : ''} transition-colors`}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-xl ${hasFixContent ? 'cursor-pointer hover:bg-red-500/10' : ''} transition-colors`}
                           onClick={hasFixContent ? () => setExpandedPreArm((prev) => {
                             const next = new Set(prev);
                             if (next.has(reason)) next.delete(reason);
@@ -1124,12 +1140,12 @@ function MavlinkFlightControl() {
                             return next;
                           }) : undefined}
                         >
-                          <svg className="w-3 h-3 text-red-400 mt-px shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg className="w-4 h-4 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                           </svg>
-                          <span className="flex-1 text-red-300 text-[11px] leading-tight">{reason}</span>
+                          <span className="flex-1 text-red-300 text-sm font-medium">{reason}</span>
                           {hasFixContent && (
-                            <span className="text-[10px] text-blue-400 shrink-0">{isExpanded ? '▾' : 'Fix ›'}</span>
+                            <span className="text-xs text-blue-400 shrink-0 font-medium">{isExpanded ? '▾' : 'Fix ›'}</span>
                           )}
                         </div>
                         {isExpanded && (
@@ -1147,28 +1163,163 @@ function MavlinkFlightControl() {
               </div>
             )}
 
+            {/* ── FORCE ARM TOGGLE ── */}
             <button
               onClick={() => setForceArm(!forceArm)}
               title="Bypass pre-arm checks — use only when the failing check is known-safe."
-              className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg transition-all
+              className={`flex items-center justify-between w-full px-4 py-3 rounded-xl transition-all
                 ${forceArm
-                  ? 'bg-amber-500/10 border border-amber-500/30'
-                  : 'bg-surface border border-subtle hover:border-default'}`}
+                  ? 'bg-amber-500/15 border-2 border-amber-500/40'
+                  : 'bg-surface border-2 border-subtle hover:border-default'}`}
             >
-              <div className="flex items-center gap-2">
-                <svg className={`w-3.5 h-3.5 ${forceArm ? 'text-amber-400' : 'text-content-secondary'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="flex items-center gap-3">
+                <svg className={`w-5 h-5 ${forceArm ? 'text-amber-400' : 'text-content-secondary'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
-                <span className={`text-[11px] font-medium ${forceArm ? 'text-amber-300' : 'text-content'}`}>Force ARM</span>
+                <span className={`text-sm font-bold ${forceArm ? 'text-amber-300' : 'text-content'}`}>Force ARM</span>
               </div>
-              <div className={`w-7 h-3.5 rounded-full transition-colors relative ${forceArm ? 'bg-amber-500' : 'bg-surface-raised'}`}>
-                <div className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white shadow transition-transform ${forceArm ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+              <div className={`w-10 h-5 rounded-full transition-colors relative ${forceArm ? 'bg-amber-500' : 'bg-surface-raised'}`}>
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${forceArm ? 'translate-x-5' : 'translate-x-0.5'}`} />
               </div>
             </button>
 
-            <ManualStickControl />
+            {/* ── FIX PRE-ARM: disable RC checks for GCS-only control ── */}
+            {!flight.armed && preArmReasons.length > 0 && (
+              <button
+                onClick={async () => {
+                  const setParam = useParameterStore.getState().setParameter;
+                  await Promise.all([
+                    setParam('ARMING_RC_CHECKS', 0),
+                    setParam('FS_THR_ENABLE', 0),
+                  ]);
+                  setStatusMsg({ text: 'Set ARMING_RC_CHECKS=0 & FS_THR_ENABLE=0 — reboot FC for ARMING_RC_CHECKS to take effect', type: 'success' });
+                  setTimeout(() => setStatusMsg(null), 6000);
+                }}
+                className="w-full px-4 py-3 text-sm font-bold rounded-xl bg-emerald-500/15 border-2 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25 transition-all"
+              >
+                Disable RC Failsafe (ARMING_RC_CHECKS=0, FS_THR_ENABLE=0)
+              </button>
+            )}
 
-            <div className="flex-1" />
+            {/* ── FLIGHT MODES ── */}
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider text-content-secondary mb-2 px-1">Flight Modes</div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {availableModes.map((mode) => {
+                  const isActive = flight.modeNum === mode.modeNum;
+                  return (
+                    <button
+                      key={mode.modeNum}
+                      onClick={() => handleSetMode(mode.modeNum)}
+                      title={mode.name}
+                      className={`px-2 py-2.5 rounded-xl text-sm font-semibold truncate
+                        transition-colors duration-150
+                        ${isActive
+                          ? 'bg-blue-500 text-white shadow-md shadow-blue-500/30'
+                          : 'bg-surface-raised text-content hover:bg-surface-raised hover:text-white border border-transparent hover:border-default'}
+                      `}
+                    >
+                      {mode.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ── TAKEOFF ── */}
+            {capabilities.takeoff.supported && (
+              <button
+                onClick={() => setShowTakeoffDialog(true)}
+                disabled={flight.armed}
+                className="w-full px-4 py-3 text-sm font-bold rounded-xl bg-surface border-2 border-subtle hover:bg-surface-raised hover:border-default disabled:opacity-40 disabled:cursor-not-allowed text-content transition-all"
+                title={flight.armed ? 'Already armed — click disarm first' : takeoffPresentation.buttonHint}
+              >
+                {takeoffPresentation.buttonLabel}
+              </button>
+            )}
+
+            {/* Takeoff altitude dialog */}
+            {showTakeoffDialog && (
+              <div className="p-3 bg-surface-raised rounded-xl border border-default">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-content-secondary shrink-0">
+                    {takeoffPresentation.dialogPrompt}
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={takeoffAlt}
+                    onChange={(e) => setTakeoffAlt(Math.max(1, Math.min(100, Number(e.target.value))))}
+                    className="w-16 px-2 py-1.5 text-base font-mono bg-surface-input border border-subtle rounded-lg text-content"
+                  />
+                  <span className="text-sm text-content-secondary">m</span>
+                  <button
+                    onClick={handleTakeoff}
+                    className="ml-auto px-4 py-1.5 text-sm font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+                  >Go</button>
+                  <button
+                    onClick={() => setShowTakeoffDialog(false)}
+                    className="px-2 py-1.5 text-content-secondary hover:text-content transition-colors text-lg leading-none"
+                  >✕</button>
+                </div>
+                {takeoffPresentation.dialogNote && (
+                  <p className="mt-2 text-xs text-content-tertiary leading-tight">
+                    {takeoffPresentation.dialogNote}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* ── MISSION ── */}
+            <div className="rounded-xl bg-surface border border-subtle p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-content truncate">
+                  {missionLoaded
+                    ? <>
+                        {missionItems.length} wp
+                        <span className="text-content-tertiary"> · </span>
+                        <span className="font-mono text-content-secondary">
+                          {currentSeq != null
+                            ? `→ ${currentSeq + 1}/${missionItems.length}`
+                            : (isInAuto ? 'starting…' : 'idle')}
+                        </span>
+                      </>
+                    : <span className="text-content-secondary">No mission</span>}
+                </span>
+                <button
+                  onClick={() => { void fetchMission(); }}
+                  className="text-sm text-content-tertiary hover:text-content shrink-0 px-2"
+                  title="Reload mission from FC"
+                >⟳</button>
+              </div>
+              {missionLoaded && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleSetMode(missionModes.auto)}
+                    disabled={!flight.armed || isInAuto}
+                    className="flex-1 px-3 py-2 text-sm font-bold rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-emerald-300 transition-all"
+                    title={!flight.armed ? 'Arm first' : 'Switch to AUTO'}
+                  >
+                    {isInAuto ? 'Running' : 'Start'}
+                  </button>
+                  {isInAuto ? (
+                    <button
+                      onClick={() => handleSetMode(missionModes.pause)}
+                      disabled={!flight.armed}
+                      className="flex-1 px-3 py-2 text-sm font-bold rounded-lg bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-amber-300 transition-all"
+                    >Pause</button>
+                  ) : (
+                    <button
+                      onClick={() => handleSetMode(missionModes.auto)}
+                      disabled={!flight.armed || !isInPause}
+                      className="flex-1 px-3 py-2 text-sm font-bold rounded-lg bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-blue-300 transition-all"
+                      title={isInPause ? `Resume from ${missionModes.pauseLabel}` : `Pause first`}
+                    >Resume</button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
