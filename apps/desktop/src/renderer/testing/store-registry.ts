@@ -116,7 +116,6 @@ export async function registerAllStores(): Promise<void> {
     'msp-telemetry': () => import('../stores/msp-telemetry-store'),
     'navigation': () => import('../stores/navigation-store'),
     'network': () => import('../stores/network-store'),
-    'osd': () => import('../stores/osd-store'),
     'overlay': () => import('../stores/overlay-store'),
     'parameter': () => import('../stores/parameter-store'),
     'payload': () => import('../stores/payload-store'),

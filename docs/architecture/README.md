@@ -60,9 +60,7 @@ The renderer uses a view-based routing system managed by `navigation-store`. The
 | `firmware` | FirmwareFlashView | Flash ArduPilot/Betaflight/iNav firmware |
 | `cli` | CliView | Terminal for legacy board configuration |
 | `sitl` | SitlView | Software-in-the-loop simulator |
-| `osd` | OsdView | OSD element preview |
 | `calibration` | CalibrationView | Accelerometer/compass calibration |
-| `lua-graph` | LuaGraphView | Visual Lua script editor |
 | `companion` | CompanionDashboard | ESP32/RPi/Jetson management |
 | `logs` | LogsView | DataFlash log analysis |
 | `inspector` | MavlinkInspectorView | Raw MAVLink packet inspector |

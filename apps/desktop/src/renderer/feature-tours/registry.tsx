@@ -15,7 +15,7 @@ const present = (selector: string) => () => !!document.querySelector(selector);
 // has more than one, and (2) the order ActiveTour's "Next feature" button walks
 // an onboarding user through when they keep accepting - so it's deliberately
 // laid out to follow the app's main nav top-to-bottom (telemetry -> mission ->
-// library -> parameters -> inspector -> firmware -> osd -> sitl -> calibration)
+// library -> parameters -> inspector -> firmware -> sitl -> calibration)
 // rather than by when each tour was added.
 export const FEATURE_TOURS: FeatureTour[] = [
   {
@@ -474,42 +474,6 @@ export const FEATURE_TOURS: FeatureTour[] = [
             <p className="text-xs leading-relaxed opacity-90">
               Once a board, version, and (if needed) target are selected, this downloads the firmware
               and writes it - progress and any errors show right here.
-            </p>
-          </div>
-        ),
-      },
-    ],
-  },
-  {
-    id: 'osd-simulator-intro-033',
-    view: 'osd',
-    version: '0.0.33',
-    title: 'Designing your OSD layout',
-    blurb: 'Preview your on-screen display and drag elements into place before you ever plug in goggles.',
-    steps: [
-      {
-        selector: '[data-tour="osd-mode-select"]',
-        predicate: present('[data-tour="osd-mode-select"]'),
-        content: (
-          <div className="space-y-2">
-            <div className="text-sm font-semibold">Demo, Live, or Edit</div>
-            <p className="text-xs leading-relaxed opacity-90">
-              <strong>Demo</strong> shows sample values, <strong>Live</strong> uses real telemetry
-              from a connected vehicle, and <strong>Edit Layout</strong> lets you drag elements
-              around the canvas.
-            </p>
-          </div>
-        ),
-      },
-      {
-        selector: '[data-tour="osd-element-browser"]',
-        predicate: present('[data-tour="osd-element-browser"]'),
-        content: (
-          <div className="space-y-2">
-            <div className="text-sm font-semibold">Every element you can place</div>
-            <p className="text-xs leading-relaxed opacity-90">
-              Battery voltage, GPS, flight mode, and more - pick one, then switch to
-              {' '}<strong>Edit Layout</strong> mode and drag it anywhere on the canvas.
             </p>
           </div>
         ),
