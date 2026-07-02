@@ -8,6 +8,8 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 
 ## [Unreleased]
 
+## [0.0.37] - 2026-07-02
+
 ### Added
 - Camera feed panel: a new dockable "Camera" panel displays the focused vehicle's MJPEG video stream, via a manually-entered URL or MAVLink `VIDEO_STREAM_INFORMATION` auto-detection. Poppable to its own window like every other telemetry panel. RTSP/H.264 is not yet supported.
 - Fleet management: a new Fleet view lets you add multiple vehicles (MAVLink and MSP) to a saved roster and monitor live status (armed/mode/battery/position) for all of them at once over lightweight, read-only connections. Every other view (Mission Planning, Parameters, Calibration, Firmware Flash, CLI, etc.) continues to operate on a single "focused" vehicle exactly as before — click Focus on any fleet tile to make it the active connection.
