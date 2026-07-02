@@ -82,6 +82,17 @@ Jawji is a next-generation ground control station built with Electron, React, an
 - **Save/Load Layouts** - Multiple named layout profiles
 - **Resizable Panels** - Flexible workspace arrangement
 
+### Fleet Management
+- **Multi-Vehicle Roster** - Add several MAVLink or MSP vehicles to a saved fleet, persisted across restarts
+- **Live Status Overview** - Armed state, mode, battery, and position for every roster vehicle at once, over lightweight read-only connections
+- **Shared Map** - See every fleet vehicle's live position on one map
+- **Focus to Fly** - Promote any fleet vehicle to the main connection for full mission planning, parameter tuning, and control - exactly as today's single-vehicle workflow
+
+### Camera Feed
+- **MJPEG Video Panel** - Dockable panel showing the focused vehicle's live camera feed
+- **Manual or Auto-Detected** - Paste a stream URL directly, or let Jawji request it from the flight controller via MAVLink `VIDEO_STREAM_INFORMATION`
+- **Pop-Out Support** - Detach the camera feed to its own window like any other telemetry panel
+
 ### Mission Planning
 - **Interactive Map Editing** - Click to add waypoints, drag to reposition
 - **Mission Groups** - Every waypoint lives in a named, colored group (manual or survey) with per-group distance, time, and GSD, recolor, show/hide, and per-group upload or save
@@ -170,25 +181,13 @@ Jawji is a next-generation ground control station built with Electron, React, an
 - **Command History** - Up/down arrow navigation through previous commands
 - **Legacy Board Support** - Full configuration for F3-era boards via CLI
 
-### OSD Simulator
-- **Live Preview** - See exactly what appears in FPV goggles
-- **Demo Mode** - Adjust telemetry values with sliders for font development
-- **Live Mode** - Real-time display from connected flight controller
-- **MCM Font Support** - Full MAX7456/AT7456E font parsing
-- **8 Bundled Fonts** - Default, Bold, Clarity, Impact, Vision, and more
-- **PAL/NTSC** - Support for both video standards (30x16 / 30x13 grids)
-- **15+ OSD Elements** - Altitude, speed, battery, GPS, artificial horizon, CCRP indicator, and more
-- **CCRP Indicator** - Continuously Computed Release Point for payload drops (shows predicted impact point)
-- **Element Toggle** - Enable/disable individual OSD elements
-
-### Lua Graph Editor
-- **Visual Scripting** - Build ArduPilot Lua scripts by connecting nodes, no coding required
-- **50+ Nodes** - Sensors, logic, math, actions, timing, variables, and flow control
-- **Live Lua Preview** - See compiled output in real-time as you build
-- **Templates** - Pre-built graphs for common tasks (battery alerts, geofencing, camera triggers)
-- **Export to .lua** - One-click compilation to ArduPilot-compatible Lua scripts
-- **In-App Documentation** - Full reference docs viewable inside the editor
-- **[Lua Graph Editor Docs](apps/desktop/src/renderer/components/lua-graph/docs/)** - Also available on the GitHub wiki
+### Manual Flight Control
+- **Keyboard & Joystick Input** - Fly with WASD+QE+Arrows or any connected gamepad, no transmitter required
+- **Mutually Exclusive Modes** - Keyboard and joystick can't fight each other over the same RC channels; picking one turns the other off
+- **MAVLink & MSP Support** - Works for both ArduPilot (RC_CHANNELS_OVERRIDE) and Betaflight/iNav (MSP_SET_RAW_RC) vehicles
+- **Live Key & Axis Indicators** - See exactly what input is being sent in the flight strip
+- **Receiver Config Auto-Detect** - Warns and offers a one-click fix if the flight controller's receiver isn't set to MSP, which otherwise silently blocks GCS stick input from reaching the motors
+- **Axis Mapping** - Remap gamepad axes and invert pitch/throttle to match your controller
 
 ### Firmware Flash
 - **Multi-Protocol Detection** - Auto-detect boards via MAVLink, MSP, or STM32 bootloader
@@ -229,47 +228,6 @@ Jawji is a next-generation ground control station built with Electron, React, an
 ---
 
 ## Screenshots
-
-### Lua Graph Editor
-
-<p align="center">
-  <a href="docs/screenshots/lua_loaded_template.png?raw=true">
-    <img src="docs/screenshots/lua_loaded_template.png" alt="Lua Graph Editor" width="800"/>
-  </a>
-  <br/>
-  <em>Visual scripting for ArduPilot Lua - build scripts by connecting nodes, no coding required</em>
-</p>
-
-<table>
-  <tr>
-    <td align="center">
-      <a href="docs/screenshots/lua_tempalte_list_dialog.png?raw=true">
-        <img src="docs/screenshots/lua_tempalte_list_dialog.png" alt="Lua Templates" width="400"/>
-      </a>
-      <br/><em>Pre-built Graph Templates</em>
-    </td>
-    <td align="center">
-      <a href="docs/screenshots/lua_node_list_left_sidebar.png?raw=true">
-        <img src="docs/screenshots/lua_node_list_left_sidebar.png" alt="Node Categories" width="400"/>
-      </a>
-      <br/><em>50+ Nodes Across 7 Categories</em>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <a href="docs/screenshots/lua_node_properties_right_sidebar.png?raw=true">
-        <img src="docs/screenshots/lua_node_properties_right_sidebar.png" alt="Node Properties" width="400"/>
-      </a>
-      <br/><em>Node Properties & Port Inspector</em>
-    </td>
-    <td align="center">
-      <a href="docs/screenshots/Lua_project_properties_right_sidebar.png?raw=true">
-        <img src="docs/screenshots/Lua_project_properties_right_sidebar.png" alt="Script Settings" width="400"/>
-      </a>
-      <br/><em>Script Settings & Run Interval</em>
-    </td>
-  </tr>
-</table>
 
 ### Mission Planning
 
@@ -444,31 +402,26 @@ Jawji is a next-generation ground control station built with Electron, React, an
 <table>
   <tr>
     <td align="center">
-      <a href="docs/screenshots/osd_simulator_demo.png?raw=true">
-        <img src="docs/screenshots/osd_simulator_demo.png" alt="OSD Simulator" width="400"/>
-      </a>
-      <br/><em>OSD Simulator - Demo Mode</em>
-    </td>
-    <td align="center">
       <a href="docs/screenshots/cli_terminal.png?raw=true">
         <img src="docs/screenshots/cli_terminal.png" alt="CLI Terminal" width="400"/>
       </a>
       <br/><em>CLI Terminal with Autocomplete</em>
     </td>
-  </tr>
-  <tr>
     <td align="center">
       <a href="docs/screenshots/sitl_simulator.png?raw=true">
         <img src="docs/screenshots/sitl_simulator.png" alt="SITL Simulator" width="400"/>
       </a>
       <br/><em>SITL Simulator with FlightGear</em>
     </td>
+  </tr>
+  <tr>
     <td align="center">
       <a href="docs/screenshots/Mission_planning_survey_grid_generated_circular.png?raw=true">
         <img src="docs/screenshots/Mission_planning_survey_grid_generated_circular.png" alt="Generated Survey 3D" width="400"/>
       </a>
       <br/><em>Generated Survey in 3D View</em>
     </td>
+    <td></td>
   </tr>
 </table>
 
@@ -505,7 +458,7 @@ Jawji is a pnpm monorepo built around an Electron main/renderer split:
 | [packages/jawji-agent](packages/jawji-agent) | Companion-board agent (ESP32/RPi/Jetson/Orange Pi) — a small Express + WebSocket server with bearer-token auth and subnet restriction, polled by the desktop app's Agent Dashboard for metrics, logs, and terminal access. |
 | [packages/module-sdk](packages/module-sdk), [packages/create-jawji-module](packages/create-jawji-module) | SDK and scaffolding for third-party Jawji modules. |
 
-Telemetry flows from the connected flight controller → `src/main` parser → IPC event → renderer Zustand stores (e.g. `telemetry-store`, `flight-control-store`) → dashboard panels. Manual control (arm/disarm, mode switching, takeoff, and — for MSP vehicles — a live joystick/throttle override) is sent the same way in reverse: renderer store → IPC → `src/main` → serial/TCP/UDP link to the vehicle.
+Telemetry flows from the connected flight controller → `src/main` parser → IPC event → renderer Zustand stores (e.g. `telemetry-store`, `flight-control-store`) → dashboard panels. Manual control (arm/disarm, mode switching, takeoff, and a live keyboard/joystick RC override for both MAVLink and MSP vehicles) is sent the same way in reverse: renderer store → IPC → `src/main` → serial/TCP/UDP link to the vehicle.
 
 ---
 
@@ -658,12 +611,10 @@ Found a bug? We want to hear about it! Jawji includes a built-in bug reporting t
 - Betaflight/iNav PID tuning and configuration
 - **CLI Terminal** with autocomplete and command history
 - **Legacy F3 board support** via full CLI configuration
-- **OSD Simulator** with demo and live telemetry modes
 - **Calibration wizards** - Accelerometer and compass calibration with step-by-step wizard
 - **Quick Setup Wizard** with preset library for common frame types
 - **VTX and filter configuration** for Betaflight/iNav
 - **ArduPilot configuration UI** - PID tuning, rate profiles, flight modes, safety, battery monitor, sensors
-- **Lua Graph Editor** - Visual scripting for ArduPilot Lua with 50+ nodes, compiler, templates, and [in-app docs](apps/desktop/src/renderer/components/lua-graph/docs/)
 - **Survey Grid Planner** - Automated survey patterns (Grid, Crosshatch, Circular) with camera and flight parameter configuration
 - **Mission Groups** - Waypoints organized into colored, per-group survey and manual groups with per-block stats, per-group upload/save, undo, and autosave
 - **Corridor Surveys** - Linear surveys along a centerline for roads, rail, and power lines, with plane and copter turn strategies
@@ -672,9 +623,12 @@ Found a bug? We want to hear about it! Jawji includes a built-in bug reporting t
 - **MAVLink Signing** - Passphrase-based packet signing for secure vehicle communication
 - **Flight Log Analysis** - DataFlash .bin parser, health checks, log explorer with 3D flight path, and AI-assisted diagnostics
 - **SITL Simulator** - ArduPilot, iNav, and Betaflight software-in-the-loop with vehicle/frame selection, virtual RC, custom frame physics, and FlightGear integration
+- **Keyboard & Joystick Flight Control** - Mutually-exclusive GCS stick input (WASD+QE+Arrows or gamepad) for MAVLink and MSP vehicles, with automatic receiver-config detection/fix so control actually reaches the motors
+- **Fleet Management** - Multi-vehicle roster with live status monitoring and one-click focus to promote a vehicle to the main connection
+- **Camera Feed Panel** - MJPEG video display with manual URL entry and MAVLink stream auto-detection
 
 ### Coming Soon
-- OSD element editor and font designer
+- Mission-planner map rendering fix (tiles/panel not displaying in some layouts)
 
 ---
 

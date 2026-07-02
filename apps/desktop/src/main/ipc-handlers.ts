@@ -82,6 +82,8 @@ import {
   serializeHeartbeat,
   HEARTBEAT_ID,
   HEARTBEAT_CRC_EXTRA,
+  VIDEO_STREAM_INFORMATION_ID,
+  deserializeVideoStreamInformation,
   serializeRcChannelsOverride,
   RC_CHANNELS_OVERRIDE_ID,
   RC_CHANNELS_OVERRIDE_CRC_EXTRA,
@@ -95,6 +97,7 @@ import {
 } from '@jawji/mavlink-ts';
 import { IPC_CHANNELS, SEVERITY_LABELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type LayoutStoreSchema, type SettingsStoreSchema, type SigningStatus, type TelemetrySpeed } from '../shared/ipc-channels.js';
 import { initAutoUpdater, checkForUpdates, downloadUpdate, installUpdate } from './updater.js';
+import { sendRcOverridePreArmStream } from './arming-helpers.js';
 import type { ParamValuePayload, ParameterProgress } from '../shared/parameter-types.js';
 import { PARAMETER_METADATA_URLS, mavTypeToVehicleType, type VehicleType, type ParameterMetadata, type ParameterMetadataStore } from '../shared/parameter-metadata.js';
 import type { AttitudeData, PositionData, GpsData, BatteryData, VfrHudData, FlightState, RcChannelsData } from '../shared/telemetry-types.js';
@@ -108,6 +111,8 @@ import type { MotorTestStartRequest, MotorTestResponse, EscTelemetryData, EscMot
 import { getBoardInfoFromVersion } from '../shared/board-ids.js';
 import { detectBoards, fetchFirmwareVersions, downloadFirmware, copyCustomFirmware, getFirmwareCacheFolderPath, flashWithDfu, flashWithAvrdude, flashWithSerialBootloader, flashWithArduPilotBootloader, getArduPilotBoards, getArduPilotVersions, getBetaflightBoards, getBetaflightVersions, resolveBetaflightDownloadUrl, getInavBoards, getInavVersions, type BoardInfo, type VersionGroup } from './firmware/index.js';
 import { registerMspHandlers, tryMspDetection, startMspTelemetry, stopMspTelemetry, cleanupMspConnection, exitCliModeIfActive, autoConfigureSitlPlatform, getMspVehicleType, resetSitlAutoConfig } from './msp/index.js';
+import { registerFleetHandlers } from './fleet/index.js';
+import { requestVideoStreamInfo } from './camera-feed-helpers.js';
 import { initCalibrationHandlers, cleanupCalibrationHandlers, handleCalibrationStatusText, handleCalibrationCommandAck, handleIncomingCommandLong, isMavlinkCalibrationActive, cancelCalibration, type MavlinkCalibrationDeps } from './calibration/index.js';
 import { initMissionLibraryHandlers, cleanupMissionLibraryHandlers } from './mission-library/index.js';
 import { MavlinkFtpClient, parseParamPack, PARAM_PCK_PATH, parseFtpPayload } from './mavlink-ftp/index.js';
@@ -2563,6 +2568,15 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
               sendConnectionState(mainWindow);
             }
 
+            // Handle VIDEO_STREAM_INFORMATION (msgid 269) — response to our
+            // MAV_CMD_REQUEST_MESSAGE request in MAVLINK_REQUEST_VIDEO_STREAM_INFO.
+            if (packet.msgid === VIDEO_STREAM_INFORMATION_ID) {
+              const info = deserializeVideoStreamInformation(packet.payload);
+              if (info.uri) {
+                safeSend(mainWindow, IPC_CHANNELS.MAVLINK_VIDEO_STREAM_INFO, { uri: info.uri });
+              }
+            }
+
             // Handle heartbeat (msgid 0)
             if (packet.msgid === 0) {
               // Detect MAVLink version from packet format
@@ -4540,6 +4554,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       return false;
     }
 
+    const transport = currentTransport; // local ref for TS type narrowing
+
     try {
       // When arming without a transmitter, ArduPilot needs RC input.
       // Auto-start the SITL RC sender if SITL is running so ArduPilot
@@ -4551,27 +4567,67 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      // Also send a one-shot RC_CHANNELS_OVERRIDE via MAVLink as a fallback
+      // Scan receivedParams for an arm switch (RCx_OPTION = 41) so the
+      // pre-arm stream can set it to the ARM position. Without this the
+      // arm-switch pre-arm check fails because every channel defaults to
+      // PWM 1000 (DISARM for most configurations).
+      let armSwitchChannel: number | undefined;
       if (arm) {
-        const rcPayload = serializeRcChannelsOverride({
+        for (let ch = 5; ch <= 16; ch++) {
+          const p = receivedParams.get(`RC${ch}_OPTION`);
+          if (p && p.paramValue === 41) {
+            armSwitchChannel = ch;
+            break;
+          }
+        }
+      }
+
+      // Stream RC_CHANNELS_OVERRIDE for a short pre-arm window so ArduPilot
+      // sees stable input before COMMAND_LONG is sent.
+      if (arm) {
+        await sendRcOverridePreArmStream({
+          sendMavlinkPacket,
+          writePacket: async packet => {
+            await transport.write(packet);
+          },
           targetSystem: connectionState.systemId ?? 1,
           targetComponent: 1,
-          chan1Raw: 1500, // Roll center
-          chan2Raw: 1500, // Pitch center
-          chan3Raw: 1000, // Throttle low
-          chan4Raw: 1500, // Yaw center
-          chan5Raw: 1000,
-          chan6Raw: 1000,
-          chan7Raw: 1000,
-          chan8Raw: 1000,
-          chan9Raw: 0, chan10Raw: 0, chan11Raw: 0, chan12Raw: 0,
-          chan13Raw: 0, chan14Raw: 0, chan15Raw: 0, chan16Raw: 0,
-          chan17Raw: 0, chan18Raw: 0,
+          iterations: 3,
+          intervalMs: 250,
+          armSwitchChannel,
         });
-        const rcPacket = await sendMavlinkPacket(RC_CHANNELS_OVERRIDE_ID, rcPayload, RC_CHANNELS_OVERRIDE_CRC_EXTRA);
-        await currentTransport.write(rcPacket);
-        // Give ArduPilot time to process the RC input
-        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Auto-disable RC failsafe parameters so the drone doesn't immediately
+      // enter RC failsafe after arming when no physical RC receiver is connected.
+      // FS_THR_ENABLE=0 takes effect immediately (no reboot).
+      // ARMING_RC_CHECKS=0 requires a reboot but we set it now so it works on
+      // the next boot.
+      // We send these unconditionally — if the param doesn't exist the FC
+      // silently ignores the PARAM_SET, and if it's already 0 it's a no-op.
+      if (arm && !force) {
+        const sendParamSet = async (paramId: string, value: number, fallbackType: number) => {
+          try {
+            const cached = receivedParams.get(paramId);
+            const paramType = cached ? cached.paramType : fallbackType;
+            const payload = serializeParamSet({
+              targetSystem: connectionState.systemId ?? 1,
+              targetComponent: 1,
+              paramId,
+              paramValue: value,
+              paramType,
+            });
+            const packet = await sendMavlinkPacket(PARAM_SET_ID, payload, PARAM_SET_CRC_EXTRA);
+            await transport.write(packet);
+            connectionState.packetsSent++;
+          } catch {
+            // Non-fatal: arming proceeds regardless
+          }
+        };
+
+        await sendParamSet('FS_THR_ENABLE', 0, 1);     // MAV_PARAM_TYPE_UINT8
+        await sendParamSet('ARMING_RC_CHECKS', 0, 1);   // MAV_PARAM_TYPE_UINT8
+        sendLog(mainWindow, 'info', 'Auto-set FS_THR_ENABLE=0 and ARMING_RC_CHECKS=0 for GCS-only flight');
       }
 
       const payload = serializeCommandLong({
@@ -4589,7 +4645,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       });
 
       const packet = await sendMavlinkPacket(COMMAND_LONG_ID, payload, COMMAND_LONG_CRC_EXTRA);
-      await currentTransport.write(packet);
+      await transport.write(packet);
       connectionState.packetsSent++;
 
       sendLog(mainWindow, 'info', `Sent ${arm ? 'ARM' : 'DISARM'} command${force ? ' (FORCE)' : ''}`);
@@ -4654,6 +4710,25 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       sendLog(mainWindow, 'error', 'Failed to set mode', message);
+      return false;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.MAVLINK_REQUEST_VIDEO_STREAM_INFO, async (): Promise<boolean> => {
+    if (!currentTransport?.isOpen || !connectionState.isConnected) {
+      return false;
+    }
+    try {
+      await requestVideoStreamInfo({
+        sendMavlinkPacket,
+        writePacket: async (packet) => { await currentTransport!.write(packet); connectionState.packetsSent++; },
+        targetSystem: connectionState.systemId ?? 1,
+      });
+      sendLog(mainWindow, 'debug', 'Sent MAV_CMD_REQUEST_MESSAGE for VIDEO_STREAM_INFORMATION');
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      sendLog(mainWindow, 'error', 'Failed to request video stream info', message);
       return false;
     }
   });
@@ -5640,7 +5715,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   // Unlike DO_SET_SERVO, this goes through the autopilot's mixer so it works
   // for outputs assigned to mixer functions (Aileron/Elevator/Throttle/etc).
   // Assumes default RCMAP (Roll=RC1, Pitch=RC2, Throttle=RC3, Yaw=RC4).
-  ipcMain.handle(IPC_CHANNELS.RC_OVERRIDE_SET, async (_, request: { roll: number; pitch: number; throttle: number; yaw: number; modeChannel?: number; modePwm?: number }) => {
+  ipcMain.handle(IPC_CHANNELS.RC_OVERRIDE_SET, async (_, request: { roll: number; pitch: number; throttle: number; yaw: number; modeChannel?: number; modePwm?: number; auxChannels?: Record<number, number> }) => {
     if (!currentTransport?.isOpen || !connectionState.isConnected) {
       return { success: false, error: 'Not connected' };
     }
@@ -5650,13 +5725,23 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     try {
       // Aux channels default to UINT16_MAX = "ignore" per MAVLink spec, so we
       // don't accidentally hijack FLTMODE_CH or other RCx_OPTION-driven aux
-      // functions with stale values. If the caller asks us to pin a specific
-      // channel (typically FLTMODE_CH so the test stays in MANUAL while RX is
-      // detached) we override that single aux slot.
+      // functions with stale values. The caller can pin specific aux channels
+      // via auxChannels map { channelNumber: pwmValue } or the legacy
+      // modeChannel/modePwm pair (still supported for backward compat).
       const IGNORE = 65535;
       const aux: number[] = new Array(14).fill(IGNORE); // chan5-18
+      // Legacy single-channel override
       if (request.modeChannel && request.modePwm && request.modeChannel >= 5 && request.modeChannel <= 18) {
         aux[request.modeChannel - 5] = request.modePwm;
+      }
+      // Multi-channel override — takes precedence over legacy
+      if (request.auxChannels) {
+        for (const [ch, pwm] of Object.entries(request.auxChannels)) {
+          const chNum = Number(ch);
+          if (chNum >= 5 && chNum <= 18 && typeof pwm === 'number') {
+            aux[chNum - 5] = Math.max(800, Math.min(2200, Math.round(pwm)));
+          }
+        }
       }
       const payload = serializeRcChannelsOverride({
         targetSystem: connectionState.systemId ?? 1,
@@ -7700,6 +7785,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   // Register MSP handlers for Betaflight/iNav/Cleanflight support
   registerMspHandlers(mainWindow);
+  registerFleetHandlers(mainWindow);
 
   // Register Calibration handlers with MAVLink deps for ArduPilot calibration support
   const mavlinkCalibrationDeps: MavlinkCalibrationDeps = {
@@ -8322,6 +8408,15 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   ipcMain.handle(IPC_CHANNELS.APP_GET_VERSION, (): string => {
     return app.getVersion();
+  });
+
+  // Detached (pop-out) windows only receive connection-state pushes going
+  // forward (CONNECTION_STATE broadcasts) — if a window opens after a
+  // connection is already established, it never sees the current state and
+  // shows "Connect device" forever. This lets a window pull the current
+  // snapshot once on mount.
+  ipcMain.handle(IPC_CHANNELS.GET_CONNECTION_STATE, (): ConnectionState => {
+    return connectionState;
   });
 
   ipcMain.handle(IPC_CHANNELS.APP_CHECK_UPDATE, (): void => {

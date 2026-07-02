@@ -33,6 +33,11 @@ export function useDetachedSubscriptions(): void {
     // Start the inspector pipeline (idempotent — safe to call from every window).
     startInspector();
 
+    // Pull the current connection snapshot once — the window may have opened
+    // after a connection was already established, so waiting for the next
+    // CONNECTION_STATE broadcast alone would leave it stuck on "disconnected".
+    api.getConnectionState?.().then(setConnectionState).catch(() => undefined);
+
     const cleanups: Array<() => void> = [];
 
     cleanups.push(

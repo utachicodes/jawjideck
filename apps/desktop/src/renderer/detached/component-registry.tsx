@@ -23,6 +23,7 @@ import { FlightModePanel } from '../components/panels/FlightModePanel';
 import { FlightControlPanel } from '../components/panels/FlightControlPanel';
 import { MessagesPanel } from '../components/panels/MessagesPanel';
 import { MapPanel } from '../components/panels/MapPanel';
+import { CameraPanel } from '../components/panels/CameraPanel';
 import { TelemetryDashboard } from '../components/telemetry/TelemetryDashboard';
 import { MavlinkInspectorView } from '../components/inspector/MavlinkInspectorView';
 import { InspectorGraphsView } from '../components/inspector/InspectorGraphsView';
@@ -50,6 +51,7 @@ export const COMPONENT_REGISTRY: Record<string, DetachedComponentDef> = {
   'flight-control': { Component: FlightControlPanel as ComponentType<Record<string, unknown>>, defaultBounds: { width: 480, height: 360 } },
   messages: { Component: MessagesPanel as ComponentType<Record<string, unknown>>, defaultBounds: { width: 560, height: 420 } },
   map: { Component: MapPanel as ComponentType<Record<string, unknown>>, defaultBounds: { width: 960, height: 720 } },
+  camera: { Component: CameraPanel as ComponentType<Record<string, unknown>>, defaultBounds: { width: 640, height: 480 } },
   'telemetry-dashboard': { Component: TelemetryDashboard as ComponentType<Record<string, unknown>>, defaultBounds: { width: 1280, height: 800 } },
   'area-editor': { Component: ObjectEditorApp as ComponentType<Record<string, unknown>>, defaultBounds: { width: 1400, height: 900 } },
 };

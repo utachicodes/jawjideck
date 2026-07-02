@@ -9,18 +9,17 @@ import { MissionPlanningView } from './components/mission';
 import { SettingsView } from './components/settings';
 import { FirmwareFlashView } from './components/firmware';
 import CliView from './components/cli/CliView';
-import { OsdView } from './components/osd/OsdView';
 import ReportBugView from './components/report/ReportBugView';
 import SitlView from './components/sitl/SitlView';
 import { CalibrationView } from './components/calibration/CalibrationView';
 import { MissionLibraryView } from './components/mission-library/MissionLibraryView';
-import { LuaGraphView } from './components/lua-graph/LuaGraphView';
 import { ModuleManagerView } from './components/modules/ModuleManagerView';
 import { ModuleRuntime } from './modules/ModuleRuntime';
 import { MountPoint } from './modules/MountPoint';
 import { CompanionDashboard } from './components/companion/CompanionDashboard';
 import { LogsView } from './components/logs/LogsView';
 import { MavlinkInspectorView } from './components/inspector/MavlinkInspectorView';
+import { FleetView } from './components/fleet/FleetView';
 import { setupWorkspaceSync } from './stores/workspace-store';
 import { startInspector } from './stores/inspector-store';
 import { useConnectionStore } from './stores/connection-store';
@@ -474,15 +473,14 @@ function App() {
 
   // MSP telemetry: only run when on telemetry view
   // Parameters view handles its own telemetry via MspConfigView (sensors tab only)
-  // OSD view manages its own telemetry start/stop based on demo/live mode
   useEffect(() => {
     if (connectionState.isConnected && connectionState.protocol === 'msp') {
       if (currentView === 'telemetry') {
         // Start telemetry when viewing telemetry dashboard
         window.electronAPI.mspStartTelemetry(10);
         console.log('[App] MSP telemetry started (telemetry view active)');
-      } else if (currentView !== 'osd') {
-        // Stop telemetry when on other views (OSD manages its own)
+      } else {
+        // Stop telemetry when on other views
         // Note: Parameters/Sensors tab handles its own telemetry in MspConfigView
         window.electronAPI.mspStopTelemetry();
         console.log('[App] MSP telemetry stopped (switched to', currentView, 'view)');
@@ -496,6 +494,21 @@ function App() {
       }
     };
   }, [connectionState.isConnected, connectionState.protocol, currentView]);
+
+  // Check once per MSP connection whether the FC's receiver is actually
+  // configured to read RC from MSP. If it isn't, GCS-simulated stick input
+  // (joystick/keyboard/gamepad) can silently fail to reach the mixer even
+  // though arming and telemetry work fine — surfaced as a fix-able warning
+  // in FlightStrip instead of a confusing "control does nothing" bug report.
+  const rxConfigChecked = useFlightControlStore((s) => s.rxConfigChecked);
+  useEffect(() => {
+    if (connectionState.isConnected && connectionState.protocol === 'msp' && !rxConfigChecked) {
+      useFlightControlStore.getState().checkRxConfig();
+    }
+    if (!connectionState.isConnected) {
+      useFlightControlStore.setState({ rxConfigChecked: false, rxConfigIsMsp: null });
+    }
+  }, [connectionState.isConnected, connectionState.protocol, rxConfigChecked]);
 
   useEffect(() => {
     const unsubscribe = window.electronAPI?.onConnectionState((state) => {
@@ -735,17 +748,11 @@ function App() {
       if (currentView === 'sitl') {
         return <SitlView />;
       }
-      if (currentView === 'osd') {
-        return <OsdView />;
-      }
       if (currentView === 'library') {
         return <MissionLibraryView />;
       }
       if (currentView === 'report') {
         return <ReportBugView />;
-      }
-      if (currentView === 'lua-graph') {
-        return <LuaGraphView />;
       }
       if (currentView === 'modules') {
         return <ModuleManagerView />;
@@ -758,6 +765,9 @@ function App() {
       }
       if (currentView === 'inspector') {
         return <MavlinkInspectorView />;
+      }
+      if (currentView === 'fleet') {
+        return <FleetView />;
       }
       if (currentView === 'settings') {
         return <SettingsView />;
@@ -833,14 +843,10 @@ function App() {
         return <CliView />;
       case 'sitl':
         return <SitlView />;
-      case 'osd':
-        return <OsdView />;
       case 'report':
         return <ReportBugView />;
       case 'calibration':
         return <CalibrationView />;
-      case 'lua-graph':
-        return <LuaGraphView />;
       case 'modules':
         return <ModuleManagerView />;
       case 'companion':
@@ -849,6 +855,8 @@ function App() {
         return <LogsView />;
       case 'inspector':
         return <MavlinkInspectorView />;
+      case 'fleet':
+        return <FleetView />;
       case 'telemetry':
       default:
         return <TelemetryDashboard />;
