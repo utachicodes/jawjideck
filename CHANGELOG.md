@@ -17,6 +17,9 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
   - **Part 4 — Intel RealSense depth camera feed.** Confirms zero new Jawji code is needed here either — a colorized depth image is just another MJPEG stream. Provides a complete, ready-to-run `depth_stream.py` (pyrealsense2 + OpenCV + Flask) that grabs raw 16-bit depth frames, colorizes them with `COLORMAP_JET` (near=red, far=blue), and serves them as MJPEG on port 8081 so it can run alongside the Part 3 color stream on port 8080; instructions for adding a second Camera panel instance (dockview supports multiple instances of the same panel type) pointed at the depth stream; and an explicit scope boundary noting this delivers a visual colorized preview only, not queryable per-pixel distance values — real depth-value readout (e.g. distance-at-cursor) would need a small data channel alongside the video and is called out as future scope, not built speculatively now.
   - A **"Putting it all together"** section describing the four services running simultaneously and independently (MAVLink over the ESP32's DroneBridge port, Jawji Agent on port 48400, color camera MJPEG on port 8080, depth camera MJPEG on port 8081 — no port conflicts) and a **troubleshooting table** covering the specific failure modes for each part (wrong AP IP, swapped UART wires, mDNS blocked on managed/guest networks, stream port/firewall issues, `pyrealsense2` wheel install failures, and depth-image colorization scaling).
 
+### Removed
+- `apps/web` and `vercel.json`. The web app had a recurring, unresolved Vercel deployment issue (a dashboard Output Directory override silently fighting `vercel.json`'s `outputDirectory` setting) and is no longer part of the project.
+
 ## [0.0.37] - 2026-07-02
 
 ### Added
