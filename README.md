@@ -88,6 +88,11 @@ Jawji is a next-generation ground control station built with Electron, React, an
 - **Shared Map** - See every fleet vehicle's live position on one map
 - **Focus to Fly** - Promote any fleet vehicle to the main connection for full mission planning, parameter tuning, and control - exactly as today's single-vehicle workflow
 
+### Camera Feed
+- **MJPEG Video Panel** - Dockable panel showing the focused vehicle's live camera feed
+- **Manual or Auto-Detected** - Paste a stream URL directly, or let Jawji request it from the flight controller via MAVLink `VIDEO_STREAM_INFORMATION`
+- **Pop-Out Support** - Detach the camera feed to its own window like any other telemetry panel
+
 ### Mission Planning
 - **Interactive Map Editing** - Click to add waypoints, drag to reposition
 - **Mission Groups** - Every waypoint lives in a named, colored group (manual or survey) with per-group distance, time, and GSD, recolor, show/hide, and per-group upload or save
@@ -620,6 +625,7 @@ Found a bug? We want to hear about it! Jawji includes a built-in bug reporting t
 - **SITL Simulator** - ArduPilot, iNav, and Betaflight software-in-the-loop with vehicle/frame selection, virtual RC, custom frame physics, and FlightGear integration
 - **Keyboard & Joystick Flight Control** - Mutually-exclusive GCS stick input (WASD+QE+Arrows or gamepad) for MAVLink and MSP vehicles, with automatic receiver-config detection/fix so control actually reaches the motors
 - **Fleet Management** - Multi-vehicle roster with live status monitoring and one-click focus to promote a vehicle to the main connection
+- **Camera Feed Panel** - MJPEG video display with manual URL entry and MAVLink stream auto-detection
 
 ### Coming Soon
 - Mission-planner map rendering fix (tiles/panel not displaying in some layouts)

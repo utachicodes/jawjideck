@@ -9,6 +9,7 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 ## [Unreleased]
 
 ### Added
+- Camera feed panel: a new dockable "Camera" panel displays the focused vehicle's MJPEG video stream, via a manually-entered URL or MAVLink `VIDEO_STREAM_INFORMATION` auto-detection. Poppable to its own window like every other telemetry panel. RTSP/H.264 is not yet supported.
 - Fleet management: a new Fleet view lets you add multiple vehicles (MAVLink and MSP) to a saved roster and monitor live status (armed/mode/battery/position) for all of them at once over lightweight, read-only connections. Every other view (Mission Planning, Parameters, Calibration, Firmware Flash, CLI, etc.) continues to operate on a single "focused" vehicle exactly as before — click Focus on any fleet tile to make it the active connection.
 - Keyboard and joystick RC control, available for both MAVLink and MSP vehicles, selectable from a mutually-exclusive KB/JOY toggle in the header (previously the two could be active simultaneously and would fight over the same RC channels).
 - Receiver-config auto-detect for MSP vehicles: on connect, Jawji now reads `MSP_RX_CONFIG` and shows a one-click "Fix" chip in the flight strip if the flight controller's receiver isn't set to MSP — without this, GCS-simulated stick input (joystick/keyboard) never reaches the motors even though arming and telemetry work fine.
