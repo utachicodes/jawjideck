@@ -4,7 +4,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type SettingsStoreSchema, type MSPConnectOptions, type MSPConnectionState, type MSPTelemetryData, type SitlConfig, type SitlStatus, type SitlExitData, type VirtualRCState, type ArduPilotSitlConfig, type ArduPilotSitlStatus, type ArduPilotSitlExitData, type ArduPilotSitlDownloadProgress, type ArduPilotSitlBinaryInfo, type ArduPilotFrameCatalog, type ArduPilotVehicleType, type ArduPilotReleaseTrack, type AppUpdateInfo, type SigningStatus, type TelemetrySpeed, type StatusMessage, type TileCacheStats, type TileCacheDownloadProgress, type TileCacheSettings, type TileCacheDownloadRegion, type CompanionConnectOptions, type CompanionConnectionIpcState, type CompanionDiscoveryResult } from '../shared/ipc-channels.js';
+import { IPC_CHANNELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type SettingsStoreSchema, type MSPConnectOptions, type MSPConnectionState, type MSPTelemetryData, type SitlConfig, type SitlStatus, type SitlExitData, type VirtualRCState, type ArduPilotSitlConfig, type ArduPilotSitlStatus, type ArduPilotSitlExitData, type ArduPilotSitlDownloadProgress, type ArduPilotSitlBinaryInfo, type ArduPilotFrameCatalog, type ArduPilotVehicleType, type ArduPilotReleaseTrack, type AppUpdateInfo, type SigningStatus, type TelemetrySpeed, type StatusMessage, type TileCacheStats, type TileCacheDownloadProgress, type TileCacheSettings, type TileCacheDownloadRegion, type CompanionConnectOptions, type CompanionConnectionIpcState, type CompanionDiscoveryResult, type FleetVehicleEntry, type FleetVehicleStatus } from '../shared/ipc-channels.js';
 import type { DetachedWindowInfo, OpenDetachedRequest } from '../shared/window-types.js';
 import type { ExportArea } from '../shared/kml-export.js';
 import type { SystemInfo, NetworkInfo, MetricsData, ProcessInfo, LogEntry, FileEntry, ServiceInfo, ServiceAction, ContainerInfo, ContainerAction, ExtensionInfo } from '@jawji/companion-types';
@@ -222,8 +222,9 @@ const api = {
 
   // RC override stick test — drives RC1..RC4 (Roll/Pitch/Throttle/Yaw) so
   // the ArduPlane mixer translates them to whatever outputs they're mapped to.
-  rcOverrideSet: (roll: number, pitch: number, throttle: number, yaw: number, modeChannel?: number, modePwm?: number): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke(IPC_CHANNELS.RC_OVERRIDE_SET, { roll, pitch, throttle, yaw, modeChannel, modePwm }),
+  // auxChannels allows setting multiple AUX channels (e.g. FLTMODE_CH + ARM switch).
+  rcOverrideSet: (roll: number, pitch: number, throttle: number, yaw: number, modeChannel?: number, modePwm?: number, auxChannels?: Record<number, number>): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.RC_OVERRIDE_SET, { roll, pitch, throttle, yaw, modeChannel, modePwm, auxChannels }),
   rcOverrideRelease: (): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.RC_OVERRIDE_RELEASE),
 
@@ -284,6 +285,31 @@ const api = {
     const handler = (_: unknown, state: ConnectionState) => callback(state);
     ipcRenderer.on(IPC_CHANNELS.CONNECTION_STATE, handler);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.CONNECTION_STATE, handler);
+  },
+
+  getConnectionState: (): Promise<ConnectionState> =>
+    ipcRenderer.invoke(IPC_CHANNELS.GET_CONNECTION_STATE),
+
+  // Fleet management
+  fleetGetRoster: (): Promise<FleetVehicleEntry[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.FLEET_GET_ROSTER),
+
+  fleetAddVehicle: (candidate: Omit<FleetVehicleEntry, 'id'>): Promise<{ success: boolean; error?: string; entry?: FleetVehicleEntry }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.FLEET_ADD_VEHICLE, candidate),
+
+  fleetUpdateVehicle: (id: string, patch: Partial<Omit<FleetVehicleEntry, 'id'>>): Promise<FleetVehicleEntry | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.FLEET_UPDATE_VEHICLE, id, patch),
+
+  fleetRemoveVehicle: (id: string): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.FLEET_REMOVE_VEHICLE, id),
+
+  fleetSetFocused: (vehicleId: string | null): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.FLEET_SET_FOCUSED, vehicleId),
+
+  onFleetVehicleStatus: (callback: (status: FleetVehicleStatus) => void) => {
+    const handler = (_: unknown, status: FleetVehicleStatus) => callback(status);
+    ipcRenderer.on(IPC_CHANNELS.FLEET_VEHICLE_STATUS, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.FLEET_VEHICLE_STATUS, handler);
   },
 
   onScanProgress: (callback: (progress: { port: string; baudRate: number; status: string }) => void) => {
