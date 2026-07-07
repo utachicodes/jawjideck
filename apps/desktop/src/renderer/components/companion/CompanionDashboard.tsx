@@ -28,6 +28,7 @@ import { ContainersPanel } from './panels/ContainersPanel';
 import { ExtensionsPanel } from './panels/ExtensionsPanel';
 import { DroneBridgeStatusPanel } from './panels/DroneBridgeStatusPanel';
 import { DroneBridgeSettingsPanel } from './panels/DroneBridgeSettingsPanel';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 // ─── Tab types ──────────────────────────────────────────────────────────────
 
@@ -284,10 +285,14 @@ function DroneBridgeTab() {
   return (
     <div className="h-full grid grid-cols-2 gap-0 divide-x divide-subtle/30">
       <div className="overflow-y-auto">
-        <DroneBridgeStatusPanel />
+        <ErrorBoundary label="DroneBridge status">
+          <DroneBridgeStatusPanel />
+        </ErrorBoundary>
       </div>
       <div className="overflow-y-auto">
-        <DroneBridgeSettingsPanel />
+        <ErrorBoundary label="DroneBridge settings">
+          <DroneBridgeSettingsPanel />
+        </ErrorBoundary>
       </div>
     </div>
   );
