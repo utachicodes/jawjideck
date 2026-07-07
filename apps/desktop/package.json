@@ -1,6 +1,6 @@
 {
   "name": "@jawji/desktop",
-  "version": "0.0.37",
+  "version": "0.0.38",
   "description": "Jawji - Desktop Application",
   "author": {
     "name": "utachicodes",
@@ -51,7 +51,7 @@
     "three": "^0.170.0",
     "uplot": "^1.6.32",
     "usb": "^2.16.0",
-    "ws": "^8.18.0",
+    "ws": "^8.21.0",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
