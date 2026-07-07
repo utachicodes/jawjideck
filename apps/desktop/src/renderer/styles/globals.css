@@ -125,6 +125,51 @@
   --select-color-scheme: light;
 }
 
+/* ── Theme switch transition (sunrise / moonrise reveal) ──────────
+   Triggered from ThemeToggle via runThemeTransition() in
+   utils/theme-transition.ts. --theme-origin-x/-y are set to the
+   toggle button's position right before the transition starts, so
+   the reveal grows outward from the side of the screen where the
+   button lives instead of the screen center. */
+::view-transition-old(root) {
+  animation: none;
+}
+
+::view-transition-new(root) {
+  animation: theme-reveal 650ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0% at var(--theme-origin-x, 0%) var(--theme-origin-y, 100%));
+  }
+  to {
+    clip-path: circle(150% at var(--theme-origin-x, 0%) var(--theme-origin-y, 100%));
+  }
+}
+
+@keyframes celestial-rise {
+  0% {
+    transform: translateY(0) scale(0.4);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-280px) scale(1.15);
+    opacity: 0;
+  }
+}
+
+.theme-celestial-icon {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  animation: celestial-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
 @layer base {
   * {
     border-color: var(--border-default);

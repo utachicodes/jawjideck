@@ -6,6 +6,7 @@ import { useFlightControlStore } from '../../stores/flight-control-store';
 import { useGamepad } from '../../hooks/useGamepad';
 import { useTheme } from '../../hooks/useTheme';
 import { DebugConsole } from '../debug/DebugConsole';
+import { ThemeTransitionLayer } from './ThemeTransitionLayer';
 import { UpdateBanner } from './UpdateBanner';
 import { ArmDisarmButton } from './ArmDisarmButton';
 import { FlightStrip } from './FlightStrip';
@@ -177,6 +178,9 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Debug console */}
       <DebugConsole />
+
+      {/* Rising sun/moon icon for the theme-switch reveal animation */}
+      <ThemeTransitionLayer />
     </div>
   );
 }
