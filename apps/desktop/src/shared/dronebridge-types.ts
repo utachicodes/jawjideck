@@ -32,7 +32,8 @@ export interface DroneBridgeStats {
   udp_clients: string[];
   current_client_ip: string;
   esp_rssi: number;
-  connected_sta: DroneBridgeStation[];
+  /** Only present when the device is in AP mode — Station mode has no connected stations of its own. */
+  connected_sta?: DroneBridgeStation[];
 }
 
 /** GET /api/system/clients */

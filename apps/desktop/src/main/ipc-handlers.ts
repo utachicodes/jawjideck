@@ -23,6 +23,7 @@ import { setupOverlayHandlers, getApiKey } from './overlays/overlay-ipc-handlers
 import { getAllWindows, getMainWindow } from './window-manager.js';
 import {
   MAVLinkParser,
+  getAllMessageInfos,
   type MAVLinkPacket,
   serializeV1,
   serializeV2,
@@ -2750,6 +2751,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     // Clean up old MAVLink state
     cleanupTransportListeners();
     mavlinkParser = new MAVLinkParser();
+    mavlinkParser.registerMessages(getAllMessageInfos());
 
     // Set up full MAVLink pipeline
     mavlinkDataHandler = createMavlinkDataHandler();
@@ -3231,6 +3233,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
       // Create parser
       mavlinkParser = new MAVLinkParser();
+      mavlinkParser.registerMessages(getAllMessageInfos());
 
       // BSOD FIX: MAVLink data handler with backpressure to prevent event loop starvation
       // Stored at module level so we can properly remove it on disconnect

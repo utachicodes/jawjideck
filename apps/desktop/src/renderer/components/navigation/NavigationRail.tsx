@@ -4,6 +4,7 @@ import { useConnectionStore } from '../../stores/connection-store';
 import { useSettingsStore, type ThemePreference } from '../../stores/settings-store';
 import { isViewAvailable, useEnabledCapabilitySlugs } from '../../modules/capabilities';
 import { ChevronRight } from 'lucide-react';
+import { runThemeTransition } from '../../utils/theme-transition';
 
 interface NavItem {
   id: ViewId;
@@ -340,14 +341,28 @@ const THEME_LABELS: Record<ThemePreference, string> = {
   system: 'System theme',
 };
 
+/** Resolves 'system' down to the OS's actual light/dark preference. */
+function resolveAppearance(pref: ThemePreference): 'light' | 'dark' {
+  if (pref === 'light') return 'light';
+  if (pref === 'dark') return 'dark';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 function ThemeToggle() {
   const theme = useSettingsStore((s) => s.theme);
   const setTheme = useSettingsStore((s) => s.setTheme);
 
-  const cycle = () => {
+  const cycle = (e: React.MouseEvent<HTMLButtonElement>) => {
     const idx = THEME_CYCLE.indexOf(theme);
     const next = THEME_CYCLE[(idx + 1) % THEME_CYCLE.length]!;
-    setTheme(next);
+
+    // Origin the reveal at the button so it grows from the side of the
+    // screen the toggle lives on, rather than an abstract center-screen fade.
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    runThemeTransition(x, y, resolveAppearance(next), () => setTheme(next));
   };
 
   return (

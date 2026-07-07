@@ -8,6 +8,8 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 
 ## [Unreleased]
 
+## [0.0.38] - 2026-07-07
+
 ### Added
 - AI Object Detection module: a real, working module (not a demo) that runs YOLOv8 object detection against the Camera panel's live MJPEG feed and draws bounding boxes directly on the video. Built on the existing module system's PTY permission (spawns a local Python process) — required two small, reusable additions to that system: a `camera` namespace on the module host API (so a module can read the active stream URL and push detection results) and a "local install" path in Module Manager for sideloading locally-built modules outside the marketplace/license flow. Requires `pip install ultralytics opencv-python` on the machine running Jawji; see `modules/ai-object-detection/README.md`.
 - New guide: `docs/guides/companion-hardware-setup.md` — a complete, step-by-step walkthrough for pairing Jawji with an ESP32 wireless telemetry bridge and a Raspberry Pi companion computer (metrics, camera, and depth camera), tested against a ground robot but equally applicable to a flying vehicle. No app code changes were required for any of this — every piece documented here uses functionality that already existed (the Companion Store's ESP32/Pi flashing templates, the DroneBridge tab, the Jawji Agent pairing flow, and the Camera panel added in v0.0.37); the guide exists because that functionality had no end-to-end documentation connecting the pieces together. Covers, in order:
@@ -17,8 +19,16 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
   - **Part 4 — Intel RealSense depth camera feed.** Confirms zero new Jawji code is needed here either — a colorized depth image is just another MJPEG stream. Provides a complete, ready-to-run `depth_stream.py` (pyrealsense2 + OpenCV + Flask) that grabs raw 16-bit depth frames, colorizes them with `COLORMAP_JET` (near=red, far=blue), and serves them as MJPEG on port 8081 so it can run alongside the Part 3 color stream on port 8080; instructions for adding a second Camera panel instance (dockview supports multiple instances of the same panel type) pointed at the depth stream; and an explicit scope boundary noting this delivers a visual colorized preview only, not queryable per-pixel distance values — real depth-value readout (e.g. distance-at-cursor) would need a small data channel alongside the video and is called out as future scope, not built speculatively now.
   - A **"Putting it all together"** section describing the four services running simultaneously and independently (MAVLink over the ESP32's DroneBridge port, Jawji Agent on port 48400, color camera MJPEG on port 8080, depth camera MJPEG on port 8081 — no port conflicts) and a **troubleshooting table** covering the specific failure modes for each part (wrong AP IP, swapped UART wires, mDNS blocked on managed/guest networks, stream port/firewall issues, `pyrealsense2` wheel install failures, and depth-image colorization scaling).
 
+### Fixed
+- MAVLink packet validation (length + CRC) was silently disabled on both live-connection code paths: `MAVLinkParser` was instantiated but `registerMessages()` was never called on it, so every packet — valid or corrupted — took the parser's "unknown message" fallback and was queued without any validation. Surfaced as an uncaught crash in `deserializeParamValue` when a truncated `PARAM_VALUE` packet (far more likely over a lossy WiFi/UDP link, e.g. an ESP32 DroneBridge bridge, than over USB serial) reached the handler with a too-short payload. Malformed packets are now dropped instead of crashing message handlers.
+
 ### Removed
 - `apps/web` and `vercel.json`. The web app had a recurring, unresolved Vercel deployment issue (a dashboard Output Directory override silently fighting `vercel.json`'s `outputDirectory` setting) and is no longer part of the project.
+
+### Security
+- Bumped `ws` to `8.21.0` (was `8.19.0`) — patches a memory-exhaustion DoS from tiny WebSocket fragments (GHSA-96hv-2xvq-fx4p).
+- Pinned `fast-uri` to `^3.1.2` via a pnpm override (was resolving to `3.1.0` through `electron-store` → `conf` → `ajv`) — patches a path-traversal/host-confusion pair of advisories (GHSA-q3j6-qgpj-74h6, GHSA-v39h-62p7-jpjc).
+- Remaining high/critical advisories from `pnpm audit` are all in build-time-only tooling (`tools/mavlink-generator`'s `fast-xml-parser`/`minimatch`) or the Pi-side companion agent's Docker client (`jawji-agent`'s `dockerode` → `protobufjs`/`@grpc/grpc-js`/`systeminformation`), none of which ship inside the desktop app — tracked as the existing backlog documented in `.github/workflows/security.yml`.
 
 ## [0.0.37] - 2026-07-02
 

@@ -226,7 +226,7 @@ export function DroneBridgeStatusPanel() {
               </div>
             )}
 
-            {droneBridgeStats.connected_sta.length > 0 && (
+            {droneBridgeStats.connected_sta && droneBridgeStats.connected_sta.length > 0 && (
               <div className="mt-1.5 p-2 bg-surface-raised rounded-lg">
                 <div className="text-[10px] text-content-tertiary uppercase tracking-wider mb-1">Connected Stations</div>
                 {droneBridgeStats.connected_sta.map((sta) => (
