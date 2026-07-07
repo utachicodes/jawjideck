@@ -94,10 +94,26 @@ const modeOptions = Object.entries(ESP32_MODE_LABELS).map(([k, v]) => ({
   label: v,
 }));
 
-const protoOptions = Object.entries(PROTOCOL_LABELS).map(([k, v]) => ({
+const protoOptionsBase = Object.entries(PROTOCOL_LABELS).map(([k, v]) => ({
   value: Number(k),
   label: v,
 }));
+
+/**
+ * A native <select> shows blank if its bound value doesn't match any
+ * <option> — which happens whenever the device reports a protocol/mode ID
+ * newer firmware added but this app's label map doesn't know about yet
+ * (e.g. a real device reporting `proto: 4` when PROTOCOL_LABELS only covers
+ * 0-2). Always including the current value as a fallback option keeps the
+ * dropdown showing something meaningful instead of silently blanking out.
+ */
+function optionsWithFallback(
+  base: { value: number; label: string }[],
+  currentValue: number,
+): { value: number; label: string }[] {
+  if (base.some((o) => o.value === currentValue)) return base;
+  return [...base, { value: currentValue, label: `Unknown (${currentValue})` }];
+}
 
 const baudOptions = BAUD_RATES.map((b) => ({ value: b, label: String(b) }));
 
@@ -288,7 +304,7 @@ export function DroneBridgeSettingsPanel() {
               <NumberInput value={form.wifi_chan} onChange={(v) => updateField('wifi_chan', v)} min={1} max={13} />
             </FieldRow>
             <FieldRow label="Mode">
-              <SelectInput value={form.esp32_mode} onChange={(v) => updateField('esp32_mode', v)} options={modeOptions} />
+              <SelectInput value={form.esp32_mode} onChange={(v) => updateField('esp32_mode', v)} options={optionsWithFallback(modeOptions, form.esp32_mode)} />
             </FieldRow>
             <FieldRow label="802.11 g/n">
               <Toggle checked={form.wifi_en_gn === 1} onChange={(v) => updateField('wifi_en_gn', v ? 1 : 0)} />
@@ -307,7 +323,7 @@ export function DroneBridgeSettingsPanel() {
               <SelectInput value={form.baud} onChange={(v) => updateField('baud', v)} options={baudOptions} />
             </FieldRow>
             <FieldRow label="Protocol">
-              <SelectInput value={form.proto} onChange={(v) => updateField('proto', v)} options={protoOptions} />
+              <SelectInput value={form.proto} onChange={(v) => updateField('proto', v)} options={optionsWithFallback(protoOptionsBase, form.proto)} />
             </FieldRow>
             <FieldRow label="TX GPIO">
               <NumberInput value={form.gpio_tx} onChange={(v) => updateField('gpio_tx', v)} min={0} />
@@ -369,7 +385,7 @@ export function DroneBridgeSettingsPanel() {
               <Toggle checked={form.radio_dis_onarm === 1} onChange={(v) => updateField('radio_dis_onarm', v ? 1 : 0)} />
             </FieldRow>
             <FieldRow label="RSSI format">
-              <SelectInput value={form.rep_rssi_dbm} onChange={(v) => updateField('rep_rssi_dbm', v)} options={rssiOptions} />
+              <SelectInput value={form.rep_rssi_dbm} onChange={(v) => updateField('rep_rssi_dbm', v)} options={optionsWithFallback(rssiOptions, form.rep_rssi_dbm)} />
             </FieldRow>
           </div>
         </div>
