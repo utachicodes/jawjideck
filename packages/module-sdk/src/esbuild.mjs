@@ -1,12 +1,22 @@
-import type { Plugin } from 'esbuild';
+/**
+ * esbuild plugin that redirects host-provided globals (React, ReactDOM) to
+ * `window.__jawjiHost` instead of bundling them into the module — keeps
+ * modules small and avoids shipping a second React copy into the renderer.
+ *
+ * Plain JS, not TypeScript: this file is loaded directly by `node` from
+ * consumers' `esbuild.config.mjs` build scripts, which run outside of any
+ * bundler/TS-loader, so it can't rely on TypeScript syntax stripping.
+ *
+ * @returns {import('esbuild').Plugin}
+ */
 
-const HOST_GLOBAL_MAP: Record<string, string> = {
+const HOST_GLOBAL_MAP = {
   'react': 'window.__jawjiHost.react',
   'react-dom': 'window.__jawjiHost.reactDom',
   'react-dom/client': 'window.__jawjiHost.reactDom',
 };
 
-export function JawjiModulePlugin(): Plugin {
+export function JawjiModulePlugin() {
   return {
     name: 'jawji-module-host-externals',
     setup(build) {
