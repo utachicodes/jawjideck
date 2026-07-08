@@ -46,4 +46,3 @@ The configuration header bar provides global actions that apply across all tabs:
 
 When parameters require a reboot to take effect, a banner appears at the top listing the affected parameters with a Reboot button.
 
-![TODO: screenshot of configuration header with save dialog]()

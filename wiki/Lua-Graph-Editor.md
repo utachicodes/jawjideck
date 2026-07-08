@@ -28,7 +28,6 @@ The Lua Graph Editor is a visual scripting environment for ArduPilot. Instead of
 - **Export Lua** -- Compile and save a `.lua` file
 - **Undo / Redo** -- Standard undo/redo for all graph changes
 
-![TODO: screenshot of Lua Graph Editor interface]()
 
 ## Your First Script
 

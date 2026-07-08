@@ -12,7 +12,6 @@ Quick-select buttons for common protocols:
 
 A full dropdown is available with all supported protocols: Auto-Detect, All, PPM, IBUS, SBus, SBus (NI), DSM/Spektrum, SUMD, SRXL, SRXL2, CRSF/ELRS, ST24, FPORT, FPORT2, FastSBUS.
 
-![TODO: screenshot of receiver tab with live channels]()
 
 ## Live RC Channels
 

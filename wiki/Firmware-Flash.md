@@ -41,7 +41,6 @@ Click **Flash**. A progress bar shows real-time status as the firmware is writte
 
 On success, a confirmation message appears. Unplug and reconnect your board to start using the new firmware.
 
-![TODO: screenshot of firmware flash progress]()
 
 ## Boot Pad Wizard
 

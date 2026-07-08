@@ -6,7 +6,6 @@ The Rates tab controls how fast your vehicle rotates in response to stick input.
 
 Three columns: **Roll** (blue), **Pitch** (green), and **Yaw** (orange). Each column has a Max Rate slider and, if your firmware supports it, an Expo slider.
 
-![TODO: screenshot of rates tab]()
 
 ## Controls
 

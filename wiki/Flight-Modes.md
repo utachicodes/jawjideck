@@ -18,7 +18,6 @@ Shows three slots mapped to Low, Mid, and High switch positions. Each slot has a
 
 Shows all 6 mode slots in a grid. Each slot displays its PWM range (within 900-2100us), a mode dropdown, and whether the slot is currently active. Use this when your transmitter sends distinct PWM values for each position.
 
-![TODO: screenshot of flight modes tab]()
 
 ## Live Feedback
 
