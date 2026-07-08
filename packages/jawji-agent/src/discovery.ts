@@ -9,7 +9,7 @@ export function startDiscovery(port: number = AGENT_DEFAULT_PORT, hostname: stri
   instance = new Bonjour();
   instance.publish({
     name: `jawji-agent-${hostname}`,
-    type: 'Jawji-agent',
+    type: 'jawji-agent',
     port,
     txt: { version: '1' },
   });

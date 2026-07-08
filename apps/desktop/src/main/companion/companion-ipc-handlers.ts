@@ -13,6 +13,7 @@ import { AGENT_DEFAULT_PORT } from '@jawji/companion-types';
 import type {
   SystemInfo,
   NetworkInfo,
+  MediaMtxStatus,
   FileEntry,
   ServiceInfo,
   ServiceAction,
@@ -24,11 +25,13 @@ import type {
 // Persisted token storage (encrypted with safeStorage)
 interface CompanionTokenStore {
   tokens: Record<string, string>; // host -> base64(encrypted(token))
+  lastHost: string | null;
+  lastPort: number | null;
 }
 
 const tokenStore = new Store<CompanionTokenStore>({
   name: 'companion-tokens',
-  defaults: { tokens: {} },
+  defaults: { tokens: {}, lastHost: null, lastPort: null },
 });
 
 function saveToken(host: string, token: string): void {
@@ -53,6 +56,22 @@ function loadToken(host: string): string | null {
 export function registerCompanionIpcHandlers(mainWindow: BrowserWindow): void {
   companionConnection.setMainWindow(mainWindow);
 
+  // Auto-reconnect to the last paired Jawji Agent, if we have a saved
+  // token for it. Fire-and-forget: on success, companionConnection's own
+  // state-change push (IPC_CHANNELS.COMPANION_CONNECTION_STATE) is what
+  // the renderer reacts to, same as a user-initiated connect. On failure
+  // (agent offline, IP changed, etc.) this is silent — the Dashboard tab
+  // just shows its normal disconnected state and the user reconnects
+  // manually, same as before this existed.
+  const lastHost = tokenStore.get('lastHost');
+  const lastPort = tokenStore.get('lastPort');
+  if (lastHost) {
+    const savedToken = loadToken(lastHost);
+    if (savedToken) {
+      void companionConnection.connect(lastHost, lastPort ?? AGENT_DEFAULT_PORT, savedToken);
+    }
+  }
+
   // === Connection management ===
 
   ipcMain.handle(IPC_CHANNELS.COMPANION_CONNECT, async (_event, options: CompanionConnectOptions) => {
@@ -60,6 +79,8 @@ export function registerCompanionIpcHandlers(mainWindow: BrowserWindow): void {
     const success = await companionConnection.connect(options.host, port, options.token);
     if (success) {
       saveToken(options.host, options.token);
+      tokenStore.set('lastHost', options.host);
+      tokenStore.set('lastPort', port);
     }
     return success;
   });
@@ -93,6 +114,10 @@ export function registerCompanionIpcHandlers(mainWindow: BrowserWindow): void {
 
   ipcMain.handle(IPC_CHANNELS.COMPANION_NETWORK, async () => {
     return companionConnection.restGet<NetworkInfo>('/network');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.COMPANION_MEDIAMTX, async () => {
+    return companionConnection.restGet<MediaMtxStatus>('/mediamtx');
   });
 
   ipcMain.handle(IPC_CHANNELS.COMPANION_SERVICES, async () => {

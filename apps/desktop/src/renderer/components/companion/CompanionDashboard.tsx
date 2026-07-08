@@ -673,17 +673,64 @@ function DashboardConnectForm() {
   const [host, setHost] = useState('');
   const [token, setToken] = useState('');
   const [connecting, setConnecting] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [found, setFound] = useState<Array<{ host: string; port: number; hostname: string }>>([]);
 
-  const handleConnect = () => {
-    if (!host.trim() || !token.trim()) return;
+  useEffect(() => {
+    const unsubscribe = window.electronAPI.onCompanionDiscoveryResult((result) => {
+      setFound((prev) => (prev.some((f) => f.host === result.host && f.port === result.port) ? prev : [...prev, result]));
+    });
+    return () => { unsubscribe(); };
+  }, []);
+
+  const handleScan = () => {
+    setFound([]);
+    setScanning(true);
+    window.electronAPI.companionDiscover();
+    // mDNS discovery has no explicit "done" signal — results trickle in as
+    // they're found on the network, so just close the scanning UI after a
+    // reasonable window rather than blocking indefinitely.
+    setTimeout(() => setScanning(false), 5000);
+  };
+
+  const handleConnect = (connectHost?: string) => {
+    const h = (connectHost ?? host).trim();
+    if (!h || !token.trim()) return;
     setConnecting(true);
-    window.electronAPI.companionConnect({ host: host.trim(), token: token.trim() });
+    window.electronAPI.companionConnect({ host: h, token: token.trim() });
     setTimeout(() => setConnecting(false), 3000);
   };
 
   return (
     <div className="space-y-3">
-      <h4 className="text-xs font-medium text-content">Connect to Agent</h4>
+      <div className="flex items-center justify-between">
+        <h4 className="text-xs font-medium text-content">Connect to Agent</h4>
+        <button
+          onClick={handleScan}
+          disabled={scanning}
+          className="text-[11px] text-blue-400 hover:text-blue-300 disabled:text-content-tertiary font-medium"
+        >
+          {scanning ? 'Scanning…' : 'Scan for agents'}
+        </button>
+      </div>
+
+      {found.length > 0 && (
+        <div className="space-y-1">
+          {found.map((f) => (
+            <button
+              key={`${f.host}:${f.port}`}
+              onClick={() => setHost(f.host)}
+              className={`w-full text-left px-3 py-2 rounded-lg text-xs border transition-colors ${
+                host === f.host ? 'border-blue-500/60 bg-blue-500/10 text-content' : 'border-subtle bg-surface-input text-content-secondary hover:text-content'
+              }`}
+            >
+              <span className="font-medium">{f.hostname}</span>
+              <span className="text-content-tertiary"> — {f.host}:{f.port}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-2">
         <input
           type="text"
@@ -703,7 +750,7 @@ function DashboardConnectForm() {
         />
       </div>
       <button
-        onClick={handleConnect}
+        onClick={() => handleConnect()}
         disabled={connecting || !host.trim() || !token.trim()}
         className="w-full py-2 bg-blue-600/80 hover:bg-blue-500/80 disabled:bg-surface-raised disabled:text-content-tertiary text-white text-xs font-medium rounded-lg transition-colors"
       >

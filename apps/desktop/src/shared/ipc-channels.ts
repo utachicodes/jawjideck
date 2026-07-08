@@ -538,6 +538,7 @@ export const IPC_CHANNELS = {
   COMPANION_TERMINAL_DATA: 'companion:terminal-data',       // main -> renderer (output)
   COMPANION_TERMINAL_RESIZE: 'companion:terminal-resize',
   COMPANION_NETWORK: 'companion:network',
+  COMPANION_MEDIAMTX: 'companion:mediamtx',
   COMPANION_INFO: 'companion:info',
 
   // Layer 3 (Docker / BlueOS)
