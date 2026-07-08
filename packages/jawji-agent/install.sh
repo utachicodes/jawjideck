@@ -3,7 +3,7 @@ set -euo pipefail
 
 AGENT_VERSION="0.1.0"
 REPO_URL="${JAWJI_REPO_URL:-https://github.com/utachicodes/jawjideck.git}"
-REPO_BRANCH="${JAWJI_REPO_BRANCH:-main}"
+REPO_BRANCH="${JAWJI_REPO_BRANCH:-master}"
 INSTALL_DIR="/opt/jawji-agent"
 SERVICE_USER="${SUDO_USER:-$(whoami)}"
 
