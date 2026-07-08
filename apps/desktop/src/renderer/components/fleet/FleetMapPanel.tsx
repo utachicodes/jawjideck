@@ -4,7 +4,8 @@
  * no waypoints, no overlays, no drawing tools — just live vehicle positions.
  */
 
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useFleetStore } from '../../stores/fleet-store';
@@ -16,9 +17,38 @@ const VEHICLE_ICON = L.divIcon({
   iconAnchor: [7, 7],
 });
 
+function FleetMapController({ containerRef }: { containerRef: React.RefObject<HTMLDivElement> }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      setTimeout(() => {
+        try {
+          if (map && map.getContainer()) {
+            map.invalidateSize();
+          }
+        } catch {
+          // Map not ready yet, ignore
+        }
+      }, 100);
+    });
+
+    resizeObserver.observe(containerRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [map, containerRef]);
+
+  return null;
+}
+
 export function FleetMapPanel() {
   const roster = useFleetStore((s) => s.roster);
   const statusByVehicleId = useFleetStore((s) => s.statusByVehicleId);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const vehiclesWithPosition = roster
     .map((entry) => ({ entry, status: statusByVehicleId[entry.id] }))
@@ -29,8 +59,9 @@ export function FleetMapPanel() {
     : [0, 0];
 
   return (
-    <div className="h-full w-full">
+    <div ref={containerRef} className="h-full w-full relative">
       <MapContainer center={center} zoom={vehiclesWithPosition.length ? 15 : 2} className="h-full w-full">
+        <FleetMapController containerRef={containerRef} />
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
         {vehiclesWithPosition.map(({ entry, status }) => (
           <Marker key={entry.id} position={[status!.lat!, status!.lon!]} icon={VEHICLE_ICON}>
