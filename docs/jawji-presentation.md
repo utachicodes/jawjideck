@@ -87,18 +87,45 @@ Four additional provisioning scripts (`packages/companion-scripts/`) layer on to
 
 **Why these choices:** Two protocols instead of one because DroneBridge and Jawji Agent sit at different trust levels — DroneBridge is a dumb, open serial-to-WiFi bridge with no business having auth, while Jawji Agent runs arbitrary code (terminal, file access, Docker) on a real Linux box and needs real auth. The Store being mostly instructions rather than automation is a reasonable scope boundary — genuinely automating a full Rpanion or BlueOS install isn't something Jawji should own.
 
-**Bugs found (audited, not fixed this session):**
-1. `CompanionStoreDialog.tsx` has a dead flash handler (`firmwarePath: ''`, literal `TODO` comment) — likely superseded by `CompanionStoreTab.tsx` but never removed.
-2. `esp32-mavlink-bridge` template is listed but not flashable — no `FIRMWARE_SOURCES` entry.
-3. Saved pairing tokens are encrypted and persisted but never read back — no auto-reconnect on launch.
-4. mDNS discovery is fully wired in the main process but no UI ever calls it — no "Scan for agents" button exists.
-5. **Real functional bug:** the agent's `authMiddleware` gates `/api/v1/info` behind a bearer token, but the desktop's manual-IP `probeAgent()` calls it with no `Authorization` header — manual agent probing likely always fails (401) against a real deployed agent.
-6. mDNS service-type casing differs between publisher (`Jawji-agent`) and browser (`jawji-agent`) — probably harmless (DNS-SD is case-insensitive) but worth knowing.
+**Bugs fixed (all 6, follow-up session):**
+1. **`probeAgent()` auth mismatch (the real one).** `/api/v1/info` is now defined before `authMiddleware` mounts, so it's genuinely unauthenticated — matches what the desktop's manual-IP probe always assumed. Manual agent probing actually works now.
+2. **`CompanionStoreDialog.tsx` deleted.** Confirmed orphaned (no imports anywhere in the codebase) before removing it — its flash handler was a stub with an empty `firmwarePath` and a literal `TODO`.
+3. **`esp32-mavlink-bridge` template removed**, not patched. Its cited project (`mavesp8266`) turned out to actually be an ESP8266 project (individual `.bin` files from ArduPilot's firmware server), not a GitHub-release zip matching the ESP32 flasher's expected chip-directory structure — no verified firmware source existed to wire up safely, so the honest fix was removing the template rather than guessing at a download URL that could brick real hardware.
+4. **Saved pairing tokens now get used.** The last host+port a user successfully paired with is persisted alongside the token; on app launch, a fire-and-forget reconnect attempt fires automatically if both exist. Silent on failure (agent offline, IP changed) — same manual-reconnect fallback as before this existed.
+5. **"Scan for agents" button added** to `DashboardConnectForm`, wired to the mDNS discovery IPC that already existed in the main process but had no UI calling it. Results show as clickable host:port rows that prefill the connect form.
+6. **mDNS casing fixed** — agent now publishes `jawji-agent` (lowercase), matching what the desktop was already browsing for.
 
-**Next steps (priority order):**
-1. Fix the `probeAgent()` auth mismatch (#5) — this one actually blocks a real user flow.
-2. Delete or fix `CompanionStoreDialog.tsx`'s dead flash path.
-3. Add a `FIRMWARE_SOURCES` entry for `esp32-mavlink-bridge`, or remove it from the catalog.
-4. Wire `getSavedToken()` into auto-reconnect on launch.
-5. Add a "Scan for agents" button using the already-implemented `companionDiscover`.
-6. Once a physical Pi is available: run the full install → pairing → dashboard flow end to end, the way the ESP32 link was validated in §1 — everything here is code-reviewed, not hardware-tested.
+**Next steps:** Run the full install → pairing → dashboard flow end to end against a physical Pi once one's available — everything above is code-reviewed and typechecked, not hardware-tested.
+
+## 8. The "one script" installer + MediaMTX architecture
+
+**How it works:** A single command now replaces the "install Docker, mavlink-router, NetworkManager, MediaMTX, MAVSDK, Jawji Agent, configure each, enable services, reboot" checklist:
+
+```
+curl -fsSL https://jawji.space/install.sh | sudo bash
+```
+
+It detects the hardware (Jetson via `/etc/nv_tegra_release`, Pi via `/proc/cpuinfo`, else generic Linux), then offers three profiles instead of a component shopping list:
+
+| Profile | Installs |
+|---|---|
+| **Basic Companion** | Jawji Agent + MAVLink telemetry + WiFi AP |
+| **Vision Companion** | + MediaMTX (RTSP/RTMP/HLS/WebRTC) |
+| **AI Companion** | + MAVSDK + YOLO object detection (Jetson only) |
+
+A profile can be given as an argument (`install.sh vision`), via `WITH_*` environment variables for scripting, or picked from an interactive menu — reading prompts from `/dev/tty` explicitly, since `curl | bash` has no stdin of its own to read from otherwise. The actual install logic lives in one shared `lib.sh`, sourced by both `install.sh` and the four original per-template scripts (kept as thin wrappers — `pi-telemetry.sh` is now three lines that just call `install.sh basic` — so the existing Companion Store templates don't break).
+
+**MediaMTX** (a real, actively maintained project — `bluenviron/mediamtx`, ~30k+ stars, "nginx for video") replaces the ad hoc single-purpose GStreamer UDP pipeline the video template used before. One camera source (a local camera published in via `ffmpeg`) can now serve RTSP, RTMP, HLS, and WebRTC simultaneously — QGroundControl, a browser, VLC, and (once it supports WebRTC/HLS) Jawji itself, all watching the same stream. `mjpg-streamer` stays installed alongside it, because Jawji's Camera panel is still MJPEG-only today — that's the real bridge until the panel gets a WebRTC/HLS player. The script is upfront about the real constraint this creates: most USB webcams only let one process hold `/dev/video0` open at a time, so running both against the same physical camera will contend rather than both working.
+
+**Jawji Agent as orchestrator (first piece).** Rather than the agent implementing video streaming itself, it queries MediaMTX's own local API (bound to `127.0.0.1:9997`, never network-exposed) for real stream status — active paths, whether a publisher is genuinely connected, reader counts — and exposes that through its existing authenticated REST API (`GET /api/v1/mediamtx`), the same pattern it already uses for services, processes, and Docker containers. This is a working proof of concept of the "agent manages dedicated tools, doesn't reinvent them" architecture, for one component.
+
+**Why these choices:**
+- **Profiles over a checkbox list** because most people know "I want video" or "I want autonomy," not which five specific packages that requires — the mapping from intent to components is exactly what a profile is for.
+- **MediaMTX over building a custom pipeline** because it's not tied to drones at all — it's a general media server that already solves protocol conversion, recording, and multi-consumer distribution, all things a bespoke GStreamer pipeline would have to reinvent badly.
+- **Agent queries MediaMTX's API rather than re-implementing status tracking** because MediaMTX already knows its own state authoritatively — parsing that is strictly more honest than the agent guessing from `systemctl is-active` alone (which only tells you the process is running, not that a camera is actually publishing).
+- **Keeping the four original per-template scripts as wrappers** rather than deleting them, because the existing Companion Store templates' `installCommand` fields already point at those exact URLs — breaking them would be the same "advertised command 404s" bug fixed earlier in this session, just self-inflicted this time.
+
+**Next steps:**
+1. Build a WebRTC or HLS player component for Jawji's Camera panel — this is the piece that actually closes the loop and makes MediaMTX's output watchable inside Jawji itself, not just via external tools. (Notably, the *other* Jawji product — the web-based `jawji-gcs` at jawji.space — already has this built, `mediamtx-player.tsx`, on an unmerged branch. Porting the approach, not necessarily the code, is a reasonable starting point.)
+2. Extend agent-as-orchestrator to `mavlink-router` and MAVSDK the same way it now covers MediaMTX — richer status than "is the systemd service running" (e.g. mavlink-router's actual connected-endpoint count).
+3. Hardware-test the new `install.sh` end to end on a real Pi and a real Jetson, same caveat as everything else companion-related this session: code-reviewed and syntax-checked, not yet run against physical hardware.
