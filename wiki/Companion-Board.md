@@ -89,7 +89,7 @@ The dashboard uses a dockview-based layout system:
 
 1. Install the Jawji Agent on your companion:
    ```
-   curl -fsSL https://Jawji.com/agent/install.sh | bash
+   curl -fsSL https://raw.githubusercontent.com/utachicodes/jawjideck/master/packages/jawji-agent/install.sh | sudo bash
    ```
 2. Note the pairing token shown after installation
 3. In the Dashboard tab, enter the companion's IP and token

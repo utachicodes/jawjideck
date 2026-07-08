@@ -86,20 +86,17 @@ This gives you live system metrics, a remote terminal, and log access from the P
 
 ### 2.1 Install the agent
 
-The simplest path — installs `mavlink-router`, a WiFi AP, and the Jawji Agent together as boot services:
+Over SSH on the Pi:
 
 ```bash
-curl -fsSL https://jawji.space/companion/pi-telemetry.sh | bash
+curl -fsSL https://raw.githubusercontent.com/utachicodes/jawjideck/master/packages/jawji-agent/install.sh | sudo bash
 ```
 
-If you already have your own Pi setup and just want the agent (no router/AP bundled), build/install it from this repo instead:
+This installs Node.js/pnpm if needed, clones the repo, builds the `jawji-agent` workspace package, and installs it as a systemd service listening on port **48400**.
 
-```bash
-cd packages/jawji-agent
-./install.sh
-```
+If you already have the repo checked out locally and just want to rebuild/reinstall from your working copy, run `sudo packages/jawji-agent/install.sh` from the repo root instead.
 
-Either way, the agent runs as a systemd service listening on port **48400**.
+> A bundled installer that also sets up `mavlink-router` and a WiFi AP alongside the agent doesn't exist yet — for now, set those up separately if you need them.
 
 ### 2.2 Get the pairing token
 
