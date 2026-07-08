@@ -47,6 +47,10 @@ jobs:
       - name: Trigger build workflow
         # Releases created with GITHUB_TOKEN don't trigger other workflows'
         # `on: release` events (GitHub's anti-loop restriction), so dispatch explicitly.
+        # --ref pins the dispatch to the exact tag: without it, `gh workflow run`
+        # uses the repo's default branch's workflow file and source, which is
+        # not necessarily where the tag was actually cut from (e.g. if the
+        # default branch lags behind the branch tags are made from).
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run build.yml --repo "${{ github.repository }}" -f release_tag="${{ github.ref_name }}"
+        run: gh workflow run build.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}" -f release_tag="${{ github.ref_name }}"
