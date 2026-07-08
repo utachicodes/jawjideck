@@ -16,7 +16,6 @@ All parameters are displayed in a sortable, searchable table:
 
 Click any column header to sort. Click the same header again to reverse sort direction.
 
-![TODO: screenshot of all parameters tab]()
 
 ## Search and Filter
 

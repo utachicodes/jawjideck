@@ -6,7 +6,6 @@ The PID Tuning tab lets you adjust proportional, integral, derivative, and feedf
 
 Three columns: **Roll**, **Pitch**, and **Yaw**. Each column has sliders for available gains.
 
-![TODO: screenshot of PID tuning tab]()
 
 ## Gain Types
 

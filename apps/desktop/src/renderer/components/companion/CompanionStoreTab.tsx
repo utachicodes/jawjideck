@@ -33,7 +33,6 @@ import {
 const TEMPLATE_ICON: Record<string, LucideIcon> = {
   'dronebridge-wifi': Wifi,
   'dronebridge-espnow': Radio,
-  'esp32-mavlink-bridge': Wifi,
   'pi-telemetry-bridge': Wifi,
   'pi-video-telemetry': Video,
   'rpanion-server': Cpu,

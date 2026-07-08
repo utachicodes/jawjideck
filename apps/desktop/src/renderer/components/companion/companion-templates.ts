@@ -118,19 +118,6 @@ export const COMPANION_TEMPLATES: CompanionTemplate[] = [
     projectUrl: 'https://github.com/DroneBridge/ESP32',
     projectName: 'DroneBridge for ESP32',
   },
-  {
-    id: 'esp32-mavlink-bridge',
-    name: 'MAVLink WiFi Bridge (Minimal)',
-    description: 'Lightweight serial-to-WiFi bridge. Minimal firmware for simple telemetry forwarding over UDP.',
-    board: 'esp32',
-    boardVariants: ['ESP32', 'ESP32-S3', 'ESP32-C3'],
-    category: 'Telemetry',
-    flashMethod: 'serial',
-    features: ['WiFi AP mode', 'Serial-to-UDP bridge', 'Auto-baud detection', 'Minimal resource usage'],
-    requirements: ['ESP32 dev board', 'UART connection to FC', '3.3V or 5V power'],
-    projectName: 'mavesp8266 (ESP32 fork)',
-  },
-
   // ── Raspberry Pi Templates ───────────────────────────────────
   {
     id: 'pi-telemetry-bridge',
@@ -148,15 +135,15 @@ export const COMPANION_TEMPLATES: CompanionTemplate[] = [
   {
     id: 'pi-video-telemetry',
     name: 'Video + Telemetry',
-    description: 'Camera streaming with GStreamer + MAVLink routing. Low-latency H.264 video over WiFi.',
+    description: 'MediaMTX media server + MAVLink routing. RTSP/RTMP/HLS/WebRTC out, MJPEG bridged in for Jawji today.',
     board: 'raspberry-pi',
     boardVariants: ['Pi 4', 'Pi 5'],
     category: 'Video',
     flashMethod: 'image',
     installCommand: 'curl -fsSL https://raw.githubusercontent.com/utachicodes/jawjideck/master/packages/companion-scripts/pi-video.sh | sudo bash',
-    features: ['Pi Camera H.264 streaming (RTP/UDP, for QGC/ffplay)', 'MJPEG stream for Jawji\'s Camera panel', 'MAVLink routing', 'WiFi AP', 'Jawji Agent'],
-    requirements: ['Raspberry Pi 4 or 5', 'Pi Camera Module (v2/v3/HQ)', 'MicroSD card (16GB+)', 'UART or USB to FC', '5V 3A BEC'],
-    projectName: 'GStreamer + mavlink-router',
+    features: ['MediaMTX (RTSP/RTMP/HLS/WebRTC, for QGC/VLC/browsers)', 'MJPEG stream for Jawji\'s Camera panel (today)', 'MAVLink routing', 'WiFi AP', 'Jawji Agent'],
+    requirements: ['Raspberry Pi 4 or 5', 'Pi Camera Module (v2/v3/HQ) or USB webcam', 'MicroSD card (16GB+)', 'UART or USB to FC', '5V 3A BEC'],
+    projectName: 'MediaMTX + mavlink-router',
   },
   {
     id: 'rpanion-server',

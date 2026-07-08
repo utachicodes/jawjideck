@@ -93,6 +93,21 @@ export interface NetworkInfo {
 }
 
 // ============================================================
+// MediaMTX (video relay, installed by companion-scripts' install_mediamtx)
+// ============================================================
+export interface MediaMtxPath {
+  name: string;
+  ready: boolean;
+  readers: number;
+  source: string | null;
+}
+
+export interface MediaMtxStatus {
+  available: boolean;
+  paths: MediaMtxPath[];
+}
+
+// ============================================================
 // Files
 // ============================================================
 export interface FileEntry {

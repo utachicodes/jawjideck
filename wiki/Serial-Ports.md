@@ -16,7 +16,6 @@ Status badges indicate the current function:
 - **RC Input** (green) -- Port is configured for receiver input
 - **MAVLink** (blue) -- Port is running MAVLink telemetry
 
-![TODO: screenshot of serial ports tab]()
 
 ## Protocol Options
 

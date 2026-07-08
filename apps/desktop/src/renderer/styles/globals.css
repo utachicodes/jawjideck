@@ -454,6 +454,10 @@ select,
 .leaflet-container {
   background: var(--map-bg);
   font-family: inherit;
+  /* Leaflet's own panes/controls use z-index up to 1000; without this the
+     map escapes its own stacking context and renders above app modals
+     (which sit at z-50), since .leaflet-container never establishes one. */
+  isolation: isolate;
 }
 
 .leaflet-control-zoom {

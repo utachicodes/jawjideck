@@ -14,6 +14,7 @@ import { listDirectory, readFile, writeFile } from './files.js';
 import { collectNetworkInfo } from './network.js';
 import { isDockerAvailable, listContainers, controlContainer, getContainerLogs } from './docker.js';
 import { isBlueOSAvailable, listInstalledExtensions, listAvailableExtensions, installExtension, removeExtension, getExtensionLogs } from './blueos.js';
+import { getMediaMtxStatus } from './mediamtx.js';
 import { createSession, writeToSession, resizeSession, destroySession, destroyAllSessions, isTerminalAvailable } from './terminal.js';
 import { startLogTailing, onLogEntry, stopLogTailing } from './logs.js';
 import { subnetMiddleware } from './subnet.js';
@@ -47,8 +48,6 @@ function authMiddleware(
   next();
 }
 
-app.use('/api/v1', authMiddleware);
-
 // Health endpoint (no auth)
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
@@ -65,6 +64,11 @@ async function detectPlatforms(): Promise<void> {
 }
 
 // --- Info endpoint ---
+// Deliberately exempt from authMiddleware (registered below): this is the
+// endpoint desktop clients probe to confirm "is there a Jawji Agent here"
+// before pairing, when they don't have a token yet. Only exposes
+// non-sensitive identity info (hostname, OS, versions) -- nothing that
+// requires auth to justify gating it.
 app.get('/api/v1/info', (_req, res) => {
   res.json({
     hostname: os.hostname(),
@@ -79,9 +83,16 @@ app.get('/api/v1/info', (_req, res) => {
   });
 });
 
+app.use('/api/v1', authMiddleware);
+
 // --- Network ---
 app.get('/api/v1/network', async (_req, res) => {
   res.json(await collectNetworkInfo());
+});
+
+// --- MediaMTX (if installed by companion-scripts' install_mediamtx) ---
+app.get('/api/v1/mediamtx', async (_req, res) => {
+  res.json(await getMediaMtxStatus());
 });
 
 // --- Processes ---

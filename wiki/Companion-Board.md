@@ -4,6 +4,24 @@ Jawji includes tools for setting up and managing companion computers. The compan
 
 > Enable the companion view in **Settings > Experimental Features > Companion Board Support**.
 
+## One-Script Installer (recommended)
+
+The fastest way to set up a Raspberry Pi, Jetson, or generic Linux companion computer:
+
+```bash
+curl -fsSL https://jawji.space/install.sh | sudo bash
+```
+
+It detects the hardware automatically and offers three profiles instead of a checklist of individual packages:
+
+| Profile | Installs |
+|---|---|
+| **Basic Companion** | Jawji Agent + MAVLink telemetry (mavlink-router) + WiFi AP |
+| **Vision Companion** | + MediaMTX (RTSP/RTMP/HLS/WebRTC video relay) |
+| **AI Companion** | + MAVSDK + YOLO object detection (Jetson only) |
+
+Pass a profile directly (`install.sh vision`), set `WITH_*` environment variables for scripting, or answer the interactive prompts if you run it without either.
+
 ## Store Tab
 
 Browse pre-configured templates for popular companion boards. The store is the default tab and works without any connection.
@@ -12,8 +30,8 @@ Browse pre-configured templates for popular companion boards. The store is the d
 
 | Board Family | Templates | Flash Method |
 |-------------|-----------|--------------|
-| ESP32 | DroneBridge WiFi, DroneBridge ESP-NOW, MAVLink Bridge | USB Flash (esptool) |
-| Raspberry Pi | Telemetry Bridge, Video + Telemetry, Rpanion Server, BlueOS, Autonomous Runner, OpenHD | SD Card Image |
+| ESP32 | DroneBridge WiFi, DroneBridge ESP-NOW | USB Flash (esptool) |
+| Raspberry Pi | Telemetry Bridge, Video + Telemetry, Rpanion Server, BlueOS, Autonomous Runner, OpenHD | SD Card Image / Install Script |
 | NVIDIA Jetson | Computer Vision Companion | Install Script (SSH) |
 | Orange Pi | (coming soon) | - |
 
@@ -30,16 +48,18 @@ esptool is downloaded automatically on first use (~25 MB standalone binary from 
 
 > **Tip:** If the flash fails to connect, hold the **BOOT** button on your ESP32 while clicking Flash.
 
-### Raspberry Pi Setup
+### Raspberry Pi / Jetson Setup
 
-Pi templates provide two paths:
+Pi and Jetson templates run the install scripts described above over SSH — either the one-script installer with a profile, or (for backward compatibility) the original per-template scripts like `pi-telemetry.sh`, `pi-video.sh`, `pi-autonomy.sh`, and `jetson-cv.sh`, which are now thin wrappers around the same install profiles.
 
-- **SD Card Image** - Download the pre-built image from the project's GitHub releases, then flash to MicroSD using [Raspberry Pi Imager](https://www.raspberrypi.com/software/) or [Balena Etcher](https://etcher.balena.io/)
-- **Install on existing OS** - Run the provided install script on an existing Raspberry Pi OS setup
+### Video streaming (MediaMTX)
 
-### Jetson / Linux Setup
+The Video + Telemetry template installs [MediaMTX](https://github.com/bluenviron/mediamtx), a real multi-protocol media server — one camera source can serve RTSP, RTMP, HLS, and WebRTC simultaneously, watchable from QGroundControl, VLC, a browser, or Jawji itself. Jawji's Camera panel supports both:
 
-SSH into your board and run the provided install script.
+- **MJPEG** — the original path, a plain `<img>` multipart stream, no configuration beyond a URL
+- **WebRTC** — low-latency H.264/H.265 via MediaMTX's WHEP endpoint (`http://<host>:8889/<path>/whep`), select "WebRTC" in the Camera panel's protocol toggle and enter the base URL (`/whep` is appended automatically)
+
+`mjpg-streamer` still installs alongside MediaMTX for now — most USB webcams only allow one process to hold the camera device open at a time, so pick whichever protocol you actually want to use if you're on a single-camera setup.
 
 ## DroneBridge Tab
 
@@ -87,12 +107,14 @@ The dashboard uses a dockview-based layout system:
 
 ### Connecting
 
-1. Install the Jawji Agent on your companion:
+1. Install the Jawji Agent — either as part of the [one-script installer](#one-script-installer-recommended) above, or on its own:
    ```
-   curl -fsSL https://raw.githubusercontent.com/utachicodes/jawjideck/master/packages/jawji-agent/install.sh | sudo bash
+   curl -fsSL https://jawji.space/agent/install.sh | sudo bash
    ```
-2. Note the pairing token shown after installation
-3. In the Dashboard tab, enter the companion's IP and token
+2. Note the pairing token shown after installation (`journalctl -u jawji-agent`)
+3. In the Dashboard tab, either click **Scan for agents** to find it via mDNS on your local network, or enter the companion's IP and token manually
 4. Click **Connect**
+
+Once paired, Jawji remembers the connection — closing and reopening the app automatically reconnects to the last-paired agent using its saved (encrypted) token, no need to re-enter it every time.
 
 The agent provides real-time metrics, terminal access, and service management over a secure WebSocket connection.

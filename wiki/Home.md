@@ -2,6 +2,8 @@
 
 Jawji is a cross-platform ground control station for ArduPilot, Betaflight, and iNav flight controllers. It replaces the legacy Mission Planner (C#/.NET WinForms) with a modern Electron + React desktop app. Connect via USB serial, TCP, or UDP, configure your vehicle, plan missions, flash firmware, and monitor telemetry in real time.
 
+The idea behind Jawji is that you shouldn't need a different tool for every firmware family. Plug in a board over USB, a telemetry radio, or a wireless bridge, and Jawji detects whether it's speaking MAVLink or MSP, identifies the vehicle and firmware version, and routes you straight into the right configuration interface — no manual protocol selection. New here? Start with [[Getting Started]].
+
 ## Supported Firmware
 
 | Firmware | Protocol | Support Level |
@@ -29,6 +31,3 @@ Jawji is a cross-platform ground control station for ArduPilot, Betaflight, and 
 | [[Firmware Flash]] | Flash ArduPilot, Betaflight, iNav, or custom firmware |
 | [[Map Overlays]] | Weather radar, airspace zones, aviation charts, terrain elevation |
 | [[Companion Board]] | ESP32 flashing, DroneBridge, companion computer management |
-| [[Lua Graph Editor]] | Visual scripting for ArduPilot Lua scripts |
-| [[Lua Node Reference]] | Complete node catalog and API reference |
-| [[Lua Examples]] | Worked examples with generated Lua code |

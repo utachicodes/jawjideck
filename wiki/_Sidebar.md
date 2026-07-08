@@ -25,11 +25,6 @@
 **Companion Board**
 - [[Companion Board]]
 
-**Lua Graph Editor**
-- [[Lua Graph Editor]]
-- [[Lua Node Reference]]
-- [[Lua Examples]]
-
 ---
 
 - [Releases](https://github.com/utachicodes/jawjideck/releases)

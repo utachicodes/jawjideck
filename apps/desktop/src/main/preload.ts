@@ -7,7 +7,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 import { IPC_CHANNELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type SettingsStoreSchema, type MSPConnectOptions, type MSPConnectionState, type MSPTelemetryData, type SitlConfig, type SitlStatus, type SitlExitData, type VirtualRCState, type ArduPilotSitlConfig, type ArduPilotSitlStatus, type ArduPilotSitlExitData, type ArduPilotSitlDownloadProgress, type ArduPilotSitlBinaryInfo, type ArduPilotFrameCatalog, type ArduPilotVehicleType, type ArduPilotReleaseTrack, type AppUpdateInfo, type SigningStatus, type TelemetrySpeed, type StatusMessage, type TileCacheStats, type TileCacheDownloadProgress, type TileCacheSettings, type TileCacheDownloadRegion, type CompanionConnectOptions, type CompanionConnectionIpcState, type CompanionDiscoveryResult, type FleetVehicleEntry, type FleetVehicleStatus, type VideoStreamInfo } from '../shared/ipc-channels.js';
 import type { DetachedWindowInfo, OpenDetachedRequest } from '../shared/window-types.js';
 import type { ExportArea } from '../shared/kml-export.js';
-import type { SystemInfo, NetworkInfo, MetricsData, ProcessInfo, LogEntry, FileEntry, ServiceInfo, ServiceAction, ContainerInfo, ContainerAction, ExtensionInfo } from '@jawji/companion-types';
+import type { SystemInfo, NetworkInfo, MediaMtxStatus, MetricsData, ProcessInfo, LogEntry, FileEntry, ServiceInfo, ServiceAction, ContainerInfo, ContainerAction, ExtensionInfo } from '@jawji/companion-types';
 import type { InstalledModule, ModuleProgress, UpdateAvailable } from '../shared/module-types.js';
 import type { ParamChange, ParamCheckpoint } from '../shared/param-history-types.js';
 import type { AttitudeData, PositionData, GpsData, BatteryData, VfrHudData, WindData, FlightState, RcChannelsData } from '../shared/telemetry-types.js';
@@ -1855,6 +1855,9 @@ const api = {
 
   companionGetNetwork: (): Promise<NetworkInfo> =>
     ipcRenderer.invoke(IPC_CHANNELS.COMPANION_NETWORK),
+
+  companionGetMediaMtx: (): Promise<MediaMtxStatus> =>
+    ipcRenderer.invoke(IPC_CHANNELS.COMPANION_MEDIAMTX),
 
   companionGetServices: (): Promise<ServiceInfo[]> =>
     ipcRenderer.invoke(IPC_CHANNELS.COMPANION_SERVICES),

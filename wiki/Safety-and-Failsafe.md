@@ -49,7 +49,6 @@ Virtual boundary that triggers an action if crossed.
 - **Max Radius (m):** Horizontal boundary in meters (30-10000)
 - **Breach Action:** Report Only, RTL or Land, Always Land, SmartRTL or RTL, Brake or Land
 
-![TODO: screenshot of safety tab]()
 
 ## Arming Checks
 

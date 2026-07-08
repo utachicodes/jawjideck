@@ -8,6 +8,31 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 
 ## [Unreleased]
 
+## [0.0.39] - 2026-07-08
+
+### Added
+- **Linux release.** Pre-built AppImage and .deb packages, built and uploaded automatically by a new `build-linux` CI job — the `linux` target in electron-builder's config existed already but was never actually built by CI until now. macOS remains not-yet-published; the source already builds there from source.
+- **WebRTC camera support.** The Camera panel now supports MediaMTX's WHEP endpoint (`http://host:8889/<path>/whep`) alongside the original MJPEG path, via a protocol toggle in the connect form. Implemented as a non-trickle-ICE WHEP client (gathers all ICE candidates locally, sends one offer, gets one answer back) rendering to a `<video>` element — no external WebRTC library needed, just the browser APIs Electron/Chromium already provides.
+- **One-script companion installer.** `curl -fsSL https://jawji.space/install.sh | sudo bash` replaces installing Docker/mavlink-router/NetworkManager/MediaMTX/MAVSDK/Jawji Agent one at a time. Detects hardware (Jetson/Raspberry Pi/generic Linux) and offers three profiles — Basic (agent + MAVLink), Vision (+ MediaMTX), AI (+ MAVSDK + YOLO, Jetson only) — selectable via argument, `WITH_*` env vars, or an interactive menu. The four original per-template scripts (`pi-telemetry.sh`, `pi-video.sh`, `pi-autonomy.sh`, `jetson-cv.sh`) are now thin wrappers around the same shared install functions (`packages/companion-scripts/lib.sh`), kept for backward compatibility with existing Companion Store templates.
+- **MediaMTX video relay.** Replaces the previous ad hoc single-purpose GStreamer UDP pipeline in the Video + Telemetry companion template with a real, actively-maintained multi-protocol media server (RTSP/RTMP/HLS/WebRTC) — one camera source can now serve QGroundControl, a browser, VLC, and Jawji simultaneously. `mjpg-streamer` still installs alongside it as the bridge for Jawji's current MJPEG-only default.
+- **Jawji Agent as orchestrator (first piece).** The agent now queries MediaMTX's own local API (bound to localhost, never network-exposed) for real stream status — active paths, whether a publisher is genuinely connected, reader counts — and exposes it over its existing authenticated REST API (`GET /api/v1/mediamtx`), the same pattern already used for services, processes, and Docker containers.
+- **"Scan for agents"** button in the Companion Dashboard's connect form, using the mDNS discovery IPC that already existed in the main process but had no UI calling it.
+- **Automatic reconnect** to the last-paired Jawji Agent on app launch, using its encrypted saved pairing token — previously the token was saved but never read back.
+- Companion documentation (`wiki/Companion-Board.md`, `wiki/Getting-Started.md`) and jawji.space's `/docs` section updated for all of the above, plus a `/software` page listing real per-platform download links pulled from the release, and a `/cookies` policy page.
+
+### Fixed
+- **A real functional bug in Companion Agent discovery:** the agent's `/api/v1/info` endpoint was gated behind `authMiddleware`, but the desktop's manual-IP probe (`probeAgent()`) called it with no `Authorization` header — meaning manually pairing with an agent by IP address always failed with a 401 against a real deployed agent. `/api/v1/info` is now genuinely exempt from auth, matching what the desktop always assumed (it only returns non-sensitive identity info: hostname, OS, versions).
+- **DroneBridge wireless MAVLink bridge**, end to end: corrected an initial wrong-firmware assumption (the flight controller runs iNav, which configures serial ports per-UART rather than ArduPilot's global `SERIALx_PROTOCOL`), a UART port conflict where UART1 was flagged as both MAVLink telemetry and the RC receiver input simultaneously, and DroneBridge GPIO settings reverting after reflash (fixed by reconfiguring through DroneBridge's own web UI rather than Jawji's mirrored settings).
+- **MAVLink packets were flowing through completely unvalidated** on live connections: `MAVLinkParser` was instantiated but `registerMessages()` was never called, so every packet — valid or corrupted — bypassed length/checksum validation entirely. A truncated `PARAM_VALUE` packet (far more likely over a lossy WiFi link than USB) was enough to crash the app. Malformed packets are now dropped instead of crashing message handlers.
+- A build helper in the module system was raw, uncompiled TypeScript loaded directly by Node — worked on recent local Node versions, broke on CI's pinned older version. Converted to plain, portable JavaScript.
+- Removed `CompanionStoreDialog.tsx`: confirmed orphaned (no imports anywhere), its flash handler was a stub passing an empty firmware path with a literal TODO comment. Superseded by `CompanionStoreTab.tsx`.
+- Removed the `esp32-mavlink-bridge` Companion Store template: its cited upstream project (`mavesp8266`) turned out to actually be an ESP8266 project distributing individual `.bin` files, not a GitHub-release zip matching the ESP32 flasher's expected structure — no verified firmware source existed to wire up safely.
+- Fixed mDNS service-type casing mismatch between the agent (was publishing `Jawji-agent`) and the desktop (browsing for `jawji-agent`).
+- Fixed a Leaflet z-index leak where Fleet's "Add Vehicle" modal rendered behind the map next to it — a latent bug in every map-plus-modal combination in the app, not just Fleet, fixed at the root (`isolation: isolate` on `.leaflet-container`) rather than patched locally.
+- Companion install URLs were dead across the app: `packages/jawji-agent/install.sh` was a non-functional stub, three different inconsistent URLs pointed at nothing (Companion Dashboard UI, setup guide, wiki), and four companion-scripts templates advertised install commands for scripts that didn't exist. All now point at real, URL-verified scripts.
+- Broken `/software` page logo (wasn't wrapped in a link back to the homepage) on jawji.space.
+- Removed a stale Lua Graph Editor reference from the docs/wiki nav — that feature was removed from the app in a previous release, but the documentation never caught up.
+
 ## [0.0.38] - 2026-07-07
 
 ### Added

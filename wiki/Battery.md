@@ -17,7 +17,6 @@ If monitoring is disabled, a warning is shown.
 
 Set the total battery capacity in mAh using a slider (0-30000 mAh). Quick preset buttons are provided for common sizes: 1300, 2200, 3000, 5000, 8000, 10000, 16000 mAh.
 
-![TODO: screenshot of battery tab]()
 
 ## Chemistry and Cell Configuration
 
