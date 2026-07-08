@@ -1,23 +1,25 @@
 /**
- * CameraPanel — displays the focused vehicle's MJPEG video feed. The stream
- * source is either a manually-entered URL or a MAVLink-advertised one
- * (VIDEO_STREAM_INFORMATION, requested on mount for MAVLink vehicles).
- *
- * MJPEG-only by design: an MJPEG multipart stream renders natively in a
- * plain <img> tag, frame by frame, with no decoding library needed. RTSP/
- * H.264 support would need ffmpeg transcoding and is a deliberately separate
- * future addition — see docs/superpowers/specs/2026-07-02-camera-feed-design.md.
+ * CameraPanel — displays the focused vehicle's video feed, either as an
+ * MJPEG multipart stream (plain <img>, no decoding library needed — the
+ * original, still-default path) or as WebRTC via a WHEP endpoint (e.g. a
+ * companion Pi's MediaMTX instance at http://host:8889/camera/whep) for
+ * low-latency H.264/H.265 playback. See use-whep-player.ts for the WHEP
+ * negotiation itself.
  */
 
 import { useEffect, useRef, useState } from 'react';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useCameraStore } from '../../stores/camera-store';
 import { mapDetectionToOverlayRect } from './camera-overlay-math';
+import { useWhepPlayer } from './use-whep-player';
 import { Video, RefreshCw } from 'lucide-react';
 
 type CameraStream =
   | { type: 'mjpeg'; url: string }
+  | { type: 'webrtc'; url: string }
   | { type: 'none' };
+
+type StreamProtocol = 'mjpeg' | 'webrtc';
 
 export function CameraPanel() {
   const connectionState = useConnectionStore((s) => s.connectionState);
@@ -25,6 +27,7 @@ export function CameraPanel() {
 
   const [stream, setStream] = useState<CameraStream>({ type: 'none' });
   const [urlInput, setUrlInput] = useState('');
+  const [protocol, setProtocol] = useState<StreamProtocol>('mjpeg');
   const [detectedUri, setDetectedUri] = useState<string | null>(null);
   const [streamError, setStreamError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -33,7 +36,17 @@ export function CameraPanel() {
   const setStoreStreamUrl = useCameraStore((s) => s.setStreamUrl);
   const clearStoreDetections = useCameraStore((s) => s.clearDetections);
   const imgRef = useRef<HTMLImageElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [overlayTick, setOverlayTick] = useState(0); // forces re-measure on resize/load
+
+  const whepUrl = stream.type === 'webrtc' ? stream.url : null;
+  const whepPlayer = useWhepPlayer(whepUrl, reloadKey);
+
+  useEffect(() => {
+    if (videoRef.current && whepPlayer.stream) {
+      videoRef.current.srcObject = whepPlayer.stream;
+    }
+  }, [whepPlayer.stream]);
 
   // Request MAVLink auto-detection once per mount, for MAVLink vehicles only.
   useEffect(() => {
@@ -48,10 +61,18 @@ export function CameraPanel() {
     return () => { unsubscribe?.(); };
   }, []);
 
-  const handleUseUrl = (url: string) => {
+  const handleUseUrl = (url: string, useProtocol: StreamProtocol = protocol) => {
     setStreamError(false);
-    setStream({ type: 'mjpeg', url });
-    setStoreStreamUrl(url);
+    if (useProtocol === 'webrtc') {
+      // MediaMTX's WHEP endpoint is <path>/whep -- append it if the user
+      // (or the pre-filled default) didn't already include it.
+      const whep = url.endsWith('/whep') ? url : `${url.replace(/\/$/, '')}/whep`;
+      setStream({ type: 'webrtc', url: whep });
+      setStoreStreamUrl(whep);
+    } else {
+      setStream({ type: 'mjpeg', url });
+      setStoreStreamUrl(url);
+    }
   };
 
   const handleRetry = () => {
@@ -120,6 +141,34 @@ export function CameraPanel() {
         </div>
       )}
 
+      {stream.type === 'webrtc' && !streamError && (
+        <div className="relative w-full h-full">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-contain"
+          />
+          {whepPlayer.state === 'connecting' && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+              <p className="text-xs text-content-secondary">Connecting (WebRTC)…</p>
+            </div>
+          )}
+          {whepPlayer.state === 'error' && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
+              <p className="text-sm text-red-400">WebRTC connection failed{whepPlayer.error ? `: ${whepPlayer.error}` : ''}</p>
+              <button
+                onClick={handleRetry}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-surface text-content text-xs"
+              >
+                <RefreshCw size={12} /> Retry
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {(stream.type === 'none' || streamError) && (
         <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6 text-center">
           <Video className="w-10 h-10 text-content-tertiary" />
@@ -138,7 +187,7 @@ export function CameraPanel() {
 
           {detectedUri && (
             <button
-              onClick={() => handleUseUrl(detectedUri)}
+              onClick={() => handleUseUrl(detectedUri, 'mjpeg')}
               className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium max-w-full truncate"
               title={detectedUri}
             >
@@ -146,20 +195,43 @@ export function CameraPanel() {
             </button>
           )}
 
-          <form
-            onSubmit={(e) => { e.preventDefault(); if (urlInput.trim()) handleUseUrl(urlInput.trim()); }}
-            className="flex items-center gap-2 w-full max-w-xs"
-          >
-            <input
-              value={urlInput}
-              onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="http://host:port/stream"
-              className="flex-1 px-2 py-1.5 rounded-lg bg-surface-raised border border-subtle text-content text-xs"
-            />
-            <button type="submit" className="px-2.5 py-1.5 rounded-lg bg-surface-raised hover:bg-surface text-content text-xs">
-              Go
-            </button>
-          </form>
+          <div className="flex flex-col gap-2 w-full max-w-xs">
+            <div className="flex items-center justify-center gap-1 text-xs">
+              <button
+                type="button"
+                onClick={() => setProtocol('mjpeg')}
+                className={`px-2.5 py-1 rounded-lg ${protocol === 'mjpeg' ? 'bg-blue-600 text-white' : 'bg-surface-raised text-content-secondary hover:text-content'}`}
+              >
+                MJPEG
+              </button>
+              <button
+                type="button"
+                onClick={() => setProtocol('webrtc')}
+                className={`px-2.5 py-1 rounded-lg ${protocol === 'webrtc' ? 'bg-blue-600 text-white' : 'bg-surface-raised text-content-secondary hover:text-content'}`}
+              >
+                WebRTC
+              </button>
+            </div>
+            <form
+              onSubmit={(e) => { e.preventDefault(); if (urlInput.trim()) handleUseUrl(urlInput.trim()); }}
+              className="flex items-center gap-2"
+            >
+              <input
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                placeholder={protocol === 'webrtc' ? 'http://host:8889/camera' : 'http://host:port/stream'}
+                className="flex-1 px-2 py-1.5 rounded-lg bg-surface-raised border border-subtle text-content text-xs"
+              />
+              <button type="submit" className="px-2.5 py-1.5 rounded-lg bg-surface-raised hover:bg-surface text-content text-xs">
+                Go
+              </button>
+            </form>
+            {protocol === 'webrtc' && (
+              <p className="text-[10px] text-content-tertiary">
+                MediaMTX WHEP endpoint — <code>/whep</code> is appended automatically if you leave it off.
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -70,10 +70,12 @@ Jawji is a next-generation ground control station built with Electron, React, an
 - **Offline Maps** - Download map regions for offline use with tile caching
 
 ### Companion Board Support
+- **One-Script Installer** - `curl -fsSL https://jawji.space/install.sh | sudo bash` sets up a Raspberry Pi, Jetson, or generic Linux companion computer end to end - hardware auto-detected, pick a profile (Basic/Vision/AI) or an interactive menu, only what you need gets installed
 - **Companion Board Store** - Browse pre-configured templates for ESP32, Raspberry Pi, Jetson, and Orange Pi
 - **ESP32 Flashing** - Direct USB flash with auto-downloaded esptool (DroneBridge, MAVLink bridge)
 - **DroneBridge Integration** - Auto-detect DroneBridge ESP32 on network, view status, configure WiFi/serial settings
-- **Agent Dashboard** - Real-time CPU/RAM/temp metrics, terminal access, service management for companion computers
+- **Agent Dashboard** - Real-time CPU/RAM/temp metrics, terminal access, service management for companion computers, with mDNS "Scan for agents" discovery and automatic reconnect to the last-paired device on launch
+- **MediaMTX Video Relay** - A real multi-protocol media server (RTSP/RTMP/HLS/WebRTC) on the companion side, queried live by Jawji Agent for stream status
 - **Dockview Layouts** - Customizable panel layouts with presets (Overview, Debug, Manage)
 - **Encrypted API Keys** - Secure storage for OpenAIP and other service credentials
 
@@ -89,7 +91,7 @@ Jawji is a next-generation ground control station built with Electron, React, an
 - **Focus to Fly** - Promote any fleet vehicle to the main connection for full mission planning, parameter tuning, and control - exactly as today's single-vehicle workflow
 
 ### Camera Feed
-- **MJPEG Video Panel** - Dockable panel showing the focused vehicle's live camera feed
+- **MJPEG or WebRTC** - Dockable panel showing the focused vehicle's live camera feed, either as a classic MJPEG multipart stream or low-latency WebRTC via a MediaMTX WHEP endpoint (e.g. a companion Pi running the Vision Companion profile)
 - **Manual or Auto-Detected** - Paste a stream URL directly, or let Jawji request it from the flight controller via MAVLink `VIDEO_STREAM_INFORMATION`
 - **Pop-Out Support** - Detach the camera feed to its own window like any other telemetry panel
 
@@ -436,18 +438,21 @@ Jawji is a next-generation ground control station built with Electron, React, an
 
 **Most users should download a pre-built release.** No need to clone or build anything.
 
-> **Windows only.** Jawji currently ships pre-built releases for Windows only. The source is cross-platform (Electron/React), so contributors can still build and run it from source on macOS or Linux — see [Development](#development-contributors-only).
+> **Windows and Linux.** Jawji ships pre-built releases for Windows and Linux. macOS is coming soon — the source is cross-platform (Electron/React), so contributors can already build and run it from source on macOS in the meantime — see [Development](#development-contributors-only).
 
 | Platform | Format | Link |
 |----------|--------|------|
 | **Windows** | Installer (.exe) | [Latest Release](https://github.com/utachicodes/jawjideck/releases/latest) |
 | **Windows** | Portable (.exe) | [Latest Release](https://github.com/utachicodes/jawjideck/releases/latest) |
+| **Linux** | AppImage | [Latest Release](https://github.com/utachicodes/jawjideck/releases/latest) |
+| **Linux** | .deb (Debian/Ubuntu) | [Latest Release](https://github.com/utachicodes/jawjideck/releases/latest) |
+| **macOS** | Coming soon | — |
 
 **Getting started:** Download the installer, install, plug in your flight controller via USB, and you're ready to go.
 
 > **Note on code signing:** Jawji binaries are currently unsigned. Windows SmartScreen may show a warning — click "More info" then "Run anyway". We plan to obtain a code signing certificate once the project reaches a meaningful user base to justify the cost.
 >
-> **Auto-updates:** Jawji supports seamless in-app updates on Windows — download and install with a single click.
+> **Auto-updates:** Jawji supports seamless in-app updates on Windows — download and install with a single click. Linux (AppImage/.deb) is new this release; grab new versions from the [releases page](https://github.com/utachicodes/jawjideck/releases) manually for now until in-app updates are verified there too.
 
 ---
 
@@ -632,8 +637,14 @@ Found a bug? We want to hear about it! Jawji includes a built-in bug reporting t
 - **Fleet Management** - Multi-vehicle roster with live status monitoring and one-click focus to promote a vehicle to the main connection
 - **Camera Feed Panel** - MJPEG video display with manual URL entry and MAVLink stream auto-detection
 - **AI Object Detection Module** - YOLOv8-based live object detection overlaid on the Camera panel, running as a local Python process via the module system
+- **WebRTC Camera Support** - Low-latency WHEP-based WebRTC playback in the Camera panel, alongside the original MJPEG path, for MediaMTX-backed companion video streams
+- **One-Script Companion Installer** - Single-command setup (`install.sh`) for a Raspberry Pi, Jetson, or generic Linux companion computer, with hardware detection and Basic/Vision/AI profiles
+- **MediaMTX Video Relay** - Real multi-protocol media server on the companion side (RTSP/RTMP/HLS/WebRTC), with Jawji Agent exposing live stream status through its API
+- **Companion Module Hardening** - Fixed a real auth bug blocking manual agent discovery, added mDNS "Scan for agents" UI, automatic reconnect to the last-paired agent on launch, and removed dead/unverifiable code paths in the Companion Store
+- **Linux Release** - Pre-built AppImage and .deb packages, alongside Windows
 
 ### Coming Soon
+- macOS release
 - Mission-planner map rendering fix (tiles/panel not displaying in some layouts)
 
 ---

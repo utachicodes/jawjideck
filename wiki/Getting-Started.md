@@ -12,17 +12,20 @@ You don't pick which one up front — plug in a board and Jawji figures out the 
 
 ## Download
 
-Jawji currently ships pre-built releases for Windows only.
+Jawji ships pre-built releases for Windows and Linux. macOS is coming soon.
 
 | Platform | Download |
 |----------|----------|
-| Windows | [Latest Release (.exe)](https://github.com/utachicodes/jawjideck/releases/latest) |
+| Windows | [Installer / Portable (.exe)](https://github.com/utachicodes/jawjideck/releases/latest) |
+| Linux | [AppImage / .deb](https://github.com/utachicodes/jawjideck/releases/latest) |
+| macOS | Coming soon |
 
 ### Platform Notes
 
 - **Windows** -- The app is unsigned. Windows Defender may show a SmartScreen warning on first launch. Click "More info" then "Run anyway".
+- **Linux** -- The AppImage needs `chmod +x` before running (`chmod +x Jawji-*.AppImage && ./Jawji-*.AppImage`). The `.deb` installs normally via `sudo dpkg -i Jawji-*.deb` (or your distro's package manager). In-app auto-update isn't verified on Linux yet -- check the [releases page](https://github.com/utachicodes/jawjideck/releases) for new versions manually for now.
 
-The source is cross-platform (Electron/React) — contributors can build and run it from source on macOS or Linux.
+The source is cross-platform (Electron/React) — contributors can build and run it from source on macOS in the meantime.
 
 ## Connecting Your Flight Controller
 
