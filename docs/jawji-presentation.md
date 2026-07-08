@@ -1,8 +1,5 @@
 # Jawji — Presentation Notes (v0.0.38)
 
-## Cheat sheet — read this part right before you present
-
-### ⚠ Check before you go on
 
 - **`jawji.space/docs`, `/software`, `/cookies` are confirmed live** (verified `200` on all three right before this doc was last updated) — safe to demo directly.
 - **Jawji Agent / companion scripts are built and URL-verified, but never run against physical hardware.** If asked "have you tested this," the honest answer is no — say so if it comes up rather than implying otherwise.
@@ -88,6 +85,53 @@ Following up on the Jawji Agent work below surfaced a bigger problem: none of th
 - **Leaflet map z-index leak.** Fleet's "Add Vehicle" modal was rendering *behind* the Leaflet map next to it. Leaflet's own panes/controls use z-index values up to 1000, and `.leaflet-container` never established its own stacking context, so those values escaped and beat the modal's `z-50`. One-line fix (`isolation: isolate` on `.leaflet-container`) — and it was a latent bug in every map-plus-modal combination in the app, not just Fleet, so this is a real fix, not a patch.
 - **`/software` logo didn't link home.** The `<Image>` for the logo wasn't wrapped in a `<Link>` at all — pure oversight, one-line fix.
 
+## Part 5 — Companion module: full technical breakdown
+
+Went through the entire Companion feature end to end — every file across the renderer UI, main-process IPC, the standalone agent daemon, and the ESP32 flasher — to answer "how does this actually work" precisely instead of from memory. Four layers, two genuinely separate subsystems living under one UI.
+
+### How it works
+
+**It's gated behind a Settings toggle.** `companionUnlocked` (off by default) in the settings store controls whether "Companion" even appears in the sidebar at all, via `ToolsTab.tsx`'s "Experimental Features" section. Flip it on, a nav item appears, click it, `CompanionDashboard` renders.
+
+**The Dashboard has three tabs that are almost entirely independent of each other:**
+
+1. **Store** — a static catalog (`companion-templates.ts`, no live backend) of 10 board/firmware combos across ESP32, Pi, Jetson. Only the 2 ESP32 "DroneBridge" templates actually do something when you click Flash — everything else (Pi images, Jetson script) is just instructions to copy-paste and run yourself over SSH.
+2. **DroneBridge** — talks directly to an ESP32 running DroneBridge firmware over **plain, unauthenticated HTTP** (`/api/system/info`, `/api/settings`, etc. — DroneBridge's own open REST API). Polls stats every 2 seconds. Can also read an ESP32's config straight off its USB serial boot log (no WiFi join needed) by toggling DTR/RTS to force a hardware reset and capturing what it prints on boot.
+3. **Dashboard** — talks to a **Jawji Agent** (the Pi-side daemon) over an authenticated WebSocket + REST, completely different protocol and completely different device than DroneBridge. Dockview-based tiling layout, 12 panel types (metrics, processes, terminal, file browser, Docker, BlueOS extensions, etc.).
+
+**Two backend protocols, two trust models.** DroneBridge assumes physical proximity is the security boundary (no auth, because you're on its own WiFi AP). Jawji Agent assumes it's reachable over a shared network, so it requires a bearer token — generated once on first boot, printed to the agent's log, and you have to prove you can read that log (i.e. you have SSH/console access to the Pi) before Jawji will pair with it.
+
+**The ESP32 flashing pipeline is the most complete part of the whole system**: auto-downloads `esptool` for your OS if it's missing, auto-downloads and caches the right DroneBridge firmware release for your chip, parses the release's `flash_args.txt` to get the correct offsets, flashes with live progress parsed straight from esptool's output, then immediately reads the freshly-flashed device's boot log to grab its WiFi AP IP and hands that straight to the DroneBridge tab. That's a real, working, well-engineered pipeline — worth demoing on its own if there's time, independent of the wireless-telemetry demo in Part 1.
+
+**Video/camera is *not* code-level wired to Companion at all**, despite the Store's feature bullets implying otherwise ("MJPEG for Camera panel," "YOLO detection"). The Camera panel gets its stream URL from the vehicle's own MAVLink `CAMERA_INFORMATION` messages, or manual entry — it has no idea whether that stream happens to be coming from a companion Pi. The connection is by convention only: flash a Pi with the video template, its GStreamer pipeline is *expected* to expose an MJPEG endpoint, and *you* point the Camera panel at it. Nothing in the agent or DroneBridge code produces or consumes video.
+
+### Why these choices
+
+- **Two protocols instead of one** because DroneBridge and Jawji Agent solve different problems at different trust levels — DroneBridge is a dumb, open serial-to-WiFi bridge (no business having auth, it's not a general-purpose computer), while Jawji Agent runs arbitrary code (terminal, file access, Docker) on a real Linux box and absolutely needs to gate that behind something.
+- **Pairing token over a printed-to-log secret** rather than, say, a QR code or Bluetooth pairing, because it needs zero extra hardware/libraries and reuses infrastructure that's already there (you already need SSH/console access to install the agent in the first place, so requiring that same access to read the token adds no new burden).
+- **mDNS for Jawji Agent discovery** so you don't need to know a Pi's IP address on a DHCP network — the same reasoning QGroundControl, AirPlay, and network printers use.
+- **The Companion Store being mostly "instructions, not automation"** (except the 2 ESP32 templates) is a reasonable scope boundary given how different Pi/Jetson provisioning is per template — genuinely automating a full Rpanion or BlueOS install isn't something Jawji should own; pointing at the right upstream project and giving copy-paste commands is.
+
+### Bugs found (not yet fixed — this is a punch list, not a changelog)
+
+Going through the code surfaced real, currently-existing gaps, distinct from anything actually fixed this session:
+
+1. **`CompanionStoreDialog.tsx` has a dead/broken flash handler** — passes an empty `firmwarePath: ''` with a literal `// TODO: download firmware binary first` comment. Looks like an earlier version of the Store UI, superseded by `CompanionStoreTab.tsx` but never deleted.
+2. **`esp32-mavlink-bridge` template is listed but not flashable** — no entry in `FIRMWARE_SOURCES`, so clicking Flash on it would throw `Unknown firmware template`.
+3. **Saved pairing tokens are never reused.** `getSavedToken()` encrypts and persists a token per host via Electron's `safeStorage`, but nothing calls it back on app startup — so there's no auto-reconnect to a previously paired Pi; every launch needs the token re-entered (or the app needs to already be mid-session).
+4. **mDNS discovery is fully wired but has no UI.** The main process can browse for `jawji-agent` services and it's exposed on `window.electronAPI.companionDiscover`, but no renderer component calls it — `DashboardConnectForm` only supports manual host+token entry. All that discovery plumbing is currently inert.
+5. **A real auth mismatch**: `packages/jawji-agent`'s `authMiddleware` gates `/api/v1/info` behind the bearer token, but the desktop's manual-IP `probeAgent()` hits that same endpoint with no `Authorization` header — meaning manual agent probing likely always fails (401) against a real deployed agent. This is a functional bug, not just a missing feature.
+6. **mDNS service-type casing mismatch**: the agent publishes `Jawji-agent` (capital J), the desktop browses for `jawji-agent` (lowercase). DNS-SD names are case-insensitive per spec so this is *probably* harmless, but worth knowing if discovery ever misbehaves.
+
+### Next steps
+
+- Delete or fix `CompanionStoreDialog.tsx`'s dead flash path (pick one: wire it to the same real flow `CompanionStoreTab` uses, or remove the file if it's truly unreachable).
+- Add a `FIRMWARE_SOURCES` entry for `esp32-mavlink-bridge`, or remove that template from the catalog until one exists.
+- Fix `probeAgent()` to send the bearer token (or make `/api/v1/info` genuinely unauthenticated on the agent side, matching what the desktop assumes) — this one actually blocks a real user flow, so it's the highest-priority item here.
+- Wire `getSavedToken()` into an auto-reconnect-on-launch flow.
+- Add a "Scan for agents" button to `DashboardConnectForm` that calls the already-implemented `companionDiscover`.
+- Once a physical Pi is available: actually run the Jawji Agent install → pairing → dashboard flow end to end, the way the ESP32 link was validated in Part 1 — everything above is code-reviewed, not hardware-tested.
+
 ---
 
 ## Feature reference for the demo
@@ -132,3 +176,7 @@ Four scripts in `packages/companion-scripts/`, one per Companion Store template,
 ### 7. jawji.space docs, download, and cookie-policy pages — merged and live
 
 A `/docs` section, a `/software` download page with real release links, and a `/cookies` page, all merged into the `jawji-gcs` website's `main` branch (which Railway auto-deploys to `jawji.space`), plus a follow-up cleanup pass (removing a stale Lua Graph Editor reference, screenshot placeholders, and a broken logo link). Confirmed live and reachable — safe to demo directly.
+
+### 8. Companion module architecture — audited, not changed
+
+A full read-through of every Companion-related file (see Part 5). If asked "how does the companion system actually work under the hood": two separate protocols (open HTTP to DroneBridge, authenticated WebSocket to Jawji Agent), a genuinely complete ESP32 flashing pipeline, and video/camera integration that's convention-only rather than code-wired. If asked "did you fix anything here": no — this was an audit that surfaced 6 real gaps (dead code, a missing firmware entry, an auth mismatch that likely breaks manual agent probing, and discovery/reconnect features that are implemented but not surfaced), captured as a punch list for next steps rather than fixed live.
