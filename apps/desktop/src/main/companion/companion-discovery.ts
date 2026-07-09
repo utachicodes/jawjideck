@@ -1,10 +1,10 @@
 /**
  * Companion Discovery
- * Finds Jawji Agent instances on the network via mDNS
+ * Finds Jawji Controller instances on the network via mDNS
  */
 
 import type { CompanionDiscoveryResult } from '../../shared/ipc-channels.js';
-import { AGENT_DEFAULT_PORT } from '@jawji/companion-types';
+import { CONTROLLER_DEFAULT_PORT } from '@jawji/companion-types';
 
 interface BonjourBrowser {
   start(): void;
@@ -23,8 +23,8 @@ let bonjourInstance: { find: (opts: { type: string; protocol: string }) => Bonjo
 let activeBrowser: BonjourBrowser | null = null;
 
 /**
- * Start mDNS discovery for Jawji Agent instances.
- * Calls onFound for each discovered agent.
+ * Start mDNS discovery for Jawji Controller instances.
+ * Calls onFound for each discovered controller.
  */
 export function startDiscovery(
   onFound: (result: CompanionDiscoveryResult) => void,
@@ -36,7 +36,7 @@ export function startDiscovery(
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { Bonjour } = require('bonjour-service');
     bonjourInstance = new Bonjour();
-    activeBrowser = bonjourInstance!.find({ type: 'jawji-agent', protocol: 'tcp' });
+    activeBrowser = bonjourInstance!.find({ type: 'jawji-controller', protocol: 'tcp' });
     activeBrowser!.on('up', (...args: unknown[]) => {
       const svc = args[0] as BonjourService;
       const host = svc.addresses?.[0] ?? svc.host;
@@ -69,12 +69,12 @@ export function stopDiscovery(): void {
 }
 
 /**
- * Probe a specific host:port to check if an Jawji Agent is running.
+ * Probe a specific host:port to check if a Jawji Controller is running.
  * Used for manual IP entry and MAVLink hint discovery.
  */
-export async function probeAgent(
+export async function probeController(
   host: string,
-  port: number = AGENT_DEFAULT_PORT,
+  port: number = CONTROLLER_DEFAULT_PORT,
 ): Promise<CompanionDiscoveryResult | null> {
   try {
     const url = `http://${host}:${port}/api/v1/info`;

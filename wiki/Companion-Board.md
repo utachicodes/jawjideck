@@ -16,7 +16,7 @@ curl -fsSL https://jawji.space/install.sh | sudo bash
 
 1. **Detects the hardware** automatically — Jetson (via `/etc/nv_tegra_release`), Raspberry Pi (via `/proc/cpuinfo` / `/proc/device-tree/model`), or falls back to generic Linux.
 2. **Asks what you want** with an interactive menu (see below for non-interactive use), then installs only that — no manual `apt install` checklist.
-3. **Prints a pairing token** at the end if the Jawji Agent was installed. Copy it (or just click **Scan for agents** in the [Dashboard tab](#connecting) — mDNS finds it automatically).
+3. **Prints a pairing token** at the end if the Jawji Controller was installed. Copy it (or just click **Scan for agents** in the [Dashboard tab](#connecting) — mDNS finds it automatically).
 
 Everything it installs runs as a `systemd` service with `Restart=always`, so it survives reboots and crashes without you doing anything else.
 
@@ -26,7 +26,7 @@ Three profiles cover the common cases; pick one instead of answering a checklist
 
 | Profile | Installs |
 |---|---|
-| **Basic Companion** | Jawji Agent + MAVLink telemetry (mavlink-router) + WiFi AP |
+| **Basic Companion** | Jawji Controller + MAVLink telemetry (mavlink-router) + WiFi AP |
 | **Vision Companion** | + MediaMTX (RTSP/RTMP/HLS/WebRTC) + mjpg-streamer (for Jawji's Camera panel today) |
 | **AI Companion** | + MediaMTX + MAVSDK + YOLO object detection (Jetson only — silently skipped elsewhere) |
 
@@ -51,7 +51,7 @@ curl -fsSL https://jawji.space/install.sh | \
 
 | Variable | Component |
 |---|---|
-| `WITH_AGENT` | Jawji Agent (metrics, terminal, file browser, mDNS pairing) |
+| `WITH_AGENT` | Jawji Controller (metrics, terminal, file browser, mDNS pairing) |
 | `WITH_MAVLINK` | mavlink-router (FC serial ↔ UDP :14550) |
 | `WITH_WIFI_AP` | WiFi access point via NetworkManager |
 | `WITH_MEDIAMTX` | MediaMTX media server (RTSP/RTMP/HLS/WebRTC) |
@@ -134,7 +134,7 @@ Monitor and configure DroneBridge ESP32 devices on your network.
 
 ## Dashboard Tab
 
-Full companion computer management when the Jawji Agent is installed.
+Full companion computer management when the Jawji Controller is installed.
 
 ### Panels
 
@@ -161,11 +161,11 @@ The dashboard uses a dockview-based layout system:
 
 ### Connecting
 
-1. Install the Jawji Agent — either as part of the [one-script installer](#one-script-installer-recommended) above, or on its own:
+1. Install the Jawji Controller — either as part of the [one-script installer](#one-script-installer-recommended) above, or on its own:
    ```
    curl -fsSL https://jawji.space/agent/install.sh | sudo bash
    ```
-2. Note the pairing token shown after installation (`journalctl -u jawji-agent`)
+2. Note the pairing token shown after installation (`journalctl -u jawji-controller`)
 3. In the Dashboard tab, either click **Scan for agents** to find it via mDNS on your local network, or enter the companion's IP and token manually
 4. Click **Connect**
 
@@ -175,10 +175,10 @@ The agent provides real-time metrics, terminal access, and service management ov
 
 ## Onboard Autonomy (jawji-orchestrator)
 
-For companion computers that need to make a decision without a GCS connected at all, Jawji Agent and the Companion Dashboard are not the right tool - both assume something is watching on the other end. [jawji-orchestrator](https://github.com/utachicodes/jawji-orchestrator) is a separate, independently published package (`@jawji/orchestrator` on npm) built for that case: it runs standalone on the companion computer, with its own direct MAVSDK connection to the flight controller, and works correctly whether or not Jawji is connected.
+For companion computers that need to make a decision without a GCS connected at all, Jawji Controller and the Companion Dashboard are not the right tool - both assume something is watching on the other end. [jawji-orchestrator](https://github.com/utachicodes/jawji-orchestrator) is a separate, independently published package (`@jawji/orchestrator` on npm) built for that case: it runs standalone on the companion computer, with its own direct MAVSDK connection to the flight controller, and works correctly whether or not Jawji is connected.
 
 Its first mode, `LandingZoneCheckMode`, holds the vehicle when it enters LAND mode, captures a camera frame, and asks an integrator-supplied vision-language model whether the site looks safe. If not, it holds and waits for an external confirm before repositioning, by default - it does not act on an unsafe verdict unattended unless that is explicitly configured.
 
 The vision-language model is pluggable - `VlmClient` is a generic image-and-prompt-in, JSON-out interface, with a built-in client for [Miril-Drone-2B-1](https://huggingface.co/MirilAI/Miril-Drone-2B-1), a model fine-tuned for aerial imagery, served over any OpenAI-compatible endpoint (`llama-server`, vLLM, SGLang). jawji-orchestrator does not bundle or run a model itself; you still need to stand one up separately and point the client at it.
 
-This package is not yet wired into Jawji desktop or Jawji Agent, so its advisories are not currently visible in the Companion Dashboard. See its own README for the full architecture, its local status API, and a researched (not yet implemented) design for GPS-denied landmark-based navigation.
+This package is not yet wired into Jawji desktop or Jawji Controller, so its advisories are not currently visible in the Companion Dashboard. See its own README for the full architecture, its local status API, and a researched (not yet implemented) design for GPS-denied landmark-based navigation.

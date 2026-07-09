@@ -74,11 +74,11 @@ Jawji is a next-generation ground control station built with Electron, React, an
 - **Companion Board Store** - Browse pre-configured templates for ESP32, Raspberry Pi, Jetson, and Orange Pi
 - **ESP32 Flashing** - Direct USB flash with auto-downloaded esptool (DroneBridge, MAVLink bridge)
 - **DroneBridge Integration** - Auto-detect DroneBridge ESP32 on network, view status, configure WiFi/serial settings
-- **Agent Dashboard** - Real-time CPU/RAM/temp metrics, terminal access, service management for companion computers, with mDNS "Scan for agents" discovery and automatic reconnect to the last-paired device on launch
-- **MediaMTX Video Relay** - A real multi-protocol media server (RTSP/RTMP/HLS/WebRTC) on the companion side, queried live by Jawji Agent for stream status
+- **Controller Dashboard** - Real-time CPU/RAM/temp metrics, terminal access, service management for companion computers, with mDNS "Scan for controllers" discovery and automatic reconnect to the last-paired device on launch
+- **MediaMTX Video Relay** - A real multi-protocol media server (RTSP/RTMP/HLS/WebRTC) on the companion side, queried live by Jawji Controller for stream status
 - **Dockview Layouts** - Customizable panel layouts with presets (Overview, Debug, Manage)
 - **Encrypted API Keys** - Secure storage for OpenAIP and other service credentials
-- **[jawji-orchestrator](https://github.com/utachicodes/jawji-orchestrator)** - A separate, independently published package (`@jawji/orchestrator` on npm) for onboard vision-assisted autonomy on a companion computer. Runs standalone, with its own MAVSDK connection to the flight controller, whether or not a Jawji GCS is connected. Not yet wired into Jawji desktop or Jawji Agent - see that repo for details.
+- **[jawji-orchestrator](https://github.com/utachicodes/jawji-orchestrator)** - A separate, independently published package (`@jawji/orchestrator` on npm) for onboard vision-assisted autonomy on a companion computer. Runs standalone, with its own MAVSDK connection to the flight controller, whether or not a Jawji GCS is connected. Not yet wired into Jawji desktop or Jawji Controller - see that repo for details.
 
 ### Dockable Dashboard
 - **IDE-Style Panels** - Drag & drop layout customization
@@ -466,7 +466,7 @@ Jawji is a pnpm monorepo built around an Electron main/renderer split:
 | [apps/desktop](apps/desktop) | The Electron app. `src/main` talks to flight controllers (serial/TCP/UDP) and the OS; `src/renderer` is the React/TypeScript UI; `src/main/preload.ts` + `src/shared/ipc-channels.ts` define the IPC boundary between them. |
 | [packages/mavlink-ts](packages/mavlink-ts) | Generated MAVLink v1/v2 message/enum definitions and codec used to talk to ArduPilot. |
 | [packages/msp-ts](packages/msp-ts) | MSP v1/v2 protocol implementation used to talk to Betaflight/iNav. |
-| [packages/jawji-agent](packages/jawji-agent) | Companion-board agent (ESP32/RPi/Jetson/Orange Pi) — a small Express + WebSocket server with bearer-token auth and subnet restriction, polled by the desktop app's Agent Dashboard for metrics, logs, and terminal access. |
+| [packages/jawji-controller](packages/jawji-controller) | Companion-board agent (ESP32/RPi/Jetson/Orange Pi) — a small Express + WebSocket server with bearer-token auth and subnet restriction, polled by the desktop app's Agent Dashboard for metrics, logs, and terminal access. |
 | [packages/module-sdk](packages/module-sdk), [packages/create-jawji-module](packages/create-jawji-module) | SDK and scaffolding for third-party Jawji modules. |
 
 Telemetry flows from the connected flight controller → `src/main` parser → IPC event → renderer Zustand stores (e.g. `telemetry-store`, `flight-control-store`) → dashboard panels. Manual control (arm/disarm, mode switching, takeoff, and a live keyboard/joystick RC override for both MAVLink and MSP vehicles) is sent the same way in reverse: renderer store → IPC → `src/main` → serial/TCP/UDP link to the vehicle.
@@ -640,7 +640,7 @@ Found a bug? We want to hear about it! Jawji includes a built-in bug reporting t
 - **AI Object Detection Module** - YOLOv8-based live object detection overlaid on the Camera panel, running as a local Python process via the module system
 - **WebRTC Camera Support** - Low-latency WHEP-based WebRTC playback in the Camera panel, alongside the original MJPEG path, for MediaMTX-backed companion video streams
 - **One-Script Companion Installer** - Single-command setup (`install.sh`) for a Raspberry Pi, Jetson, or generic Linux companion computer, with hardware detection and Basic/Vision/AI profiles
-- **MediaMTX Video Relay** - Real multi-protocol media server on the companion side (RTSP/RTMP/HLS/WebRTC), with Jawji Agent exposing live stream status through its API
+- **MediaMTX Video Relay** - Real multi-protocol media server on the companion side (RTSP/RTMP/HLS/WebRTC), with Jawji Controller exposing live stream status through its API
 - **Companion Module Hardening** - Fixed a real auth bug blocking manual agent discovery, added mDNS "Scan for agents" UI, automatic reconnect to the last-paired agent on launch, and removed dead/unverifiable code paths in the Companion Store
 - **Linux Release** - Pre-built AppImage and .deb packages, alongside Windows
 - **jawji-orchestrator** - A separately published package for onboard vision-assisted landing-zone checks on a companion computer, with a confirm-gated (not unattended-autonomous by default) decision loop

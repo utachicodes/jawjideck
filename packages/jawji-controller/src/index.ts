@@ -2,7 +2,7 @@
 import express from 'express';
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
-import { AGENT_PROTOCOL_VERSION } from '@jawji/companion-types';
+import { CONTROLLER_PROTOCOL_VERSION } from '@jawji/companion-types';
 import type { WsMessage, HelloMessage, MetricsData, ProcessInfo, LogEntry } from '@jawji/companion-types';
 import { loadOrCreateToken, validateToken } from './auth.js';
 import { startDiscovery, stopDiscovery } from './discovery.js';
@@ -65,7 +65,7 @@ async function detectPlatforms(): Promise<void> {
 
 // --- Info endpoint ---
 // Deliberately exempt from authMiddleware (registered below): this is the
-// endpoint desktop clients probe to confirm "is there a Jawji Agent here"
+// endpoint desktop clients probe to confirm "is there a Jawji Controller here"
 // before pairing, when they don't have a token yet. Only exposes
 // non-sensitive identity info (hostname, OS, versions) -- nothing that
 // requires auth to justify gating it.
@@ -76,7 +76,7 @@ app.get('/api/v1/info', (_req, res) => {
     arch: os.arch(),
     uptime: os.uptime(),
     agentVersion: '0.1.0',
-    protocolVersion: AGENT_PROTOCOL_VERSION,
+    protocolVersion: CONTROLLER_PROTOCOL_VERSION,
     dockerAvailable,
     blueosDetected,
     terminalAvailable: isTerminalAvailable() && config.terminalEnabled,
@@ -228,7 +228,7 @@ wss.on('connection', (ws: WebSocket, req) => {
   const hello: WsMessage<HelloMessage> = {
     channel: 'hello',
     data: {
-      protocolVersion: AGENT_PROTOCOL_VERSION,
+      protocolVersion: CONTROLLER_PROTOCOL_VERSION,
       agentVersion: '0.1.0',
       hostname: os.hostname(),
     },
@@ -312,7 +312,7 @@ server.listen(config.port, async () => {
   startLogTailing();
 
   console.log('='.repeat(50));
-  console.log('Jawji Agent v0.1.0');
+  console.log('Jawji Controller v0.1.0');
   console.log(`REST API: http://0.0.0.0:${config.port}/api/v1`);
   console.log(`WebSocket: ws://0.0.0.0:${config.port}/ws`);
   console.log('');

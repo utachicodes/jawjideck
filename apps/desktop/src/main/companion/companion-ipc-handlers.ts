@@ -8,8 +8,8 @@ import Store from 'electron-store';
 import { IPC_CHANNELS } from '../../shared/ipc-channels.js';
 import type { CompanionConnectOptions } from '../../shared/ipc-channels.js';
 import { companionConnection } from './companion-connection.js';
-import { startDiscovery, stopDiscovery, probeAgent } from './companion-discovery.js';
-import { AGENT_DEFAULT_PORT } from '@jawji/companion-types';
+import { startDiscovery, stopDiscovery, probeController } from './companion-discovery.js';
+import { CONTROLLER_DEFAULT_PORT } from '@jawji/companion-types';
 import type {
   SystemInfo,
   NetworkInfo,
@@ -56,7 +56,7 @@ function loadToken(host: string): string | null {
 export function registerCompanionIpcHandlers(mainWindow: BrowserWindow): void {
   companionConnection.setMainWindow(mainWindow);
 
-  // Auto-reconnect to the last paired Jawji Agent, if we have a saved
+  // Auto-reconnect to the last paired Jawji Controller, if we have a saved
   // token for it. Fire-and-forget: on success, companionConnection's own
   // state-change push (IPC_CHANNELS.COMPANION_CONNECTION_STATE) is what
   // the renderer reacts to, same as a user-initiated connect. On failure
@@ -68,14 +68,14 @@ export function registerCompanionIpcHandlers(mainWindow: BrowserWindow): void {
   if (lastHost) {
     const savedToken = loadToken(lastHost);
     if (savedToken) {
-      void companionConnection.connect(lastHost, lastPort ?? AGENT_DEFAULT_PORT, savedToken);
+      void companionConnection.connect(lastHost, lastPort ?? CONTROLLER_DEFAULT_PORT, savedToken);
     }
   }
 
   // === Connection management ===
 
   ipcMain.handle(IPC_CHANNELS.COMPANION_CONNECT, async (_event, options: CompanionConnectOptions) => {
-    const port = options.port ?? AGENT_DEFAULT_PORT;
+    const port = options.port ?? CONTROLLER_DEFAULT_PORT;
     const success = await companionConnection.connect(options.host, port, options.token);
     if (success) {
       saveToken(options.host, options.token);
@@ -94,7 +94,7 @@ export function registerCompanionIpcHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle(IPC_CHANNELS.COMPANION_DISCOVER, async (_event, host?: string) => {
     // If a host is given, probe it directly
     if (host) {
-      return probeAgent(host);
+      return probeController(host);
     }
 
     // Otherwise start mDNS discovery — results come asynchronously via events

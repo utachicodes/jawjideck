@@ -260,7 +260,7 @@ importers:
         specifier: ^3.0.0
         version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.3)
 
-  packages/jawji-agent:
+  packages/jawji-controller:
     dependencies:
       '@jawji/companion-types':
         specifier: workspace:*
@@ -285,7 +285,7 @@ importers:
         version: 11.1.0
       ws:
         specifier: ^8.17.0
-        version: 8.19.0
+        version: 8.21.0
     devDependencies:
       '@types/dockerode':
         specifier: ^3.3.0
@@ -4633,18 +4633,6 @@ packages:
 
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
-
-  ws@8.19.0:
-    resolution: {integrity: sha512-blAT2mjOEIi0ZzruJfIhb3nps74PRWTCz1IjglWEEpQl5XS/UNama6u2/rjFkDDouqr4L67ry+1aGIALViWjDg==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
 
   ws@8.21.0:
     resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
@@ -9591,8 +9579,6 @@ snapshots:
       strip-ansi: 7.1.2
 
   wrappy@1.0.2: {}
-
-  ws@8.19.0: {}
 
   ws@8.21.0: {}
 
