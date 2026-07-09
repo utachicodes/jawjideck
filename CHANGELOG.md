@@ -8,6 +8,12 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 
 ## [Unreleased]
 
+### Changed
+- **Renamed `jawji-agent` to `jawji-controller`** across the entire product: `packages/jawji-agent` → `packages/jawji-controller`, the npm package (`@jawji/jawji-controller`), the systemd/OpenRC service, the mDNS discovery type (`_jawji-controller._tcp`), all `JAWJI_AGENT_*` environment variables (now `JAWJI_CONTROLLER_*`), the companion installer's `WITH_AGENT` flag (now `WITH_CONTROLLER`), and every UI string, doc, and wiki page that referenced the old name. jawji.space's `/agent/install.sh` route becomes `/controller/install.sh` to match (tracked separately in the jawji-gcs repo). Also fixed a pre-existing mixed-case bug (`.Jawji-agent` token directory and `Jawji-agent` protected-process default were inconsistent with the lowercase service/mDNS names used everywhere else) while renaming. Confirmed nothing was deployed in the field yet, so this is a clean rename with no backward-compatibility shim.
+
+### Added
+- **Design spec for a licensing and payments core** (`docs/superpowers/specs/2026-07-09-licensing-payments-core-design.md`), the shared backend that will gate the official Jawji product experience going forward. jawjideck stays GPL-3.0 — the source remains free to build — under an open-core model where the subscription gates the *official* product (pre-built installers, account/sync between desktop and web, marketplace access, license activation) rather than the source itself. The same purchase-code-redeem mechanism is designed to be reused across the base subscription, jawji-orchestrator licenses, and future Jawji Intelligence modules. Design only in this release — no licensing code has shipped yet.
+
 ## [0.0.40] - 2026-07-09
 
 ### Added
