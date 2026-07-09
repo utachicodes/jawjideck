@@ -6,21 +6,75 @@ Jawji includes tools for setting up and managing companion computers. The compan
 
 ## One-Script Installer (recommended)
 
-The fastest way to set up a Raspberry Pi, Jetson, or generic Linux companion computer:
+The fastest way to set up a Raspberry Pi, Jetson, or generic Linux companion computer — SSH into the board and run:
 
 ```bash
 curl -fsSL https://jawji.space/install.sh | sudo bash
 ```
 
-It detects the hardware automatically and offers three profiles instead of a checklist of individual packages:
+### What it does
+
+1. **Detects the hardware** automatically — Jetson (via `/etc/nv_tegra_release`), Raspberry Pi (via `/proc/cpuinfo` / `/proc/device-tree/model`), or falls back to generic Linux.
+2. **Asks what you want** with an interactive menu (see below for non-interactive use), then installs only that — no manual `apt install` checklist.
+3. **Prints a pairing token** at the end if the Jawji Agent was installed. Copy it (or just click **Scan for agents** in the [Dashboard tab](#connecting) — mDNS finds it automatically).
+
+Everything it installs runs as a `systemd` service with `Restart=always`, so it survives reboots and crashes without you doing anything else.
+
+### Profiles
+
+Three profiles cover the common cases; pick one instead of answering a checklist:
 
 | Profile | Installs |
 |---|---|
 | **Basic Companion** | Jawji Agent + MAVLink telemetry (mavlink-router) + WiFi AP |
-| **Vision Companion** | + MediaMTX (RTSP/RTMP/HLS/WebRTC video relay) |
-| **AI Companion** | + MAVSDK + YOLO object detection (Jetson only) |
+| **Vision Companion** | + MediaMTX (RTSP/RTMP/HLS/WebRTC) + mjpg-streamer (for Jawji's Camera panel today) |
+| **AI Companion** | + MediaMTX + MAVSDK + YOLO object detection (Jetson only — silently skipped elsewhere) |
 
-Pass a profile directly (`install.sh vision`), set `WITH_*` environment variables for scripting, or answer the interactive prompts if you run it without either.
+Pass a profile as the first argument to skip the menu:
+
+```bash
+curl -fsSL https://jawji.space/install.sh | sudo bash -s -- basic
+curl -fsSL https://jawji.space/install.sh | sudo bash -s -- vision
+curl -fsSL https://jawji.space/install.sh | sudo bash -s -- ai
+```
+
+This is exactly what the Store tab's templates do under the hood — Telemetry Bridge runs `-- basic`, Video + Telemetry runs `-- vision`, Computer Vision Companion runs `-- ai`. Copy the command straight from a template card if you'd rather not type it yourself.
+
+### Custom component combinations
+
+If none of the three profiles fit, set `WITH_*` environment variables directly instead of a profile — `sudo` needs them passed inline (`sudo VAR=1 command`, not `VAR=1 sudo command`, since `sudo` resets the environment otherwise):
+
+```bash
+curl -fsSL https://jawji.space/install.sh | \
+  sudo WITH_AGENT=1 WITH_MAVLINK=1 WITH_MAVSDK=1 WITH_YOLO=0 WITH_WIFI_AP=0 WITH_MEDIAMTX=0 bash
+```
+
+| Variable | Component |
+|---|---|
+| `WITH_AGENT` | Jawji Agent (metrics, terminal, file browser, mDNS pairing) |
+| `WITH_MAVLINK` | mavlink-router (FC serial ↔ UDP :14550) |
+| `WITH_WIFI_AP` | WiFi access point via NetworkManager |
+| `WITH_MEDIAMTX` | MediaMTX media server (RTSP/RTMP/HLS/WebRTC) |
+| `WITH_MJPG` | mjpg-streamer (MJPEG, for Jawji's Camera panel today) |
+| `WITH_MAVSDK` | MAVSDK Python environment + example script |
+| `WITH_YOLO` | Ultralytics YOLO object detection (Jetson/JetPack only) |
+
+Any variable left unset defaults to `0` (skip). The command above is the Autonomous Mission Runner template's exact configuration — Agent + telemetry + MAVSDK, no WiFi AP, no video.
+
+### Non-interactive / scripted use
+
+`curl | bash` has no terminal of its own to prompt on. If you don't pass a profile or any `WITH_*` variable, the script checks for a real TTY (`/dev/tty`) to ask interactively; if there isn't one (e.g. driven from another script, CI, or Jawji's Store tab over SSH), it defaults to the **Basic Companion** profile and prints a note telling you how to choose explicitly next time. Always pass a profile or `WITH_*` flags when scripting this — don't rely on the interactive fallback.
+
+### Re-running / updating
+
+The script is safe to re-run — each `install_*` step checks whether its binary/service already exists before rebuilding, and systemd units are rewritten and restarted idempotently. Re-run it with a different profile or flags to add components to an already-provisioned board; it won't remove anything you added previously that isn't part of the new selection.
+
+### Troubleshooting
+
+- **"Run with sudo"** — the script needs root for package installs and systemd units; re-run with `sudo`.
+- **MediaMTX version lookup fails** — `install_mediamtx` queries the GitHub API for the latest release; if the board has no internet access (or GitHub rate-limits you), that step fails with a clear message and the rest of the install continues.
+- **Camera not found** — `mjpg-streamer`/MediaMTX's camera-publish service will start but immediately fail if `/dev/video0` doesn't exist; check `CAMERA_DEVICE` if your camera is on a different path, e.g. `curl -fsSL https://jawji.space/install.sh | sudo CAMERA_DEVICE=/dev/video1 bash -s -- vision`.
+- **YOLO skipped** — object detection needs a Jetson with JetPack (`/etc/nv_tegra_release`); on anything else the script prints a warning and skips it rather than failing the whole install.
 
 ## Store Tab
 
@@ -50,7 +104,7 @@ esptool is downloaded automatically on first use (~25 MB standalone binary from 
 
 ### Raspberry Pi / Jetson Setup
 
-Pi and Jetson templates run the install scripts described above over SSH — either the one-script installer with a profile, or (for backward compatibility) the original per-template scripts like `pi-telemetry.sh`, `pi-video.sh`, `pi-autonomy.sh`, and `jetson-cv.sh`, which are now thin wrappers around the same install profiles.
+Pi and Jetson templates run the one-script installer described above over SSH, each with the profile or flags matching that template (e.g. Telemetry Bridge runs `install.sh -- basic`, Video + Telemetry runs `install.sh -- vision`). The per-template wrapper scripts (`pi-telemetry.sh`, `pi-video.sh`, `pi-autonomy.sh`, `jetson-cv.sh`) that used to exist purely to give each template its own URL have been removed now that the Store copies the installer command with the profile baked in directly.
 
 ### Video streaming (MediaMTX)
 
@@ -118,3 +172,11 @@ The dashboard uses a dockview-based layout system:
 Once paired, Jawji remembers the connection — closing and reopening the app automatically reconnects to the last-paired agent using its saved (encrypted) token, no need to re-enter it every time.
 
 The agent provides real-time metrics, terminal access, and service management over a secure WebSocket connection.
+
+## Onboard Autonomy (jawji-orchestrator)
+
+For companion computers that need to make a decision without a GCS connected at all, Jawji Agent and the Companion Dashboard are not the right tool - both assume something is watching on the other end. [jawji-orchestrator](https://github.com/utachicodes/jawji-orchestrator) is a separate, independently published package (`@jawji/orchestrator` on npm) built for that case: it runs standalone on the companion computer, with its own direct MAVSDK connection to the flight controller, and works correctly whether or not Jawji is connected.
+
+Its first mode, `LandingZoneCheckMode`, holds the vehicle when it enters LAND mode, captures a camera frame, and asks an integrator-supplied vision-language model whether the site looks safe. If not, it holds and waits for an external confirm before repositioning, by default - it does not act on an unsafe verdict unattended unless that is explicitly configured.
+
+This package is not yet wired into Jawji desktop or Jawji Agent, so its advisories are not currently visible in the Companion Dashboard. See its own README for setup and its local status API.

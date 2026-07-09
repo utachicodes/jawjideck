@@ -8,6 +8,22 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 
 ## [Unreleased]
 
+## [0.0.40] - 2026-07-09
+
+### Added
+- **jawji-orchestrator**, a new standalone package published separately at [github.com/utachicodes/jawji-orchestrator](https://github.com/utachicodes/jawji-orchestrator) (`@jawji/orchestrator` on npm). Runs on a companion computer as its own process with a direct MAVSDK connection to the flight controller, independent of whether a Jawji GCS is connected at all. Ships a `VisionAssistMode` framework with a first mode, `LandingZoneCheckMode`: on entering LAND mode it holds the vehicle, captures a frame, asks an integrator-supplied vision-language model whether the site is safe, and if not, gates any repositioning behind an external confirm by default (`confirmPolicy: 'gated'`) rather than acting unattended. There is no official MAVSDK Node.js client on npm — verified directly against the `mavlink` GitHub org and the npm registry before building this — so the package generates its own gRPC client from the official `mavlink/MAVSDK-Proto` definitions using `@grpc/grpc-js` (pure JavaScript, no native addon, which matters for cross-compiling to Jetson/Pi ARM). Not yet wired into Jawji desktop or `jawji-agent`; this release only ships the standalone package.
+
+### Changed
+- **Companion Store templates now call the one-script installer directly.** Telemetry Bridge, Video + Telemetry, Autonomous Mission Runner, and Computer Vision Companion each used to point at their own per-template wrapper script (`pi-telemetry.sh`, `pi-video.sh`, `pi-autonomy.sh`, `jetson-cv.sh`) that did nothing but call `install.sh` with fixed args. They now call `curl -fsSL https://jawji.space/install.sh | sudo bash -s -- <profile>` (or the equivalent `WITH_*` flags for Autonomous Mission Runner's non-profile combination) directly. `pi-video.sh`'s one genuinely unique step — installing `mjpg-streamer` alongside MediaMTX, since Jawji's Camera panel only decodes MJPEG today — is now a `WITH_MJPG` flag built into `install.sh`'s `vision` profile itself, so nothing was lost in the consolidation.
+- `docs/guides/companion-hardware-setup.md` and `wiki/Companion-Board.md` (both published to jawji.space's `/docs` section) rewritten to lead with the one-script installer and its profile/`WITH_*` reference, instead of the old fully-manual `apt install mjpg-streamer` walkthrough.
+
+### Removed
+- `packages/companion-scripts/pi-telemetry.sh`, `pi-video.sh`, `pi-autonomy.sh`, `jetson-cv.sh` — superseded by calling `install.sh` directly (see above); nothing else in the app referenced these filenames.
+
+### Fixed
+- **MAVLink signing log falsely implied the connection was blocked.** "Vehicle requires MAVLink signing but no key is configured... before connecting" read as a hard requirement, but nothing in the connection path actually gates on it — the heartbeat handshake and telemetry flow proceed regardless. Downgraded to an `info`-level note that the connection continues without signing.
+- **Jawji Agent crashed entirely if `journalctl`/`tail` was missing.** `spawn()` reports a missing binary asynchronously via the child process's `'error'` event, not a synchronous throw, so the existing try/catch around log tailing never caught it — an unhandled `'error'` event took down the whole agent process (REST API, WebSocket, and mDNS discovery included), not just log tailing. Affects any companion board without `journalctl` (the installer explicitly supports non-systemd `generic-linux`). Now falls back from `journalctl` to `tail` to a warning instead of crashing.
+
 ## [0.0.39] - 2026-07-08
 
 ### Added

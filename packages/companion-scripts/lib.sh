@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Shared install functions for Jawji companion provisioning. Sourced by
-# install.sh (the unified profile-driven installer) and by the older
-# per-template scripts (pi-telemetry.sh, pi-video.sh, pi-autonomy.sh,
-# jetson-cv.sh), which now just call into these instead of duplicating
-# the logic. Not meant to be run directly.
+# install.sh, the one-script installer for every companion template
+# (Telemetry Bridge, Video + Telemetry, Autonomous Mission Runner, Computer
+# Vision Companion) via its basic/vision/ai profiles and WITH_* flags. Not
+# meant to be run directly.
 
 JAWJI_REPO_URL="${JAWJI_REPO_URL:-https://github.com/utachicodes/jawjideck.git}"
 JAWJI_REPO_BRANCH="${JAWJI_REPO_BRANCH:-master}"

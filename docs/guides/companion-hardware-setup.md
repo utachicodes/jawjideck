@@ -86,7 +86,13 @@ This gives you live system metrics, a remote terminal, and log access from the P
 
 ### 2.1 Install the agent
 
-Over SSH on the Pi:
+Over SSH on the Pi, use Jawji's one-script installer with the `basic` profile — it installs the Jawji Agent **and** `mavlink-router` (MAVLink over UDP :14550) **and** a WiFi access point in one command, as systemd services:
+
+```bash
+curl -fsSL https://jawji.space/install.sh | sudo bash -s -- basic
+```
+
+If you only want the agent and nothing else, use the agent-only installer instead:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/utachicodes/jawjideck/master/packages/jawji-agent/install.sh | sudo bash
@@ -96,7 +102,7 @@ This installs Node.js/pnpm if needed, clones the repo, builds the `jawji-agent` 
 
 If you already have the repo checked out locally and just want to rebuild/reinstall from your working copy, run `sudo packages/jawji-agent/install.sh` from the repo root instead.
 
-> A bundled installer that also sets up `mavlink-router` and a WiFi AP alongside the agent doesn't exist yet — for now, set those up separately if you need them.
+> See the [Companion Board wiki page](https://github.com/utachicodes/jawjideck/wiki/Companion-Board) for the full profile/flag reference (`basic` / `vision` / `ai`, or individual `WITH_*` components).
 
 ### 2.2 Get the pairing token
 
@@ -119,32 +125,32 @@ Keep this handy — you'll paste it into Jawji once.
 
 ## Part 3 — Pi camera feed in Jawji's Camera panel
 
-**Important:** Jawji's built-in "Video + Telemetry" companion template streams H.264 over GStreamer/RTSP. Jawji's Camera panel currently only supports **MJPEG** (plain `<img>` tag, no RTSP/H.264 decoding yet) — so skip that template for now and use `mjpg-streamer` directly, which produces exactly the format the panel expects.
+**Important:** Jawji's Camera panel currently only supports **MJPEG** (plain `<img>` tag, no RTSP/H.264/WebRTC decoding built in yet — though [WebRTC via MediaMTX's WHEP endpoint](https://github.com/utachicodes/jawjideck/wiki/Companion-Board#video-streaming-mediamtx) is supported as a separate protocol option if you'd rather use that). This part covers the MJPEG path.
 
 ### 3.1 Install and run mjpg-streamer on the Pi
+
+The one-script installer's `vision` profile sets this up automatically (`mjpg-streamer` + MediaMTX + telemetry + WiFi AP + agent, as boot services on `/dev/video0`), which is what the Store tab's "Video + Telemetry" template runs:
+
+```bash
+curl -fsSL https://jawji.space/install.sh | sudo bash -s -- vision
+```
+
+If your camera is on a different device path, pass `CAMERA_DEVICE`:
+
+```bash
+curl -fsSL https://jawji.space/install.sh | sudo CAMERA_DEVICE=/dev/video1 bash -s -- vision
+```
+
+`mjpg-streamer` only supports V4L2/UVC cameras. If you're on a recent Raspberry Pi OS using `libcamera` (the default camera stack for the official Pi Camera Module) instead of a UVC USB webcam, bridge `libcamera` to a V4L2 device first (`sudo apt install v4l2loopback-dkms rpicam-apps`, then pipe `rpicam-vid` into the loopback device) so `mjpg-streamer` has a `/dev/videoN` to open.
+
+To install and run it manually instead (e.g. to test settings before committing to the systemd service, or on a board where you don't want the full `vision` profile):
 
 ```bash
 sudo apt update
 sudo apt install mjpg-streamer
-```
-
-For a USB webcam:
-
-```bash
 mjpg_streamer -i "input_uvc.so -d /dev/video0 -r 1280x720 -f 30" \
               -o "output_http.so -p 8080 -w /usr/share/mjpg-streamer/www"
 ```
-
-For the official Pi Camera Module (older camera stack / `input_raspicam.so`):
-
-```bash
-mjpg_streamer -i "input_raspicam.so -x 1280 -y 720 -fps 30" \
-              -o "output_http.so -p 8080 -w /usr/share/mjpg-streamer/www"
-```
-
-> If you're on a recent Raspberry Pi OS using `libcamera` instead of the legacy camera stack, `input_raspicam.so` won't see the camera. In that case, bridge `libcamera` to a V4L2 device first (`sudo apt install v4l2loopback-dkms rpicam-apps`, then pipe `rpicam-vid` into the loopback device) and use `input_uvc.so` pointed at that device instead.
-
-Make it start on boot with a systemd service or `cron @reboot` if you want it persistent across power cycles — not required just to test.
 
 ### 3.2 Point Jawji's Camera panel at it
 
@@ -255,8 +261,8 @@ Once Part 3 or Part 4 is streaming into the Camera panel, the **AI Object Detect
 Once all four parts are running simultaneously:
 
 - **ESP32** — wireless MAVLink link to the robot. All of Jawji's normal controls (arm/disarm, mode switching, mission planning, parameter tuning) work exactly as they would over USB.
-- **Pi (Jawji Agent)** — live system metrics, terminal, and logs from the companion computer, in the Companion Dashboard.
-- **Pi (mjpg-streamer)** — live color camera feed in one Camera panel.
+- **Pi (Jawji Agent + mavlink-router + WiFi AP)** — installed by `install.sh -- basic` (or `-- vision` if you also want the camera feed below) — live system metrics, terminal, and logs from the companion computer, in the Companion Dashboard.
+- **Pi (mjpg-streamer)** — installed by `install.sh -- vision` — live color camera feed in one Camera panel.
 - **Pi (depth_stream.py)** — live colorized RealSense depth feed in a second Camera panel.
 
 These are independent services on independent ports (MAVLink over whatever port DroneBridge serves, port 48400 for the Jawji Agent, port 8080 for the color camera stream, port 8081 for the depth stream), so there's no conflict running all four at once on the same Pi/network.
@@ -267,7 +273,7 @@ These are independent services on independent ports (MAVLink over whatever port 
 |---|---|
 | DroneBridge tab shows nothing at `192.168.2.1` | You haven't joined the ESP32's WiFi AP yet, or its AP IP differs from default — recheck the boot log from step 1.2 |
 | Connected to ESP32 but no telemetry in Jawji's main Connect panel | Wrong TCP/UDP port, or TX/RX wired backwards between ESP32 and FC (swap them) |
-| Jawji Agent doesn't show up in Companion Dashboard | mDNS may be blocked by your router/network (common on guest networks or some managed WiFi) — check the Pi's IP manually and see if `packages/jawji-agent` supports a manual-IP fallback in your version |
+| Jawji Agent doesn't show up in Companion Dashboard | mDNS may be blocked by your router/network (common on guest networks or some managed WiFi) — in the Dashboard tab, enter the Pi's IP and pairing token manually instead of using "Scan for agents" |
 | Camera panel says "Stream unavailable" | `mjpg_streamer` (or `depth_stream.py`) not running, wrong port, or firewall blocking the port on the Pi |
 | Video is choppy/high latency | Lower resolution/framerate in the `mjpg_streamer -i` flags (e.g. `640x480 -f 15`), or in `depth_stream.py`'s `enable_stream` call — MJPEG is bandwidth-hungry compared to H.264 |
 | `pyrealsense2` import fails on the Pi | No prebuilt wheel for your Pi's architecture/OS combination — you'll need to build `librealsense2` from source with Python bindings (see Intel's official RealSense docs) |

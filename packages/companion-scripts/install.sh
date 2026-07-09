@@ -58,13 +58,16 @@ PROFILE="${1:-}"
 apply_profile() {
   case "$1" in
     basic)
-      WITH_AGENT=1 WITH_MAVLINK=1 WITH_MEDIAMTX=0 WITH_MAVSDK=0 WITH_YOLO=0 WITH_WIFI_AP=1
+      WITH_AGENT=1 WITH_MAVLINK=1 WITH_MEDIAMTX=0 WITH_MJPG=0 WITH_MAVSDK=0 WITH_YOLO=0 WITH_WIFI_AP=1
       ;;
     vision)
-      WITH_AGENT=1 WITH_MAVLINK=1 WITH_MEDIAMTX=1 WITH_MAVSDK=0 WITH_YOLO=0 WITH_WIFI_AP=1
+      # Jawji's Camera panel only decodes MJPEG today, so the vision profile
+      # installs mjpg-streamer alongside MediaMTX (RTSP/RTMP/HLS/WebRTC for
+      # everything else) rather than MediaMTX alone.
+      WITH_AGENT=1 WITH_MAVLINK=1 WITH_MEDIAMTX=1 WITH_MJPG=1 WITH_MAVSDK=0 WITH_YOLO=0 WITH_WIFI_AP=1
       ;;
     ai)
-      WITH_AGENT=1 WITH_MAVLINK=1 WITH_MEDIAMTX=1 WITH_MAVSDK=1 WITH_YOLO=1 WITH_WIFI_AP=1
+      WITH_AGENT=1 WITH_MAVLINK=1 WITH_MEDIAMTX=1 WITH_MJPG=0 WITH_MAVSDK=1 WITH_YOLO=1 WITH_WIFI_AP=1
       ;;
     *)
       echo "Unknown profile: $1 (expected basic, vision, or ai)" >&2
@@ -99,6 +102,7 @@ prompt_menu() {
       read -r -p "Jawji Agent? [Y/n] " a < "${tty}"; WITH_AGENT=$([ "${a}" = "n" ] && echo 0 || echo 1)
       read -r -p "MAVLink telemetry (mavlink-router)? [Y/n] " b < "${tty}"; WITH_MAVLINK=$([ "${b}" = "n" ] && echo 0 || echo 1)
       read -r -p "Video streaming (MediaMTX)? [y/N] " c < "${tty}"; WITH_MEDIAMTX=$([ "${c}" = "y" ] && echo 1 || echo 0)
+      read -r -p "MJPEG stream for Jawji's Camera panel (mjpg-streamer)? [y/N] " c2 < "${tty}"; WITH_MJPG=$([ "${c2}" = "y" ] && echo 1 || echo 0)
       read -r -p "MAVSDK autonomy environment? [y/N] " d < "${tty}"; WITH_MAVSDK=$([ "${d}" = "y" ] && echo 1 || echo 0)
       read -r -p "Object detection (Jetson only)? [y/N] " e < "${tty}"; WITH_YOLO=$([ "${e}" = "y" ] && echo 1 || echo 0)
       read -r -p "WiFi access point? [Y/n] " f < "${tty}"; WITH_WIFI_AP=$([ "${f}" = "n" ] && echo 0 || echo 1)
@@ -112,13 +116,14 @@ prompt_menu() {
 
 if [ -n "${PROFILE}" ]; then
   apply_profile "${PROFILE}"
-elif [ -z "${WITH_AGENT:-}${WITH_MAVLINK:-}${WITH_MEDIAMTX:-}${WITH_MAVSDK:-}${WITH_YOLO:-}" ]; then
+elif [ -z "${WITH_AGENT:-}${WITH_MAVLINK:-}${WITH_MEDIAMTX:-}${WITH_MJPG:-}${WITH_MAVSDK:-}${WITH_YOLO:-}" ]; then
   prompt_menu
 fi
 
 WITH_AGENT="${WITH_AGENT:-0}"
 WITH_MAVLINK="${WITH_MAVLINK:-0}"
 WITH_MEDIAMTX="${WITH_MEDIAMTX:-0}"
+WITH_MJPG="${WITH_MJPG:-0}"
 WITH_MAVSDK="${WITH_MAVSDK:-0}"
 WITH_YOLO="${WITH_YOLO:-0}"
 WITH_WIFI_AP="${WITH_WIFI_AP:-0}"
@@ -133,7 +138,7 @@ echo "================================"
 echo "Jawji Companion Installer"
 echo "================================"
 echo "Hardware: ${HARDWARE}"
-echo "Installing: $( [ "${WITH_AGENT}" = 1 ] && echo -n 'Jawji Agent ' )$( [ "${WITH_MAVLINK}" = 1 ] && echo -n 'mavlink-router ' )$( [ "${WITH_WIFI_AP}" = 1 ] && echo -n 'WiFi-AP ' )$( [ "${WITH_MEDIAMTX}" = 1 ] && echo -n 'MediaMTX ' )$( [ "${WITH_MAVSDK}" = 1 ] && echo -n 'MAVSDK ' )$( [ "${WITH_YOLO}" = 1 ] && echo -n 'YOLO ' )"
+echo "Installing: $( [ "${WITH_AGENT}" = 1 ] && echo -n 'Jawji Agent ' )$( [ "${WITH_MAVLINK}" = 1 ] && echo -n 'mavlink-router ' )$( [ "${WITH_WIFI_AP}" = 1 ] && echo -n 'WiFi-AP ' )$( [ "${WITH_MEDIAMTX}" = 1 ] && echo -n 'MediaMTX ' )$( [ "${WITH_MJPG}" = 1 ] && echo -n 'mjpg-streamer ' )$( [ "${WITH_MAVSDK}" = 1 ] && echo -n 'MAVSDK ' )$( [ "${WITH_YOLO}" = 1 ] && echo -n 'YOLO ' )"
 echo ""
 
 apt-get update -qq
@@ -141,6 +146,7 @@ apt-get update -qq
 [ "${WITH_MAVLINK}" = "1" ] && install_mavlink_router
 [ "${WITH_WIFI_AP}" = "1" ] && install_wifi_ap
 [ "${WITH_MEDIAMTX}" = "1" ] && install_mediamtx
+[ "${WITH_MJPG}" = "1" ] && install_mjpg_streamer
 [ "${WITH_MAVSDK}" = "1" ] && install_mavsdk
 [ "${WITH_YOLO}" = "1" ] && install_yolo
 # Agent last: it's the one thing every profile has, and it's a good final
