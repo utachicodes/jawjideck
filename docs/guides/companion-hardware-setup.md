@@ -2,7 +2,7 @@
 
 A full walkthrough for pairing Jawji with an ESP32 (wireless MAVLink bridge) and a Raspberry Pi (companion metrics + camera feed), tested against a ground robot (rover) but equally applicable to a flying vehicle.
 
-**End state:** the ESP32 replaces your USB cable/telemetry radio for MAVLink; the Pi gives you live system metrics/terminal via the Jawji Agent and a live camera feed in Jawji's Camera panel. Both run independently and simultaneously over the same WiFi network.
+**End state:** the ESP32 replaces your USB cable/telemetry radio for MAVLink; the Pi gives you live system metrics/terminal via the Jawji Controller and a live camera feed in Jawji's Camera panel. Both run independently and simultaneously over the same WiFi network.
 
 ---
 
@@ -80,13 +80,13 @@ Power the ESP32 from a 3.3V or 5V source depending on your board (check your spe
 
 ---
 
-## Part 2 — Raspberry Pi as a companion computer (Jawji Agent)
+## Part 2 — Raspberry Pi as a companion computer (Jawji Controller)
 
 This gives you live system metrics, a remote terminal, and log access from the Pi, inside Jawji's Companion Dashboard.
 
 ### 2.1 Install the agent
 
-Over SSH on the Pi, use Jawji's one-script installer with the `basic` profile — it installs the Jawji Agent **and** `mavlink-router` (MAVLink over UDP :14550) **and** a WiFi access point in one command, as systemd services:
+Over SSH on the Pi, use Jawji's one-script installer with the `basic` profile — it installs the Jawji Controller **and** `mavlink-router` (MAVLink over UDP :14550) **and** a WiFi access point in one command, as systemd services:
 
 ```bash
 curl -fsSL https://jawji.space/install.sh | sudo bash -s -- basic
@@ -95,12 +95,12 @@ curl -fsSL https://jawji.space/install.sh | sudo bash -s -- basic
 If you only want the agent and nothing else, use the agent-only installer instead:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/utachicodes/jawjideck/master/packages/jawji-agent/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/utachicodes/jawjideck/master/packages/jawji-controller/install.sh | sudo bash
 ```
 
-This installs Node.js/pnpm if needed, clones the repo, builds the `jawji-agent` workspace package, and installs it as a systemd service listening on port **48400**.
+This installs Node.js/pnpm if needed, clones the repo, builds the `jawji-controller` workspace package, and installs it as a systemd service listening on port **48400**.
 
-If you already have the repo checked out locally and just want to rebuild/reinstall from your working copy, run `sudo packages/jawji-agent/install.sh` from the repo root instead.
+If you already have the repo checked out locally and just want to rebuild/reinstall from your working copy, run `sudo packages/jawji-controller/install.sh` from the repo root instead.
 
 > See the [Companion Board wiki page](https://github.com/utachicodes/jawjideck/wiki/Companion-Board) for the full profile/flag reference (`basic` / `vision` / `ai`, or individual `WITH_*` components).
 
@@ -109,7 +109,7 @@ If you already have the repo checked out locally and just want to rebuild/reinst
 The agent generates a random pairing token the first time it starts. Read it from the service log:
 
 ```bash
-journalctl -u jawji-agent | grep 'Pairing token'
+journalctl -u jawji-controller | grep 'Pairing token'
 ```
 
 Keep this handy — you'll paste it into Jawji once.
@@ -117,7 +117,7 @@ Keep this handy — you'll paste it into Jawji once.
 ### 2.3 Pair it in Jawji
 
 1. Make sure your computer and the Pi are on the same network.
-2. Companion Dashboard in Jawji should auto-discover the Pi via mDNS (service type `_jawji-agent._tcp`, advertised as `jawji-agent-{hostname}`).
+2. Companion Dashboard in Jawji should auto-discover the Pi via mDNS (service type `_jawji-controller._tcp`, advertised as `jawji-controller-{hostname}`).
 3. Select the discovered device, paste the pairing token from step 2.2.
 4. Once paired, the **Dashboard** tab lights up with live CPU/memory/disk metrics, a process list, a remote terminal, and log streaming from the Pi.
 
@@ -261,11 +261,11 @@ Once Part 3 or Part 4 is streaming into the Camera panel, the **AI Object Detect
 Once all four parts are running simultaneously:
 
 - **ESP32** — wireless MAVLink link to the robot. All of Jawji's normal controls (arm/disarm, mode switching, mission planning, parameter tuning) work exactly as they would over USB.
-- **Pi (Jawji Agent + mavlink-router + WiFi AP)** — installed by `install.sh -- basic` (or `-- vision` if you also want the camera feed below) — live system metrics, terminal, and logs from the companion computer, in the Companion Dashboard.
+- **Pi (Jawji Controller + mavlink-router + WiFi AP)** — installed by `install.sh -- basic` (or `-- vision` if you also want the camera feed below) — live system metrics, terminal, and logs from the companion computer, in the Companion Dashboard.
 - **Pi (mjpg-streamer)** — installed by `install.sh -- vision` — live color camera feed in one Camera panel.
 - **Pi (depth_stream.py)** — live colorized RealSense depth feed in a second Camera panel.
 
-These are independent services on independent ports (MAVLink over whatever port DroneBridge serves, port 48400 for the Jawji Agent, port 8080 for the color camera stream, port 8081 for the depth stream), so there's no conflict running all four at once on the same Pi/network.
+These are independent services on independent ports (MAVLink over whatever port DroneBridge serves, port 48400 for the Jawji Controller, port 8080 for the color camera stream, port 8081 for the depth stream), so there's no conflict running all four at once on the same Pi/network.
 
 ## Troubleshooting
 
@@ -273,7 +273,7 @@ These are independent services on independent ports (MAVLink over whatever port 
 |---|---|
 | DroneBridge tab shows nothing at `192.168.2.1` | You haven't joined the ESP32's WiFi AP yet, or its AP IP differs from default — recheck the boot log from step 1.2 |
 | Connected to ESP32 but no telemetry in Jawji's main Connect panel | Wrong TCP/UDP port, or TX/RX wired backwards between ESP32 and FC (swap them) |
-| Jawji Agent doesn't show up in Companion Dashboard | mDNS may be blocked by your router/network (common on guest networks or some managed WiFi) — in the Dashboard tab, enter the Pi's IP and pairing token manually instead of using "Scan for agents" |
+| Jawji Controller doesn't show up in Companion Dashboard | mDNS may be blocked by your router/network (common on guest networks or some managed WiFi) — in the Dashboard tab, enter the Pi's IP and pairing token manually instead of using "Scan for agents" |
 | Camera panel says "Stream unavailable" | `mjpg_streamer` (or `depth_stream.py`) not running, wrong port, or firewall blocking the port on the Pi |
 | Video is choppy/high latency | Lower resolution/framerate in the `mjpg_streamer -i` flags (e.g. `640x480 -f 15`), or in `depth_stream.py`'s `enable_stream` call — MJPEG is bandwidth-hungry compared to H.264 |
 | `pyrealsense2` import fails on the Pi | No prebuilt wheel for your Pi's architecture/OS combination — you'll need to build `librealsense2` from source with Python bindings (see Intel's official RealSense docs) |

@@ -628,16 +628,16 @@ function DashboardTab() {
             </svg>
           </div>
           <div>
-            <h3 className="text-sm font-medium text-content">Jawji Agent Not Connected</h3>
+            <h3 className="text-sm font-medium text-content">Jawji Controller Not Connected</h3>
             <p className="text-xs text-content-secondary mt-2 max-w-sm mx-auto">
-              Install the Jawji Agent on your companion computer to enable real-time metrics, terminal access, and service management.
+              Install the Jawji Controller on your companion computer to enable real-time metrics, terminal access, and service management.
             </p>
           </div>
 
           <div className="bg-surface rounded-xl border border-subtle p-5 text-left space-y-4">
             <h4 className="text-xs font-medium text-content">Quick Install</h4>
             <div className="bg-surface-input rounded-lg px-3 py-2 font-mono text-xs text-content-secondary select-all">
-              curl -fsSL https://raw.githubusercontent.com/utachicodes/jawjideck/master/packages/jawji-agent/install.sh | sudo bash
+              curl -fsSL https://raw.githubusercontent.com/utachicodes/jawjideck/master/packages/jawji-controller/install.sh | sudo bash
             </div>
             <DashboardConnectForm />
           </div>
@@ -710,7 +710,7 @@ function DashboardConnectForm() {
           disabled={scanning}
           className="text-[11px] text-blue-400 hover:text-blue-300 disabled:text-content-tertiary font-medium"
         >
-          {scanning ? 'Scanning…' : 'Scan for agents'}
+          {scanning ? 'Scanning…' : 'Scan for controllers'}
         </button>
       </div>
 

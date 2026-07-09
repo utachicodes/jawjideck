@@ -4,7 +4,7 @@ import { listProcesses, isProtected } from './processes';
 
 describe('processes', () => {
   it('returns current processes with required fields', async () => {
-    const procs = await listProcesses(['Jawji-agent']);
+    const procs = await listProcesses(['jawji-controller']);
     expect(procs.length).toBeGreaterThan(0);
     const first = procs[0];
     expect(first).toHaveProperty('pid');

@@ -1,5 +1,5 @@
 {
-  "name": "@jawji/jawji-agent",
+  "name": "@jawji/jawji-controller",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,7 +12,7 @@
     }
   },
   "bin": {
-    "jawji-agent": "./dist/index.js"
+    "jawji-controller": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",

@@ -97,7 +97,7 @@ export function StatusPanel() {
                 <StatRow label="Last Seen" value={formatTimeSince(lastHeartbeat)} />
               )}
               <div className="mt-3 p-2 bg-surface-raised rounded text-xs text-content-secondary">
-                Install the Jawji Agent on the companion for full monitoring.
+                Install the Jawji Controller on the companion for full monitoring.
               </div>
             </>
           ) : (

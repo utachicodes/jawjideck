@@ -1,6 +1,6 @@
 /**
  * Companion Connection Manager
- * WebSocket client that connects to the Jawji Agent daemon
+ * WebSocket client that connects to the Jawji Controller daemon
  * running on a companion computer (Raspberry Pi, Jetson, etc.)
  */
 
@@ -8,7 +8,7 @@ import WebSocket from 'ws';
 import { BrowserWindow } from 'electron';
 import { IPC_CHANNELS } from '../../shared/ipc-channels.js';
 import type { CompanionConnectionIpcState } from '../../shared/ipc-channels.js';
-import { AGENT_DEFAULT_PORT } from '@jawji/companion-types';
+import { CONTROLLER_DEFAULT_PORT } from '@jawji/companion-types';
 import type {
   WsMessage,
   HelloMessage,
@@ -209,7 +209,7 @@ export class CompanionConnection {
         this.protocolVersion = hello.protocolVersion;
         // Check major version match
         const agentMajor = hello.protocolVersion.split('.')[0];
-        const expectedMajor = '1'; // AGENT_PROTOCOL_VERSION major
+        const expectedMajor = '1'; // CONTROLLER_PROTOCOL_VERSION major
         this.versionMismatch = agentMajor !== expectedMajor;
         this.reconnectAttempt = 0;
         this.setState('connected');

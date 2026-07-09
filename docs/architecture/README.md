@@ -9,7 +9,7 @@ ardudeck/
 ├── apps/desktop/           # Electron app (main + renderer)
 ├── packages/mavlink-ts/    # MAVLink v1/v2 protocol definitions
 ├── packages/msp-ts/        # MSP v1/v2 protocol (Betaflight/iNav)
-├── packages/jawji-agent/   # Companion board agent (ESP32/RPi/Jetson)
+├── packages/jawji-controller/   # Companion board agent (ESP32/RPi/Jetson)
 ├── packages/module-sdk/    # SDK for third-party modules
 └── tools/                  # Build scripts, CI helpers
 ```

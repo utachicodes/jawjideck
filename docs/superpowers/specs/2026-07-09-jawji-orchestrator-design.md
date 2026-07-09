@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-09
 **Status:** Approved for planning
-**Scope:** A standalone, independently-published npm package for onboard vision-assisted autonomy on a companion computer, with landing-zone-check as its first mode. Jawji desktop observes and confirms via jawji-agent; it does not host or drive the orchestrator.
+**Scope:** A standalone, independently-published npm package for onboard vision-assisted autonomy on a companion computer, with landing-zone-check as its first mode. Jawji desktop observes and confirms via jawji-controller; it does not host or drive the orchestrator.
 
 ## Problem
 
@@ -15,16 +15,16 @@ This is explicitly not a Jawji desktop app feature. The desktop app should be ab
 1. **Separate repo and package.** `utachicodes/jawji-orchestrator` on GitHub, published to npm as `@jawji/orchestrator`, versioned independently with semver. Not a workspace package of this monorepo — `apps/desktop` (and any other consumer) depends on a real published version.
 2. **Runs standalone on a companion board**, as its own process, with its own direct connection to the flight controller. It does not require Jawji desktop to be running or connected.
 3. **General framework, landing-check first.** The package exposes a `VisionAssistMode` extension point so future modes (survey/inspection auto-tagging, live operator Q&A, first-response situational awareness) can be added without re-architecting. Only `LandingZoneCheckMode` ships in this pass.
-4. **Vehicle connection via MAVSDK.** Uses the official MAVSDK Node.js client against a local `mavsdk_server`, matching the `mavsdk_server` this project's own `install.sh` `ai`/autonomy profile already provisions on the companion (`packages/companion-scripts/lib.sh`'s `install_mavsdk`). No raw MAVLink parsing in this package — `@jawji/mavlink-ts` is a private workspace-only package (confirmed not published to the public npm registry) and would need its own separate publishing effort to be usable here, which is out of scope.
+4. **Vehicle connection via MAVSDK.** There is no official MAVSDK Node.js/TypeScript client published to npm (confirmed against the `mavlink` GitHub org, which only maintains Python, Swift, and Java clients). This package generates its own gRPC client from the official `mavlink/MAVSDK-Proto` definitions, using `@grpc/grpc-js` (pure JavaScript, no native addon) against a local `mavsdk_server`, matching the `mavsdk_server` this project's own `install.sh` `ai`/autonomy profile already provisions on the companion (`packages/companion-scripts/lib.sh`'s `install_mavsdk`). No raw MAVLink parsing in this package — `@jawji/mavlink-ts` is a private workspace-only package (confirmed not published to the public npm registry) and would need its own separate publishing effort to be usable here, which is out of scope.
 5. **VLM client is injected, not hardcoded.** The package calls out to a configurable HTTP endpoint for image-and-prompt-in, JSON-out. It is not coupled to Miril specifically, so it stays reusable for other vision-language backends.
 6. **Confirm-gate policy is configurable, defaults to gated.** By default, an unsafe-landing verdict blocks (holds the vehicle) until an external confirm/reject is received through the package's own local API. A fully-autonomous mode (act without waiting) is supported but must be explicitly opted into by the integrator — this mirrors this project's existing stance against unattended autonomous action by default (see `packages/companion-scripts/lib.sh`'s `install_mavsdk` comment: "arming/flying without an operator present is a safety hazard").
 7. **Local-only status/confirm HTTP API.** Bound to `127.0.0.1`, matching the pattern already used by MediaMTX's own API in this project's companion setup (`api: yes` / `apiAddress: 127.0.0.1:9997` in `install_mediamtx`). Not directly network-exposed; nothing outside the companion board can reach it without going through something else.
-8. **Jawji observes via jawji-agent, never talks to the orchestrator directly.** `jawji-agent` (already running on the same companion board in real deployments) gets a new module that polls the orchestrator's local status endpoint and relays operator confirm/reject actions back to it, mirroring the existing `mediamtx.ts` module exactly. Jawji desktop only ever talks to `jawji-agent`'s existing authenticated REST/WS API.
-9. **README requirements** (explicit from the brainstorming conversation): no emojis anywhere, no em dashes anywhere, includes badges (license, npm version, build status at minimum), and documents how all the pieces (orchestrator, mavsdk_server, VLM endpoint, jawji-agent, Jawji desktop) fit together end to end.
+8. **Jawji observes via jawji-controller, never talks to the orchestrator directly.** `jawji-controller` (already running on the same companion board in real deployments) gets a new module that polls the orchestrator's local status endpoint and relays operator confirm/reject actions back to it, mirroring the existing `mediamtx.ts` module exactly. Jawji desktop only ever talks to `jawji-controller`'s existing authenticated REST/WS API.
+9. **README requirements** (explicit from the brainstorming conversation): no emojis anywhere, no em dashes anywhere, includes badges (license, npm version, build status at minimum), and documents how all the pieces (orchestrator, mavsdk_server, VLM endpoint, jawji-controller, Jawji desktop) fit together end to end.
 
 ## Non-goals (explicitly out of scope for this pass)
 
-- **Any code changes to `apps/desktop` or `jawji-agent` in the `jawji-orchestrator` repo itself.** Those live in this monorepo and are a separate, later piece of work once the orchestrator package exists and has a real API surface to integrate against.
+- **Any code changes to `apps/desktop` or `jawji-controller` in the `jawji-orchestrator` repo itself.** Those live in this monorepo and are a separate, later piece of work once the orchestrator package exists and has a real API surface to integrate against.
 - **Publishing `@jawji/mavlink-ts` to the public npm registry.** Confirmed not currently published; making it public is a separate decision with its own scope (semver commitments, API stability guarantees) not undertaken here.
 - **Modes beyond `LandingZoneCheckMode`.** Survey/inspection auto-tagging, live operator Q&A, and first-response situational awareness are named as future modes the `VisionAssistMode` interface should accommodate, but none are implemented in this pass.
 - **Any bundled VLM server setup (llama-server, vLLM, etc.).** The package calls an injected HTTP endpoint; standing up that endpoint (e.g. the Pi 5 GGUF/llama-server path discussed earlier) is the integrator's responsibility, not this package's.
@@ -93,7 +93,7 @@ interface OrchestratorConfig {
 }
 ```
 
-Port 48500 is chosen to sit next to `jawji-agent`'s own 48400 default, avoiding the ports this project's companion services already use (5760 mavlink-router TCP, 8080 mjpg-streamer, 8554/8888/8889 MediaMTX, 9997 MediaMTX's own localhost API, 14550 MAVLink UDP, 50051 mavsdk_server's default gRPC port).
+Port 48500 is chosen to sit next to `jawji-controller`'s own 48400 default, avoiding the ports this project's companion services already use (5760 mavlink-router TCP, 8080 mjpg-streamer, 8554/8888/8889 MediaMTX, 9997 MediaMTX's own localhost API, 14550 MAVLink UDP, 50051 mavsdk_server's default gRPC port).
 
 The `VehicleAdapter` wraps the MAVSDK Node.js client's `Action`, `Telemetry`, and `Offboard`/`Mission` plugins behind a small, purpose-specific interface — the rest of the package (modes, tests) never imports `mavsdk` directly, only this adapter's interface. This is what makes the state machine testable without a real `mavsdk_server`.
 
@@ -106,9 +106,9 @@ When a mode's `evaluate()` returns `unsafe` (or `unknown`) and `confirmPolicy` i
 3. On receiving a decision, it calls `mode.onDecision(decision, ctx)`, which drives the actual next vehicle action (goto candidate and re-evaluate, or resume original landing).
 4. If `confirmPolicy` is `'autonomous'`, step 2 is skipped entirely — the mode's default decision (defined per-mode; for `LandingZoneCheckMode`, this would be documented explicitly as "reposition to the candidate automatically") runs immediately instead.
 
-### jawji-agent integration (separate repo, tracked as follow-up work)
+### jawji-controller integration (separate repo, tracked as follow-up work)
 
-Not built in the `jawji-orchestrator` repo itself, but the local HTTP API's shape (`GET /status`, `POST /confirm`) is designed so a future `jawji-agent` module can poll and relay it exactly like the existing `mediamtx.ts` module does for MediaMTX's own local API — same localhost-only-API-behind-an-authenticated-proxy pattern already established in this project.
+Not built in the `jawji-orchestrator` repo itself, but the local HTTP API's shape (`GET /status`, `POST /confirm`) is designed so a future `jawji-controller` module can poll and relay it exactly like the existing `mediamtx.ts` module does for MediaMTX's own local API — same localhost-only-API-behind-an-authenticated-proxy pattern already established in this project.
 
 ## Data flow (landing-zone-check mode, gated policy)
 
@@ -129,7 +129,7 @@ Not built in the `jawji-orchestrator` repo itself, but the local HTTP API's shap
 
 ## Testing
 
-- The state machine (`LandingZoneCheckMode`, confirm-gate logic in `orchestrator.ts`) is unit-tested with mocked `VehicleAdapter`, `CameraSource`, and `VlmClient` implementations — no real `mavsdk_server` or hardware required, following the same mock-based approach as this project's own `packages/jawji-agent` vitest suite (`auth.test.ts`, `metrics.test.ts`, etc.).
+- The state machine (`LandingZoneCheckMode`, confirm-gate logic in `orchestrator.ts`) is unit-tested with mocked `VehicleAdapter`, `CameraSource`, and `VlmClient` implementations — no real `mavsdk_server` or hardware required, following the same mock-based approach as this project's own `packages/jawji-controller` vitest suite (`auth.test.ts`, `metrics.test.ts`, etc.).
 - The local HTTP status/confirm server is tested directly with real HTTP requests against a running instance in the test process (supertest-style), independent of the vehicle/VLM mocks.
 - Integration testing (manual, not part of CI for this pass): run against ArduPilot SITL plus a stub VLM HTTP endpoint returning canned JSON, to exercise the full trigger to hold to advisory to confirm to reposition loop without real hardware.
 

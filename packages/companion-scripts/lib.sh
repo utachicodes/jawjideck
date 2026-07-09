@@ -9,10 +9,10 @@ JAWJI_REPO_URL="${JAWJI_REPO_URL:-https://github.com/utachicodes/jawjideck.git}"
 JAWJI_REPO_BRANCH="${JAWJI_REPO_BRANCH:-master}"
 JAWJI_RAW_BASE="https://raw.githubusercontent.com/utachicodes/jawjideck/${JAWJI_REPO_BRANCH}"
 
-# ── Jawji Agent ──────────────────────────────────────────────────────────
-install_agent() {
-  echo "── Installing Jawji Agent ──"
-  curl -fsSL "${JAWJI_RAW_BASE}/packages/jawji-agent/install.sh" | \
+# ── Jawji Controller ─────────────────────────────────────────────────────
+install_controller() {
+  echo "── Installing Jawji Controller ──"
+  curl -fsSL "${JAWJI_RAW_BASE}/packages/jawji-controller/install.sh" | \
     JAWJI_REPO_URL="${JAWJI_REPO_URL}" JAWJI_REPO_BRANCH="${JAWJI_REPO_BRANCH}" bash
 }
 
@@ -181,7 +181,7 @@ install_mediamtx() {
   # can publish into.
   cat > /etc/mediamtx/mediamtx.yml <<YAMLEOF
 # Jawji companion MediaMTX config
-# API bound to localhost only -- Jawji Agent queries it locally (paths,
+# API bound to localhost only -- Jawji Controller queries it locally (paths,
 # publisher/reader counts) to expose real stream status, not just
 # "is the process running". Not exposed to the network.
 api: yes

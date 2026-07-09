@@ -1,8 +1,8 @@
 // ============================================================
 // Protocol version — bump major on breaking changes
 // ============================================================
-export const AGENT_PROTOCOL_VERSION = '1.0.0';
-export const AGENT_DEFAULT_PORT = 48400;
+export const CONTROLLER_PROTOCOL_VERSION = '1.0.0';
+export const CONTROLLER_DEFAULT_PORT = 48400;
 
 // ============================================================
 // WebSocket message envelope

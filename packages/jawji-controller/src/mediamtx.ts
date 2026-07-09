@@ -3,8 +3,8 @@
 // packages/companion-scripts/lib.sh's install_mediamtx) for real stream
 // status -- which paths exist, whether a publisher is actually connected,
 // how many readers -- rather than just "is the systemd service running".
-// This is the first piece of the "Jawji Agent as orchestrator" pattern:
-// the agent doesn't implement video streaming itself, it manages and
+// This is the first piece of the "Jawji Controller as orchestrator" pattern:
+// the controller doesn't implement video streaming itself, it manages and
 // reports on a dedicated tool (MediaMTX) that does.
 
 import type { MediaMtxStatus } from '@jawji/companion-types';

@@ -3,10 +3,10 @@
 #
 #   curl -fsSL https://jawji.space/install.sh | sudo bash
 #   curl -fsSL https://jawji.space/install.sh | sudo bash -s -- vision
-#   sudo WITH_AGENT=1 WITH_MEDIAMTX=1 bash install.sh
+#   sudo WITH_CONTROLLER=1 WITH_MEDIAMTX=1 bash install.sh
 #
 # Replaces installing Docker/mavlink-router/NetworkManager/MediaMTX/MAVSDK/
-# Jawji Agent one at a time with a single command that asks what you need
+# Jawji Controller one at a time with a single command that asks what you need
 # (or takes a profile/flags non-interactively) and installs only that.
 set -euo pipefail
 
@@ -58,16 +58,16 @@ PROFILE="${1:-}"
 apply_profile() {
   case "$1" in
     basic)
-      WITH_AGENT=1 WITH_MAVLINK=1 WITH_MEDIAMTX=0 WITH_MJPG=0 WITH_MAVSDK=0 WITH_YOLO=0 WITH_WIFI_AP=1
+      WITH_CONTROLLER=1 WITH_MAVLINK=1 WITH_MEDIAMTX=0 WITH_MJPG=0 WITH_MAVSDK=0 WITH_YOLO=0 WITH_WIFI_AP=1
       ;;
     vision)
       # Jawji's Camera panel only decodes MJPEG today, so the vision profile
       # installs mjpg-streamer alongside MediaMTX (RTSP/RTMP/HLS/WebRTC for
       # everything else) rather than MediaMTX alone.
-      WITH_AGENT=1 WITH_MAVLINK=1 WITH_MEDIAMTX=1 WITH_MJPG=1 WITH_MAVSDK=0 WITH_YOLO=0 WITH_WIFI_AP=1
+      WITH_CONTROLLER=1 WITH_MAVLINK=1 WITH_MEDIAMTX=1 WITH_MJPG=1 WITH_MAVSDK=0 WITH_YOLO=0 WITH_WIFI_AP=1
       ;;
     ai)
-      WITH_AGENT=1 WITH_MAVLINK=1 WITH_MEDIAMTX=1 WITH_MJPG=0 WITH_MAVSDK=1 WITH_YOLO=1 WITH_WIFI_AP=1
+      WITH_CONTROLLER=1 WITH_MAVLINK=1 WITH_MEDIAMTX=1 WITH_MJPG=0 WITH_MAVSDK=1 WITH_YOLO=1 WITH_WIFI_AP=1
       ;;
     *)
       echo "Unknown profile: $1 (expected basic, vision, or ai)" >&2
@@ -88,7 +88,7 @@ prompt_menu() {
   fi
 
   echo "What do you want on this ${HARDWARE}?" > "${tty}"
-  echo "  1) Basic Companion   -- Jawji Agent + MAVLink telemetry" > "${tty}"
+  echo "  1) Basic Companion   -- Jawji Controller + MAVLink telemetry" > "${tty}"
   echo "  2) Vision Companion  -- + MediaMTX video streaming" > "${tty}"
   echo "  3) AI Companion      -- + MAVSDK + YOLO object detection (Jetson only)" > "${tty}"
   echo "  4) Custom            -- pick components individually" > "${tty}"
@@ -99,7 +99,7 @@ prompt_menu() {
     2) apply_profile vision ;;
     3) apply_profile ai ;;
     4)
-      read -r -p "Jawji Agent? [Y/n] " a < "${tty}"; WITH_AGENT=$([ "${a}" = "n" ] && echo 0 || echo 1)
+      read -r -p "Jawji Controller? [Y/n] " a < "${tty}"; WITH_CONTROLLER=$([ "${a}" = "n" ] && echo 0 || echo 1)
       read -r -p "MAVLink telemetry (mavlink-router)? [Y/n] " b < "${tty}"; WITH_MAVLINK=$([ "${b}" = "n" ] && echo 0 || echo 1)
       read -r -p "Video streaming (MediaMTX)? [y/N] " c < "${tty}"; WITH_MEDIAMTX=$([ "${c}" = "y" ] && echo 1 || echo 0)
       read -r -p "MJPEG stream for Jawji's Camera panel (mjpg-streamer)? [y/N] " c2 < "${tty}"; WITH_MJPG=$([ "${c2}" = "y" ] && echo 1 || echo 0)
@@ -116,11 +116,11 @@ prompt_menu() {
 
 if [ -n "${PROFILE}" ]; then
   apply_profile "${PROFILE}"
-elif [ -z "${WITH_AGENT:-}${WITH_MAVLINK:-}${WITH_MEDIAMTX:-}${WITH_MJPG:-}${WITH_MAVSDK:-}${WITH_YOLO:-}" ]; then
+elif [ -z "${WITH_CONTROLLER:-}${WITH_MAVLINK:-}${WITH_MEDIAMTX:-}${WITH_MJPG:-}${WITH_MAVSDK:-}${WITH_YOLO:-}" ]; then
   prompt_menu
 fi
 
-WITH_AGENT="${WITH_AGENT:-0}"
+WITH_CONTROLLER="${WITH_CONTROLLER:-0}"
 WITH_MAVLINK="${WITH_MAVLINK:-0}"
 WITH_MEDIAMTX="${WITH_MEDIAMTX:-0}"
 WITH_MJPG="${WITH_MJPG:-0}"
@@ -138,7 +138,7 @@ echo "================================"
 echo "Jawji Companion Installer"
 echo "================================"
 echo "Hardware: ${HARDWARE}"
-echo "Installing: $( [ "${WITH_AGENT}" = 1 ] && echo -n 'Jawji Agent ' )$( [ "${WITH_MAVLINK}" = 1 ] && echo -n 'mavlink-router ' )$( [ "${WITH_WIFI_AP}" = 1 ] && echo -n 'WiFi-AP ' )$( [ "${WITH_MEDIAMTX}" = 1 ] && echo -n 'MediaMTX ' )$( [ "${WITH_MJPG}" = 1 ] && echo -n 'mjpg-streamer ' )$( [ "${WITH_MAVSDK}" = 1 ] && echo -n 'MAVSDK ' )$( [ "${WITH_YOLO}" = 1 ] && echo -n 'YOLO ' )"
+echo "Installing: $( [ "${WITH_CONTROLLER}" = 1 ] && echo -n 'Jawji Controller ' )$( [ "${WITH_MAVLINK}" = 1 ] && echo -n 'mavlink-router ' )$( [ "${WITH_WIFI_AP}" = 1 ] && echo -n 'WiFi-AP ' )$( [ "${WITH_MEDIAMTX}" = 1 ] && echo -n 'MediaMTX ' )$( [ "${WITH_MJPG}" = 1 ] && echo -n 'mjpg-streamer ' )$( [ "${WITH_MAVSDK}" = 1 ] && echo -n 'MAVSDK ' )$( [ "${WITH_YOLO}" = 1 ] && echo -n 'YOLO ' )"
 echo ""
 
 apt-get update -qq
@@ -149,9 +149,9 @@ apt-get update -qq
 [ "${WITH_MJPG}" = "1" ] && install_mjpg_streamer
 [ "${WITH_MAVSDK}" = "1" ] && install_mavsdk
 [ "${WITH_YOLO}" = "1" ] && install_yolo
-# Agent last: it's the one thing every profile has, and it's a good final
+# Controller last: it's the one thing every profile has, and it's a good final
 # "everything above worked, here's your pairing token" note to end on.
-[ "${WITH_AGENT}" = "1" ] && install_agent
+[ "${WITH_CONTROLLER}" = "1" ] && install_controller
 
 echo ""
 echo "================================"
