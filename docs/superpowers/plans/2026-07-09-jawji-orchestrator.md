@@ -246,10 +246,14 @@ import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { includeDirs as wellKnownIncludeDirs } from 'google-proto-files';
+import { getProtoPath } from 'google-proto-files';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROTO_ROOT = path.resolve(__dirname, '../../proto');
+// getProtoPath('.') resolves to .../google-proto-files/google, so its parent
+// is the include root that "google/protobuf/descriptor.proto" (imported by
+// mavsdk_options.proto) resolves against.
+const WELL_KNOWN_PROTO_ROOT = path.dirname(getProtoPath('.'));
 
 function loadPackage(protoRelativePath: string): grpc.GrpcObject {
   const packageDefinition = protoLoader.loadSync(
@@ -260,7 +264,7 @@ function loadPackage(protoRelativePath: string): grpc.GrpcObject {
       enums: String,
       defaults: true,
       oneofs: true,
-      includeDirs: [PROTO_ROOT, ...wellKnownIncludeDirs],
+      includeDirs: [PROTO_ROOT, WELL_KNOWN_PROTO_ROOT],
     }
   );
   return grpc.loadPackageDefinition(packageDefinition);

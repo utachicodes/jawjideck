@@ -78,6 +78,7 @@ Jawji is a next-generation ground control station built with Electron, React, an
 - **MediaMTX Video Relay** - A real multi-protocol media server (RTSP/RTMP/HLS/WebRTC) on the companion side, queried live by Jawji Agent for stream status
 - **Dockview Layouts** - Customizable panel layouts with presets (Overview, Debug, Manage)
 - **Encrypted API Keys** - Secure storage for OpenAIP and other service credentials
+- **[jawji-orchestrator](https://github.com/utachicodes/jawji-orchestrator)** - A separate, independently published package (`@jawji/orchestrator` on npm) for onboard vision-assisted autonomy on a companion computer. Runs standalone, with its own MAVSDK connection to the flight controller, whether or not a Jawji GCS is connected. Not yet wired into Jawji desktop or Jawji Agent - see that repo for details.
 
 ### Dockable Dashboard
 - **IDE-Style Panels** - Drag & drop layout customization
@@ -642,10 +643,12 @@ Found a bug? We want to hear about it! Jawji includes a built-in bug reporting t
 - **MediaMTX Video Relay** - Real multi-protocol media server on the companion side (RTSP/RTMP/HLS/WebRTC), with Jawji Agent exposing live stream status through its API
 - **Companion Module Hardening** - Fixed a real auth bug blocking manual agent discovery, added mDNS "Scan for agents" UI, automatic reconnect to the last-paired agent on launch, and removed dead/unverifiable code paths in the Companion Store
 - **Linux Release** - Pre-built AppImage and .deb packages, alongside Windows
+- **jawji-orchestrator** - A separately published package for onboard vision-assisted landing-zone checks on a companion computer, with a confirm-gated (not unattended-autonomous by default) decision loop
 
 ### Coming Soon
 - macOS release
 - Mission-planner map rendering fix (tiles/panel not displaying in some layouts)
+- Wiring `jawji-orchestrator`'s status into Jawji's Companion Dashboard so its advisories and confirm/reject actions are visible from the GCS, not just the local API
 
 ---
 
