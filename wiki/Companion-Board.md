@@ -179,4 +179,6 @@ For companion computers that need to make a decision without a GCS connected at 
 
 Its first mode, `LandingZoneCheckMode`, holds the vehicle when it enters LAND mode, captures a camera frame, and asks an integrator-supplied vision-language model whether the site looks safe. If not, it holds and waits for an external confirm before repositioning, by default - it does not act on an unsafe verdict unattended unless that is explicitly configured.
 
-This package is not yet wired into Jawji desktop or Jawji Agent, so its advisories are not currently visible in the Companion Dashboard. See its own README for setup and its local status API.
+The vision-language model is pluggable - `VlmClient` is a generic image-and-prompt-in, JSON-out interface, with a built-in client for [Miril-Drone-2B-1](https://huggingface.co/MirilAI/Miril-Drone-2B-1), a model fine-tuned for aerial imagery, served over any OpenAI-compatible endpoint (`llama-server`, vLLM, SGLang). jawji-orchestrator does not bundle or run a model itself; you still need to stand one up separately and point the client at it.
+
+This package is not yet wired into Jawji desktop or Jawji Agent, so its advisories are not currently visible in the Companion Dashboard. See its own README for the full architecture, its local status API, and a researched (not yet implemented) design for GPS-denied landmark-based navigation.
