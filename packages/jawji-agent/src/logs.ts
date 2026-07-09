@@ -22,26 +22,19 @@ function parseLine(line: string): LogEntry {
   };
 }
 
-export function startLogTailing(): void {
-  if (logProcess) return;
+function attachLogProcess(proc: ChildProcess, onUnavailable: () => void): void {
+  logProcess = proc;
 
-  // Try journalctl first (systemd), fall back to tail -f /var/log/syslog
-  try {
-    logProcess = spawn('journalctl', ['-f', '-n', '0', '--no-pager', '-o', 'short'], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-  } catch {
-    try {
-      logProcess = spawn('tail', ['-f', '-n', '0', '/var/log/syslog'], {
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
-    } catch {
-      console.warn('[logs] Neither journalctl nor /var/log/syslog available');
-      return;
-    }
-  }
+  // spawn() reports a missing binary asynchronously via 'error', not a
+  // thrown exception - without this handler an ENOENT here is an uncaught
+  // 'error' event that crashes the whole agent process (REST API, WS,
+  // mDNS - everything), not just log tailing.
+  proc.on('error', () => {
+    logProcess = null;
+    onUnavailable();
+  });
 
-  logProcess.stdout?.on('data', (chunk: Buffer) => {
+  proc.stdout?.on('data', (chunk: Buffer) => {
     const lines = chunk.toString().split('\n').filter(l => l.trim());
     for (const line of lines) {
       const entry = parseLine(line);
@@ -51,9 +44,30 @@ export function startLogTailing(): void {
     }
   });
 
-  logProcess.on('exit', () => {
+  proc.on('exit', () => {
     logProcess = null;
   });
+}
+
+export function startLogTailing(): void {
+  if (logProcess) return;
+
+  // Try journalctl first (systemd), fall back to tail -f /var/log/syslog
+  attachLogProcess(
+    spawn('journalctl', ['-f', '-n', '0', '--no-pager', '-o', 'short'], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }),
+    () => {
+      attachLogProcess(
+        spawn('tail', ['-f', '-n', '0', '/var/log/syslog'], {
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }),
+        () => {
+          console.warn('[logs] Neither journalctl nor /var/log/syslog available');
+        }
+      );
+    }
+  );
 }
 
 export function onLogEntry(callback: (entry: LogEntry) => void): () => void {

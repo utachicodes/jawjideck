@@ -2545,7 +2545,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
                     );
                     safeSend(mainWindow, IPC_CHANNELS.MAVLINK_SIGNING_STATUS, getSigningStatus());
                   } else {
-                    sendLog(mainWindow, 'warn', 'Vehicle requires MAVLink signing but no key is configured. Set a signing passphrase in the Connection panel before connecting.');
+                    sendLog(mainWindow, 'info', 'FC is sending signed packets but no signing key is configured. Continuing without signing - some commands may be rejected by the FC. Set a signing passphrase in the Connection panel if needed.');
                   }
 
                   // RACE CONDITION FIX: If signing state changed after connection was
