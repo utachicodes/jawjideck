@@ -11,6 +11,12 @@
  *   jawji://open?tool=area-editor
  *     - open a standalone tool that lives in its own window (not a renderer
  *       view), e.g. the Area Editor. Handled entirely in main.
+ *   jawji://auth-callback?token=<firebase-custom-token>
+ *     - completes the "sign in via system browser" licensing flow (see
+ *       apps/desktop/src/main/licensing/desktop-auth.ts): jawji-gcs's
+ *       /desktop-auth page mints a short-lived Firebase custom token and
+ *       redirects here. Handed to the renderer, which exchanges it for a
+ *       real session via signInWithCustomToken.
  */
 
 import { app, BrowserWindow } from 'electron';
@@ -98,9 +104,21 @@ function handleDeepLink(url: string): void {
     case 'open':
       handleOpen(parsed);
       return;
+    case 'auth-callback':
+      handleAuthCallback(parsed);
+      return;
     default:
       console.warn('[DeepLink] Unknown action:', parsed.host);
   }
+}
+
+function handleAuthCallback(parsed: URL): void {
+  const token = parsed.searchParams.get('token') ?? '';
+  if (!token) {
+    console.warn('[DeepLink] auth-callback: missing token');
+    return;
+  }
+  deliver(IPC_CHANNELS.LICENSING_AUTH_CALLBACK, { token });
 }
 
 function handleInstall(parsed: URL): void {

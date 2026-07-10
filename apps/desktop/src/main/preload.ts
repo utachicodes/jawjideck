@@ -1790,6 +1790,16 @@ const api = {
   },
 
   // =============================================================================
+  // Licensing (jawji-gcs entitlements/activation core)
+  // =============================================================================
+
+  onLicensingAuthCallback: (callback: (payload: { token: string }) => void) => {
+    const handler = (_: unknown, payload: { token: string }) => callback(payload);
+    ipcRenderer.on(IPC_CHANNELS.LICENSING_AUTH_CALLBACK, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.LICENSING_AUTH_CALLBACK, handler);
+  },
+
+  // =============================================================================
   // Module Host (runtime API for loaded modules)
   // =============================================================================
 

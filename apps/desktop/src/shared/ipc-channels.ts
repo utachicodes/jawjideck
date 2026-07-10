@@ -635,6 +635,10 @@ export const IPC_CHANNELS = {
 
   // Generic text file save (native dialog)
   SAVE_TEXT_FILE: 'save:text-file',
+
+  // Licensing (jawji-gcs entitlements/activation core)
+  /** Push channel: main -> renderer, delivers the custom token from jawji://auth-callback. */
+  LICENSING_AUTH_CALLBACK: 'licensing:auth-callback',
 } as const;
 
 export type IpcChannels = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];

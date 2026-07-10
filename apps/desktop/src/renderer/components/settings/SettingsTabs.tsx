@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { VehicleTab } from './tabs/VehicleTab';
 import { DisplayTab } from './tabs/DisplayTab';
 import { ToolsTab } from './tabs/ToolsTab';
+import { LicensingTab } from './tabs/LicensingTab';
 import { AboutTab } from './tabs/AboutTab';
-import { Car, Sliders, Wrench, Info } from 'lucide-react';
+import { Car, Sliders, Wrench, KeyRound, Info } from 'lucide-react';
 
 const TABS = [
   { id: 'vehicle', label: 'Vehicle', icon: Car },
   { id: 'display', label: 'Display', icon: Sliders },
   { id: 'tools', label: 'Tools', icon: Wrench },
+  { id: 'licensing', label: 'Licensing', icon: KeyRound },
   { id: 'about', label: 'About', icon: Info },
 ] as const;
 
@@ -45,6 +47,7 @@ export function SettingsTabs() {
         {activeTab === 'vehicle' && <VehicleTab />}
         {activeTab === 'display' && <DisplayTab />}
         {activeTab === 'tools' && <ToolsTab />}
+        {activeTab === 'licensing' && <LicensingTab />}
         {activeTab === 'about' && <AboutTab />}
       </div>
     </div>
