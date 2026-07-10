@@ -96,7 +96,7 @@ import {
   REQUEST_DATA_STREAM_CRC_EXTRA,
   type ParamValue,
 } from '@jawji/mavlink-ts';
-import { IPC_CHANNELS, SEVERITY_LABELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type LayoutStoreSchema, type SettingsStoreSchema, type SigningStatus, type TelemetrySpeed } from '../shared/ipc-channels.js';
+import { IPC_CHANNELS, SEVERITY_LABELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type LayoutStoreSchema, type SettingsStoreSchema, type SigningStatus, type TelemetrySpeed, type LicensingCacheSchema } from '../shared/ipc-channels.js';
 import { initAutoUpdater, checkForUpdates, downloadUpdate, installUpdate } from './updater.js';
 import { sendRcOverridePreArmStream } from './arming-helpers.js';
 import type { ParamValuePayload, ParameterProgress } from '../shared/parameter-types.js';
@@ -246,6 +246,13 @@ const settingsStore = new Store<SettingsStoreSchema>({
       lastConnectionDate: null,
     },
   },
+});
+
+// Last-known entitlement snapshot (see licensing-store.ts in the renderer),
+// so the Licensing tab has something to show when a live fetch fails.
+const licensingCacheStore = new Store<LicensingCacheSchema>({
+  name: 'licensing-cache',
+  defaults: { uid: null, snapshot: null, token: null, cachedAt: null },
 });
 
 let currentTransport: Transport | null = null;
@@ -3747,6 +3754,14 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   ipcMain.handle(IPC_CHANNELS.SETTINGS_SAVE, async (_, settings: SettingsStoreSchema): Promise<void> => {
     settingsStore.set(settings);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.LICENSING_CACHE_GET, async (): Promise<LicensingCacheSchema> => {
+    return licensingCacheStore.store;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.LICENSING_CACHE_SET, async (_, cache: LicensingCacheSchema): Promise<void> => {
+    licensingCacheStore.set(cache);
   });
 
   // Telemetry stream rate control (MAVLink only)

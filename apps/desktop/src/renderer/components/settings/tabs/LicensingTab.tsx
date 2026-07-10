@@ -1,7 +1,17 @@
 import { useState } from 'react';
-import { LogIn, LogOut, KeyRound, ShoppingCart, Sparkles } from 'lucide-react';
+import { LogIn, LogOut, KeyRound, ShoppingCart, Sparkles, WifiOff, AlertTriangle } from 'lucide-react';
 import { useLicensingStore, type LicenseType } from '../../../stores/licensing-store';
 import { useIntelligenceCatalog } from '../../../hooks/useIntelligenceCatalog';
+
+function formatCachedAt(cachedAt: number | null): string {
+  if (!cachedAt) return 'unknown';
+  const minutes = Math.round((Date.now() - cachedAt) / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
 
 function statusLabel(status: string): string {
   switch (status) {
@@ -16,6 +26,7 @@ function statusLabel(status: string): string {
 export function LicensingTab() {
   const {
     user, authLoading, entitlements, entitlementsLoading, error,
+    offline, needsReverification, cachedAt,
     signIn, signOutUser, activateCode, startCheckout,
   } = useLicensingStore();
   const [code, setCode] = useState('');
@@ -47,6 +58,20 @@ export function LicensingTab() {
 
   return (
     <div className="space-y-6">
+      {offline && !needsReverification && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+          <WifiOff size={14} className="shrink-0" />
+          Offline — showing your license status as of {formatCachedAt(cachedAt)}.
+        </div>
+      )}
+      {needsReverification && (
+        <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+          <AlertTriangle size={14} className="shrink-0" />
+          Needs re-verification — last confirmed {formatCachedAt(cachedAt)}, more than 7 days ago. Connect to
+          refresh; this may no longer reflect your actual license status.
+        </div>
+      )}
+
       <section className="bg-surface rounded-xl border border-subtle p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div>

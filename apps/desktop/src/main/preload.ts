@@ -4,7 +4,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type SettingsStoreSchema, type MSPConnectOptions, type MSPConnectionState, type MSPTelemetryData, type SitlConfig, type SitlStatus, type SitlExitData, type VirtualRCState, type ArduPilotSitlConfig, type ArduPilotSitlStatus, type ArduPilotSitlExitData, type ArduPilotSitlDownloadProgress, type ArduPilotSitlBinaryInfo, type ArduPilotFrameCatalog, type ArduPilotVehicleType, type ArduPilotReleaseTrack, type AppUpdateInfo, type SigningStatus, type TelemetrySpeed, type StatusMessage, type TileCacheStats, type TileCacheDownloadProgress, type TileCacheSettings, type TileCacheDownloadRegion, type CompanionConnectOptions, type CompanionConnectionIpcState, type CompanionDiscoveryResult, type FleetVehicleEntry, type FleetVehicleStatus, type VideoStreamInfo } from '../shared/ipc-channels.js';
+import { IPC_CHANNELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type SettingsStoreSchema, type MSPConnectOptions, type MSPConnectionState, type MSPTelemetryData, type SitlConfig, type SitlStatus, type SitlExitData, type VirtualRCState, type ArduPilotSitlConfig, type ArduPilotSitlStatus, type ArduPilotSitlExitData, type ArduPilotSitlDownloadProgress, type ArduPilotSitlBinaryInfo, type ArduPilotFrameCatalog, type ArduPilotVehicleType, type ArduPilotReleaseTrack, type AppUpdateInfo, type SigningStatus, type TelemetrySpeed, type StatusMessage, type TileCacheStats, type TileCacheDownloadProgress, type TileCacheSettings, type TileCacheDownloadRegion, type CompanionConnectOptions, type CompanionConnectionIpcState, type CompanionDiscoveryResult, type FleetVehicleEntry, type FleetVehicleStatus, type VideoStreamInfo, type LicensingCacheSchema } from '../shared/ipc-channels.js';
 import type { DetachedWindowInfo, OpenDetachedRequest } from '../shared/window-types.js';
 import type { ExportArea } from '../shared/kml-export.js';
 import type { SystemInfo, NetworkInfo, MediaMtxStatus, MetricsData, ProcessInfo, LogEntry, FileEntry, ServiceInfo, ServiceAction, ContainerInfo, ContainerAction, ExtensionInfo } from '@jawji/companion-types';
@@ -667,6 +667,12 @@ const api = {
 
   saveSettings: (settings: SettingsStoreSchema): Promise<void> =>
     ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_SAVE, settings),
+
+  licensingCacheGet: (): Promise<LicensingCacheSchema> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LICENSING_CACHE_GET),
+
+  licensingCacheSet: (cache: LicensingCacheSchema): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LICENSING_CACHE_SET, cache),
 
   // ============================================================================
   // Log Download & Diagnostics
