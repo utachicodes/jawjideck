@@ -18,9 +18,11 @@ exclude = [
   "github\\.com/<your-username>",
   # Discord invite links routinely block automated HEAD/GET requests
   "^https://discord\\.gg/",
-  # Private repo (proprietary, per-drone licensed) — a 404 to an
-  # unauthenticated crawler is expected, not a broken link.
+  # Private repos — a 404 to an unauthenticated crawler is expected here,
+  # not a broken link. jawji-orchestrator: proprietary, per-device licensed.
+  # jawji-gcs: private web app repo (jawji.space itself is public).
   "^https://github\\.com/utachicodes/jawji-orchestrator",
+  "^https://github\\.com/utachicodes/jawji-gcs(?:[/#?]|$)",
 ]
 
 # Some hosts (shields.io, GitHub raw) rate-limit or briefly throttle bots.

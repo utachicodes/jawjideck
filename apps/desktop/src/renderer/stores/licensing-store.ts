@@ -46,12 +46,29 @@ interface LicensingState {
   entitlements: EntitlementSnapshot | null;
   entitlementsLoading: boolean;
   error: string | null;
+  /** True when `entitlements` came from the on-disk cache, not a live fetch. */
+  offline: boolean;
+  /** True when the cached data is older than STALE_THRESHOLD_MS - shown, not hidden, per the "don't hard-lock, show an honest stale state" design. */
+  needsReverification: boolean;
+  /** When the currently-shown entitlements were last confirmed live, if known. */
+  cachedAt: number | null;
 
   signIn: () => Promise<void>;
   signOutUser: () => Promise<void>;
   refreshEntitlements: () => Promise<void>;
   activateCode: (code: string, hardwareId?: string) => Promise<boolean>;
   startCheckout: (licenseType: LicenseType, moduleId?: string) => Promise<string | null>;
+}
+
+// How long a cached entitlement snapshot is trusted without complaint while
+// offline. Past this, the cached data is still shown (never a hard lock)
+// but flagged as needing re-verification - matches the offline design's
+// "surface an honest needs-re-verification state" principle.
+export const STALE_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function isCacheStale(cachedAt: number | null, now: number = Date.now()): boolean {
+  if (!cachedAt) return true;
+  return now - cachedAt > STALE_THRESHOLD_MS;
 }
 
 async function getIdTokenOrThrow(): Promise<string> {
@@ -115,6 +132,9 @@ export const useLicensingStore = create<LicensingState>((set, get) => {
     entitlements: null,
     entitlementsLoading: false,
     error: null,
+    offline: false,
+    needsReverification: false,
+    cachedAt: null,
 
     signIn: async () => {
       await window.electronAPI?.openExternal(`${JAWJI_GCS_URL}/desktop-auth`);
@@ -122,15 +142,50 @@ export const useLicensingStore = create<LicensingState>((set, get) => {
 
     signOutUser: async () => {
       await signOut(auth);
-      set({ entitlements: null });
+      set({ entitlements: null, offline: false, needsReverification: false, cachedAt: null });
     },
 
     refreshEntitlements: async () => {
       set({ entitlementsLoading: true, error: null });
+      const user = auth.currentUser;
+
       try {
-        const { snapshot } = await apiFetch<{ snapshot: EntitlementSnapshot }>('/api/licensing/entitlements');
-        set({ entitlements: snapshot, entitlementsLoading: false });
+        const { snapshot, token } = await apiFetch<{ snapshot: EntitlementSnapshot; token: string }>(
+          '/api/licensing/entitlements'
+        );
+        const cachedAt = Date.now();
+        set({
+          entitlements: snapshot,
+          entitlementsLoading: false,
+          offline: false,
+          needsReverification: false,
+          cachedAt,
+        });
+        if (user) {
+          void window.electronAPI?.licensingCacheSet({ uid: user.uid, snapshot, token, cachedAt });
+        }
+        return;
       } catch (err) {
+        // A thrown TypeError from fetch() means the request never reached the
+        // network (offline, DNS failure, etc.) - anything else (a non-2xx
+        // response, an explicit API error) is a real answer from the server
+        // and should NOT silently fall back to a possibly-outdated cache.
+        const isNetworkFailure = err instanceof TypeError;
+        if (isNetworkFailure && user) {
+          const cache = await window.electronAPI?.licensingCacheGet();
+          if (cache && cache.uid === user.uid && cache.snapshot) {
+            const cachedAt = cache.cachedAt ?? null;
+            set({
+              entitlements: cache.snapshot as EntitlementSnapshot,
+              entitlementsLoading: false,
+              offline: true,
+              needsReverification: isCacheStale(cachedAt),
+              cachedAt,
+              error: null,
+            });
+            return;
+          }
+        }
         set({ entitlementsLoading: false, error: err instanceof Error ? err.message : 'Failed to load entitlements' });
       }
     },

@@ -639,9 +639,25 @@ export const IPC_CHANNELS = {
   // Licensing (jawji-gcs entitlements/activation core)
   /** Push channel: main -> renderer, delivers the custom token from jawji://auth-callback. */
   LICENSING_AUTH_CALLBACK: 'licensing:auth-callback',
+  /** Persisted last-known entitlement snapshot, for offline use when a live fetch fails. */
+  LICENSING_CACHE_GET: 'licensing:cache-get',
+  LICENSING_CACHE_SET: 'licensing:cache-set',
 } as const;
 
 export type IpcChannels = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];
+
+/**
+ * Last-known entitlement snapshot, cached on disk so the Licensing tab has
+ * something to show when offline. `snapshot`/`token` are kept as opaque
+ * JSON here (their real shape lives in the renderer's licensing-store.ts) so
+ * this shared module doesn't need to track jawji-gcs's licensing types.
+ */
+export interface LicensingCacheSchema {
+  uid: string | null;
+  snapshot: unknown;
+  token: string | null;
+  cachedAt: number | null;
+}
 
 /**
  * Connection options for comms:connect
