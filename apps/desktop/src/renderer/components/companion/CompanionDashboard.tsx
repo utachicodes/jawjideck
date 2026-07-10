@@ -637,7 +637,7 @@ function DashboardTab() {
           <div className="bg-surface rounded-xl border border-subtle p-5 text-left space-y-4">
             <h4 className="text-xs font-medium text-content">Quick Install</h4>
             <div className="bg-surface-input rounded-lg px-3 py-2 font-mono text-xs text-content-secondary select-all">
-              curl -fsSL https://raw.githubusercontent.com/utachicodes/jawjideck/master/packages/jawji-controller/install.sh | sudo bash
+              curl -fsSL https://jawji.space/install.sh | sudo bash
             </div>
             <DashboardConnectForm />
           </div>
