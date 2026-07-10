@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { LogIn, LogOut, KeyRound, ShoppingCart, Sparkles } from 'lucide-react';
 import { useLicensingStore, type LicenseType } from '../../../stores/licensing-store';
-import { useConnectionStore } from '../../../stores/connection-store';
 import { useIntelligenceCatalog } from '../../../hooks/useIntelligenceCatalog';
 
 function statusLabel(status: string): string {
@@ -19,7 +18,6 @@ export function LicensingTab() {
     user, authLoading, entitlements, entitlementsLoading, error,
     signIn, signOutUser, activateCode, startCheckout,
   } = useLicensingStore();
-  const boardUid = useConnectionStore((s) => s.connectionState?.boardUid);
   const [code, setCode] = useState('');
   const [activating, setActivating] = useState(false);
   const catalog = useIntelligenceCatalog();
@@ -90,7 +88,7 @@ export function LicensingTab() {
               disabled={!code || activating}
               onClick={async () => {
                 setActivating(true);
-                const ok = await activateCode(code, boardUid);
+                const ok = await activateCode(code);
                 setActivating(false);
                 if (ok) setCode('');
               }}
@@ -99,11 +97,11 @@ export function LicensingTab() {
               <KeyRound size={14} /> Activate
             </button>
           </div>
-          {boardUid && (
-            <p className="text-xs text-content-tertiary">
-              Orchestrator activation will bind to the connected board ({boardUid.slice(0, 12)}…).
-            </p>
-          )}
+          <p className="text-xs text-content-tertiary">
+            For a jawji-orchestrator code, activate it from the companion computer instead
+            (<code>jawji-orchestrator activate &lt;code&gt;</code>) — that binds the license to the
+            device actually running Orchestrator. Activating an orchestrator code here leaves it unbound.
+          </p>
           {error && <p className="text-xs text-red-400">{error}</p>}
         </div>
 
