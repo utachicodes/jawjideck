@@ -55,6 +55,11 @@ jobs:
     permissions:
       contents: read
       security-events: write
+      # codeql-action v3 looks up the triggering workflow run (for its
+      # diff-range PR comparison and telemetry) via the Actions API - without
+      # this the analysis itself still succeeds, but the action then fails
+      # the job on "Resource not accessible by integration".
+      actions: read
     steps:
       - uses: actions/checkout@v4
 
