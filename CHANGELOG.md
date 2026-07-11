@@ -8,6 +8,8 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 
 ## [Unreleased]
 
+## [0.0.41] - 2026-07-11
+
 ### Changed
 - **Renamed `jawji-agent` to `jawji-controller`** across the entire product: `packages/jawji-agent` → `packages/jawji-controller`, the npm package (`@jawji/jawji-controller`), the systemd/OpenRC service, the mDNS discovery type (`_jawji-controller._tcp`), all `JAWJI_AGENT_*` environment variables (now `JAWJI_CONTROLLER_*`), the companion installer's `WITH_AGENT` flag (now `WITH_CONTROLLER`), and every UI string, doc, and wiki page that referenced the old name. jawji.space's `/agent/install.sh` route becomes `/controller/install.sh` to match (tracked separately in the jawji-gcs repo). Also fixed a pre-existing mixed-case bug (`.Jawji-agent` token directory and `Jawji-agent` protected-process default were inconsistent with the lowercase service/mDNS names used everywhere else) while renaming. Confirmed nothing was deployed in the field yet, so this is a clean rename with no backward-compatibility shim.
 
