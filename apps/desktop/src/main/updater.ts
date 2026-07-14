@@ -18,6 +18,11 @@ import { IPC_CHANNELS, type AppUpdateInfo } from '../shared/ipc-channels.js';
 
 let mainWindow: BrowserWindow | null = null;
 let canAutoUpdate = true;
+let periodicCheckInterval: NodeJS.Timeout | null = null;
+
+// Re-check for updates every 4 hours while the app stays open, so a fresh
+// release is picked up without requiring a full app restart.
+const PERIODIC_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
 
 /**
  * Check if the app is code-signed on macOS.
@@ -119,6 +124,14 @@ export async function initAutoUpdater(win: BrowserWindow): Promise<void> {
   setTimeout(() => {
     checkForUpdates();
   }, 10_000);
+
+  // Keep re-checking periodically for long-running sessions
+  if (periodicCheckInterval) {
+    clearInterval(periodicCheckInterval);
+  }
+  periodicCheckInterval = setInterval(() => {
+    checkForUpdates();
+  }, PERIODIC_CHECK_INTERVAL_MS);
 }
 
 /**

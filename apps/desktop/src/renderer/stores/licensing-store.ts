@@ -71,6 +71,11 @@ export function isCacheStale(cachedAt: number | null, now: number = Date.now()):
   return now - cachedAt > STALE_THRESHOLD_MS;
 }
 
+// Re-verify entitlements periodically during long-running sessions, so a
+// revoked/expired license or a completed purchase is picked up without
+// requiring the user to restart the app.
+const PERIODIC_REVERIFY_INTERVAL_MS = 60 * 60 * 1000;
+
 async function getIdTokenOrThrow(): Promise<string> {
   const user = auth.currentUser;
   if (!user) throw new Error('Not signed in');
@@ -115,6 +120,10 @@ export const useLicensingStore = create<LicensingState>((set, get) => {
         if (user) void get().refreshEntitlements();
         else set({ entitlements: null });
       });
+
+      setInterval(() => {
+        if (auth.currentUser) void get().refreshEntitlements();
+      }, PERIODIC_REVERIFY_INTERVAL_MS);
 
       window.electronAPI?.onLicensingAuthCallback(({ token }) => {
         void ensurePersistence()

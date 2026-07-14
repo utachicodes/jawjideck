@@ -8,6 +8,11 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 
 ## [Unreleased]
 
+### Added
+- **Periodic auto-update checks while the app stays open.** Previously the updater only checked once, 10s after launch — a long-running session would never see a new release without a full restart. Now re-checks every 4 hours (`apps/desktop/src/main/updater.ts`).
+- **Periodic entitlement re-verification for the desktop Licensing tab.** A signed-in session now re-fetches entitlements every hour, so a revoked license or a completed purchase is picked up without requiring an app restart, on top of the existing on-restart live refresh and 7-day offline-cache fallback (`apps/desktop/src/renderer/stores/licensing-store.ts`).
+- **Focus Mode preset for the Telemetry dashboard** — a distraction-free layout showing only the Flight Control and Camera panels.
+
 ## [0.0.41] - 2026-07-11
 
 ### Changed
