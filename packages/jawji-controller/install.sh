@@ -117,11 +117,34 @@ else
   echo "Controller started via cron fallback"
 fi
 
+# Read back the pairing token the controller just generated. It's written
+# synchronously before the server starts listening, but give it a few
+# seconds in case the service is still starting up.
+SERVICE_HOME="$(getent passwd "${SERVICE_USER}" | cut -d: -f6)"
+TOKEN_PATH="${JAWJI_CONTROLLER_TOKEN_PATH:-${SERVICE_HOME}/.jawji-controller/token}"
+TOKEN=""
+for _ in $(seq 1 10); do
+  if [ -f "${TOKEN_PATH}" ]; then
+    TOKEN="$(cat "${TOKEN_PATH}")"
+    break
+  fi
+  sleep 1
+done
+
+CONTROLLER_PORT="${JAWJI_CONTROLLER_PORT:-48400}"
+CONTROLLER_IP="$(hostname -I | awk '{print $1}')"
+
 echo ""
 echo "================================"
 echo "Installation complete!"
 echo "Controller will start automatically on boot."
 echo ""
-echo "To see your pairing token:"
-echo "  journalctl -u jawji-controller | grep 'Pairing token'"
+echo "Controller: http://${CONTROLLER_IP}:${CONTROLLER_PORT}"
+if [ -n "${TOKEN}" ]; then
+  echo "Pairing token: ${TOKEN}"
+  echo "Enter this IP and token in Jawji to connect."
+else
+  echo "Pairing token not ready yet -- fetch it with:"
+  echo "  journalctl -u jawji-controller | grep 'Pairing token'"
+fi
 echo "================================"

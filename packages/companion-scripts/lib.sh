@@ -102,10 +102,21 @@ install_wifi_ap() {
   nmcli connection delete Jawji-Hotspot >/dev/null 2>&1 || true
   nmcli device wifi hotspot ifname "${iface}" con-name Jawji-Hotspot ssid "${ssid}" password "${password}"
   nmcli connection modify Jawji-Hotspot connection.autoconnect yes
+
+  local ap_ip
+  ap_ip="$(nmcli -g IP4.ADDRESS device show "${iface}" 2>/dev/null | head -1 | cut -d/ -f1)"
   echo "WiFi AP up: SSID '${ssid}', password '${password}' (save this)"
+  if [ -n "${ap_ip}" ]; then
+    echo "AP IP: ${ap_ip} -- connect your computer to '${ssid}' first, then use this IP in Jawji."
+  else
+    echo "Could not determine the AP's IP -- once connected to '${ssid}', check with 'ip addr show ${iface}' on the Pi." >&2
+  fi
 }
 
-# ── mjpg-streamer: drives Jawji's Camera panel today (MJPEG-only) ──
+# ── mjpg-streamer: MJPEG option for Jawji's Camera panel (WebRTC via
+# MediaMTX is the vision profile's default -- only add this if you
+# specifically need plain MJPEG; it'll compete with MediaMTX for the same
+# camera device if both are enabled) ──
 install_mjpg_streamer() {
   local camera_dev="${CAMERA_DEVICE:-/dev/video0}"
   local mjpeg_port="${MJPEG_PORT:-8080}"
@@ -246,9 +257,10 @@ SVCEOF
     systemctl daemon-reload
     systemctl enable jawji-camera-publish >/dev/null
     systemctl restart jawji-camera-publish || echo "Camera publish failed to start — check ${camera_dev} exists and isn't already in use." >&2
-    echo "Camera publishing into MediaMTX at rtsp://<pi-ip>:${rtsp_port}/camera"
-    echo "  -> WebRTC: http://<pi-ip>:${webrtc_port}/camera"
-    echo "  -> HLS:    http://<pi-ip>:${hls_port}/camera"
+    local pi_ip; pi_ip="$(hostname -I | awk '{print $1}')"
+    echo "Camera publishing into MediaMTX at rtsp://${pi_ip}:${rtsp_port}/camera"
+    echo "  -> WebRTC: http://${pi_ip}:${webrtc_port}/camera"
+    echo "  -> HLS:    http://${pi_ip}:${hls_port}/camera"
     echo ""
     echo "NOTE: most USB webcams only allow one process to open ${camera_dev} at"
     echo "a time. If you also enabled mjpg-streamer, only one of the two will"

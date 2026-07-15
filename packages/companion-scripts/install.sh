@@ -61,10 +61,13 @@ apply_profile() {
       WITH_CONTROLLER=1 WITH_MAVLINK=1 WITH_MEDIAMTX=0 WITH_MJPG=0 WITH_MAVSDK=0 WITH_YOLO=0 WITH_WIFI_AP=1
       ;;
     vision)
-      # Jawji's Camera panel only decodes MJPEG today, so the vision profile
-      # installs mjpg-streamer alongside MediaMTX (RTSP/RTMP/HLS/WebRTC for
-      # everything else) rather than MediaMTX alone.
-      WITH_CONTROLLER=1 WITH_MAVLINK=1 WITH_MEDIAMTX=1 WITH_MJPG=1 WITH_MAVSDK=0 WITH_YOLO=0 WITH_WIFI_AP=1
+      # Jawji's Camera panel decodes both MJPEG and WebRTC (WHEP), so the
+      # vision profile installs MediaMTX alone -- it serves RTSP/RTMP/HLS/
+      # WebRTC from a single camera device with nothing else fighting it for
+      # the device handle. Add mjpg-streamer yourself (WITH_MJPG=1) via the
+      # Custom option if you specifically need a plain MJPEG endpoint too,
+      # but note it'll then be competing with MediaMTX for the same camera.
+      WITH_CONTROLLER=1 WITH_MAVLINK=1 WITH_MEDIAMTX=1 WITH_MJPG=0 WITH_MAVSDK=0 WITH_YOLO=0 WITH_WIFI_AP=1
       ;;
     ai)
       WITH_CONTROLLER=1 WITH_MAVLINK=1 WITH_MEDIAMTX=1 WITH_MJPG=0 WITH_MAVSDK=1 WITH_YOLO=1 WITH_WIFI_AP=1
