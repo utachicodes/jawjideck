@@ -58,9 +58,12 @@ else
 fi
 chown -R "${SERVICE_USER}:${SERVICE_USER}" "${INSTALL_DIR}"
 
-# Install deps and build just the controller + its workspace dependencies
+# Install deps and build the controller + its workspace dependencies (the
+# trailing "..." on both the install and build filters matters: it pulls in
+# @jawji/companion-types too, and pnpm builds matched packages in dependency
+# order, so companion-types' dist/ exists before jawji-controller needs it).
 echo "Installing dependencies and building jawji-controller (this can take a few minutes)..."
-sudo -u "${SERVICE_USER}" bash -c "cd '${INSTALL_DIR}' && pnpm install --filter @jawji/jawji-controller... && pnpm --filter @jawji/jawji-controller build"
+sudo -u "${SERVICE_USER}" bash -c "cd '${INSTALL_DIR}' && pnpm install --filter @jawji/jawji-controller... && pnpm --filter @jawji/jawji-controller... build"
 
 CONTROLLER_ENTRY="${INSTALL_DIR}/packages/jawji-controller/dist/index.js"
 if [ ! -f "$CONTROLLER_ENTRY" ]; then
