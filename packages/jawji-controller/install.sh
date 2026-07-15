@@ -124,15 +124,17 @@ fi
 # synchronously before the server starts listening, but give it a few
 # seconds in case the service is still starting up.
 SERVICE_HOME="$(getent passwd "${SERVICE_USER}" | cut -d: -f6)"
-TOKEN_PATH="${JAWJI_CONTROLLER_TOKEN_PATH:-${SERVICE_HOME}/.jawji-controller/token}"
 TOKEN=""
-for _ in $(seq 1 10); do
-  if [ -f "${TOKEN_PATH}" ]; then
-    TOKEN="$(cat "${TOKEN_PATH}")"
-    break
-  fi
-  sleep 1
-done
+if [ -n "${JAWJI_CONTROLLER_TOKEN_PATH:-}" ] || [ -n "${SERVICE_HOME}" ]; then
+  TOKEN_PATH="${JAWJI_CONTROLLER_TOKEN_PATH:-${SERVICE_HOME}/.jawji-controller/token}"
+  for _ in $(seq 1 10); do
+    if [ -f "${TOKEN_PATH}" ]; then
+      TOKEN="$(cat "${TOKEN_PATH}")"
+      break
+    fi
+    sleep 1
+  done
+fi
 
 CONTROLLER_PORT="${JAWJI_CONTROLLER_PORT:-48400}"
 CONTROLLER_IP="$(hostname -I | awk '{print $1}')"

@@ -146,17 +146,42 @@ echo ""
 
 apt-get update -qq
 
-[ "${WITH_MAVLINK}" = "1" ] && install_mavlink_router
-[ "${WITH_WIFI_AP}" = "1" ] && install_wifi_ap
-[ "${WITH_MEDIAMTX}" = "1" ] && install_mediamtx
-[ "${WITH_MJPG}" = "1" ] && install_mjpg_streamer
-[ "${WITH_MAVSDK}" = "1" ] && install_mavsdk
-[ "${WITH_YOLO}" = "1" ] && install_yolo
+# Run each requested component under its own error boundary. Under `set -e`,
+# a bare "[ cond ] && install_x" aborts the *entire* script the instant
+# install_x returns non-zero (e.g. nmcli missing) -- one optional component
+# failing would silently prevent everything after it (including the
+# Controller) from ever installing. Track failures and report them at the
+# end instead.
+FAILED_COMPONENTS=()
+run_component() {
+  local name="$1" fn="$2"
+  if ! "${fn}"; then
+    echo "!! ${name} failed -- continuing with the rest of the install." >&2
+    FAILED_COMPONENTS+=("${name}")
+  fi
+}
+
+[ "${WITH_MAVLINK}" = "1" ] && run_component "mavlink-router" install_mavlink_router
+[ "${WITH_WIFI_AP}" = "1" ] && run_component "WiFi AP" install_wifi_ap
+[ "${WITH_MEDIAMTX}" = "1" ] && run_component "MediaMTX" install_mediamtx
+[ "${WITH_MJPG}" = "1" ] && run_component "mjpg-streamer" install_mjpg_streamer
+[ "${WITH_MAVSDK}" = "1" ] && run_component "MAVSDK" install_mavsdk
+[ "${WITH_YOLO}" = "1" ] && run_component "YOLO" install_yolo
 # Controller last: it's the one thing every profile has, and it's a good final
 # "everything above worked, here's your pairing token" note to end on.
-[ "${WITH_CONTROLLER}" = "1" ] && install_controller
+[ "${WITH_CONTROLLER}" = "1" ] && run_component "Jawji Controller" install_controller
+
+if [ "${#FAILED_COMPONENTS[@]}" -gt 0 ]; then
+  echo ""
+  echo "The following components failed and were skipped: ${FAILED_COMPONENTS[*]}" >&2
+  echo "Check the errors above, fix the underlying issue, then re-run the installer with only those components (e.g. WITH_X=1 for the ones that failed, WITH_X=0 for the rest already installed)." >&2
+fi
 
 echo ""
 echo "================================"
-echo "Jawji Companion setup complete."
+if [ "${#FAILED_COMPONENTS[@]}" -gt 0 ]; then
+  echo "Jawji Companion setup finished with errors (see above)."
+else
+  echo "Jawji Companion setup complete."
+fi
 echo "================================"
