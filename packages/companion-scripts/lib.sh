@@ -214,7 +214,7 @@ logLevel: info
 logDestinations: [stdout]
 
 paths:
-  camera:
+  camera: {}
 YAMLEOF
 
   cat > /etc/systemd/system/mediamtx.service <<SVCEOF
