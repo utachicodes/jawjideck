@@ -513,6 +513,13 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
+                {!template.installCommand.includes('WITH_WIFI_AP=0') && (
+                  <p className="text-[10px] text-content-tertiary mt-1.5">
+                    This sets up its own WiFi AP (printed at the end as "AP IP"). Connect this
+                    computer to that network first, then use the printed IP to search for the
+                    companion in the Dashboard tab.
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -536,6 +543,13 @@ function TemplateDetailView({ template, onBack, onFlashComplete }: { template: C
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
             </div>
+            {!template.installCommand.includes('WITH_WIFI_AP=0') && (
+              <p className="text-[10px] text-content-tertiary">
+                This sets up its own WiFi AP (printed at the end as "AP IP"). Connect this
+                computer to that network first, then use the printed IP to search for the
+                companion in the Dashboard tab.
+              </p>
+            )}
           </div>
         )}
       </div>
