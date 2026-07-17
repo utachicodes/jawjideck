@@ -2,6 +2,43 @@ import { useState } from 'react';
 import { LogIn, LogOut, KeyRound, ShoppingCart, Sparkles, WifiOff, AlertTriangle } from 'lucide-react';
 import { useLicensingStore, type LicenseType } from '../../../stores/licensing-store';
 import { useIntelligenceCatalog } from '../../../hooks/useIntelligenceCatalog';
+import { useSyncStore } from '../../../stores/sync-store';
+
+function SyncStatusSection() {
+  const syncing = useSyncStore((s) => s.syncing);
+  const lastSyncedAt = useSyncStore((s) => s.lastSyncedAt);
+  const error = useSyncStore((s) => s.error);
+  const syncMissions = useSyncStore((s) => s.syncMissions);
+  const syncSettings = useSyncStore((s) => s.syncSettings);
+
+  const handleSyncNow = () => {
+    void syncMissions();
+    void syncSettings();
+  };
+
+  return (
+    <div className="space-y-2">
+      <h4 className="text-xs font-medium text-content">Mission &amp; Settings Sync</h4>
+      <p className="text-[11px] text-content-secondary">
+        Missions and settings sync automatically when you sign in and after each local
+        change. Use this to sync immediately.
+      </p>
+      <button
+        onClick={handleSyncNow}
+        disabled={syncing}
+        className="px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-surface disabled:opacity-50 text-content text-xs font-medium"
+      >
+        {syncing ? 'Syncing\u2026' : 'Sync now'}
+      </button>
+      {lastSyncedAt && (
+        <p className="text-[10px] text-content-tertiary">
+          Last synced {new Date(lastSyncedAt).toLocaleTimeString()}
+        </p>
+      )}
+      {error && <p className="text-[11px] text-red-400">{error}</p>}
+    </div>
+  );
+}
 
 function formatCachedAt(cachedAt: number | null): string {
   if (!cachedAt) return 'unknown';
@@ -141,6 +178,10 @@ export function LicensingTab() {
             </button>
           ))}
         </div>
+      </section>
+
+      <section className="bg-surface rounded-xl border border-subtle p-5 space-y-3">
+        <SyncStatusSection />
       </section>
 
       <section className="bg-surface rounded-xl border border-subtle p-5 space-y-3">
