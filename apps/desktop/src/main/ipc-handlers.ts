@@ -8929,6 +8929,35 @@ async function callAiProvider(
   throw new Error(`Unknown provider: ${provider}`);
 }
 
+// ---------------------------------------------------------------------------
+// Jawji Assistant — forwards questions to jawji-gcs /api/intelligence/assist
+// ---------------------------------------------------------------------------
+ipcMain.handle(IPC_CHANNELS.ASSIST_ASK, async (_, args: {
+  idToken: string;
+  question: string;
+  telemetry: Record<string, unknown>;
+  imageBase64?: string;
+}): Promise<{ answer: string; stub: boolean }> => {
+  const jawjiGcsUrl = process.env.JAWJI_GCS_URL || 'https://jawji.space';
+  const res = await fetch(`${jawjiGcsUrl}/api/intelligence/assist`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${args.idToken}`,
+    },
+    body: JSON.stringify({
+      question: args.question,
+      telemetry: args.telemetry,
+      imageBase64: args.imageBase64,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as any).error || `Assist request failed (${res.status})`);
+  }
+  return res.json();
+});
+
 /**
  * Parse ArduPilot apm.pdef.xml into metadata store
  */

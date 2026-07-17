@@ -609,6 +609,10 @@ export const IPC_CHANNELS = {
    *  executes tools against the parsed log locally; main just proxies the HTTP
    *  call so the API key never leaves the main process. */
   LOG_AI_CLAUDE_TOOL: 'log:ai-claude-tool',
+
+  // Jawji Assistant
+  ASSIST_ASK: 'assist:ask',
+
   LOG_CHAT_SAVE: 'log:chat-save',
   LOG_CHAT_LOAD: 'log:chat-load',
   LOG_RECENT_GET: 'log:recent-get',
