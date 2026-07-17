@@ -1003,6 +1003,8 @@ export interface SettingsStoreSchema {
    * renderer-only survey types.
    */
   surveySavedConfig?: Record<string, unknown>;
+  /** Epoch ms, stamped by the main process on every SETTINGS_SAVE. Used for last-write-wins sync with jawji-gcs. */
+  settingsUpdatedAt?: number;
 }
 
 // =============================================================================

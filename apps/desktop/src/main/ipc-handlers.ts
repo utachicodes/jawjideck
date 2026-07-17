@@ -3753,7 +3753,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   });
 
   ipcMain.handle(IPC_CHANNELS.SETTINGS_SAVE, async (_, settings: SettingsStoreSchema): Promise<void> => {
-    settingsStore.set(settings);
+    settingsStore.set({ ...settings, settingsUpdatedAt: Date.now() });
   });
 
   ipcMain.handle(IPC_CHANNELS.LICENSING_CACHE_GET, async (): Promise<LicensingCacheSchema> => {
