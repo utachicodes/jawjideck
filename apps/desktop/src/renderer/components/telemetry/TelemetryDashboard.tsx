@@ -35,6 +35,7 @@ import {
   MapPanel,
   MessagesPanel,
   CameraPanel,
+  AssistantPanel,
   PreflightCheckCard,
   // Mission panels (for monitoring during flight) - MissionMapPanel removed (merged into MapPanel)
   WaypointTablePanel,
@@ -72,6 +73,7 @@ const PANEL_ID_TO_DETACHED: Record<string, { componentId: string; defaultBounds?
   map: { componentId: 'map', defaultBounds: { width: 960, height: 720 } },
   messages: { componentId: 'messages' },
   camera: { componentId: 'camera', defaultBounds: { width: 640, height: 480 } },
+  assistant: { componentId: 'assistant', defaultBounds: { width: 420, height: 560 } },
 };
 
 /**
@@ -128,6 +130,7 @@ const components: Record<string, React.FC<IDockviewPanelProps>> = {
   MapPanel: () => <PanelWrapper component={MapPanel} />,
   MessagesPanel: () => <PanelWrapper component={MessagesPanel} />,
   CameraPanel: () => <PanelWrapper component={CameraPanel} />,
+  AssistantPanel: () => <PanelWrapper component={AssistantPanel} />,
   PreflightCheckCard: () => <PanelWrapper component={PreflightCheckCard} />,
   // Mission panels (for monitoring during flight) - readOnly mode
   // Note: MissionMapPanel removed - mission data now integrated into MapPanel

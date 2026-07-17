@@ -10,6 +10,7 @@ export { FlightControlPanel } from './FlightControlPanel';
 export { MapPanel } from './MapPanel';
 export { MessagesPanel } from './MessagesPanel';
 export { CameraPanel } from './CameraPanel';
+export { AssistantPanel } from './AssistantPanel';
 export { PreflightCheckCard } from '../prearm/PreflightCheckCard';
 
 // Re-export mission panels for use in telemetry dashboard
@@ -36,6 +37,7 @@ export const PANEL_COMPONENTS = {
   map: { component: 'MapPanel', title: 'Map' }, // Unified map with mission overlays
   messages: { component: 'MessagesPanel', title: 'Messages' },
   camera: { component: 'CameraPanel', title: 'Camera' },
+  assistant: { component: 'AssistantPanel', title: 'Assistant' },
   preflightCheck: { component: 'PreflightCheckCard', title: 'Pre-flight Checks' },
   // Mission panels (for monitoring during flight)
   // Note: missionMap removed - mission data now integrated into unified MapPanel
