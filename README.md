@@ -171,9 +171,11 @@ Jawji is a next-generation ground control station built with Electron, React, an
 
 ### Flight Log Analysis
 - **DataFlash Log Reader** - Parse ArduPilot .bin blackbox logs directly in the app
+- **PX4 ULog Reader** - Parse PX4 .ulg logs (and .bin files from logs.px4.io, detected by magic bytes) with the same analysis pipeline, mapping GPS/battery/flight-mode data into ArduPilot-shaped messages
+- **Flight Summary** - Flight Review-style at-a-glance stats: flight time, max altitude/climb/speed, distance flown, battery consumption, GPS quality, plus a mode timeline and battery/altitude charts
 - **Health Check Reports** - Automated diagnostics with pass/warn/fail checks for vibration, GPS, EKF, power, and more
 - **Log Explorer** - Interactive time-series graphs with field picker for any logged parameter
-- **3D Flight Path** - Three-dimensional replay of the flight trajectory
+- **3D Flight Path** - Three-dimensional replay of the flight trajectory, either over a terrain map or on an offline rotating globe (built on three.js, no cloud service)
 - **AI-Assisted Analysis** - Chat with your flight log using Claude, GPT, or Gemini to diagnose issues, get tuning recommendations, and apply parameter changes directly
 
 ### Calibration
@@ -632,7 +634,7 @@ Found a bug? We want to hear about it! Jawji includes a built-in bug reporting t
 - **GSD-First Survey Planning** - Plan by ground sample distance, crosshatch at two heights, battery sortie splitting, and KML/KMZ/GeoJSON import
 - **3D Mission View** - Three-dimensional visualization of mission waypoints and flight paths
 - **MAVLink Signing** - Passphrase-based packet signing for secure vehicle communication
-- **Flight Log Analysis** - DataFlash .bin parser, health checks, log explorer with 3D flight path, and AI-assisted diagnostics
+- **Flight Log Analysis** - ArduPilot .bin and PX4 .ulg parsers, health checks, log explorer with 3D flight path, and AI-assisted diagnostics
 - **SITL Simulator** - ArduPilot, iNav, and Betaflight software-in-the-loop with vehicle/frame selection, virtual RC, custom frame physics, and FlightGear integration
 - **Keyboard & Joystick Flight Control** - Mutually-exclusive GCS stick input (WASD+QE+Arrows or gamepad) for MAVLink and MSP vehicles, with automatic receiver-config detection/fix so control actually reaches the motors
 - **Fleet Management** - Multi-vehicle roster with live status monitoring and one-click focus to promote a vehicle to the main connection
