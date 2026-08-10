@@ -102,6 +102,10 @@ export const useLicensingStore = create<LicensingState>((set, get) => {
         }
       });
 
+      setInterval(() => {
+        if (auth.currentUser) void get().refreshEntitlements();
+      }, PERIODIC_REVERIFY_INTERVAL_MS);
+
       window.electronAPI?.onLicensingAuthCallback(({ token }) => {
         void ensurePersistence()
           .then(() => signInWithCustomToken(auth, token))

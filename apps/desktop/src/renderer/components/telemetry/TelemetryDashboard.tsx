@@ -147,6 +147,7 @@ const PRESET_LAYOUTS = {
   missionTelemetry: 'Mission Telemetry',
   sitl: 'SITL',
   allPanels: 'All Panels',
+  focusMode: 'Focus Mode',
 } as const;
 
 // The default preset to load when no saved layout exists
@@ -379,6 +380,28 @@ const SITL_LAYOUT: SerializedDockview = {
   activeGroup: '4',
 };
 
+// Focus Mode preset - only Flight Control and Camera panels, for distraction-free flying
+const FOCUS_MODE_LAYOUT: SerializedDockview = {
+  grid: {
+    root: {
+      type: 'branch',
+      data: [
+        { type: 'leaf', data: { views: ['flightControl'], activeView: 'flightControl', id: '1' }, size: 280 },
+        { type: 'leaf', data: { views: ['camera'], activeView: 'camera', id: '2' }, size: 620 },
+      ],
+      size: 900,
+    },
+    width: 900,
+    height: 900,
+    orientation: Orientation.HORIZONTAL,
+  },
+  panels: {
+    flightControl: { id: 'flightControl', contentComponent: 'FlightControlPanel', title: 'Flight Control' },
+    camera: { id: 'camera', contentComponent: 'CameraPanel', title: 'Camera' },
+  },
+  activeGroup: '2',
+};
+
 // Legacy default layout configuration - Map center, panels on sides (used as fallback)
 function createDefaultLayout(api: DockviewApi): void {
   // Main center group - Map (primary view)
@@ -447,6 +470,9 @@ function loadPresetLayout(api: DockviewApi, preset: PresetLayoutKey): void {
       break;
     case 'allPanels':
       api.fromJSON(ALL_PANELS_LAYOUT);
+      break;
+    case 'focusMode':
+      api.fromJSON(FOCUS_MODE_LAYOUT);
       break;
     default:
       // Default to Pilot View
