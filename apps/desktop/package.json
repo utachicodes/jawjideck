@@ -31,6 +31,7 @@
     "@jawji/module-sdk": "workspace:*",
     "@jawji/msp-ts": "workspace:*",
     "@jawji/stm32-dfu": "workspace:*",
+    "@jawji/ulog-parser": "workspace:^",
     "@reactour/tour": "^3.8.0",
     "@tanstack/react-virtual": "^3.13.23",
     "@xterm/addon-fit": "^0.11.0",
