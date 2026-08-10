@@ -8,6 +8,8 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 
 ## [Unreleased]
 
+## [0.0.42] - 2026-08-10
+
 ### Added
 - **Flight Log Summary tab in the desktop Logs viewer** (Flight Review style, fully local): at-a-glance stats computed from the parsed `.bin` log — flight time, max/min altitude, max climb rate, max speed, distance flown, max distance from home, battery min/max voltage, max current and mAh consumed, and GPS satellite/HDOP ranges — plus a mode timeline strip with per-mode duration percentages and battery/altitude uPlot mini-charts. Pure computation lives in `log-summary.ts` (unit-tested) with shared mode/path helpers extracted to `log-utils.ts` so the Summary, Explorer charts, and map panels all agree on mode names/colors.
 - **3D Globe view of the flight path in the Log Explorer** — a Cesium Ion-style rotating globe built entirely on the already-bundled three.js (no Cesium, no Ion, no tokens, no network). The earth texture is generated offline from public-domain Natural Earth 110m land data (`scripts/gen-earth-texture.mjs` produces the committed dark/light PNGs), the flight trail is altitude-gradient colored with takeoff/landing markers, auto-rotate toggle, orbit/drag camera, and theme-aware rendering. It lives as a "Globe" tab next to the existing flat 3D terrain map in the Explorer's default layout.
