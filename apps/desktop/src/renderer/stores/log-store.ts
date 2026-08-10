@@ -74,7 +74,7 @@ interface LogStore {
   syncZoomEnabled: boolean;
 
   // Tab
-  activeTab: 'list' | 'report' | 'explorer' | 'ai';
+  activeTab: 'list' | 'summary' | 'report' | 'explorer' | 'ai';
 
   // Actions
   setAvailableLogs: (logs: LogListEntry[]) => void;
@@ -99,7 +99,7 @@ interface LogStore {
   removeChart: (id: string) => void;
   setSyncedXRange: (range: { min: number; max: number } | null) => void;
   setSyncZoomEnabled: (enabled: boolean) => void;
-  setActiveTab: (tab: 'list' | 'report' | 'explorer' | 'ai') => void;
+  setActiveTab: (tab: 'list' | 'summary' | 'report' | 'explorer' | 'ai') => void;
   reset: () => void;
 }
 

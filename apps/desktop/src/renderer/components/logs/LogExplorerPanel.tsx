@@ -20,6 +20,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 // packaged builds (see ObjectEditorMap.tsx), breaking the MapLibre worker.
 maplibregl.setWorkerUrl(new URL('maplibre-worker.js', document.baseURI).href);
 import { createFlightPathThreeJsLayer } from './flight-threejs-layer';
+import { getModeTimeline, getFlightPath } from './log-utils';
 import { useLogStore } from '../../stores/log-store';
 
 // Style uPlot - uses CSS variables for theme support
@@ -40,29 +41,12 @@ const SERIES_COLORS = [
   '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1',
 ];
 
-const MODE_COLORS: Record<string, string> = {
-  STABILIZE: '#6b7280', ALT_HOLD: '#3b82f6', LOITER: '#10b981', AUTO: '#8b5cf6',
-  RTL: '#f59e0b', LAND: '#ef4444', GUIDED: '#ec4899', POSHOLD: '#06b6d4',
-  ACRO: '#f97316', CIRCLE: '#84cc16', BRAKE: '#6366f1', SMART_RTL: '#fbbf24',
-};
-
 /** Color per event-marker type, used by the chart draw hook. */
 const EVENT_TYPE_COLORS: Record<string, string> = {
   MODE: '#a855f7',
   MSG: '#10b981',
   CMD: '#f59e0b',
 };
-
-const COPTER_MODES: Record<number, string> = {
-  0: 'STABILIZE', 1: 'ACRO', 2: 'ALT_HOLD', 3: 'AUTO', 4: 'GUIDED',
-  5: 'LOITER', 6: 'RTL', 7: 'CIRCLE', 9: 'LAND', 11: 'DRIFT',
-  13: 'SPORT', 14: 'FLIP', 15: 'AUTOTUNE', 16: 'POSHOLD', 17: 'BRAKE',
-  18: 'THROW', 21: 'SMART_RTL', 22: 'FLOWHOLD', 23: 'FOLLOW', 24: 'ZIGZAG', 27: 'AUTO_RTL',
-};
-
-function getModeName(modeNum: number): string {
-  return COPTER_MODES[modeNum] ?? `MODE_${modeNum}`;
-}
 
 const QUICK_PRESETS = [
   { label: 'Attitude', desc: 'DesRoll vs Roll, DesPitch vs Pitch', types: ['ATT'], fields: { ATT: ['DesRoll', 'Roll', 'DesPitch', 'Pitch'] } },
@@ -97,43 +81,6 @@ const EVENT_FIELDS_BY_TYPE: Record<string, string[]> = {
   MSG: ['Message'],
   CMD: ['CName'],
 };
-
-function getModeTimeline(log: ReturnType<typeof useLogStore.getState>['currentLog']) {
-  if (!log) return [];
-  const modes = log.messages['MODE'];
-  if (!modes || modes.length === 0) return [];
-  const endTimeS = log.timeRange.endUs / 1_000_000;
-  const segments: { startS: number; endS: number; name: string; color: string }[] = [];
-  for (let i = 0; i < modes.length; i++) {
-    const m = modes[i]!;
-    const modeNum = (typeof m.fields['ModeNum'] === 'number' ? m.fields['ModeNum'] : m.fields['Mode']) as number;
-    const name = getModeName(modeNum);
-    const startS = m.timeUs / 1_000_000;
-    const endS = i + 1 < modes.length ? (modes[i + 1]!.timeUs / 1_000_000) : endTimeS;
-    segments.push({ startS, endS, name, color: MODE_COLORS[name] ?? '#6b7280' });
-  }
-  return segments;
-}
-
-function getFlightPath(log: ReturnType<typeof useLogStore.getState>['currentLog']): [number, number, number][] {
-  if (!log) return [];
-  const gps = log.messages['GPS'];
-  if (!gps) return [];
-  const path: [number, number, number][] = [];
-  for (const msg of gps) {
-    const lat = msg.fields['Lat'];
-    const lng = msg.fields['Lng'];
-    const alt = msg.fields['Alt'];
-    if (typeof lat === 'number' && typeof lng === 'number' && lat !== 0 && lng !== 0) {
-      path.push([lat, lng, typeof alt === 'number' ? alt : 0]);
-    }
-  }
-  return path;
-}
-
-// ============================================================================
-// Chart Panel
-// ============================================================================
 
 /**
  * `chartId` lets multiple ChartPanel instances coexist with independent
