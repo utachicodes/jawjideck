@@ -20,6 +20,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 // packaged builds (see ObjectEditorMap.tsx), breaking the MapLibre worker.
 maplibregl.setWorkerUrl(new URL('maplibre-worker.js', document.baseURI).href);
 import { createFlightPathThreeJsLayer } from './flight-threejs-layer';
+import { GlobePanel } from './GlobePanel';
 import { getModeTimeline, getFlightPath } from './log-utils';
 import { useLogStore } from '../../stores/log-store';
 
@@ -1476,6 +1477,7 @@ const dockviewComponents: Record<string, React.FC<IDockviewPanelProps>> = {
     return <ChartPanel chartId={chartId} />;
   },
   FlightPathPanel: () => <FlightPathPanel />,
+  GlobePanel: () => <GlobePanel />,
   FieldPickerPanel: () => <FieldPickerPanel />,
 };
 
@@ -1487,7 +1489,7 @@ const DEFAULT_LAYOUT: SerializedDockview = {
         {
           type: 'branch',
           data: [
-            { type: 'leaf', data: { views: ['map'], activeView: 'map', id: '1' }, size: 500 },
+            { type: 'leaf', data: { views: ['map', 'globe'], activeView: 'map', id: '1' }, size: 500 },
             { type: 'leaf', data: { views: ['chart'], activeView: 'chart', id: '2' }, size: 350 },
           ],
           size: 850,
@@ -1506,6 +1508,7 @@ const DEFAULT_LAYOUT: SerializedDockview = {
   },
   panels: {
     map: { id: 'map', contentComponent: 'FlightPathPanel', title: 'Flight Path' },
+    globe: { id: 'globe', contentComponent: 'GlobePanel', title: 'Globe' },
     chart: { id: 'chart', contentComponent: 'ChartPanel', title: 'Chart 1', params: { chartId: 'chart' } },
     fields: { id: 'fields', contentComponent: 'FieldPickerPanel', title: 'Fields' },
   },
@@ -1519,13 +1522,14 @@ const DEFAULT_LAYOUT: SerializedDockview = {
 const PANEL_DEFS = [
   { id: 'chart', component: 'ChartPanel', title: 'Chart' },
   { id: 'map', component: 'FlightPathPanel', title: 'Flight Path' },
+  { id: 'globe', component: 'GlobePanel', title: 'Globe' },
   { id: 'fields', component: 'FieldPickerPanel', title: 'Fields' },
 ];
 
 export function LogExplorerPanel() {
   const resolvedTheme = useResolvedTheme();
   const apiRef = useRef<DockviewApi | null>(null);
-  const [openPanels, setOpenPanels] = useState<Set<string>>(new Set(['chart', 'map', 'fields']));
+  const [openPanels, setOpenPanels] = useState<Set<string>>(new Set(['chart', 'map', 'globe', 'fields']));
   const setActiveChartId = useLogStore((s) => s.setActiveChartId);
   const removeChart = useLogStore((s) => s.removeChart);
   const addChart = useLogStore((s) => s.addChart);
@@ -1588,7 +1592,7 @@ export function LogExplorerPanel() {
   const handleResetLayout = useCallback(() => {
     if (!apiRef.current) return;
     apiRef.current.fromJSON(DEFAULT_LAYOUT);
-    setOpenPanels(new Set(['chart', 'map', 'fields']));
+    setOpenPanels(new Set(['chart', 'map', 'globe', 'fields']));
   }, []);
 
   const closedPanels = PANEL_DEFS.filter((d) => !openPanels.has(d.id));
