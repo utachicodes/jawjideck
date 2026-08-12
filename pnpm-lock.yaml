@@ -38,6 +38,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@jawji/blackbox-parser':
+        specifier: workspace:^
+        version: link:../../packages/blackbox-parser
       '@jawji/comms':
         specifier: workspace:*
         version: link:../../packages/comms
@@ -59,6 +62,9 @@ importers:
       '@jawji/stm32-dfu':
         specifier: workspace:*
         version: link:../../packages/stm32-dfu
+      '@jawji/ulog-parser':
+        specifier: workspace:^
+        version: link:../../packages/ulog-parser
       '@reactour/tour':
         specifier: ^3.8.0
         version: 3.8.0(react@18.3.1)
@@ -230,6 +236,19 @@ importers:
         specifier: ^5.4.0
         version: 5.9.3
 
+  packages/blackbox-parser:
+    dependencies:
+      '@jawji/dataflash-parser':
+        specifier: workspace:^
+        version: link:../dataflash-parser
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.3)
+
   packages/comms:
     dependencies:
       '@jawji/mavlink-ts':
@@ -364,6 +383,19 @@ importers:
       typescript:
         specifier: ^5.3.3
         version: 5.9.3
+
+  packages/ulog-parser:
+    dependencies:
+      '@jawji/dataflash-parser':
+        specifier: workspace:^
+        version: link:../dataflash-parser
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.3)
 
   tools/mavlink-generator:
     dependencies:

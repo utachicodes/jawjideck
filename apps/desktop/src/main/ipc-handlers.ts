@@ -131,7 +131,18 @@ import {
 import { LogDownloadManager, type LogListEntry } from './mavlink-log/index.js';
 import { decodeServoOutputRaw } from './servo-output-decode.js';
 import { writeFile, readFile } from 'node:fs/promises';
-import { createDataFlashParser, runHealthChecks } from '@jawji/dataflash-parser';
+import { createDataFlashParser, runHealthChecks, type DataFlashLog } from '@jawji/dataflash-parser';
+import {
+  convertBlackboxToDataFlashLog,
+  createBlackboxParser,
+  isBlackboxBuffer,
+} from '@jawji/blackbox-parser';
+import {
+  convertUlogToDataFlashLog,
+  createUlogParser,
+  IGNORED_ULOG_TOPICS,
+  isUlogBuffer,
+} from '@jawji/ulog-parser';
 import { sitlProcess } from './sitl/sitl-process.js';
 import { ardupilotSitlProcess, ardupilotSitlDownloader, ardupilotRcSender } from './sitl/index.js';
 import {
@@ -3753,7 +3764,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   });
 
   ipcMain.handle(IPC_CHANNELS.SETTINGS_SAVE, async (_, settings: SettingsStoreSchema): Promise<void> => {
-    settingsStore.set(settings);
+    settingsStore.set({ ...settings, settingsUpdatedAt: Date.now() });
   });
 
   ipcMain.handle(IPC_CHANNELS.LICENSING_CACHE_GET, async (): Promise<LicensingCacheSchema> => {
@@ -8588,7 +8599,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     const result = await dialog.showOpenDialog(mainWindow, {
       title: 'Open Flight Log',
       filters: [
-        { name: 'Flight Logs', extensions: ['bin', 'log'] },
+        { name: 'Flight Logs', extensions: ['bin', 'log', 'ulg', 'bbl', 'csv'] },
         { name: 'All Files', extensions: ['*'] },
       ],
       properties: ['openFile'],
@@ -8623,7 +8634,20 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     // and yield the event loop between feeds. Without the yield, IPC events
     // queued by sendLogParseProgress would not flush to the renderer until
     // the entire parse completed, leaving the progress bar stuck at 0%.
-    const parser = createDataFlashParser();
+    // Betaflight .bbl files (and blackbox_decode .csv exports) are detected
+    // by their header text and routed to the blackbox parser, then converted
+    // into the ArduPilot-shaped DataFlashLog. PX4 .ulg files (and .bin files
+    // downloaded from logs.px4.io, which are actually ULog) are detected by
+    // the ULog magic bytes and routed to the ULog parser, then converted the
+    // same way. Everything else goes to the ArduPilot DataFlash parser.
+    const bytes = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    const isBlackbox = isBlackboxBuffer(bytes.subarray(0, 4096));
+    const isUlog = !isBlackbox && isUlogBuffer(bytes.subarray(0, 16));
+    const blackboxParser = isBlackbox ? createBlackboxParser() : null;
+    const ulogParser =
+      isBlackbox ? null : isUlog ? createUlogParser({ ignoreTopics: IGNORED_ULOG_TOPICS }) : null;
+    const dataflashParser = isBlackbox || isUlog ? null : createDataFlashParser();
+    const parser = blackboxParser ?? ulogParser ?? dataflashParser;
     const CHUNK = 1024 * 1024;
     const yieldEventLoop = () => new Promise<void>((r) => setImmediate(r));
     const sendProgress = (bytesConsumed: number) => {
@@ -8636,11 +8660,21 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     for (let offset = 0; offset < totalBytes; offset += CHUNK) {
       const end = Math.min(offset + CHUNK, totalBytes);
       const slice = new Uint8Array(buffer.buffer, buffer.byteOffset + offset, end - offset);
-      parser.feed(slice);
+      parser!.feed(slice);
       sendProgress(end);
       await yieldEventLoop();
     }
-    const log = parser.finalize();
+    // Convert PX4 ULog / Betaflight blackbox data into the ArduPilot-shaped
+    // DataFlashLog the rest of the app (Summary, Health Report, Explorer,
+    // map/globe, AI) consumes.
+    let log: DataFlashLog;
+    if (blackboxParser) {
+      log = convertBlackboxToDataFlashLog(blackboxParser.finalize());
+    } else if (ulogParser) {
+      log = convertUlogToDataFlashLog(ulogParser.finalize());
+    } else {
+      log = dataflashParser!.finalize();
+    }
 
     const healthResults = runHealthChecks(log);
 
@@ -8928,6 +8962,35 @@ async function callAiProvider(
 
   throw new Error(`Unknown provider: ${provider}`);
 }
+
+// ---------------------------------------------------------------------------
+// Jawji Assistant — forwards questions to jawji-gcs /api/intelligence/assist
+// ---------------------------------------------------------------------------
+ipcMain.handle(IPC_CHANNELS.ASSIST_ASK, async (_, args: {
+  idToken: string;
+  question: string;
+  telemetry: Record<string, unknown>;
+  imageBase64?: string;
+}): Promise<{ answer: string; stub: boolean }> => {
+  const jawjiGcsUrl = process.env.JAWJI_GCS_URL || 'https://jawji.space';
+  const res = await fetch(`${jawjiGcsUrl}/api/intelligence/assist`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${args.idToken}`,
+    },
+    body: JSON.stringify({
+      question: args.question,
+      telemetry: args.telemetry,
+      imageBase64: args.imageBase64,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as any).error || `Assist request failed (${res.status})`);
+  }
+  return res.json();
+});
 
 /**
  * Parse ArduPilot apm.pdef.xml into metadata store

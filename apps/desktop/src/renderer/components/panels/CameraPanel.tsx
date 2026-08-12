@@ -98,7 +98,7 @@ export function CameraPanel() {
   }, [stream.type]);
 
   return (
-    <div className="h-full w-full bg-black flex flex-col relative">
+    <div className="h-full w-full bg-black flex flex-col relative" data-camera-panel>
       {stream.type === 'mjpeg' && !streamError && (
         <div className="relative w-full h-full">
           <img

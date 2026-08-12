@@ -8,8 +8,7 @@ import {
   type User,
 } from 'firebase/auth';
 import { auth, firebaseConfigured } from '../lib/firebase';
-
-const JAWJI_GCS_URL = import.meta.env.VITE_JAWJI_GCS_URL || 'https://jawji.space';
+import { apiFetch, JAWJI_GCS_URL } from '../lib/api-fetch';
 
 export type LicenseType = 'subscription' | 'orchestrator' | 'intelligence-module';
 
@@ -71,34 +70,6 @@ export function isCacheStale(cachedAt: number | null, now: number = Date.now()):
   return now - cachedAt > STALE_THRESHOLD_MS;
 }
 
-// Re-verify entitlements periodically during long-running sessions, so a
-// revoked/expired license or a completed purchase is picked up without
-// requiring the user to restart the app.
-const PERIODIC_REVERIFY_INTERVAL_MS = 60 * 60 * 1000;
-
-async function getIdTokenOrThrow(): Promise<string> {
-  const user = auth.currentUser;
-  if (!user) throw new Error('Not signed in');
-  return user.getIdToken();
-}
-
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const idToken = await getIdTokenOrThrow();
-  const res = await fetch(`${JAWJI_GCS_URL}${path}`, {
-    ...init,
-    headers: {
-      ...(init?.headers ?? {}),
-      Authorization: `Bearer ${idToken}`,
-      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
-    },
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as { error?: string }).error || `Request to ${path} failed (${res.status})`);
-  }
-  return res.json() as Promise<T>;
-}
-
 let persistenceReady: Promise<void> | null = null;
 function ensurePersistence(): Promise<void> {
   if (!persistenceReady) {
@@ -117,8 +88,18 @@ export const useLicensingStore = create<LicensingState>((set, get) => {
       void ensurePersistence();
       onAuthStateChanged(auth, (user) => {
         set({ user, authLoading: false });
-        if (user) void get().refreshEntitlements();
-        else set({ entitlements: null });
+        if (user) {
+          void get().refreshEntitlements();
+          // Fire-and-forget: mission/settings sync failures shouldn't block
+          // sign-in or surface as a licensing error. The sync store tracks
+          // its own error state independently.
+          void import('./sync-store').then(({ useSyncStore }) => {
+            void useSyncStore.getState().syncMissions();
+            void useSyncStore.getState().syncSettings();
+          });
+        } else {
+          set({ entitlements: null });
+        }
       });
 
       setInterval(() => {

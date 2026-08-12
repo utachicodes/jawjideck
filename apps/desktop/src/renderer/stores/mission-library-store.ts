@@ -99,6 +99,12 @@ export const useMissionLibraryStore = create<MissionLibraryStore>((set, get) => 
       const summary = await window.electronAPI.missionLibrarySave(payload);
       // Reload the list after save (don't let reload failure break the save result)
       get().loadMissions().catch(() => {});
+      // Fire-and-forget: push the change to jawji-gcs if signed in. Sync
+      // failures don't block the local save or surface here — the sync
+      // store tracks its own error state.
+      void import('./sync-store').then(({ useSyncStore }) => {
+        void useSyncStore.getState().syncMissions();
+      });
       return summary;
     } catch (err) {
       console.error('[MissionLibrary] Failed to save mission:', err);
@@ -117,6 +123,9 @@ export const useMissionLibraryStore = create<MissionLibraryStore>((set, get) => 
           set({ selectedMission: null, flightLogs: [] });
         }
         await get().loadMissions();
+        void import('./sync-store').then(({ useSyncStore }) => {
+          void useSyncStore.getState().syncMissions();
+        });
       }
       return success;
     } catch (err) {

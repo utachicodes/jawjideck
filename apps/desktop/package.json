@@ -1,6 +1,6 @@
 {
   "name": "@jawji/desktop",
-  "version": "0.0.41",
+  "version": "0.0.42",
   "description": "Jawji - Desktop Application",
   "author": {
     "name": "utachicodes",
@@ -24,6 +24,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@jawji/blackbox-parser": "workspace:^",
     "@jawji/comms": "workspace:*",
     "@jawji/companion-types": "workspace:*",
     "@jawji/dataflash-parser": "workspace:^",
@@ -31,6 +32,7 @@
     "@jawji/module-sdk": "workspace:*",
     "@jawji/msp-ts": "workspace:*",
     "@jawji/stm32-dfu": "workspace:*",
+    "@jawji/ulog-parser": "workspace:^",
     "@reactour/tour": "^3.8.0",
     "@tanstack/react-virtual": "^3.13.23",
     "@xterm/addon-fit": "^0.11.0",

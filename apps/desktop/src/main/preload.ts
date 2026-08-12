@@ -713,6 +713,14 @@ const api = {
   }): Promise<{ success: boolean; content?: unknown[]; stop_reason?: string; error?: string }> =>
     ipcRenderer.invoke(IPC_CHANNELS.LOG_AI_CLAUDE_TOOL, args),
 
+  assistAsk: (args: {
+    idToken: string;
+    question: string;
+    telemetry: Record<string, unknown>;
+    imageBase64?: string;
+  }): Promise<{ answer: string; stub: boolean }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.ASSIST_ASK, args),
+
   logChatSave: (args: {
     logPath: string;
     messages: { role: string; content: string }[];

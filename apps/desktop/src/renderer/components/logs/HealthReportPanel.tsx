@@ -129,7 +129,7 @@ Return 3-6 cards. Most important issues first.`;
   if (!healthResults || !currentLog) {
     return (
       <div className="h-full flex items-center justify-center text-content-secondary">
-        No log loaded. Download or open a .bin file first.
+        No log loaded. Download or open a .bin / .ulg file first.
       </div>
     );
   }

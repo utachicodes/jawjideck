@@ -1,6 +1,7 @@
 import { useLogStore } from '../../stores/log-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import { LogListPanel } from './LogListPanel';
+import { LogSummaryPanel } from './LogSummaryPanel';
 import { HealthReportPanel } from './HealthReportPanel';
 import { LogExplorerPanel } from './LogExplorerPanel';
 import { AiAnalysisPanel } from './AiAnalysisPanel';
@@ -14,6 +15,7 @@ export function LogsView() {
 
   const tabs = [
     { id: 'list' as const, label: 'Log List' },
+    { id: 'summary' as const, label: 'Summary', disabled: !currentLog },
     { id: 'report' as const, label: 'Health Report', disabled: !currentLog },
     { id: 'explorer' as const, label: 'Explorer', disabled: !currentLog },
     ...(aiProvider ? [{ id: 'ai' as const, label: 'AI Analysis', disabled: !currentLog }] : []),
@@ -53,6 +55,7 @@ export function LogsView() {
       {/* Content */}
       <div className="flex-1 overflow-hidden">
         {activeTab === 'list' && <LogListPanel />}
+        {activeTab === 'summary' && currentLog && <LogSummaryPanel />}
         {activeTab === 'report' && currentLog && <HealthReportPanel />}
         {activeTab === 'explorer' && currentLog && <LogExplorerPanel />}
         {activeTab === 'ai' && currentLog && <AiAnalysisPanel />}

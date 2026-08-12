@@ -99,8 +99,23 @@ install_wifi_ap() {
     password="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 12)"
     echo "No AP_PASSWORD given — generated one: ${password}"
   fi
+
+  # If you're SSH'd in over this exact interface, switching it to AP mode
+  # drops your session mid-command. Give a few seconds' warning so there's a
+  # chance to Ctrl-C, and cap the hotspot command itself so a stalled
+  # NetworkManager can't hang the rest of the install indefinitely.
+  if ip route show default 2>/dev/null | grep -q "dev ${iface}"; then
+    echo "WARNING: ${iface} looks like it's your current default route -- if you're" >&2
+    echo "connected over it (e.g. SSH over WiFi), this will drop your session." >&2
+    echo "Starting in 5s -- Ctrl-C now to abort." >&2
+    sleep 5
+  fi
+
   nmcli connection delete Jawji-Hotspot >/dev/null 2>&1 || true
-  nmcli device wifi hotspot ifname "${iface}" con-name Jawji-Hotspot ssid "${ssid}" password "${password}"
+  if ! timeout 30 nmcli device wifi hotspot ifname "${iface}" con-name Jawji-Hotspot ssid "${ssid}" password "${password}"; then
+    echo "nmcli hotspot setup timed out or failed on ${iface}." >&2
+    return 1
+  fi
   nmcli connection modify Jawji-Hotspot connection.autoconnect yes
 
   local ap_ip

@@ -20,6 +20,8 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 // packaged builds (see ObjectEditorMap.tsx), breaking the MapLibre worker.
 maplibregl.setWorkerUrl(new URL('maplibre-worker.js', document.baseURI).href);
 import { createFlightPathThreeJsLayer } from './flight-threejs-layer';
+import { GlobePanel } from './GlobePanel';
+import { getModeTimeline, getFlightPath } from './log-utils';
 import { useLogStore } from '../../stores/log-store';
 
 // Style uPlot - uses CSS variables for theme support
@@ -40,29 +42,12 @@ const SERIES_COLORS = [
   '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1',
 ];
 
-const MODE_COLORS: Record<string, string> = {
-  STABILIZE: '#6b7280', ALT_HOLD: '#3b82f6', LOITER: '#10b981', AUTO: '#8b5cf6',
-  RTL: '#f59e0b', LAND: '#ef4444', GUIDED: '#ec4899', POSHOLD: '#06b6d4',
-  ACRO: '#f97316', CIRCLE: '#84cc16', BRAKE: '#6366f1', SMART_RTL: '#fbbf24',
-};
-
 /** Color per event-marker type, used by the chart draw hook. */
 const EVENT_TYPE_COLORS: Record<string, string> = {
   MODE: '#a855f7',
   MSG: '#10b981',
   CMD: '#f59e0b',
 };
-
-const COPTER_MODES: Record<number, string> = {
-  0: 'STABILIZE', 1: 'ACRO', 2: 'ALT_HOLD', 3: 'AUTO', 4: 'GUIDED',
-  5: 'LOITER', 6: 'RTL', 7: 'CIRCLE', 9: 'LAND', 11: 'DRIFT',
-  13: 'SPORT', 14: 'FLIP', 15: 'AUTOTUNE', 16: 'POSHOLD', 17: 'BRAKE',
-  18: 'THROW', 21: 'SMART_RTL', 22: 'FLOWHOLD', 23: 'FOLLOW', 24: 'ZIGZAG', 27: 'AUTO_RTL',
-};
-
-function getModeName(modeNum: number): string {
-  return COPTER_MODES[modeNum] ?? `MODE_${modeNum}`;
-}
 
 const QUICK_PRESETS = [
   { label: 'Attitude', desc: 'DesRoll vs Roll, DesPitch vs Pitch', types: ['ATT'], fields: { ATT: ['DesRoll', 'Roll', 'DesPitch', 'Pitch'] } },
@@ -97,43 +82,6 @@ const EVENT_FIELDS_BY_TYPE: Record<string, string[]> = {
   MSG: ['Message'],
   CMD: ['CName'],
 };
-
-function getModeTimeline(log: ReturnType<typeof useLogStore.getState>['currentLog']) {
-  if (!log) return [];
-  const modes = log.messages['MODE'];
-  if (!modes || modes.length === 0) return [];
-  const endTimeS = log.timeRange.endUs / 1_000_000;
-  const segments: { startS: number; endS: number; name: string; color: string }[] = [];
-  for (let i = 0; i < modes.length; i++) {
-    const m = modes[i]!;
-    const modeNum = (typeof m.fields['ModeNum'] === 'number' ? m.fields['ModeNum'] : m.fields['Mode']) as number;
-    const name = getModeName(modeNum);
-    const startS = m.timeUs / 1_000_000;
-    const endS = i + 1 < modes.length ? (modes[i + 1]!.timeUs / 1_000_000) : endTimeS;
-    segments.push({ startS, endS, name, color: MODE_COLORS[name] ?? '#6b7280' });
-  }
-  return segments;
-}
-
-function getFlightPath(log: ReturnType<typeof useLogStore.getState>['currentLog']): [number, number, number][] {
-  if (!log) return [];
-  const gps = log.messages['GPS'];
-  if (!gps) return [];
-  const path: [number, number, number][] = [];
-  for (const msg of gps) {
-    const lat = msg.fields['Lat'];
-    const lng = msg.fields['Lng'];
-    const alt = msg.fields['Alt'];
-    if (typeof lat === 'number' && typeof lng === 'number' && lat !== 0 && lng !== 0) {
-      path.push([lat, lng, typeof alt === 'number' ? alt : 0]);
-    }
-  }
-  return path;
-}
-
-// ============================================================================
-// Chart Panel
-// ============================================================================
 
 /**
  * `chartId` lets multiple ChartPanel instances coexist with independent
@@ -1529,6 +1477,7 @@ const dockviewComponents: Record<string, React.FC<IDockviewPanelProps>> = {
     return <ChartPanel chartId={chartId} />;
   },
   FlightPathPanel: () => <FlightPathPanel />,
+  GlobePanel: () => <GlobePanel />,
   FieldPickerPanel: () => <FieldPickerPanel />,
 };
 
@@ -1540,7 +1489,7 @@ const DEFAULT_LAYOUT: SerializedDockview = {
         {
           type: 'branch',
           data: [
-            { type: 'leaf', data: { views: ['map'], activeView: 'map', id: '1' }, size: 500 },
+            { type: 'leaf', data: { views: ['map', 'globe'], activeView: 'map', id: '1' }, size: 500 },
             { type: 'leaf', data: { views: ['chart'], activeView: 'chart', id: '2' }, size: 350 },
           ],
           size: 850,
@@ -1559,6 +1508,7 @@ const DEFAULT_LAYOUT: SerializedDockview = {
   },
   panels: {
     map: { id: 'map', contentComponent: 'FlightPathPanel', title: 'Flight Path' },
+    globe: { id: 'globe', contentComponent: 'GlobePanel', title: 'Globe' },
     chart: { id: 'chart', contentComponent: 'ChartPanel', title: 'Chart 1', params: { chartId: 'chart' } },
     fields: { id: 'fields', contentComponent: 'FieldPickerPanel', title: 'Fields' },
   },
@@ -1572,13 +1522,14 @@ const DEFAULT_LAYOUT: SerializedDockview = {
 const PANEL_DEFS = [
   { id: 'chart', component: 'ChartPanel', title: 'Chart' },
   { id: 'map', component: 'FlightPathPanel', title: 'Flight Path' },
+  { id: 'globe', component: 'GlobePanel', title: 'Globe' },
   { id: 'fields', component: 'FieldPickerPanel', title: 'Fields' },
 ];
 
 export function LogExplorerPanel() {
   const resolvedTheme = useResolvedTheme();
   const apiRef = useRef<DockviewApi | null>(null);
-  const [openPanels, setOpenPanels] = useState<Set<string>>(new Set(['chart', 'map', 'fields']));
+  const [openPanels, setOpenPanels] = useState<Set<string>>(new Set(['chart', 'map', 'globe', 'fields']));
   const setActiveChartId = useLogStore((s) => s.setActiveChartId);
   const removeChart = useLogStore((s) => s.removeChart);
   const addChart = useLogStore((s) => s.addChart);
@@ -1641,7 +1592,7 @@ export function LogExplorerPanel() {
   const handleResetLayout = useCallback(() => {
     if (!apiRef.current) return;
     apiRef.current.fromJSON(DEFAULT_LAYOUT);
-    setOpenPanels(new Set(['chart', 'map', 'fields']));
+    setOpenPanels(new Set(['chart', 'map', 'globe', 'fields']));
   }, []);
 
   const closedPanels = PANEL_DEFS.filter((d) => !openPanels.has(d.id));

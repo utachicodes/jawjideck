@@ -48,7 +48,7 @@ function ErrorToast({ message, onDismiss }: { message: string; onDismiss: () => 
 }
 
 /**
- * Read + parse a .bin file by PATH on the main process. We deliberately do
+ * Read + parse a log file by PATH on the main process. We deliberately do
  * NOT marshal file bytes through IPC — a 100MB log used to take minutes to
  * round-trip as `number[]` (one JS Number per byte) and froze the UI the
  * whole time. Now the renderer just sends a string and gets streamed
@@ -239,7 +239,7 @@ export function LogListPanel() {
           disabled={isParsingLog}
           className="px-4 py-2 bg-surface-raised hover:bg-surface-raised disabled:bg-surface-raised disabled:text-content-tertiary text-content text-sm font-medium rounded-lg transition-colors"
         >
-          Open .bin File
+          Open .bin / .ulg / .bbl File
         </button>
       </div>
 
@@ -260,7 +260,7 @@ export function LogListPanel() {
       {!isConnected && availableLogs.length === 0 && recentLogs.length === 0 && !isParsingLog && (
         <div className="bg-surface rounded-xl border border-subtle p-6 text-center">
           <p className="text-content-secondary text-sm">
-            Connect to a flight controller to download logs, or open a .bin file from disk.
+            Connect to a flight controller to download logs, or open a .bin / .ulg file from disk.
           </p>
         </div>
       )}
