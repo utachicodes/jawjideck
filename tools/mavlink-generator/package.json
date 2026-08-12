@@ -14,7 +14,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "fast-xml-parser": "^4.5.1",
+    "fast-xml-parser": "^5.7.0",
     "glob": "^11.0.0"
   },
   "devDependencies": {
