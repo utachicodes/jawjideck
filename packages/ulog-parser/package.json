@@ -20,7 +20,7 @@
     "@jawji/dataflash-parser": "workspace:^"
   },
   "devDependencies": {
-    "vitest": "^3.0.0",
+    "vitest": "^3.2.6",
     "typescript": "^5.0.0"
   }
 }
