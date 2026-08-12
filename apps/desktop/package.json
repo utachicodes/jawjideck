@@ -24,6 +24,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@jawji/blackbox-parser": "workspace:^",
     "@jawji/comms": "workspace:*",
     "@jawji/companion-types": "workspace:*",
     "@jawji/dataflash-parser": "workspace:^",

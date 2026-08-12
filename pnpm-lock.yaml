@@ -38,6 +38,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@jawji/blackbox-parser':
+        specifier: workspace:^
+        version: link:../../packages/blackbox-parser
       '@jawji/comms':
         specifier: workspace:*
         version: link:../../packages/comms
@@ -232,6 +235,19 @@ importers:
       typescript:
         specifier: ^5.4.0
         version: 5.9.3
+
+  packages/blackbox-parser:
+    dependencies:
+      '@jawji/dataflash-parser':
+        specifier: workspace:^
+        version: link:../dataflash-parser
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.3)
 
   packages/comms:
     dependencies:

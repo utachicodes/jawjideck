@@ -133,6 +133,11 @@ import { decodeServoOutputRaw } from './servo-output-decode.js';
 import { writeFile, readFile } from 'node:fs/promises';
 import { createDataFlashParser, runHealthChecks, type DataFlashLog } from '@jawji/dataflash-parser';
 import {
+  convertBlackboxToDataFlashLog,
+  createBlackboxParser,
+  isBlackboxBuffer,
+} from '@jawji/blackbox-parser';
+import {
   convertUlogToDataFlashLog,
   createUlogParser,
   IGNORED_ULOG_TOPICS,
@@ -8594,7 +8599,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     const result = await dialog.showOpenDialog(mainWindow, {
       title: 'Open Flight Log',
       filters: [
-        { name: 'Flight Logs', extensions: ['bin', 'log', 'ulg'] },
+        { name: 'Flight Logs', extensions: ['bin', 'log', 'ulg', 'bbl', 'csv'] },
         { name: 'All Files', extensions: ['*'] },
       ],
       properties: ['openFile'],
@@ -8629,15 +8634,20 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     // and yield the event loop between feeds. Without the yield, IPC events
     // queued by sendLogParseProgress would not flush to the renderer until
     // the entire parse completed, leaving the progress bar stuck at 0%.
-    // PX4 .ulg files (and .bin files downloaded from logs.px4.io, which are
-    // actually ULog) are detected by the ULog magic bytes and routed to the
-    // ULog parser, then converted into the ArduPilot-shaped DataFlashLog the
-    // rest of the app consumes.
+    // Betaflight .bbl files (and blackbox_decode .csv exports) are detected
+    // by their header text and routed to the blackbox parser, then converted
+    // into the ArduPilot-shaped DataFlashLog. PX4 .ulg files (and .bin files
+    // downloaded from logs.px4.io, which are actually ULog) are detected by
+    // the ULog magic bytes and routed to the ULog parser, then converted the
+    // same way. Everything else goes to the ArduPilot DataFlash parser.
     const bytes = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-    const isUlog = isUlogBuffer(bytes.subarray(0, 16));
-    const ulogParser = isUlog ? createUlogParser({ ignoreTopics: IGNORED_ULOG_TOPICS }) : null;
-    const dataflashParser = isUlog ? null : createDataFlashParser();
-    const parser = ulogParser ?? dataflashParser;
+    const isBlackbox = isBlackboxBuffer(bytes.subarray(0, 4096));
+    const isUlog = !isBlackbox && isUlogBuffer(bytes.subarray(0, 16));
+    const blackboxParser = isBlackbox ? createBlackboxParser() : null;
+    const ulogParser =
+      isBlackbox ? null : isUlog ? createUlogParser({ ignoreTopics: IGNORED_ULOG_TOPICS }) : null;
+    const dataflashParser = isBlackbox || isUlog ? null : createDataFlashParser();
+    const parser = blackboxParser ?? ulogParser ?? dataflashParser;
     const CHUNK = 1024 * 1024;
     const yieldEventLoop = () => new Promise<void>((r) => setImmediate(r));
     const sendProgress = (bytesConsumed: number) => {
@@ -8654,10 +8664,13 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       sendProgress(end);
       await yieldEventLoop();
     }
-    // Convert PX4 ULog data into the ArduPilot-shaped DataFlashLog the rest of
-    // the app (Summary, Health Report, Explorer, map/globe, AI) consumes.
+    // Convert PX4 ULog / Betaflight blackbox data into the ArduPilot-shaped
+    // DataFlashLog the rest of the app (Summary, Health Report, Explorer,
+    // map/globe, AI) consumes.
     let log: DataFlashLog;
-    if (ulogParser) {
+    if (blackboxParser) {
+      log = convertBlackboxToDataFlashLog(blackboxParser.finalize());
+    } else if (ulogParser) {
       log = convertUlogToDataFlashLog(ulogParser.finalize());
     } else {
       log = dataflashParser!.finalize();
