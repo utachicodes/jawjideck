@@ -8713,7 +8713,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   // ─── AI Flight Log Analysis ─────────────────────────────────────────────────
 
   ipcMain.handle(IPC_CHANNELS.LOG_AI_ANALYZE, async (_, args: {
-    provider: 'claude' | 'openai' | 'gemini';
+    provider: 'claude' | 'openai' | 'gemini' | 'fanar' | 'nvidia';
     messages: { role: 'user' | 'assistant'; content: string }[];
     systemContext: string;
   }): Promise<{ success: boolean; response?: string; error?: string }> => {
@@ -8888,7 +8888,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 }
 
 async function callAiProvider(
-  provider: 'claude' | 'openai' | 'gemini',
+  provider: 'claude' | 'openai' | 'gemini' | 'fanar' | 'nvidia',
   apiKey: string,
   system: string,
   messages: { role: 'user' | 'assistant'; content: string }[],
@@ -8958,6 +8958,54 @@ async function callAiProvider(
     }
     const json = await res.json() as { candidates: { content: { parts: { text: string }[] } }[] };
     return json.candidates[0]?.content?.parts?.map((p) => p.text).join('') ?? '';
+  }
+
+  if (provider === 'fanar') {
+    // Fanar API: OpenAI-compatible endpoint with Bearer auth
+    const res = await fetch('https://api.fanar.qa/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'Fanar',
+        max_tokens: 2048,
+        messages: [{ role: 'system', content: system }, ...messages],
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Fanar API error ${res.status}: ${body}`);
+    }
+    const json = await res.json() as { choices: { message: { content: string } }[] };
+    return json.choices[0]?.message?.content ?? '';
+  }
+
+  if (provider === 'nvidia') {
+    // NVIDIA NIM endpoint — OpenAI-compatible chat completions.
+    // meta/llama-3.3-70b-instruct: strong instruction-following and reasoning
+    // for flight-log investigation (examine, hypothesize, defend, emit plots).
+    const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'meta/llama-3.3-70b-instruct',
+        max_tokens: 8192,
+        temperature: 0.4,
+        top_p: 0.95,
+        messages: [{ role: 'system', content: system }, ...messages],
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`NVIDIA API error ${res.status}: ${body}`);
+    }
+    const json = await res.json() as { choices: { message: { content: string } }[] };
+    return json.choices[0]?.message?.content ?? '';
   }
 
   throw new Error(`Unknown provider: ${provider}`);

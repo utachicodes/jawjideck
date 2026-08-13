@@ -3,7 +3,9 @@ import { useLogStore } from '../../stores/log-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import { HealthCheckCard } from './HealthCheckCard';
 import { AiWarningDialog } from './AiAnalysisPanel';
+import { computeLogSummary } from './log-summary';
 import type { ExplorerPreset, HealthCheckResult } from '@jawji/dataflash-parser';
+import { extractInsightCards } from './log-ai-tools';
 
 function computeFlightStats(log: ReturnType<typeof useLogStore.getState>['currentLog']) {
   if (!log) return null;
@@ -73,17 +75,30 @@ export function HealthReportPanel() {
     store.setAiInsightError(null);
 
     const stats = computeFlightStats(currentLog) ?? { maxAlt: 0, maxSpd: 0, totalDist: 0, totalMah: 0 };
+    const summary = computeLogSummary(currentLog);
     const meta = currentLog.metadata;
     const dS = (currentLog.timeRange.endUs - currentLog.timeRange.startUs) / 1_000_000;
     const dist = stats.totalDist > 1000 ? `${(stats.totalDist / 1000).toFixed(2)} km` : `${stats.totalDist.toFixed(0)} m`;
+
+    const modeLines = summary.modeStats.map((ms) => `- ${ms.name}: ${ms.seconds.toFixed(0)}s (${(ms.fraction * 100).toFixed(0)}%)`);
+    const typeLines = Object.entries(currentLog.messages)
+      .sort((a, b) => b[1].length - a[1].length)
+      .map(([type, msgs]) => `- ${type}: ${msgs.length} rows`);
 
     const systemContext = `You are a flight log analyst for ArduPilot vehicles. Analyze this flight and return ONLY a JSON array of insight cards. No other text.
 
 ## This Flight
 - Vehicle: ${meta.vehicleType || 'Unknown'} running ${meta.firmwareString || meta.firmwareVersion || 'Unknown firmware'}
-- Duration: ${(dS / 60).toFixed(1)} minutes
-- Max Altitude: ${stats.maxAlt.toFixed(1)} m | Max Speed: ${stats.maxSpd.toFixed(1)} m/s
-- Distance: ${dist} | Battery Used: ${stats.totalMah.toFixed(0)} mAh
+- Duration: ${(dS / 60).toFixed(1)} minutes (${dS.toFixed(1)} s)${summary.flightTimeS != null ? ` | flight time: ${summary.flightTimeS.toFixed(1)} s` : ''}
+- Max Altitude: ${stats.maxAlt.toFixed(1)} m | Max Speed: ${stats.maxSpd.toFixed(1)} m/s${summary.maxClimbRateMs != null ? ` | max climb/descent: ${summary.maxClimbRateMs.toFixed(1)} m/s` : ''}
+- Distance: ${dist} | Battery Used: ${stats.totalMah.toFixed(0)} mAh${summary.battery ? ` (${summary.battery.minVolt.toFixed(2)}–${summary.battery.maxVolt.toFixed(2)} V, max ${summary.battery.maxCurr.toFixed(1)} A)` : ''}
+${summary.gps ? `- GPS: ${summary.gps.minSats}–${summary.gps.maxSats} satellites, HDOP ${summary.gps.minHDop}–${summary.gps.maxHDop}, max ${summary.gps.maxDistanceFromHomeM > 1000 ? `${(summary.gps.maxDistanceFromHomeM / 1000).toFixed(2)} km` : `${summary.gps.maxDistanceFromHomeM.toFixed(0)} m`} from home` : ''}
+
+## Flight Modes
+${modeLines.join('\n') || '- No MODE records in this log.'}
+
+## Message Types Recorded
+${typeLines.join('\n')}
 
 ## Automated Health Check Results
 ${JSON.stringify(healthResults, null, 2)}
@@ -114,11 +129,10 @@ Return 3-6 cards. Most important issues first.`;
 
     store.setIsAiInsightLoading(false);
     if (result?.success && result.response) {
-      try {
-        const jsonStr = result.response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-        const parsed = JSON.parse(jsonStr) as HealthCheckResult[];
+      const parsed = extractInsightCards(result.response);
+      if (parsed) {
         store.setAiInsightCards(parsed);
-      } catch {
+      } else {
         store.setAiInsightError('Failed to parse AI response');
       }
     } else {

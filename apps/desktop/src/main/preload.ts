@@ -697,7 +697,7 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.LOG_PARSE_FILE, filePath),
 
   logAiAnalyze: (args: {
-    provider: 'claude' | 'openai' | 'gemini';
+    provider: 'claude' | 'openai' | 'gemini' | 'fanar' | 'nvidia';
     messages: { role: 'user' | 'assistant'; content: string }[];
     systemContext: string;
   }): Promise<{ success: boolean; response?: string; error?: string }> =>

@@ -7,6 +7,8 @@ import {
   getParameters,
   executeLogTool,
   runClaudeLogChat,
+  parsePlotMarkers,
+  stripPlotMarkers,
   type ClaudeMessage,
 } from './log-ai-tools';
 
@@ -101,6 +103,57 @@ describe('executeLogTool', () => {
   it('dispatches by tool name', () => {
     expect(executeLogTool('list_message_types', {}, makeLog())).toHaveLength(3);
     expect(executeLogTool('bogus', {}, makeLog())).toHaveProperty('error');
+  });
+});
+
+describe('plot markers', () => {
+  it('parses :::plot::: blocks into markers', () => {
+    const text = [
+      'Attitude looked clean:',
+      ':::plot',
+      'type=ATT',
+      'fields=DesRoll,Roll,DesPitch,Pitch',
+      'startS=0',
+      'endS=240',
+      'title=Attitude (desired vs actual)',
+      ':::',
+      '',
+      'Vibration spike at 12s:',
+      ':::plot',
+      'type=VIBE',
+      'fields=VibeX,VibeY',
+      ':::',
+    ].join('\n');
+    const markers = parsePlotMarkers(text);
+    expect(markers).toHaveLength(2);
+    expect(markers[0]).toEqual({
+      type: 'ATT',
+      fields: ['DesRoll', 'Roll', 'DesPitch', 'Pitch'],
+      startS: 0,
+      endS: 240,
+      title: 'Attitude (desired vs actual)',
+    });
+    expect(markers[1]).toMatchObject({ type: 'VIBE', fields: ['VibeX', 'VibeY'] });
+  });
+
+  it('tolerates quoted titles and comment lines', () => {
+    const markers = parsePlotMarkers(
+      ':::plot\n# Roll vs desired\ntype=ATT\nfields="Roll, DesRoll"\ntitle="Roll vs desired"\n:::\n',
+    );
+    expect(markers).toHaveLength(1);
+    expect(markers[0]!.title).toBe('Roll vs desired');
+    expect(markers[0]!.fields).toEqual(['Roll', 'DesRoll']);
+  });
+
+  it('skips blocks without a type', () => {
+    expect(parsePlotMarkers(':::plot\nfields=Roll\n:::\n')).toHaveLength(0);
+  });
+
+  it('strips plot blocks from display text', () => {
+    const text = 'See the roll data:\n:::plot\ntype=ATT\nfields=Roll\n:::\n\nNext point.';
+    expect(stripPlotMarkers(text)).toContain('See the roll data');
+    expect(stripPlotMarkers(text)).not.toContain(':::plot');
+    expect(stripPlotMarkers(text)).toContain('Next point.');
   });
 });
 

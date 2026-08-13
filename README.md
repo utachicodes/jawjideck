@@ -11,7 +11,7 @@
   <a href="https://github.com/iNavFlight/inav/wiki/MSP-V2"><img src="https://img.shields.io/badge/MSP-v1%2Fv2-orange" alt="MSP" /></a>
   <a href="https://codecov.io/gh/utachicodes/Jawji"><img src="https://codecov.io/gh/utachicodes/Jawji/branch/master/graph/badge.svg" alt="Coverage" /></a>
   <a href="https://discord.gg/JX2JdVXPPC"><img src="https://img.shields.io/badge/Discord-Join%20Us-5865F2?logo=discord&logoColor=white" alt="Discord" /></a>
-  <a href="https://Jawji.com"><img src="https://img.shields.io/badge/Website-Jawji.com-22d3ee" alt="Website" /></a>
+  <a href="https://jawji.space"><img src="https://img.shields.io/badge/Website-jawji.space-22d3ee" alt="Website" /></a>
 </p>
 
 <p align="center">

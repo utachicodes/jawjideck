@@ -995,7 +995,7 @@ export interface SettingsStoreSchema {
   experienceLevelVersion?: string;
   uiVisibility?: UiVisibilitySettings;
   showDebugLogs?: boolean;
-  aiProvider?: 'claude' | 'openai' | 'gemini' | null;
+  aiProvider?: 'claude' | 'openai' | 'gemini' | 'fanar' | 'nvidia' | null;
   /** User-saved survey planner presets. Built-in presets ship in code. */
   surveyPresets?: PersistedSurveyPreset[];
   /** Last-used survey preset id (built-in or user-defined). Restored on app start. */
