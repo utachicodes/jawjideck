@@ -54,6 +54,8 @@ function AiAnalysisSection() {
     { id: 'claude' as const, name: 'Claude', color: 'bg-orange-500' },
     { id: 'openai' as const, name: 'OpenAI', color: 'bg-emerald-500' },
     { id: 'gemini' as const, name: 'Gemini', color: 'bg-blue-500' },
+    { id: 'fanar' as const, name: 'Fanar', color: 'bg-purple-500' },
+    { id: 'nvidia' as const, name: 'NVIDIA', color: 'bg-green-500' },
   ];
 
   useEffect(() => {

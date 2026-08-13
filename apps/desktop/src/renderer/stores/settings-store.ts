@@ -313,8 +313,8 @@ interface SettingsStore {
   setShowDebugLogs: (enabled: boolean) => void;
 
   // AI Analysis
-  aiProvider: 'claude' | 'openai' | 'gemini' | null;
-  setAiProvider: (provider: 'claude' | 'openai' | 'gemini' | null) => void;
+  aiProvider: 'claude' | 'openai' | 'gemini' | 'fanar' | 'nvidia' | null;
+  setAiProvider: (provider: 'claude' | 'openai' | 'gemini' | 'fanar' | 'nvidia' | null) => void;
   aiWarningDismissed: boolean;
   setAiWarningDismissed: (dismissed: boolean) => void;
 
@@ -934,7 +934,7 @@ export const useSettingsStore = create<SettingsStore>()(
           companionUnlocked: !!((settings as unknown as Record<string, unknown>).companionUnlocked),
           advancedCommandsUnlocked: !!((settings as unknown as Record<string, unknown>).advancedCommandsUnlocked),
           showDebugLogs: !!((settings as unknown as Record<string, unknown>).showDebugLogs),
-          aiProvider: ((settings as unknown as Record<string, unknown>).aiProvider as 'claude' | 'openai' | 'gemini' | null) ?? null,
+          aiProvider: ((settings as unknown as Record<string, unknown>).aiProvider as 'claude' | 'openai' | 'gemini' | 'fanar' | 'nvidia' | null) ?? null,
           aiWarningDismissed: !!((settings as unknown as Record<string, unknown>).aiWarningDismissed),
           surveyPresets: (settings.surveyPresets ?? []) as PersistedSurveyPreset[],
           lastSurveyPresetId: settings.lastSurveyPresetId ?? null,
