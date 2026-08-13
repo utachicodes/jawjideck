@@ -65,6 +65,9 @@ interface LicensingState {
 // "surface an honest needs-re-verification state" principle.
 export const STALE_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
 
+/** How often to silently re-verify entitlements in the background while signed in. */
+const PERIODIC_REVERIFY_INTERVAL_MS = 15 * 60 * 1000;
+
 export function isCacheStale(cachedAt: number | null, now: number = Date.now()): boolean {
   if (!cachedAt) return true;
   return now - cachedAt > STALE_THRESHOLD_MS;
