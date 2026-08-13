@@ -4,7 +4,10 @@ import { useSettingsStore } from '../../stores/settings-store';
 import { useNavigationStore } from '../../stores/navigation-store';
 import { useConnectionStore } from '../../stores/connection-store';
 import { useParameterStore } from '../../stores/parameter-store';
-import { runClaudeLogChat } from './log-ai-tools';
+import { useResolvedTheme } from '../../hooks/useTheme';
+import { runClaudeLogChat, parsePlotMarkers, stripPlotMarkers } from './log-ai-tools';
+import { computeLogSummary } from './log-summary';
+import { AiPlotCard, openMarkerInExplorer } from './AiPlotCard';
 
 /** AI disclaimer dialog shown before first AI interaction */
 export function AiWarningDialog({ onAccept, onCancel }: { onAccept: (dismiss: boolean) => void; onCancel: () => void }) {
@@ -320,44 +323,46 @@ export function AiAnalysisPanel() {
     inputRef.current?.focus();
   }, []);
 
-  const flightStats = useMemo(() => {
-    if (!currentLog) return null;
-    let maxAlt = 0, maxSpd = 0, totalMah = 0;
-    let lastLat = 0, lastLng = 0, totalDist = 0, hasLastPos = false;
-    const gps = currentLog.messages['GPS'];
-    if (gps) {
-      for (const msg of gps) {
-        const alt = msg.fields['Alt'];
-        const spd = msg.fields['Spd'];
-        const lat = msg.fields['Lat'];
-        const lng = msg.fields['Lng'];
-        if (typeof alt === 'number' && alt > maxAlt) maxAlt = alt;
-        if (typeof spd === 'number' && spd > maxSpd) maxSpd = spd;
-        if (typeof lat === 'number' && typeof lng === 'number' && lat !== 0 && lng !== 0) {
-          if (hasLastPos) {
-            const dLat = (lat - lastLat) * Math.PI / 180;
-            const dLng = (lng - lastLng) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) ** 2 + Math.cos(lastLat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-            totalDist += 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-          }
-          lastLat = lat; lastLng = lng; hasLastPos = true;
-        }
-      }
-    }
-    const bat = currentLog.messages['BAT'];
-    if (bat && bat.length > 0) {
-      const mah = bat[bat.length - 1]!.fields['CurrTot'];
-      if (typeof mah === 'number') totalMah = mah;
-    }
-    return { maxAlt, maxSpd, totalDist, totalMah };
-  }, [currentLog]);
+  const logSummary = useMemo(() => (currentLog ? computeLogSummary(currentLog) : null), [currentLog]);
+  const isLight = useResolvedTheme() === 'light';
 
   const buildSystemContext = useCallback(() => {
     if (!currentLog || !healthResults) return '';
-    const stats = flightStats ?? { maxAlt: 0, maxSpd: 0, totalDist: 0, totalMah: 0 };
-    const meta = currentLog.metadata;
+    const s = logSummary;
     const dS = (currentLog.timeRange.endUs - currentLog.timeRange.startUs) / 1_000_000;
-    const dist = stats.totalDist > 1000 ? `${(stats.totalDist / 1000).toFixed(2)} km` : `${stats.totalDist.toFixed(0)} m`;
+    const dist = s?.gps ? (s.gps.distanceFlownM > 1000 ? `${(s.gps.distanceFlownM / 1000).toFixed(2)} km` : `${s.gps.distanceFlownM.toFixed(0)} m`) : 'unknown';
+
+    const statsLines: string[] = [];
+    if (s) {
+      statsLines.push(`- Vehicle: ${s.vehicleType || 'Unknown'} running ${s.firmwareString || s.firmwareVersion || 'Unknown firmware'}${s.boardType ? ` (board: ${s.boardType})` : ''}${s.gitHash ? `, git ${s.gitHash.slice(0, 10)}` : ''}`);
+      statsLines.push(`- Duration: ${(dS / 60).toFixed(1)} minutes (${dS.toFixed(1)} s)${s.flightTimeS != null ? ` | flight time: ${s.flightTimeS.toFixed(1)} s` : ''}`);
+      if (s.maxAltM != null) statsLines.push(`- Altitude: ${s.minAltM != null ? `${s.minAltM.toFixed(1)} – ` : ''}${s.maxAltM.toFixed(1)} m (max)${s.maxClimbRateMs != null ? ` | max climb/descent: ${s.maxClimbRateMs.toFixed(1)} m/s` : ''}`);
+      if (s.maxSpeedMs != null) statsLines.push(`- Speed: max ${s.maxSpeedMs.toFixed(1)} m/s (${(s.maxSpeedMs * 3.6).toFixed(1)} km/h)`);
+      if (s.gps) {
+        statsLines.push(`- Distance: ${dist} | max distance from home: ${s.gps.maxDistanceFromHomeM > 1000 ? `${(s.gps.maxDistanceFromHomeM / 1000).toFixed(2)} km` : `${s.gps.maxDistanceFromHomeM.toFixed(0)} m`}`);
+        statsLines.push(`- GPS: ${s.gps.minSats}–${s.gps.maxSats} satellites, HDOP ${s.gps.minHDop}–${s.gps.maxHDop}`);
+      }
+      if (s.battery) {
+        statsLines.push(`- Battery: ${s.battery.minVolt.toFixed(2)}–${s.battery.maxVolt.toFixed(2)} V, max current ${s.battery.maxCurr.toFixed(1)} A, ${s.battery.consumedMah.toFixed(0)} mAh consumed`);
+      }
+    }
+
+    // Flight mode timeline — lets the model talk about what happened when.
+    const modeLines: string[] = [];
+    if (s) {
+      for (const ms of s.modeStats) {
+        modeLines.push(`- ${ms.name}: ${ms.seconds.toFixed(0)}s (${(ms.fraction * 100).toFixed(0)}%)`);
+      }
+    }
+
+    // Message type inventory so even tool-less providers know what's recorded.
+    const typeLines = Object.entries(currentLog.messages)
+      .sort((a, b) => b[1].length - a[1].length)
+      .map(([type, msgs]) => {
+        const first = msgs[0];
+        const fields = first ? Object.keys(first.fields).join(', ') : '';
+        return `- ${type}: ${msgs.length} rows${fields ? ` (${fields})` : ''}`;
+      });
 
     // Collect reboot-required params from metadata
     const paramMeta = useParameterStore.getState().metadata;
@@ -378,24 +383,73 @@ export function AiAnalysisPanel() {
 
 ## Reading the Log (IMPORTANT)
 You have tools to query the raw telemetry of THIS log on demand — you are not limited to the summary below. Use them to ground every claim in actual data instead of guessing:
-- list_message_types — discover what's recorded (ATT, RCOU, VIBE, GPS, BAT, ERR, MODE, RATE, …). Call this first if unsure what's available.
-- get_field_stats(type, fields?, startS?, endS?) — count/min/max/mean/stddev/first/last for numeric fields. Use for aggregate questions.
-- read_samples(type, fields?, startS?, endS?, maxPoints?) — decimated time-series to inspect the shape of a trend, spike, or oscillation.
+
+### Discover message types
+- list_message_types — discover what's recorded (ATT, RCOU, VIBE, GPS, BAT, ERR, MODE, RATE, etc.). Call this first if unsure what's available.
+
+### Aggregate statistics
+- get_field_stats(type, fields?, startS?, endS?) — count/min/max/mean/stddev/first/last for numeric fields. Use for aggregate questions: vibration levels, attitude error, output saturation, voltage sag.
+
+### Time-series samples (for graphs/plots)
+- read_samples(type, fields?, startS?, endS?, maxPoints?) — decimated time-series to inspect the shape of a trend, spike, or oscillation. Default ~200 points, max 500. Each point has tS (seconds from log start) plus the requested fields. Prefer this over guesswork to plot exact trends.
+
+### Parameter lookup
 - get_parameters(names? | search?) — ArduPilot parameter values from the log.
-All time arguments (startS/endS) are SECONDS from log start. This flight is ${dS.toFixed(1)} s long. Prefer real values pulled from these tools over the summary, and cite specific numbers and timestamps.`
+
+### Plot markers (render real charts in your answer)
+To embed an actual chart instead of just describing one, end your answer with a :::plot::: block. The app renders it as a time-series chart straight from the log:
+:::plot
+type=ATT
+fields=DesRoll,Roll,DesPitch,Pitch
+startS=0
+endS=240
+title=Attitude (desired vs actual)
+:::
+Rules:
+- type is required and must be a real message type (check list_message_types). fields are numeric fields of that type.
+- startS/endS are optional seconds from log start (this flight is ${dS.toFixed(1)} s long); omit for the whole log.
+- Prefer 1–2 plots that prove your point (e.g. a VIBE spike window, battery sag around a timestamp, altitude during a mission phase). Only emit plots you can ground in data you actually queried.
+- Put plot blocks on their own lines so they render cleanly; the app strips them from the text view.
+
+### Graph/Plot guidance
+- When analyzing dynamics, first call list_message_types to see what's recorded, then read_samples on the most relevant message type(s) to get time-series data. Focus on message types that capture vehicle dynamics: ATT (roll/pitch/yaw), VIBE (vibration), RCMO (radio control inputs), GPS (position/altitude/speed), BAT (voltage/current), and ERR (errors/failures). Cite specific tS ranges and values, then back key claims with a :::plot::: marker.
+
+All time arguments (startS/endS) are SECONDS from log start. Prefer real values pulled from these tools over the summary, and cite specific numbers and timestamps.`
       : '';
+
+    // Non-tool providers (NVIDIA etc.) get the same :::plot marker instructions so
+    // they can embed real charts in their answers, grounded in the summary above.
+    const plotSection = aiProvider === 'claude' ? '' : `
+## Plot markers (render real charts in your answer)
+To embed an actual chart instead of just describing one, end your answer with a :::plot::: block. The app renders it as a time-series chart straight from the log:
+:::plot
+type=ATT
+fields=DesRoll,Roll
+startS=0
+endS=240
+title=Attitude (desired vs actual)
+:::
+Rules:
+- type is required and must be one of the message types in the "Message Types Recorded" section above (e.g. ATT, BAT, GPS, VIBE, RCOU, ERR, MODE, EKF). fields are numeric fields of that type (see the field lists above).
+- startS/endS are optional seconds from log start (this flight is ${dS.toFixed(1)} s long); omit for the whole log.
+- Prefer 1–2 plots that prove your point (e.g. a VIBE spike window, battery sag around a timestamp, altitude during a mission phase). Only emit plots you can ground in the data provided.
+- Put plot blocks on their own lines so they render cleanly; the app strips them from the text view.
+- Investigate the data: form hypotheses about what happened (e.g. vibration, oscillation, voltage sag, GPS issues), defend them with the numbers above, and recommend specific ArduPilot parameters where relevant.`;
 
     return `You are a flight log analyst embedded in Jawji, an ArduPilot ground control station.
 You ONLY answer questions about this specific flight log, ArduPilot configuration, and drone/vehicle troubleshooting. Refuse any off-topic requests politely.
 
 ## This Flight
-- Vehicle: ${meta.vehicleType || 'Unknown'} running ${meta.firmwareString || meta.firmwareVersion || 'Unknown firmware'}
-- Duration: ${(dS / 60).toFixed(1)} minutes (${dS.toFixed(1)} s)
-- Max Altitude: ${stats.maxAlt.toFixed(1)} m | Max Speed: ${stats.maxSpd.toFixed(1)} m/s
-- Distance: ${dist} | Battery Used: ${stats.totalMah.toFixed(0)} mAh
+${statsLines.join('\n') || '- No usable telemetry found in this log.'}
+
+## Flight Modes
+${modeLines.join('\n') || '- No MODE records in this log.'}
+
+## Message Types Recorded
+${typeLines.join('\n')}
 
 ## Health Check Results
-${JSON.stringify(healthResults, null, 2)}${toolSection}
+${JSON.stringify(healthResults, null, 2)}${toolSection}${plotSection}
 
 ## Jawji Navigation (use these to guide the user)
 - Parameters screen: user can search and change ArduPilot parameters.
@@ -419,8 +473,10 @@ If a parameter requires a reboot, mention it in your explanation text.${rebootPa
 - Be concise and actionable. Use markdown.
 - Reference ArduPilot parameters by name when suggesting changes.
 - Always use the :::param::: format when suggesting specific values.
+- Back claims with real numbers and time ranges from the log.
+- When a time-series plot would clarify a point, embed it with a :::plot::: block (see above).
 - If asked about data not in the log, say so.`;
-  }, [currentLog, healthResults, flightStats, aiProvider]);
+  }, [currentLog, healthResults, logSummary, aiProvider]);
 
   const sendToAi = useCallback(async () => {
     if (!aiProvider || !currentLog) return;
@@ -512,7 +568,12 @@ If a parameter requires a reboot, mention it in your explanation text.${rebootPa
     }
   }, []);
 
-  const providerName = aiProvider === 'claude' ? 'Claude' : aiProvider === 'openai' ? 'OpenAI' : 'Gemini';
+  const providerName =
+    aiProvider === 'claude' ? 'Claude'
+    : aiProvider === 'openai' ? 'OpenAI'
+    : aiProvider === 'gemini' ? 'Gemini'
+    : aiProvider === 'nvidia' ? 'NVIDIA'
+    : 'Fanar';
 
   if (!aiProvider) {
     return (
@@ -586,7 +647,10 @@ If a parameter requires a reboot, mention it in your explanation text.${rebootPa
           <div className="px-4 py-4 space-y-4 max-w-3xl mx-auto">
             {aiMessages.map((msg, i) => {
               const paramSuggestions = msg.role === 'assistant' ? parseParamSuggestions(msg.content) : [];
-              const displayContent = msg.role === 'assistant' ? stripParamMarkers(msg.content) : msg.content;
+              const plotMarkers = msg.role === 'assistant' ? parsePlotMarkers(msg.content) : [];
+              const displayContent = msg.role === 'assistant'
+                ? stripPlotMarkers(stripParamMarkers(msg.content))
+                : msg.content;
 
               return (
                 <div key={i} className={msg.role === 'user' ? 'flex justify-end' : ''}>
@@ -611,6 +675,19 @@ If a parameter requires a reboot, mention it in your explanation text.${rebootPa
                       />
                       {paramSuggestions.length > 0 && (
                         <ParamActionCard params={paramSuggestions} requireWarning={requireWarning} />
+                      )}
+                      {currentLog && plotMarkers.length > 0 && (
+                        <div className="space-y-2">
+                          {plotMarkers.map((marker, pi) => (
+                            <AiPlotCard
+                              key={pi}
+                              log={currentLog}
+                              marker={marker}
+                              isLight={isLight}
+                              onOpenInExplorer={openMarkerInExplorer}
+                            />
+                          ))}
+                        </div>
                       )}
                     </div>
                   )}

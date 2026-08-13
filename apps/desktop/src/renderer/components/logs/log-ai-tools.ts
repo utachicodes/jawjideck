@@ -9,6 +9,29 @@
 // the log lives.
 
 import type { ParsedLog } from '../../stores/log-store';
+import type { HealthCheckResult } from '@jawji/dataflash-parser';
+
+/** Tolerantly extract a JSON array of insight cards from a model response that
+ *  may be wrapped in markdown fences, contain prose around the JSON, or use a
+ *  trailing comma. Returns null when no valid array can be found. */
+export function extractInsightCards(raw: string): HealthCheckResult[] | null {
+  const fenced = raw.replace(/```(?:json|JSON|js)?\s*/g, '').replace(/```/g, '').trim();
+  const noTrailingCommas = fenced.replace(/,\s*([\]}])/g, '$1');
+  const candidates: string[] = [];
+  const first = noTrailingCommas.indexOf('[');
+  const last = noTrailingCommas.lastIndexOf(']');
+  if (first !== -1 && last > first) candidates.push(noTrailingCommas.slice(first, last + 1));
+  candidates.push(noTrailingCommas);
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as unknown;
+      if (Array.isArray(parsed)) return parsed as HealthCheckResult[];
+    } catch {
+      // keep trying the next candidate
+    }
+  }
+  return null;
+}
 
 type LogMsg = { type: string; timeUs: number; fields: Record<string, number | string> };
 
@@ -158,6 +181,87 @@ export function getParameters(log: ParsedLog, names?: string[], search?: string)
     return { matched: count, params };
   }
   return { totalParams: map.size, note: 'Call again with names[] (exact) or search (substring) to get values.' };
+}
+
+// ─── Inline plot markers ─────────────────────────────────────────────────────
+//
+// The model can embed real charts in its answer with a :::plot::: block. The
+// renderer parses these markers and renders a time-series chart straight from
+// the parsed log (see AiPlotCard.tsx), so an AI recommendation isn't just text.
+
+export interface PlotMarker {
+  /** Message type whose records feed the chart, e.g. "ATT". */
+  type: string;
+  /** Numeric field names of that type to plot. */
+  fields: string[];
+  /** Window start, seconds from log start. */
+  startS?: number;
+  /** Window end, seconds from log start. */
+  endS?: number;
+  /** Optional chart title. */
+  title?: string;
+}
+
+const PLOT_BLOCK_RE = /:::plot\s+([\s\S]*?)\s*:::/g;
+
+/**
+ * Extract :::plot::: blocks from an AI response. Block format (one key per
+ * line, key=value):
+ *
+ *   :::plot
+ *   type=ATT
+ *   fields=DesRoll,Roll,DesPitch,Pitch
+ *   startS=0
+ *   endS=240
+ *   title=Attitude (desired vs actual)
+ *   :::
+ *
+ * Only `type` is required; unknown lines are ignored so the model can add
+ * comment-ish notes without breaking parsing.
+ */
+export function parsePlotMarkers(text: string): PlotMarker[] {
+  const out: PlotMarker[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = PLOT_BLOCK_RE.exec(text)) !== null) {
+    const body = m[1]!;
+    let type = '';
+    const fields: string[] = [];
+    let startS: number | undefined;
+    let endS: number | undefined;
+    let title: string | undefined;
+    for (const rawLine of body.split('\n')) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith('#')) continue;
+      const eq = line.indexOf('=');
+      if (eq === -1) continue;
+      const key = line.slice(0, eq).trim().toLowerCase();
+      const value = line.slice(eq + 1).trim();
+      if (key === 'type') {
+        type = value.toUpperCase();
+      } else if (key === 'fields') {
+        for (const f of value.split(',')) {
+          const field = f.trim().replace(/^"+|"+$/g, '');
+          if (field) fields.push(field);
+        }
+      } else if (key === 'starts') {
+        const n = Number(value);
+        if (Number.isFinite(n)) startS = n;
+      } else if (key === 'ends') {
+        const n = Number(value);
+        if (Number.isFinite(n)) endS = n;
+      } else if (key === 'title') {
+        title = value.replace(/^"(.*)"$/, '$1');
+      }
+    }
+    if (!type) continue;
+    out.push({ type, fields, startS, endS, title });
+  }
+  return out;
+}
+
+/** Remove :::plot::: blocks from text used for the plain markdown view. */
+export function stripPlotMarkers(text: string): string {
+  return text.replace(PLOT_BLOCK_RE, '').replace(/\n{3,}/g, '\n\n');
 }
 
 /** Claude tool definitions exposed to the model. */
