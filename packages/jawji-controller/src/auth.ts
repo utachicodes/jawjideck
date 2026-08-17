@@ -14,6 +14,9 @@ export function loadOrCreateToken(tokenPath: string): string {
   }
 
   if (fs.existsSync(tokenPath)) {
+    // Ensure the on-disk token file stays owner-only even if it pre-dates the
+    // 0o600 write below (e.g. created by an older version or a backup).
+    fs.chmodSync(tokenPath, 0o600);
     const existing = fs.readFileSync(tokenPath, 'utf-8').trim();
     if (existing.length === 64) return existing;
   }

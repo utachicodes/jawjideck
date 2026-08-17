@@ -5,7 +5,7 @@
  * No pre-bundled binaries — everything is fetched on demand and cached locally.
  */
 
-import { spawn, execSync } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import { mkdir, writeFile, chmod, readFile } from 'fs/promises';
@@ -83,9 +83,20 @@ export async function downloadEsptool(): Promise<string> {
   await writeFile(archivePath, buffer);
 
   if (assetName.endsWith('.tar.gz')) {
-    execSync(`tar -xzf "${archivePath}" -C "${destDir}" --strip-components=1`, { timeout: 30000 });
+    // spawnSync with an arg array avoids shell interpolation of paths.
+    const tarResult = spawnSync('tar', ['-xzf', archivePath, '-C', destDir, '--strip-components=1'], { timeout: 30000 });
+    if (tarResult.status !== 0) throw new Error(`tar extraction failed: ${tarResult.error?.message ?? tarResult.stderr?.toString() ?? 'unknown error'}`);
   } else {
-    execSync(`powershell -Command "Expand-Archive -Force '${archivePath}' '${destDir}'"`, { timeout: 30000 });
+    // Paths are passed as separate argv entries ($args), never interpolated
+    // into a shell command string.
+    const psResult = spawnSync(
+      'powershell',
+      ['-NoProfile', '-NonInteractive', '-Command',
+        'Expand-Archive -Force -LiteralPath $args[0] -DestinationPath $args[1]',
+        archivePath, destDir],
+      { timeout: 30000 },
+    );
+    if (psResult.status !== 0) throw new Error(`Expand-Archive failed: ${psResult.error?.message ?? psResult.stderr?.toString() ?? 'unknown error'}`);
     const nested = fs.readdirSync(destDir).find((d) => d.startsWith('esptool-') && fs.statSync(path.join(destDir, d)).isDirectory());
     if (nested) {
       const nestedDir = path.join(destDir, nested);
@@ -258,11 +269,13 @@ print('OK')
   await writeFile(extractPy, extractScript);
 
   try {
-    execSync(`python3 "${extractPy}" "${tempZip}" "${chipDir}" "${cacheDir}"`, { timeout: 30000 });
+    const result = spawnSync('python3', [extractPy, tempZip, chipDir, cacheDir], { timeout: 30000 });
+    if (result.status !== 0) throw new Error(result.error?.message || 'python3 failed');
   } catch {
     // Fallback: try python instead of python3
     try {
-      execSync(`python "${extractPy}" "${tempZip}" "${chipDir}" "${cacheDir}"`, { timeout: 30000 });
+      const result = spawnSync('python', [extractPy, tempZip, chipDir, cacheDir], { timeout: 30000 });
+      if (result.status !== 0) throw new Error(result.error?.message || 'python failed');
     } catch (e) {
       throw new Error(`Failed to extract firmware: ${e}`);
     }

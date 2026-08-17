@@ -97,6 +97,15 @@ function handleDeepLink(url: string): void {
     return;
   }
 
+  // Defense in depth: only accept the registered scheme. On macOS/Windows the
+  // OS only hands us jawji:// URLs, but argv-sourced links (dev env var,
+  // handleStartupArgs) could carry anything — reject non-jawji schemes so a
+  // crafted https://open?... URL cannot trigger install/open/auth actions.
+  if (parsed.protocol !== 'jawji:') {
+    console.warn('[DeepLink] Ignoring non-jawji URL:', parsed.protocol);
+    return;
+  }
+
   switch (parsed.host) {
     case 'install':
       handleInstall(parsed);

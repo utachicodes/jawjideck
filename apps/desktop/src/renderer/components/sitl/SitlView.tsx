@@ -385,20 +385,17 @@ export default function SitlView() {
               <h3 className="text-sm font-medium text-content">Visual Simulator</h3>
             </div>
 
-            {/* Simulator selection dropdown - temporarily disabled */}
+            {/* Simulator selection dropdown */}
             <div className="flex items-center gap-2">
-              <span className="px-1.5 py-0.5 text-[10px] font-medium text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded">
-                Coming Soon
-              </span>
               <select
-                value="none"
+                value={selectedSimulator}
                 onChange={(e) => setSelectedSimulator(e.target.value as 'flightgear' | 'xplane' | 'none')}
-                disabled={true}
+                disabled={isRunning}
                 className="px-2 py-1 text-xs bg-surface-raised text-content border border rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="none">None</option>
+                <option value="none">No visual sim</option>
                 <option value="xplane">X-Plane (Recommended)</option>
-                <option value="flightgear">FlightGear</option>
+                <option value="flightgear">FlightGear (Free)</option>
               </select>
             </div>
           </div>

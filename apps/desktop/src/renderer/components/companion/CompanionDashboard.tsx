@@ -29,6 +29,7 @@ import { ExtensionsPanel } from './panels/ExtensionsPanel';
 import { DroneBridgeStatusPanel } from './panels/DroneBridgeStatusPanel';
 import { DroneBridgeSettingsPanel } from './panels/DroneBridgeSettingsPanel';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
+import { Terminal, KeyRound, Plug } from 'lucide-react';
 
 // ─── Tab types ──────────────────────────────────────────────────────────────
 
@@ -619,9 +620,16 @@ function DashboardTab() {
 
   // Disconnected state
   if (connectionState.state === 'disconnected') {
+    const sshSteps = [
+      { text: 'SSH into the Raspberry Pi (find its address on your router, or try the Pi name with .local):', code: 'ssh pi@<pi-ip>' },
+      { text: 'Run the one-line installer:', code: 'curl -fsSL https://jawji.space/install.sh | sudo bash' },
+      { text: 'On the Pi, print everything needed to connect (IP, port, mDNS name, token):', code: 'sudo jawji info' },
+      { text: 'Paste the pairing token into the field below (or click "Scan for controllers").', code: null },
+    ];
+
     return (
-      <div className="h-full flex items-center justify-center p-8">
-        <div className="max-w-lg text-center space-y-6">
+      <div className="h-full flex items-center justify-center p-8 overflow-y-auto">
+        <div className="max-w-xl text-center space-y-6">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-surface border border-subtle">
             <svg className="w-7 h-7 text-content-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
@@ -630,14 +638,42 @@ function DashboardTab() {
           <div>
             <h3 className="text-sm font-medium text-content">Jawji Controller Not Connected</h3>
             <p className="text-xs text-content-secondary mt-2 max-w-sm mx-auto">
-              Install the Jawji Controller on your companion computer to enable real-time metrics, terminal access, and service management.
+              Install the Jawji Controller on your Raspberry Pi or companion computer to enable real-time metrics, terminal access, and service management.
             </p>
           </div>
 
           <div className="bg-surface rounded-xl border border-subtle p-5 text-left space-y-4">
-            <h4 className="text-xs font-medium text-content">Quick Install</h4>
-            <div className="bg-surface-input rounded-lg px-3 py-2 font-mono text-xs text-content-secondary select-all">
-              curl -fsSL https://jawji.space/install.sh | sudo bash
+            <div className="flex items-center gap-2">
+              <Terminal className="w-3.5 h-3.5 text-blue-400" />
+              <h4 className="text-xs font-medium text-content">Connect a Raspberry Pi (SSH)</h4>
+            </div>
+            <ol className="space-y-3">
+              {sshSteps.map((step, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-xs text-content-secondary">
+                  <span className="w-5 h-5 rounded-full bg-blue-500/15 text-blue-400 flex items-center justify-center font-mono text-[10px] shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
+                  <div className="space-y-1">
+                    <p className="leading-relaxed">{step.text}</p>
+                    {step.code && (
+                      <div className="bg-surface-input rounded-lg px-3 py-1.5 font-mono text-[11px] text-content-secondary select-all break-all">
+                        {step.code}
+                      </div>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <p className="flex items-center gap-1.5 text-[11px] text-content-tertiary">
+              <KeyRound className="w-3 h-3 shrink-0" />
+              The installer prints a summary with IP, mDNS name, health check, and pairing token when it finishes.
+            </p>
+          </div>
+
+          <div className="bg-surface rounded-xl border border-subtle p-5 text-left space-y-4">
+            <div className="flex items-center gap-2">
+              <Plug className="w-3.5 h-3.5 text-blue-400" />
+              <h4 className="text-xs font-medium text-content">Add Controller</h4>
             </div>
             <DashboardConnectForm />
           </div>

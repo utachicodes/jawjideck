@@ -73,9 +73,10 @@ export function setupOverlayHandlers(): void {
     return { data };
   });
 
+  // Expose only whether a key exists. The decrypted key never crosses the
+  // IPC boundary — only main-process code (fetch handlers) may read it.
   ipcMain.handle(IPC_CHANNELS.OVERLAY_GET_API_KEY, async (_event, service: string) => {
-    const key = getApiKey(service);
-    return { hasKey: !!key, key: key ?? '' };
+    return { hasKey: !!getApiKey(service) };
   });
 
   ipcMain.handle(IPC_CHANNELS.OVERLAY_SET_API_KEY, async (_event, service: string, key: string) => {

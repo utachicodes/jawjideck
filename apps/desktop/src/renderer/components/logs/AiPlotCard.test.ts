@@ -111,4 +111,38 @@ describe('buildPlotData', () => {
     expect(data!.series[0]!.values[0]).toBe(0);
     expect(data!.series[0]!.values[data!.series[0]!.values.length - 1]).toBe(1999);
   });
+
+  it('resolves MAVLink-style type names to ArduPilot dataflash types', () => {
+    const log = makeLog({
+      messages: {
+        IMU: Array.from({ length: 5 }, (_, i) => ({
+          type: 'IMU',
+          timeUs: BASE_US + i * 100_000,
+          fields: { AccX: 1, AccY: 2, AccZ: 3, GyrX: 0.1, GyrY: 0.2, GyrZ: 0.3, Instance: 0 },
+        })),
+      },
+    });
+    const accel = buildPlotData(log, marker({ type: 'VEHICLE_ACCELERATION', fields: ['x', 'y', 'z'] }));
+    expect(accel).not.toBeNull();
+    expect(accel!.series.map((s) => s.label)).toEqual(['IMU.AccX', 'IMU.AccY', 'IMU.AccZ']);
+
+    const rate = buildPlotData(log, marker({ type: 'VEHICLE_ANGULAR_VELOCITY', fields: ['x', 'y', 'z'] }));
+    expect(rate).not.toBeNull();
+    expect(rate!.series.map((s) => s.label)).toEqual(['IMU.GyrX', 'IMU.GyrY', 'IMU.GyrZ']);
+  });
+
+  it('falls back to numeric fields when an aliased marker names unknown fields', () => {
+    const log = makeLog({
+      messages: {
+        IMU: [{ type: 'IMU', timeUs: BASE_US, fields: { AccX: 1, AccY: 2, AccZ: 3 } }],
+      },
+    });
+    const data = buildPlotData(log, marker({ type: 'VEHICLE_ACCELERATION', fields: [] }));
+    expect(data).not.toBeNull();
+    expect(data!.series.map((s) => s.label)).toEqual(['IMU.AccX', 'IMU.AccY', 'IMU.AccZ']);
+  });
+
+  it('does not alias unknown types', () => {
+    expect(buildPlotData(makeLog(), marker({ type: 'FOO' }))).toBeNull();
+  });
 });

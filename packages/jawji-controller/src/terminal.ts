@@ -1,12 +1,13 @@
 // terminal.ts
 import type { IPty } from 'node-pty';
+import { log } from './logs.js';
 
 let pty: typeof import('node-pty') | null = null;
 
 try {
   pty = await import('node-pty');
 } catch {
-  console.warn('[terminal] node-pty not available — terminal feature disabled');
+  log.warn('node-pty not available — terminal feature disabled');
 }
 
 interface TerminalSession {
@@ -49,7 +50,7 @@ export function createSession(
     session.lastActivity = Date.now();
     if (session.timeoutHandle) clearTimeout(session.timeoutHandle);
     session.timeoutHandle = setTimeout(() => {
-      console.log(`[terminal] Session ${sessionId} timed out`);
+      log.info(`Terminal session ${sessionId} timed out after ${timeoutMs}ms`);
       destroySession(sessionId);
       onExit();
     }, timeoutMs);

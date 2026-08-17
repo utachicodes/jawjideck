@@ -10,8 +10,6 @@
  */
 
 import { spawn, ChildProcess } from 'child_process';
-import { join } from 'path';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { detectXPlane } from './simulator-detector';
 
 export interface XPlaneConfig {
@@ -26,17 +24,6 @@ export interface XPlaneConfig {
   // Window settings
   fullscreen?: boolean;
 }
-
-// X-Plane data output indices we need enabled for flight simulation
-// These correspond to X-Plane's Data Input & Output menu
-const REQUIRED_DATA_REFS = [
-  3,   // Speeds (IAS, TAS, etc.)
-  4,   // Mach, VVI, G-load
-  17,  // Pitch, roll, headings
-  18,  // Angle of attack, sideslip
-  20,  // Latitude, longitude, altitude
-  21,  // Location (local coordinates)
-];
 
 class XPlaneLauncher {
   private process: ChildProcess | null = null;
@@ -57,39 +44,17 @@ class XPlaneLauncher {
   }
 
   /**
-   * Get path to X-Plane preferences file
+   * Configure X-Plane's network output settings.
+   *
+   * No-op: X-Plane 12 enables UDP data output automatically via the
+   * `--data_out=IP:port` CLI flag added in buildArgs(). X-Plane 11
+   * does not support this flag and must be configured manually through
+   * the in-app Data Input & Output menu (enable indices 3, 4, 17, 18,
+   * 20, 21 for the data SITL needs).
    */
-  private getPreferencesPath(xplanePath: string): string | null {
-    const platform = process.platform;
-
-    if (platform === 'win32') {
-      // Windows: Output/preferences/X-Plane.prf
-      return join(xplanePath, 'Output', 'preferences', 'X-Plane.prf');
-    } else if (platform === 'darwin') {
-      // macOS: Output/preferences/X-Plane.prf (inside the X-Plane folder)
-      return join(xplanePath, 'Output', 'preferences', 'X-Plane.prf');
-    } else {
-      // Linux
-      return join(xplanePath, 'Output', 'preferences', 'X-Plane.prf');
-    }
-  }
-
-  /**
-   * Configure X-Plane's network output settings
-   * This modifies the preferences file to enable UDP data output
-   */
-  private configureNetworkOutput(xplanePath: string, config: XPlaneConfig): void {
-    const prefsPath = this.getPreferencesPath(xplanePath);
-    if (!prefsPath) {
-      console.warn('[X-Plane] Could not determine preferences path');
-      return;
-    }
-
-    // X-Plane preferences are in a custom binary/text format
-    // For network settings, we can also use a separate Data.txt file
-    // or rely on user to configure via UI
-
-    // For now, log instructions for manual setup
+  private configureNetworkOutput(_xplanePath: string, _config: XPlaneConfig): void {
+    console.log('[X-Plane] Network output handled via --data_out CLI flag (X-Plane 12+).');
+    console.log('[X-Plane] For X-Plane 11: enable Data Output indices 3, 4, 17, 18, 20, 21 manually via Settings > Data Input & Output > Network.');
   }
 
   /**

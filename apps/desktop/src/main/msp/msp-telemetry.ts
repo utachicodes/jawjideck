@@ -209,11 +209,11 @@ function startTelemetryInterval(intervalMs: number): void {
         altitudeM = meters.altitudeM;
         varioMs = meters.varioMs;
         if (ctx.telemetryPollCount % 50 === 0) {
-          console.log('[MSP] Altitude raw:', altitude, 'meters:', meters);
+          console.debug('[MSP] Altitude raw:', altitude, 'meters:', meters);
         }
       } catch (err) {
         if (ctx.telemetryPollCount % 50 === 0) {
-          console.warn('[MSP] Altitude fetch failed:', err);
+          console.debug('[MSP] Altitude fetch failed:', err);
         }
       }
 
@@ -282,17 +282,17 @@ function startTelemetryInterval(intervalMs: number): void {
         };
 
         if (ctx.telemetryPollCount % 50 === 0) {
-          console.log('[MSP] Status - activeSensors:', status.activeSensors?.toString(2).padStart(8, '0'),
+          console.debug('[MSP] Status - activeSensors:', status.activeSensors?.toString(2).padStart(8, '0'),
             '(ACC:', !!(status.activeSensors & 1), 'BARO:', !!(status.activeSensors & 2),
             'MAG:', !!(status.activeSensors & 4), 'GPS:', !!(status.activeSensors & 8),
             'SONAR:', !!(status.activeSensors & 16), 'GYRO:', !!(status.activeSensors & 32), ')');
-          console.log('[MSP] Flight - flags:', status.flightModeFlags, 'binary:', status.flightModeFlags?.toString(2).padStart(16, '0'),
+          console.debug('[MSP] Flight - flags:', status.flightModeFlags, 'binary:', status.flightModeFlags?.toString(2).padStart(16, '0'),
             'mode:', batch.flight?.mode, 'armed:', batch.flight?.armed,
             'boxNames:', ctx.cachedBoxNames.length, ctx.cachedBoxNames.length > 0 ? ctx.cachedBoxNames.slice(0, 8).join(',') : '(empty)');
         }
       } catch (err) {
         if (ctx.telemetryPollCount % 50 === 0) {
-          console.warn('[MSP] Status fetch failed:', err);
+          console.debug('[MSP] Status fetch failed:', err);
         }
       }
 

@@ -8,11 +8,36 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-17
+
 ### Added
+- **Device Security & Licensing system** — full fail-closed Ed25519 entitlement-token enforcement across desktop, controller, and orchestrator. The server (jawji-gcs) signs tokens with a private key; each client binary embeds only the public key at build time. Tokens are verified locally offline. Paid features (AI log analysis, cloud sync, Intelligence modules, companion provisioning, orchestrator) require an active subscription or license. Core offline GCS (connect, telemetry, mission, parameters) stays free under GPL-3.0.
+  - `@jawji/license-verifier` package: shared Ed25519 verify + entitlement policy (19 tests)
+  - Desktop: `license-gate.ts` async fail-closed gate, `license-credentials.ts` encrypted-at-rest credential store (safeStorage), renderer `license-gate.ts` zustand snapshot check
+  - Desktop: gated handlers — `LOG_AI_ANALYZE`, `LOG_AI_CLAUDE_TOOL`, `MODULE_ACTIVATE`, `MODULE_INSTALL_LOCAL`, `AiAnalysisPanel.tsx`, `HealthReportPanel.tsx`, `sync-store.ts` (missions + settings)
+  - Controller: `gate.ts` with `requirePaidService()` — 5 tests
+  - Orchestrator: `verify-token.ts` local Ed25519 verify, `credentials-store.ts` AES-256-GCM encrypted, `entitlements-client.ts` verifies signature before trusting snapshot
+  - `tools/license-keys.mjs`: Ed25519 keypair generator (`LICENSE_SIGNING_PRIVATE_KEY` + `JAWJI_LICENSE_PUBLIC_KEY`)
+- **Controller auto-setup: flight controller detection, mavlink-router, MediaMTX video, TCP/UDP bridge** — on every boot the controller automatically scans USB serial ports for flight controllers, installs/configures mavlink-router (FC UART → UDP:14550 + TCP:5760), detects cameras and installs MediaMTX (RTSP/WebRTC/HLS), and configures the TCP/UDP bridge so the desktop app can connect without manual network setup. New modules: `fc-detect.ts`, `mavlink-setup.ts`, `mediamtx-setup.ts`, `bridge.ts`, `validation.ts`. New API endpoints: `GET/POST /api/v1/setup`, `POST /api/v1/setup/rescan`, `POST /api/v1/setup/mavlink`, `POST /api/v1/setup/video`. Input validation on all endpoints: device paths, baud rates, ports — reject newlines/shell metacharacters to prevent config/systemd injection. Controller install script updated to v0.2.0 with license key support (`JAWJI_LICENSE_PUBLIC_KEY` env var). New `jawji license` CLI command.
+- **Visual flight simulator integration enabled** — the FlightGear/X-Plane simulator selection dropdown in the iNav SITL view is now live (was "Coming Soon"). Users can select FlightGear (free, with protocol bridge) or X-Plane, configure aircraft/airport/weather, and launch SITL with the visual simulator in one click. Enables training with realistic 3D visualization before flying a real drone.
 - **Betaflight blackbox `.bbl` flight log support in the desktop Logs viewer** — a new zero-dependency `@jawji/blackbox-parser` package parses Betaflight/iNav blackbox logs (binary `.bbl` files and blackbox_decode `.csv` exports), rewriting the reference decoders used by blackbox.betaflight.com (field predictors, VB/zigzag/TAG8_8SVB/NEG_14BIT encodings, I/P/G/H/S frame types, in-flight events) in TypeScript. Header-text detection routes `.bbl` files to the new parser automatically, so the open dialog and button now accept `.bbl` files. Blackbox data is converted into the same ArduPilot-shaped `DataFlashLog` the rest of the app already consumes: G frames → GPS (lat/lon/alt/HDop/Spd, with home-coordinate prediction applied), vbatLatest/amperageLatest → BAT (firmware-era voltage/current scaling, 10 Hz downsampling), FLIGHT_MODE events → MODE entries (Betaflight mode-name tables per firmware generation, capped at 32 flags), and DISARM/SYNC_BEEP/etc. → EVT entries with names. Native I/P main frames, S slow frames, and H home frames are kept verbatim as MAIN/SLOW/HOME so the Explorer and AI analysis can plot gyro/PID/motor/RX traces exactly like blackbox.betaflight.com. All existing health checks and the Summary/Explorer/Globe/AI pipeline work unchanged on blackbox logs.
 - **Periodic auto-update checks while the app stays open.** Previously the updater only checked once, 10s after launch — a long-running session would never see a new release without a full restart. Now re-checks every 4 hours (`apps/desktop/src/main/updater.ts`).
 - **Periodic entitlement re-verification for the desktop Licensing tab.** A signed-in session now re-fetches entitlements every hour, so a revoked license or a completed purchase is picked up without requiring an app restart, on top of the existing on-restart live refresh and 7-day offline-cache fallback (`apps/desktop/src/renderer/stores/licensing-store.ts`).
 - **Focus Mode preset for the Telemetry dashboard** — a distraction-free layout showing only the Flight Control and Camera panels.
+- **AI analysis alias map** — fixes the common failure mode where AI models hallucinate MAVLink/ROS type names (`VEHICLE_ACCELERATION`, `BATTERY_STATUS`, etc.) instead of real ArduPilot dataflash types (`IMU`, `BAT`, etc.). `log-ai-tools.ts` resolves aliases before lookup; `AiPlotCard.tsx` shows helpful errors with the top 12 available types when a type is genuinely missing.
+- **AI analysis prompt improvements** — warnings added to the system prompt telling the model to never use MAVLink or ROS message names, only ArduPilot dataflash types.
+
+### Changed
+- **Performance: hot telemetry parse loop optimized** — `readFloat` reuses a single `DataView` instead of allocating one per call; `MISSION_MSG_IDS`, `MAV_RESULT_NAMES` arrays hoisted to module level; `packet.payload` sent as `Uint8Array` directly instead of `Array.from()` (~2KB allocation eliminated per packet at 50Hz).
+- **Security: API key no longer exposed to renderer** — `preload.ts` `getApiKey()` return type narrowed from `{ hasKey: boolean; key: string }` to `{ hasKey: boolean }`. The actual key value is only decrypted in the main process now; `OpenAipKeyInput.tsx` updated to match.
+- **Security: `APP_OPEN_EXTERNAL` hardened** — URL validation now uses `new URL()` protocol check instead of naive `startsWith()`, preventing `javascript:`, `data:`, and other dangerous protocol schemes.
+- **Security: SITL EEPROM path traversal fixed** — `getEepromPath()` now applies `path.basename()` sanitization to prevent `../` or absolute paths from escaping the `userData/sitl/` directory.
+
+### Removed
+- 8 dead UI components confirmed unused (zero imports anywhere): `LandingRecentConnections.tsx`, `LandingVehiclePanel.tsx`, `Detachable.tsx`, `OnboardingWizard.tsx`, `SectionHeader.tsx`, `StatCard.tsx`, `w.js`, `w2.js`.
+
+### Security
+- **Input validation on controller auto-setup endpoints** — `fcDevice` and `cameraDevice` from POST bodies were flowing unsanitized into mavlink-router config files and systemd unit `ExecStart` directives. A malicious value with newlines could inject arbitrary config directives or systemd commands. Fixed with `validation.ts`: device paths must match `/dev/ttyACM*`/`/dev/ttyUSB*`/`/dev/videoN`, newlines and shell metacharacters rejected, ports validated to 1-65535, baud rates whitelisted. Defense-in-depth: validation runs both at the API layer and inside each setup module.
 
 ## [0.0.41] - 2026-07-11
 

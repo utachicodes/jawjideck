@@ -7,6 +7,7 @@ import { spawn, ChildProcess } from 'node:child_process';
 import { app, BrowserWindow } from 'electron';
 import { access, chmod } from 'node:fs/promises';
 import path from 'node:path';
+import { inavSitlDownloader } from './inav-sitl-downloader.js';
 
 export interface SitlConfig {
   /** Profile name (e.g., "Airplane", "Quadcopter") */
@@ -54,7 +55,8 @@ class SitlProcessManager {
   }
 
   /**
-   * Get the platform-specific SITL binary path
+   * Get the platform-specific SITL binary path.
+   * On Windows, checks the downloaded binary first, then falls back to bundled.
    */
   private getSitlBinaryPath(): string {
     const basePath = app.isPackaged
@@ -65,7 +67,8 @@ class SitlProcessManager {
     const arch = process.arch;
 
     if (platform === 'win32') {
-      return path.join(basePath, 'windows', 'inav_SITL.exe');
+      // Prefer downloaded binary over bundled (bundled may not exist)
+      return inavSitlDownloader.getBinaryPath();
     } else if (platform === 'linux') {
       if (arch === 'arm64') {
         return path.join(basePath, 'linux', 'arm64', 'inav_SITL');
@@ -82,8 +85,16 @@ class SitlProcessManager {
    * Get the path for EEPROM storage
    */
   private getEepromPath(filename: string): string {
+    // filename arrives from the renderer (SitlConfig / deleteEeprom IPC).
+    // Coerce to a bare basename so ../, absolute paths, or drive-qualified
+    // paths can't escape the <userData>/sitl directory (which would turn
+    // deleteEeprom into an arbitrary-file delete).
+    const name = path.basename(filename);
+    if (!name || name === '.' || name === '..') {
+      throw new Error(`Invalid EEPROM filename: ${filename}`);
+    }
     const userDataPath = app.getPath('userData');
-    return path.join(userDataPath, 'sitl', filename);
+    return path.join(userDataPath, 'sitl', name);
   }
 
   /**
@@ -158,13 +169,35 @@ class SitlProcessManager {
     }
 
     // Verify SITL binary exists before attempting spawn
+    // On Windows, auto-download if missing
     try {
       await access(sitlPath);
     } catch {
-      const msg = `SITL binary not found at: ${sitlPath}`;
-      console.error('[SITL]', msg);
-      this._isRunning = false;
-      throw new Error(msg);
+      if (process.platform === 'win32') {
+        console.log('[SITL] iNav SITL binary not found, attempting download...');
+        this.sendToRenderer('sitl:stdout', '[SITL] iNav SITL binary not found, downloading...');
+        const result = await inavSitlDownloader.download();
+        if (!result.success || !result.path) {
+          const msg = `iNav SITL binary not found and download failed: ${result.error || 'unknown error'}`;
+          console.error('[SITL]', msg);
+          this._isRunning = false;
+          throw new Error(msg);
+        }
+        // Re-check with the downloaded path
+        try {
+          await access(result.path);
+        } catch {
+          const msg = `iNav SITL binary not found at: ${result.path}`;
+          console.error('[SITL]', msg);
+          this._isRunning = false;
+          throw new Error(msg);
+        }
+      } else {
+        const msg = `SITL binary not found at: ${sitlPath}`;
+        console.error('[SITL]', msg);
+        this._isRunning = false;
+        throw new Error(msg);
+      }
     }
 
     // Make binary executable on Unix platforms

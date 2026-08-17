@@ -121,6 +121,11 @@ export const useSyncStore = create<SyncState>((set) => ({
   syncMissions: async () => {
     set({ syncing: true, error: null });
     try {
+      const { isCurrentServiceEntitled } = await import('../lib/license-gate');
+      if (!isCurrentServiceEntitled('cloud-sync')) {
+        set({ syncing: false, error: 'Cloud sync requires an active Jawji subscription.' });
+        return;
+      }
       const { missions: remote } = await apiFetch<{ missions: SyncedMission[] }>('/api/sync/missions');
       const local = useMissionLibraryStore.getState().missions;
       const plan = planMissionMerge(local, remote);
@@ -153,6 +158,11 @@ export const useSyncStore = create<SyncState>((set) => ({
   syncSettings: async () => {
     set({ syncing: true, error: null });
     try {
+      const { isCurrentServiceEntitled } = await import('../lib/license-gate');
+      if (!isCurrentServiceEntitled('cloud-sync')) {
+        set({ syncing: false, error: 'Cloud sync requires an active Jawji subscription.' });
+        return;
+      }
       const local = await window.electronAPI.getSettings();
       const { settings: remote } = await apiFetch<{ settings: SyncedSettings | null }>('/api/sync/settings');
       const localUpdatedAt = local.settingsUpdatedAt ?? 0;

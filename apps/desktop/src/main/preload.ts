@@ -1426,6 +1426,12 @@ const api = {
     return () => ipcRenderer.removeListener(IPC_CHANNELS.ARDUPILOT_SITL_DOWNLOAD_PROGRESS, handler);
   },
 
+  onInavSitlDownloadProgress: (callback: (progress: { status: string; progress: number; bytesDownloaded: number; totalBytes: number; error?: string }) => void) => {
+    const handler = (_: unknown, progress: { status: string; progress: number; bytesDownloaded: number; totalBytes: number; error?: string }) => callback(progress);
+    ipcRenderer.on(IPC_CHANNELS.INAV_SITL_DOWNLOAD_PROGRESS, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.INAV_SITL_DOWNLOAD_PROGRESS, handler);
+  },
+
   // ============================================================================
   // Visual Simulators (FlightGear, X-Plane integration)
   // ============================================================================
@@ -2026,7 +2032,7 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_GET_WIND, params),
   geocodeSearch: (query: string): Promise<GeocodeResult[]> =>
     ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_GEOCODE, query),
-  getApiKey: (service: string): Promise<{ hasKey: boolean; key: string }> =>
+  getApiKey: (service: string): Promise<{ hasKey: boolean }> =>
     ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_GET_API_KEY, service),
   setApiKey: (service: string, key: string): Promise<{ success: boolean }> =>
     ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_SET_API_KEY, service, key),

@@ -15,10 +15,32 @@ import {
 } from './module-manager.js';
 import { getLoadedModules, loadAllModules } from './module-registry.js';
 import { killPty, resizePty, spawnPty, writePty } from './module-pty-service.js';
+import { createLicenseGate, LicenseGateError } from '../licensing/license-gate.js';
+import { createLicenseCredentialStore } from '../licensing/license-credentials.js';
+
+// Fail-closed license gate for Intelligence module operations (install/activate/run).
+// Built lazily on first use, once the app is ready.
+let moduleLicenseGate: ReturnType<typeof createLicenseGate> | null = null;
+async function getModuleLicenseGate() {
+  if (!moduleLicenseGate) {
+    const store = await createLicenseCredentialStore();
+    moduleLicenseGate = createLicenseGate({
+      publicKey: __JAWJI_LICENSE_PUBLIC_KEY__ ?? '',
+      readCredentials: () => store.read(),
+    });
+  }
+  return moduleLicenseGate;
+}
 
 export function setupModuleIpc(mainWindow: BrowserWindow): void {
   // Activate a license key
   ipcMain.handle(IPC_CHANNELS.MODULE_ACTIVATE, async (_, key: string) => {
+    try {
+      await (await getModuleLicenseGate()).requireService('intelligence-modules');
+    } catch (err) {
+      if (err instanceof LicenseGateError) return { success: false, error: `License required: ${err.reason}` };
+      throw err;
+    }
     try {
       const result = await activateLicense(key, (progress) => {
         mainWindow.webContents.send(IPC_CHANNELS.MODULE_PROGRESS, progress);
@@ -32,6 +54,12 @@ export function setupModuleIpc(mainWindow: BrowserWindow): void {
 
   // Sideload a locally-built module (dev workflow, not the marketplace path).
   ipcMain.handle(IPC_CHANNELS.MODULE_INSTALL_LOCAL, async () => {
+    try {
+      await (await getModuleLicenseGate()).requireService('intelligence-modules');
+    } catch (err) {
+      if (err instanceof LicenseGateError) return { success: false, error: `License required: ${err.reason}` };
+      throw err;
+    }
     const result = await dialog.showOpenDialog(mainWindow, {
       title: 'Select Module Build Folder (containing module.json)',
       properties: ['openDirectory'],

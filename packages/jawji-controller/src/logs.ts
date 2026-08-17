@@ -2,6 +2,32 @@
 import { spawn, type ChildProcess } from 'child_process';
 import type { LogEntry, LogLevel } from '@jawji/companion-types';
 
+// ── Structured logger ───────────────────────────────────────────────────────
+// Every controller log line follows the same shape:
+//   [jawji-controller] <LEVEL> <ISO timestamp> <message>
+// Keeping the prefix, level, and timestamp consistent makes journalctl output
+// and any log scraper trivial to parse.
+
+function emit(level: LogLevel, message: string, ...args: unknown[]): void {
+  const line = `[jawji-controller] ${level.toUpperCase()} ${new Date().toISOString()} ${message}`;
+  if (level === 'error') {
+    console.error(line, ...args);
+  } else if (level === 'warn') {
+    console.warn(line, ...args);
+  } else {
+    console.log(line, ...args);
+  }
+}
+
+export const log = {
+  debug: (message: string, ...args: unknown[]): void => emit('debug', message, ...args),
+  info: (message: string, ...args: unknown[]): void => emit('info', message, ...args),
+  warn: (message: string, ...args: unknown[]): void => emit('warn', message, ...args),
+  error: (message: string, ...args: unknown[]): void => emit('error', message, ...args),
+};
+
+// ── System log tailing (streamed to desktop Logs panel) ─────────────────────
+
 let logProcess: ChildProcess | null = null;
 let listeners: Array<(entry: LogEntry) => void> = [];
 
@@ -52,6 +78,8 @@ function attachLogProcess(proc: ChildProcess, onUnavailable: () => void): void {
 export function startLogTailing(): void {
   if (logProcess) return;
 
+  log.info('Starting system log tailing for the desktop Logs panel');
+
   // Try journalctl first (systemd), fall back to tail -f /var/log/syslog
   attachLogProcess(
     spawn('journalctl', ['-f', '-n', '0', '--no-pager', '-o', 'short'], {
@@ -63,7 +91,7 @@ export function startLogTailing(): void {
           stdio: ['ignore', 'pipe', 'pipe'],
         }),
         () => {
-          console.warn('[logs] Neither journalctl nor /var/log/syslog available');
+          log.warn('System log tailing unavailable (no journalctl or /var/log/syslog)');
         }
       );
     }
