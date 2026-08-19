@@ -8,6 +8,11 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 
 ## [Unreleased]
 
+### Fixed
+- **CI: broken lockfile and vitest version mismatch** — a dependabot PR bumped `vitest` to `^3.2.6` but left `@vitest/coverage-v8` at `2.1.9`, and the merge into `main` corrupted `pnpm-lock.yaml`. This caused every CI job (`build`, `test`, `lint-and-typecheck`, `dependency-audit`) to fail at `pnpm install`. Fixed by aligning all `@vitest/coverage-v8` specifiers to `^3.2.6`, adding `pnpm.overrides` to force consistent vitest resolution across the monorepo, and regenerating the lockfile.
+- **CI: pnpm filter case sensitivity** — `ci.yml` used `@Jawji/desktop` (capital J) in the typecheck step but the package is `@jawji/desktop` (lowercase). pnpm filter is case-sensitive on Linux CI runners, so the typecheck silently matched zero projects and exited 0. Fixed to `@jawji/desktop`.
+- **Broken LICENSE links in jawji-controller README** — the License badge and footer linked to `packages/jawji-controller/LICENSE` and `packages/LICENSE`, neither of which exist. The LICENSE file lives at the repo root. Fixed both links to `../../LICENSE`.
+
 ## [0.1.0] - 2026-08-17
 
 ### Added
