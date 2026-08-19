@@ -1,7 +1,7 @@
 # jawji-controller
 
 [![CI](https://github.com/utachicodes/jawjideck/actions/workflows/ci.yml/badge.svg)](https://github.com/utachicodes/jawjideck/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](../../LICENSE)
 
 A companion-board agent for ESP32, Raspberry Pi, Jetson, and Orange Pi. Exposes a small Express + WebSocket server with bearer-token auth and subnet restriction, polled by the Jawji desktop app's Agent Dashboard for real-time metrics, logs, and terminal access.
 
@@ -175,4 +175,4 @@ packages/jawji-controller/
 
 ## License
 
-GPL-3.0 — see [LICENSE](../LICENSE).
+GPL-3.0 — see [LICENSE](../../LICENSE).
