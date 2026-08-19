@@ -407,6 +407,7 @@ title=Attitude (desired vs actual)
 :::
 Rules:
 - type is required and must be a real message type (check list_message_types). fields are numeric fields of that type.
+- IMPORTANT: ArduPilot dataflash types are short (IMU, ATT, GPS, VIBE, BAT, RCOU, ERR). Never use MAVLink/ROS names like VEHICLE_ACCELERATION, VEHICLE_ANGULAR_VELOCITY, VEHICLE_ATTITUDE, BATTERY_STATUS or SENSOR_STATUS — they are not in the log and the plot will fail. Call list_message_types and pick from its output.
 - startS/endS are optional seconds from log start (this flight is ${dS.toFixed(1)} s long); omit for the whole log.
 - Prefer 1–2 plots that prove your point (e.g. a VIBE spike window, battery sag around a timestamp, altitude during a mission phase). Only emit plots you can ground in data you actually queried.
 - Put plot blocks on their own lines so they render cleanly; the app strips them from the text view.
@@ -430,7 +431,8 @@ endS=240
 title=Attitude (desired vs actual)
 :::
 Rules:
-- type is required and must be one of the message types in the "Message Types Recorded" section above (e.g. ATT, BAT, GPS, VIBE, RCOU, ERR, MODE, EKF). fields are numeric fields of that type (see the field lists above).
+- type is required and must be one of the message types in the "Message Types Recorded" section above (e.g. IMU, ATT, BAT, GPS, VIBE, RCOU, ERR, MODE, EKF). fields are numeric fields of that type (see the field lists above).
+- IMPORTANT: use ArduPilot dataflash type names exactly as listed — never MAVLink/ROS names such as VEHICLE_ACCELERATION, VEHICLE_ANGULAR_VELOCITY, VEHICLE_ATTITUDE, BATTERY_STATUS or SENSOR_STATUS. Plots with those names cannot be rendered.
 - startS/endS are optional seconds from log start (this flight is ${dS.toFixed(1)} s long); omit for the whole log.
 - Prefer 1–2 plots that prove your point (e.g. a VIBE spike window, battery sag around a timestamp, altitude during a mission phase). Only emit plots you can ground in the data provided.
 - Put plot blocks on their own lines so they render cleanly; the app strips them from the text view.
@@ -480,6 +482,16 @@ If a parameter requires a reboot, mention it in your explanation text.${rebootPa
 
   const sendToAi = useCallback(async () => {
     if (!aiProvider || !currentLog) return;
+
+    // License-gated: AI log analysis requires an active subscription.
+    const { isCurrentServiceEntitled } = await import('../../lib/license-gate');
+    if (!isCurrentServiceEntitled('ai-analysis')) {
+      const store = useLogStore.getState();
+      store.setIsAiAnalyzing(false);
+      store.setAiAnalysisError('AI analysis requires an active Jawji subscription.');
+      return;
+    }
+
     const store = useLogStore.getState();
     store.setIsAiAnalyzing(true);
     store.setAiAnalysisError(null);

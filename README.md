@@ -9,7 +9,6 @@
   <a href="https://reactjs.org/"><img src="https://img.shields.io/badge/React-18-61DAFB?logo=react" alt="React" /></a>
   <a href="https://mavlink.io/"><img src="https://img.shields.io/badge/MAVLink-v1%2Fv2-green" alt="MAVLink" /></a>
   <a href="https://github.com/iNavFlight/inav/wiki/MSP-V2"><img src="https://img.shields.io/badge/MSP-v1%2Fv2-orange" alt="MSP" /></a>
-  <a href="https://codecov.io/gh/utachicodes/Jawji"><img src="https://codecov.io/gh/utachicodes/Jawji/branch/master/graph/badge.svg" alt="Coverage" /></a>
   <a href="https://discord.gg/JX2JdVXPPC"><img src="https://img.shields.io/badge/Discord-Join%20Us-5865F2?logo=discord&logoColor=white" alt="Discord" /></a>
   <a href="https://jawji.space"><img src="https://img.shields.io/badge/Website-jawji.space-22d3ee" alt="Website" /></a>
 </p>
@@ -71,6 +70,7 @@ Jawji is a next-generation ground control station built with Electron, React, an
 
 ### Companion Board Support
 - **One-Script Installer** - `curl -fsSL https://jawji.space/install.sh | sudo bash` sets up a Raspberry Pi, Jetson, or generic Linux companion computer end to end - hardware auto-detected, pick a profile (Basic/Vision/AI) or an interactive menu, only what you need gets installed
+- **Controller Auto-Setup** - On every boot, the controller automatically detects flight controllers via USB serial, installs and configures mavlink-router (FC UART → UDP:14550 + TCP:5760), detects cameras and installs MediaMTX (RTSP/WebRTC/HLS), and configures the TCP/UDP bridge so the desktop app can connect without manual network setup
 - **Companion Board Store** - Browse pre-configured templates for ESP32, Raspberry Pi, Jetson, and Orange Pi
 - **ESP32 Flashing** - Direct USB flash with auto-downloaded esptool (DroneBridge, MAVLink bridge)
 - **DroneBridge Integration** - Auto-detect DroneBridge ESP32 on network, view status, configure WiFi/serial settings
@@ -172,7 +172,7 @@ Jawji is a next-generation ground control station built with Electron, React, an
 ### Flight Log Analysis
 - **DataFlash Log Reader** - Parse ArduPilot .bin blackbox logs directly in the app
 - **PX4 ULog Reader** - Parse PX4 .ulg logs (and .bin files from logs.px4.io, detected by magic bytes) with the same analysis pipeline, mapping GPS/battery/flight-mode data into ArduPilot-shaped messages
-- **Betaflight Blackbox Reader** - Parse Betaflight/iNav .bbl logs (and blackbox_decode .csv exports) with the same analysis pipeline, converting GPS, battery, flight-mode, and event data into ArduPilot-shaped messages while keeping native I/P frames for the Explorer
+- **Betaflight Blackbox Reader** - Parse Betaflight/iNav `.bbl` logs (and blackbox_decode `.csv` exports) with the same analysis pipeline, converting GPS, battery, flight-mode, and event data into ArduPilot-shaped messages while keeping native I/P frames for the Explorer. Built on a new zero-dependency `@jawji/blackbox-parser` package.
 - **Flight Summary** - Flight Review-style at-a-glance stats: flight time, max altitude/climb/speed, distance flown, battery consumption, GPS quality, plus a mode timeline and battery/altitude charts
 - **Health Check Reports** - Automated diagnostics with pass/warn/fail checks for vibration, GPS, EKF, power, and more
 - **Log Explorer** - Interactive time-series graphs with field picker for any logged parameter
@@ -217,9 +217,9 @@ Jawji is a next-generation ground control station built with Electron, React, an
 - **UDP** - Listen mode for MAVProxy and other forwarders
 - **Auto-Detect** - Scan ports for MAVLink devices
 
-### SITL Simulator & FlightGear Bridge
+### SITL Simulator & Visual Flight Simulators
 
-> **Now Available** - ArduPilot SITL runs natively in Jawji on macOS, Windows, and Linux. Pick a vehicle type (Copter, Plane, Rover, Sub) and frame, choose a release track, and Jawji downloads and launches the real ArduPilot firmware, then connects automatically. Virtual RC control, custom frame physics, and an optional FlightGear bridge are included.
+> **Now Available** - ArduPilot SITL runs natively in Jawji on macOS, Windows, and Linux. Pick a vehicle type (Copter, Plane, Rover, Sub) and frame, choose a release track, and Jawji downloads and launches the real ArduPilot firmware, then connects automatically. Virtual RC control, custom frame physics, and visual simulator integration are included.
 
 **What is this?** SITL (Software In The Loop) lets you run real flight controller firmware on your computer - no drone required! Perfect for:
 - **Learning** - Practice mission planning and configuration without risking a crash
@@ -230,9 +230,14 @@ Jawji is a next-generation ground control station built with Electron, React, an
 1. Jawji downloads and runs the actual ArduPilot, iNav, or Betaflight firmware as a desktop application
 2. The simulated flight controller behaves exactly like real hardware
 3. You can configure PIDs, modes, missions - everything works!
-4. Optionally connect to **FlightGear** (free flight simulator) to see your virtual aircraft fly
+4. Optionally connect to a **visual flight simulator** to see your virtual aircraft fly
 
-**FlightGear Integration** - If you have [FlightGear](https://www.flightgear.org/) installed, Jawji automatically detects it and can bridge the simulator to your SITL session. Watch your configured aircraft respond to your mission in a realistic 3D environment!
+**Visual Simulator Support:**
+- **FlightGear** (free) - Automatic detection and protocol bridge, one-click launch
+- **X-Plane** (commercial) - Direct UDP integration via `--data_out` CLI flag (X-Plane 12+)
+- Select your simulator in the iNav SITL view, configure aircraft/airport/weather, and launch with the visual sim in one click
+
+**iNav SITL (Windows):** On Windows, the iNav SITL binary is downloaded on demand from GitHub releases if not already present. macOS and Linux binaries are bundled in the app.
 
 > **TL;DR**: Test your drone configuration on your computer before flying for real. Break things in simulation, not in the field!
 
@@ -469,7 +474,9 @@ Jawji is a pnpm monorepo built around an Electron main/renderer split:
 | [apps/desktop](apps/desktop) | The Electron app. `src/main` talks to flight controllers (serial/TCP/UDP) and the OS; `src/renderer` is the React/TypeScript UI; `src/main/preload.ts` + `src/shared/ipc-channels.ts` define the IPC boundary between them. |
 | [packages/mavlink-ts](packages/mavlink-ts) | Generated MAVLink v1/v2 message/enum definitions and codec used to talk to ArduPilot. |
 | [packages/msp-ts](packages/msp-ts) | MSP v1/v2 protocol implementation used to talk to Betaflight/iNav. |
-| [packages/jawji-controller](packages/jawji-controller) | Companion-board agent (ESP32/RPi/Jetson/Orange Pi) — a small Express + WebSocket server with bearer-token auth and subnet restriction, polled by the desktop app's Agent Dashboard for metrics, logs, and terminal access. |
+| [packages/jawji-controller](packages/jawji-controller) | Companion-board agent (ESP32/RPi/Jetson/Orange Pi) — auto-detects flight controllers, installs mavlink-router/MediaMTX, and runs a TCP/UDP bridge. Express + WebSocket server with bearer-token auth, polled by the desktop app's Controller Dashboard for metrics, logs, and terminal access. |
+| [packages/license-verifier](packages/license-verifier) | Shared Ed25519 entitlement-token verification and fail-closed service gating. Zero dependencies. Used by desktop, controller, and orchestrator. |
+| [packages/blackbox-parser](packages/blackbox-parser) | Zero-dependency Betaflight/iNav blackbox `.bbl` log parser, rewriting the reference decoders in TypeScript. |
 | [packages/module-sdk](packages/module-sdk), [packages/create-jawji-module](packages/create-jawji-module) | SDK and scaffolding for third-party Jawji modules. |
 
 Telemetry flows from the connected flight controller → `src/main` parser → IPC event → renderer Zustand stores (e.g. `telemetry-store`, `flight-control-store`) → dashboard panels. Manual control (arm/disarm, mode switching, takeoff, and a live keyboard/joystick RC override for both MAVLink and MSP vehicles) is sent the same way in reverse: renderer store → IPC → `src/main` → serial/TCP/UDP link to the vehicle.
@@ -636,17 +643,20 @@ Found a bug? We want to hear about it! Jawji includes a built-in bug reporting t
 - **3D Mission View** - Three-dimensional visualization of mission waypoints and flight paths
 - **MAVLink Signing** - Passphrase-based packet signing for secure vehicle communication
 - **Flight Log Analysis** - ArduPilot .bin, PX4 .ulg, and Betaflight .bbl parsers, health checks, log explorer with 3D flight path, and AI-assisted diagnostics
-- **SITL Simulator** - ArduPilot, iNav, and Betaflight software-in-the-loop with vehicle/frame selection, virtual RC, custom frame physics, and FlightGear integration
+- **SITL Simulator** - ArduPilot, iNav, and Betaflight software-in-the-loop with vehicle/frame selection, virtual RC, custom frame physics, and visual flight simulator integration (FlightGear + X-Plane)
+- **Visual Flight Simulator Integration** - FlightGear (free) and X-Plane (commercial) support with one-click launch, automatic detection, and protocol bridge
 - **Keyboard & Joystick Flight Control** - Mutually-exclusive GCS stick input (WASD+QE+Arrows or gamepad) for MAVLink and MSP vehicles, with automatic receiver-config detection/fix so control actually reaches the motors
 - **Fleet Management** - Multi-vehicle roster with live status monitoring and one-click focus to promote a vehicle to the main connection
-- **Camera Feed Panel** - MJPEG video display with manual URL entry and MAVLink stream auto-detection
+- **Camera Feed Panel** - MJPEG and WebRTC video display with manual URL entry and MAVLink stream auto-detection
 - **AI Object Detection Module** - YOLOv8-based live object detection overlaid on the Camera panel, running as a local Python process via the module system
-- **WebRTC Camera Support** - Low-latency WHEP-based WebRTC playback in the Camera panel, alongside the original MJPEG path, for MediaMTX-backed companion video streams
 - **One-Script Companion Installer** - Single-command setup (`install.sh`) for a Raspberry Pi, Jetson, or generic Linux companion computer, with hardware detection and Basic/Vision/AI profiles
+- **Controller Auto-Setup** - Flight controller detection, mavlink-router, MediaMTX video, and TCP/UDP bridge automatically configured on every boot. No manual setup required.
 - **MediaMTX Video Relay** - Real multi-protocol media server on the companion side (RTSP/RTMP/HLS/WebRTC), with Jawji Controller exposing live stream status through its API
-- **Companion Module Hardening** - Fixed a real auth bug blocking manual agent discovery, added mDNS "Scan for agents" UI, automatic reconnect to the last-paired agent on launch, and removed dead/unverifiable code paths in the Companion Store
-- **Linux Release** - Pre-built AppImage and .deb packages, alongside Windows
-- **jawji-orchestrator** - A separately published package for onboard vision-assisted landing-zone checks on a companion computer, with a confirm-gated (not unattended-autonomous by default) decision loop
+- **Device Security & Licensing** - Ed25519 entitlement-token enforcement across desktop, controller, and orchestrator. Core GCS stays free under GPL-3.0; paid features require an active subscription.
+- **Periodic Auto-Updates** - Re-checks for new releases every 4 hours while the app stays open
+- **Focus Mode** - Distraction-free Telemetry dashboard preset showing only Flight Control and Camera panels
+- **AI Analysis Improvements** - Alias map for hallucinated type names, improved system prompt warnings
+- **Security Hardening** - API keys no longer exposed to renderer, URL validation hardened, SITL EEPROM path traversal fixed, input validation on controller endpoints
 
 ### Coming Soon
 - macOS release
@@ -675,6 +685,70 @@ Contributions are welcome! If you'd like to help improve Jawji, see the [Develop
 Jawji is supported by companies that contribute hardware, time, or resources to the project.
 
 - [Adlerblix](https://adlerblix.de) - Optical aerial surveying - photogrammetry, RTK precision, large-area mapping. (Germany)
+
+---
+
+## Device Security & Licensing
+
+Jawji uses an open-core model: core offline GCS features (connect, telemetry, mission planning, parameters) are free under GPL-3.0. Paid/cloud features — AI log analysis, cloud sync, Intelligence modules, companion provisioning, and jawji-orchestrator — require an active subscription or license.
+
+### How it works
+
+1. **jawji-gcs** (the server) issues Ed25519-signed entitlement tokens after authentication.
+2. Each client binary (desktop, controller, orchestrator) embeds only the **Ed25519 public key** at build time.
+3. Tokens are verified **locally offline** — no network call needed during flight.
+4. Fail-closed: no public key → paid features denied; expired subscription → paid features denied; tampered token → denied.
+
+### Key generation
+
+```bash
+# Generate both keys (run from monorepo root)
+node tools/license-keys.mjs
+
+# LICENSE_SIGNING_PRIVATE_KEY  → jawji-gcs server only
+# JAWJI_LICENSE_PUBLIC_KEY     → embedded in each client binary
+```
+
+### Service enforcement
+
+| Service | Requires |
+|---------|----------|
+| AI log analysis | Active subscription |
+| Cloud sync | Active subscription |
+| Intelligence modules | Active subscription OR `intelligence-module` license |
+| Companion provisioning | Active subscription |
+| Orchestrator | Active `orchestrator` license |
+
+### Architecture
+
+```
+jawji-gcs (server)                 jawjideck (desktop)
+  signs token with                   verifies token with
+  LICENSE_SIGNING_PRIVATE_KEY        embedded JAWJI_LICENSE_PUBLIC_KEY
+           |                                    |
+           v                                    v
+  POST /api/licensing/activate     LicenseGate.requireService('ai-analysis')
+  GET  /api/licensing/entitlements         |
+           |                               v
+           v                     fail-closed if invalid/expired
+  { snapshot, token }            encrypted credentials at rest
+  (Ed25519 signed)               (safeStorage / AES-256-GCM)
+```
+
+### Key files
+
+| File | Role |
+|------|------|
+| `packages/license-verifier/` | Shared Ed25519 verify + entitlement policy (19 tests) |
+| `apps/desktop/src/main/licensing/license-gate.ts` | Main-process fail-closed gate |
+| `apps/desktop/src/main/licensing/license-credentials.ts` | Encrypted-at-rest credential store |
+| `apps/desktop/src/renderer/lib/license-gate.ts` | Renderer-side entitlement check |
+| `packages/jawji-controller/src/licensing/gate.ts` | Controller license gate |
+| `tools/license-keys.mjs` | Ed25519 keypair generator |
+
+### Offline grace
+
+All clients cache entitlement tokens locally. A flaky network at boot doesn't gate features that were already entitled. The desktop app uses encrypted safeStorage; the orchestrator caches to `~/.jawji-orchestrator/license-cache.json` with a 7-day grace period.
 
 ---
 

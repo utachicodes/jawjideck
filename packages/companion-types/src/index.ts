@@ -192,4 +192,52 @@ export interface CompanionState {
   // Layer 3
   containers: ContainerInfo[];
   extensions: ExtensionInfo[];
+
+  // Auto-setup
+  setup: SetupStatus | null;
+}
+
+// ============================================================
+// Auto-setup (flight controller detection, mavlink, video)
+// ============================================================
+export interface FlightControllerInfo {
+  path: string;
+  driver: string;
+  baudRate: number;
+  detected: boolean;
+  fcType?: string;
+  firmwareVersion?: string;
+}
+
+export interface SetupStatus {
+  fc: {
+    controllers: FlightControllerInfo[];
+    bestPath: string | null;
+  };
+  mavlink: {
+    installed: boolean;
+    running: boolean;
+    fcDevice: string;
+    udpPort: number;
+    tcpPort: number;
+  };
+  video: {
+    installed: boolean;
+    running: boolean;
+    cameras: CameraDeviceInfo[];
+    rtspPort: number;
+    webrtcPort: number;
+  };
+  bridge: {
+    fcConnected: boolean;
+    mavlinkRunning: boolean;
+    udpPort: number;
+    tcpPort: number;
+  };
+}
+
+export interface CameraDeviceInfo {
+  path: string;
+  name: string;
+  driver: string;
 }

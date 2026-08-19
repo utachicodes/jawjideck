@@ -42,4 +42,25 @@ describe('files', () => {
   it('rejects absolute paths outside root', () => {
     expect(() => resolveSafePath(testRoot, '/etc/passwd')).toThrow('Path traversal');
   });
+
+  it('rejects symlink escapes on read', async () => {
+    // A symlink inside the root pointing outside must not be readable.
+    // Skipped where the environment cannot create symlinks (e.g. Windows
+    // without Developer Mode / admin privileges).
+    const outsideDir = path.join(os.tmpdir(), 'Jawji-files-outside');
+    fs.mkdirSync(outsideDir, { recursive: true });
+    fs.writeFileSync(path.join(outsideDir, 'secret.txt'), 'secret');
+    const linkPath = path.join(testRoot, 'link');
+    try {
+      fs.symlinkSync(outsideDir, linkPath, 'dir');
+    } catch {
+      fs.rmSync(outsideDir, { recursive: true, force: true });
+      return;
+    }
+    try {
+      await expect(readFile(testRoot, '/link/secret.txt')).rejects.toThrow('Path traversal');
+    } finally {
+      fs.rmSync(outsideDir, { recursive: true, force: true });
+    }
+  });
 });

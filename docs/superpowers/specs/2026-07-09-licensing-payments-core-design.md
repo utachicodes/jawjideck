@@ -117,3 +117,18 @@ activationCodes/{code}               # code itself is the document id: 13 chars,
 ## Security hardening (post-implementation review)
 
 A self-conducted security review of the implemented code (not just this spec) found the webhook signature check described above ("Webhook signature invalid: rejected outright") had been spec'd but not actually implemented — `handleWebhookEvent` read the `signature` argument but never verified it, so any unauthenticated caller could POST a crafted body to `/api/licensing/webhook` and mint themselves an unredeemed license. Fixed: `createManualPaymentProvider` now takes a `secret: string` and verifies an HMAC-SHA256 signature (`timingSafeEqual`) before processing any event, failing closed (returns `null`) if the secret is unset or the signature doesn't match. Both `checkout/route.ts` and `webhook/route.ts` now pass `process.env.MANUAL_PAYMENT_WEBHOOK_SECRET`. This env var must be set in every deployment for the webhook endpoint to accept any events at all — that's intentional (fail closed, not fail open).
+
+## Device Security & Licensing (Ed25519 + encrypted on-device credentials)
+
+Follow-up pass hardening the token scheme and client-side enforcement. Supersedes the earlier "never hard-lock offline" stance for **paid/cloud features**: core offline GCS stays free (GPL open-core), but AI log analysis, Intelligence modules, cloud sync, and companion/orchestrator provisioning fail closed without a valid entitlement.
+
+- **Ed25519 instead of HMAC shared-secret.** An HMAC secret can't be embedded in a client binary without being extractable (and then forgeable). The server now signs entitlement tokens with its private key; clients embed only the matching public key at build time and verify locally, fully offline.
+- **Env vars.**
+  - `LICENSE_SIGNING_PRIVATE_KEY` — base64 PKCS8 PEM, server only (`lib/server/licensing/keys.ts`). Never set in client builds. Signing fails closed when unset.
+  - `JAWJI_LICENSE_PUBLIC_KEY` — base64 SPKI PEM, injected at build time into each client binary (`electron.vite.config.ts` define for desktop; `scripts/inject-license-key.mjs` for jawji-controller and jawji-orchestrator). Builds with no key ship empty → paid features fail closed.
+  - Generate both with `node tools/license-keys.mjs`.
+- **Token format:** `<base64url(json)>.<base64url(64-byte Ed25519 sig)>`, unchanged from the signed-token design above. Verification logic lives in `@jawji/license-verifier` (jawjideck workspace); jawji-gcs and jawji-orchestrator keep in-sync copies.
+- **Client enforcement (fail-closed).**
+  - Desktop: entitlement cache (`LICENSING_CACHE_*`) now persists via safeStorage (encrypted at rest, plaintext never touches disk; `src/main/licensing/license-credentials.ts`), and a main-process gate (`src/main/licensing/license-gate.ts`) requires a locally-verified, still-entitled token before paid features run.
+  - Orchestrator: `fetchEntitlements`/`activateCode` verify the token signature before trusting the snapshot (`src/licensing/verify-token.ts`); credentials are encrypted at rest with a device-bound AES-256-GCM key derived from the machine ID (`credentials-store.ts`), replacing plaintext `credentials.json`.
+  - Controller: embeds the public key and gates paid provisioning via `src/licensing/gate.ts` (defense-in-depth for direct/SSH use).

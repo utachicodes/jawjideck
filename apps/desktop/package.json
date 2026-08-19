@@ -1,6 +1,6 @@
 {
   "name": "@jawji/desktop",
-  "version": "0.0.42",
+  "version": "0.1.0",
   "description": "Jawji - Desktop Application",
   "author": {
     "name": "utachicodes",
@@ -28,6 +28,7 @@
     "@jawji/comms": "workspace:*",
     "@jawji/companion-types": "workspace:*",
     "@jawji/dataflash-parser": "workspace:^",
+    "@jawji/license-verifier": "workspace:*",
     "@jawji/mavlink-ts": "workspace:*",
     "@jawji/module-sdk": "workspace:*",
     "@jawji/msp-ts": "workspace:*",

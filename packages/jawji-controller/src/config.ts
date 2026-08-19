@@ -2,6 +2,8 @@
 import path from 'path';
 import os from 'os';
 
+export const CONTROLLER_AGENT_VERSION = '0.1.0';
+
 export interface ControllerConfig {
   port: number;
   tokenPath: string;

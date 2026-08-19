@@ -5,8 +5,8 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { CONTROLLER_PROTOCOL_VERSION } from '@jawji/companion-types';
 import type { WsMessage, HelloMessage, MetricsData, ProcessInfo, LogEntry } from '@jawji/companion-types';
 import { loadOrCreateToken, validateToken } from './auth.js';
-import { startDiscovery, stopDiscovery } from './discovery.js';
-import { loadConfig } from './config.js';
+import { startDiscovery, stopDiscovery, getMdnsServiceName, MDNS_SERVICE_TYPE } from './discovery.js';
+import { loadConfig, CONTROLLER_AGENT_VERSION } from './config.js';
 import { collectMetrics } from './metrics.js';
 import { listProcesses, killProcess } from './processes.js';
 import { listServices, controlService } from './services.js';
@@ -16,8 +16,13 @@ import { isDockerAvailable, listContainers, controlContainer, getContainerLogs }
 import { isBlueOSAvailable, listInstalledExtensions, listAvailableExtensions, installExtension, removeExtension, getExtensionLogs } from './blueos.js';
 import { getMediaMtxStatus } from './mediamtx.js';
 import { createSession, writeToSession, resizeSession, destroySession, destroyAllSessions, isTerminalAvailable } from './terminal.js';
-import { startLogTailing, onLogEntry, stopLogTailing } from './logs.js';
+import { startLogTailing, onLogEntry, stopLogTailing, log } from './logs.js';
 import { subnetMiddleware } from './subnet.js';
+import { detectFlightControllers, type FlightController } from './fc-detect.js';
+import { getMavlinkRouterStatus, configureMavlinkRouter } from './mavlink-setup.js';
+import { getMediaMtxSetupStatus, detectCameras, configureMediaMTX } from './mediamtx-setup.js';
+import { autoSetupBridge, getBridgeStatus } from './bridge.js';
+import { validateDevicePath, validateBaudRate, validatePort } from './validation.js';
 import os from 'os';
 
 const config = loadConfig();
@@ -56,11 +61,59 @@ app.get('/health', (_req, res) => {
 // --- Platform detection (run once at startup) ---
 let dockerAvailable = false;
 let blueosDetected = false;
+let setupComplete = false;
 
 async function detectPlatforms(): Promise<void> {
   dockerAvailable = await isDockerAvailable();
   blueosDetected = await isBlueOSAvailable();
-  console.log(`[platform] Docker: ${dockerAvailable}, BlueOS: ${blueosDetected}`);
+  log.info(`Platform detection — Docker: ${dockerAvailable}, BlueOS: ${blueosDetected}`);
+}
+
+// --- Auto-setup: detect FC, configure mavlink + video + bridge ---
+async function autoSetup(): Promise<void> {
+  log.info('Starting auto-setup (flight controller detection, mavlink, video, bridge)');
+
+  try {
+    // 1. Detect connected flight controllers
+    const fcResult = await detectFlightControllers();
+    if (fcResult.bestPath) {
+      log.info(`Flight controller detected: ${fcResult.bestPath} (${fcResult.controllers.length} total)`);
+
+      // 2. Auto-configure mavlink-router if not already running
+      const mavlink = await getMavlinkRouterStatus();
+      if (!mavlink.running) {
+        log.info('mavlink-router not running — auto-configuring...');
+        const fc = fcResult.controllers.find(c => c.path === fcResult.bestPath) ?? fcResult.controllers[0];
+        if (fc) await autoSetupBridge(fc, {
+          udpPort: parseInt(process.env.JAWJI_MAVLINK_UDP_PORT || '14550', 10),
+          tcpPort: parseInt(process.env.JAWJI_MAVLINK_TCP_PORT || '5760', 10),
+        });
+      }
+    } else {
+      log.info('No flight controller detected — mavlink setup skipped');
+    }
+
+    // 3. Detect cameras and auto-configure MediaMTX if a camera is found
+    const cameras = await detectCameras();
+    if (cameras.length > 0) {
+      const mtx = await getMediaMtxSetupStatus();
+      if (!mtx.running) {
+        const cam = cameras[0];
+        if (cam) {
+          log.info(`Camera detected (${cam.path}) — auto-configuring MediaMTX...`);
+          await configureMediaMTX({ cameraDevice: cam.path });
+        }
+      }
+    } else {
+      log.info('No camera detected — video setup skipped');
+    }
+
+    setupComplete = true;
+    log.info('Auto-setup complete');
+  } catch (err) {
+    log.error(`Auto-setup failed: ${(err as Error).message}`);
+    setupComplete = true; // mark as complete even on failure so we don't retry
+  }
 }
 
 // --- Info endpoint ---
@@ -75,7 +128,7 @@ app.get('/api/v1/info', (_req, res) => {
     os: `${os.type()} ${os.release()}`,
     arch: os.arch(),
     uptime: os.uptime(),
-    agentVersion: '0.1.0',
+    agentVersion: CONTROLLER_AGENT_VERSION,
     protocolVersion: CONTROLLER_PROTOCOL_VERSION,
     dockerAvailable,
     blueosDetected,
@@ -84,6 +137,75 @@ app.get('/api/v1/info', (_req, res) => {
 });
 
 app.use('/api/v1', authMiddleware);
+
+// --- Auto-setup status ---
+app.get('/api/v1/setup', async (_req, res) => {
+  try {
+    const [fcResult, mavlink, video, bridge] = await Promise.all([
+      detectFlightControllers(),
+      getMavlinkRouterStatus(),
+      getMediaMtxSetupStatus(),
+      getBridgeStatus(),
+    ]);
+    res.json({
+      complete: setupComplete,
+      fc: { controllers: fcResult.controllers, bestPath: fcResult.bestPath },
+      mavlink: { installed: mavlink.installed, running: mavlink.running, fcDevice: mavlink.fcDevice, udpPort: mavlink.udpPort, tcpPort: mavlink.tcpPort },
+      video: { installed: video.installed, running: video.running, cameras: video.cameras, rtspPort: video.rtspPort, webrtcPort: video.webrtcPort },
+      bridge: { fcConnected: bridge.fcConnected, mavlinkRunning: bridge.mavlinkRunning, udpPort: bridge.udpPort, tcpPort: bridge.tcpPort },
+    });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// --- Force re-scan for flight controllers ---
+app.post('/api/v1/setup/rescan', async (_req, res) => {
+  const { invalidateFcCache } = await import('./fc-detect.js');
+  invalidateFcCache();
+  const fcResult = await detectFlightControllers();
+  res.json(fcResult);
+});
+
+// --- Reconfigure mavlink-router ---
+app.post('/api/v1/setup/mavlink', async (req, res) => {
+  const { fcDevice, fcBaud, udpPort, tcpPort } = req.body;
+  const validatedDevice = validateDevicePath(fcDevice, 'serial');
+  const validatedBaud = validateBaudRate(fcBaud);
+  const validatedUdp = validatePort(udpPort);
+  const validatedTcp = validatePort(tcpPort);
+  if (fcDevice && !validatedDevice) { res.status(400).json({ error: 'Invalid device path' }); return; }
+  if (fcBaud && !validatedBaud) { res.status(400).json({ error: 'Invalid baud rate' }); return; }
+  if (udpPort && !validatedUdp) { res.status(400).json({ error: 'Invalid UDP port' }); return; }
+  if (tcpPort && !validatedTcp) { res.status(400).json({ error: 'Invalid TCP port' }); return; }
+  const result = await configureMavlinkRouter({
+    fcDevice: validatedDevice ?? undefined,
+    fcBaud: validatedBaud ?? undefined,
+    udpPort: validatedUdp ?? undefined,
+    tcpPort: validatedTcp ?? undefined,
+  });
+  res.status(result.success ? 200 : 400).json(result);
+});
+
+// --- Reconfigure MediaMTX ---
+app.post('/api/v1/setup/video', async (req, res) => {
+  const { cameraDevice, rtspPort, webrtcPort, hlsPort } = req.body;
+  const validatedCamera = validateDevicePath(cameraDevice, 'video');
+  const validatedRtsp = validatePort(rtspPort);
+  const validatedWebrtc = validatePort(webrtcPort);
+  const validatedHls = validatePort(hlsPort);
+  if (cameraDevice && !validatedCamera) { res.status(400).json({ error: 'Invalid camera device path' }); return; }
+  if (rtspPort && !validatedRtsp) { res.status(400).json({ error: 'Invalid RTSP port' }); return; }
+  if (webrtcPort && !validatedWebrtc) { res.status(400).json({ error: 'Invalid WebRTC port' }); return; }
+  if (hlsPort && !validatedHls) { res.status(400).json({ error: 'Invalid HLS port' }); return; }
+  const result = await configureMediaMTX({
+    cameraDevice: validatedCamera ?? undefined,
+    rtspPort: validatedRtsp ?? undefined,
+    webrtcPort: validatedWebrtc ?? undefined,
+    hlsPort: validatedHls ?? undefined,
+  });
+  res.status(result.success ? 200 : 400).json(result);
+});
 
 // --- Network ---
 app.get('/api/v1/network', async (_req, res) => {
@@ -218,18 +340,19 @@ wss.on('connection', (ws: WebSocket, req) => {
     || '';
 
   if (!validateToken(wsToken, token)) {
+    log.warn('Rejected WebSocket connection: bad or missing token');
     ws.close(4001, 'Unauthorized');
     return;
   }
 
-  console.log('[ws] Client connected');
+  log.info('Desktop client connected (WebSocket)');
 
   // Send hello message
   const hello: WsMessage<HelloMessage> = {
     channel: 'hello',
     data: {
       protocolVersion: CONTROLLER_PROTOCOL_VERSION,
-      agentVersion: '0.1.0',
+      agentVersion: CONTROLLER_AGENT_VERSION,
       hostname: os.hostname(),
     },
   };
@@ -298,7 +421,7 @@ wss.on('connection', (ws: WebSocket, req) => {
   });
 
   ws.on('close', () => {
-    console.log('[ws] Client disconnected');
+    log.info('Desktop client disconnected (WebSocket)');
     clearInterval(metricsInterval);
     clearInterval(processInterval);
     removeLogListener();
@@ -307,41 +430,77 @@ wss.on('connection', (ws: WebSocket, req) => {
 });
 
 // ---- Start ----
+function listIPv4Addresses(): string[] {
+  const addresses: string[] = [];
+  for (const entries of Object.values(os.networkInterfaces())) {
+    if (!entries) continue;
+    for (const entry of entries) {
+      if (entry.family === 'IPv4' && !entry.internal) {
+        addresses.push(entry.address);
+      }
+    }
+  }
+  return addresses;
+}
+
+function printStartupBanner(): void {
+  const hostname = os.hostname();
+  const ips = listIPv4Addresses();
+  const primaryIp = ips[0] ?? 'localhost';
+  const urls = ips.length > 0 ? ips.map((ip) => `http://${ip}:${config.port}`) : [`http://localhost:${config.port}`];
+
+  const lines: string[] = [
+    '='.repeat(72),
+    `  Jawji Controller v${CONTROLLER_AGENT_VERSION}  (protocol ${CONTROLLER_PROTOCOL_VERSION})`,
+    '='.repeat(72),
+    `  REST API      : ${urls[0]}/api/v1`,
+    `  WebSocket     : ws://${primaryIp}:${config.port}/ws`,
+    `  Health check  : curl ${urls[0]}/health   (expects {"status":"ok"})`,
+    '',
+    '  Controller URLs (one per network interface):',
+    ...urls.map((url) => `    - ${url}`),
+    '',
+    `  mDNS          : ${getMdnsServiceName(hostname)} on _${MDNS_SERVICE_TYPE}._tcp`,
+    `                  pair in Jawji as ${hostname}.local:${config.port}`,
+    '',
+    `  Pairing token : ${token}`,
+    '    ^ This secret lets the Jawji desktop app control this device.',
+    '      Anyone with it can pair -- keep it private.',
+    '',
+    '  To connect: open the Jawji desktop app -> Companion Dashboard ->',
+    '    Add controller by address (or Scan for controllers) -> paste the token.',
+    '='.repeat(72),
+  ];
+  console.log(`\n${lines.join('\n')}\n`);
+}
+
 server.listen(config.port, async () => {
   await detectPlatforms();
   startLogTailing();
-
-  console.log('='.repeat(50));
-  console.log('Jawji Controller v0.1.0');
-  console.log(`REST API: http://0.0.0.0:${config.port}/api/v1`);
-  console.log(`WebSocket: ws://0.0.0.0:${config.port}/ws`);
-  console.log('');
-  console.log(`Pairing token: ${token}`);
-  console.log('Enter this token in Jawji to connect.');
-  console.log('='.repeat(50));
-
+  autoSetup();  // fire-and-forget — doesn't block the server
+  printStartupBanner();
   startDiscovery(config.port, os.hostname());
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('[agent] Shutting down...');
+function shutdown(signal: string): void {
+  log.info(`Received ${signal} — shutting down`);
   stopDiscovery();
   stopLogTailing();
   destroyAllSessions();
   wss.close();
-  server.close();
-  process.exit(0);
-});
+  server.close(() => {
+    log.info('Stopped cleanly');
+    process.exit(0);
+  });
+  // Belt-and-braces: never hang a reboot because a socket refused to close.
+  setTimeout(() => {
+    log.info('Forced exit after graceful shutdown timed out');
+    process.exit(0);
+  }, 2000).unref();
+}
 
-process.on('SIGINT', () => {
-  console.log('[agent] Shutting down...');
-  stopDiscovery();
-  stopLogTailing();
-  destroyAllSessions();
-  wss.close();
-  server.close();
-  process.exit(0);
-});
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 export { app, server, wss, config };

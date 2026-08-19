@@ -48,7 +48,21 @@ function mapDockerState(state: string): ContainerInfo['status'] {
   return map[state] || 'stopped';
 }
 
+const ALLOWED_ACTIONS: readonly ContainerAction[] = ['start', 'stop', 'restart'];
+
+// Docker container IDs are 64 hex chars (short form: any prefix of ≥ 1 hex
+// char is accepted by the engine). Reject anything else before handing it to
+// dockerode — no shell is involved, but this blocks malformed/garbage IDs.
+const CONTAINER_ID_RE = /^[0-9a-fA-F]{1,64}$/;
+
 export async function controlContainer(id: string, action: ContainerAction): Promise<{ success: boolean; error?: string }> {
+  if (typeof id !== 'string' || !CONTAINER_ID_RE.test(id)) {
+    return { success: false, error: `Invalid container ID: ${id}` };
+  }
+  if (!ALLOWED_ACTIONS.includes(action)) {
+    return { success: false, error: `Invalid action: ${action}` };
+  }
+
   try {
     const docker = getDocker();
     const container = docker.getContainer(id);

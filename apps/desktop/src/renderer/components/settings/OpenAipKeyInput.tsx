@@ -6,8 +6,10 @@ export function OpenAipKeyInput() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    window.electronAPI?.getApiKey('openaip').then((result: { hasKey: boolean; key: string }) => {
-      if (result?.hasKey) { setHasKey(true); setKey(result.key); }
+    // The renderer only learns whether a key exists — the key itself is
+    // decrypted exclusively in the main process and never sent to the UI.
+    window.electronAPI?.getApiKey('openaip').then((result: { hasKey: boolean }) => {
+      if (result?.hasKey) setHasKey(true);
     });
   }, []);
 

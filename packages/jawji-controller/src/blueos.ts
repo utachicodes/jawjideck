@@ -3,6 +3,20 @@ import type { ExtensionInfo, AvailableExtension } from '@jawji/companion-types';
 
 const BLUEOS_BASE = 'http://localhost';
 
+// Extension identifiers are slugs like "my-extension" or "org.example.ext".
+// Strict charset (no slashes/spaces/semicolons) and no ".." sequences so
+// nothing user-controlled can shape the request URL or JSON body.
+const IDENTIFIER_RE = /^[A-Za-z0-9_][A-Za-z0-9_.-]{0,199}$/;
+const VERSION_RE = /^[A-Za-z0-9.+-]{1,64}$/;
+
+function isSafeIdentifier(identifier: string): boolean {
+  return (
+    typeof identifier === 'string' &&
+    IDENTIFIER_RE.test(identifier) &&
+    !identifier.includes('..')
+  );
+}
+
 export async function isBlueOSAvailable(): Promise<boolean> {
   try {
     const res = await fetch(`${BLUEOS_BASE}/version/info`, {
@@ -35,6 +49,9 @@ export async function listAvailableExtensions(): Promise<AvailableExtension[]> {
 }
 
 export async function installExtension(identifier: string, version: string): Promise<{ success: boolean; error?: string }> {
+  if (!isSafeIdentifier(identifier) || !VERSION_RE.test(version ?? '')) {
+    return { success: false, error: `Invalid extension identifier or version: ${identifier}@${version}` };
+  }
   try {
     const res = await fetch(`${BLUEOS_BASE}/kraken/v1.0/extension/install`, {
       method: 'POST',
@@ -52,6 +69,9 @@ export async function installExtension(identifier: string, version: string): Pro
 }
 
 export async function removeExtension(identifier: string): Promise<{ success: boolean; error?: string }> {
+  if (!isSafeIdentifier(identifier)) {
+    return { success: false, error: `Invalid extension identifier: ${identifier}` };
+  }
   try {
     const res = await fetch(`${BLUEOS_BASE}/kraken/v1.0/extension/${encodeURIComponent(identifier)}`, {
       method: 'DELETE',
@@ -67,6 +87,7 @@ export async function removeExtension(identifier: string): Promise<{ success: bo
 }
 
 export async function getExtensionLogs(identifier: string): Promise<string> {
+  if (!isSafeIdentifier(identifier)) return '';
   const res = await fetch(`${BLUEOS_BASE}/kraken/v1.0/extension/${encodeURIComponent(identifier)}/logs`);
   if (!res.ok) return '';
   return res.text();

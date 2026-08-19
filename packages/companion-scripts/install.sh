@@ -185,3 +185,9 @@ else
   echo "Jawji Companion setup complete."
 fi
 echo "================================"
+if [ "${WITH_CONTROLLER}" = "1" ] && ! printf '%s\n' "${FAILED_COMPONENTS[@]}" | grep -qx "Jawji Controller"; then
+  echo ""
+  echo "The Jawji Controller is installed. Run 'sudo jawji connect' on this"
+  echo "device any time to see everything needed to pair it in the Jawji"
+  echo "desktop app (IP, port, pairing token, health and status commands)."
+fi

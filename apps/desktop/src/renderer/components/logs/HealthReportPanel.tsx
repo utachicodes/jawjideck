@@ -70,6 +70,16 @@ export function HealthReportPanel() {
 
   const handleAiAnalyze = useCallback(async () => {
     if (!aiProvider || !currentLog || !healthResults) return;
+
+    // License-gated: AI log analysis requires an active subscription.
+    const { isCurrentServiceEntitled } = await import('../../lib/license-gate');
+    if (!isCurrentServiceEntitled('ai-analysis')) {
+      const store = useLogStore.getState();
+      store.setIsAiInsightLoading(false);
+      store.setAiInsightError('AI analysis requires an active Jawji subscription.');
+      return;
+    }
+
     const store = useLogStore.getState();
     store.setIsAiInsightLoading(true);
     store.setAiInsightError(null);

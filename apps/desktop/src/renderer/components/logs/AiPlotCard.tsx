@@ -4,7 +4,7 @@ import 'uplot/dist/uPlot.min.css';
 import type { ParsedLog } from '../../stores/log-store';
 import { useLogStore } from '../../stores/log-store';
 import { getModeTimeline, type ModeSegment } from './log-utils';
-import type { PlotMarker } from './log-ai-tools';
+import { resolvePlotType, type PlotMarker } from './log-ai-tools';
 
 const SERIES_COLORS = [
   '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
@@ -45,7 +45,10 @@ export function buildPlotData(
   log: ParsedLog,
   marker: PlotMarker,
 ): { series: Series[]; startS: number; endS: number } | null {
-  const all = log.messages[marker.type];
+  // Resolve MAVLink/ROS-style names the model might guess (VEHICLE_ACCELERATION
+  // → IMU, etc.) down to real ArduPilot dataflash types before looking them up.
+  const { type, fields: markerFields } = resolvePlotType(marker);
+  const all = log.messages[type];
   if (!all || all.length === 0) return null;
 
   const base = log.timeRange.startUs;
@@ -71,13 +74,13 @@ export function buildPlotData(
   const splitByInstance = instanceKey != null && distinctInstances.size > 1;
 
   // Field fallback: numeric fields of the type's first record.
-  let fields = marker.fields.filter((f) => f.length > 0);
+  let fields = markerFields.filter((f) => f.length > 0);
   if (fields.length === 0) {
     fields = Object.keys(sample.fields).filter((f) => typeof sample.fields[f] === 'number');
   }
   if (fields.length === 0) return null;
 
-  const labelPrefix = `${marker.type}.`;
+  const labelPrefix = `${type}.`;
   const series: Series[] = [];
 
   for (const field of fields) {
@@ -95,7 +98,7 @@ export function buildPlotData(
       }
       for (const [inst, bucket] of [...byInst.entries()].sort((a, b) => a[0] - b[0])) {
         const ds = decimate(bucket.time, bucket.values);
-        series.push({ label: `${marker.type}[${inst}].${field}`, time: ds.time, values: ds.values });
+        series.push({ label: `${type}[${inst}].${field}`, time: ds.time, values: ds.values });
       }
     } else {
       const time: number[] = [];
@@ -252,11 +255,32 @@ export function AiPlotCard({
   }, [data, isLight, modeTimeline]);
 
   if (!data) {
+    // Distinguish a hallucinated message type (model used a name that isn't in
+    // this log) from a real type that just has nothing in the requested window.
+    const { type } = resolvePlotType(marker);
+    const hasType = !!log.messages[type];
+    const available = Object.entries(log.messages)
+      .sort((a, b) => b[1].length - a[1].length)
+      .slice(0, 12)
+      .map(([t]) => t)
+      .join(', ');
     return (
       <div className="mt-2 rounded-lg border border-subtle bg-surface-overlay-subtle p-3">
-        <div className="text-xs text-content-secondary">
-          No {marker.type} data available{marker.startS != null || marker.endS != null ? ' in the requested time window' : ''}.
-        </div>
+        {hasType ? (
+          <div className="text-xs text-content-secondary">
+            No {type} data available{marker.startS != null || marker.endS != null ? ' in the requested time window' : ''}.
+          </div>
+        ) : (
+          <div className="text-xs text-content-secondary">
+            Message type <code className="text-amber-300 bg-surface-overlay-light px-1 py-0.5 rounded">{marker.type}</code> isn't
+            in this log — the model likely used a MAVLink name instead of an ArduPilot one.
+            {available && (
+              <>
+                {' '}Available types: <code className="text-content">{available}</code>
+              </>
+            )}
+          </div>
+        )}
       </div>
     );
   }

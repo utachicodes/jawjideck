@@ -395,6 +395,9 @@ export const IPC_CHANNELS = {
   ARDUPILOT_SITL_CUSTOM_FRAME_IMPORT: 'ardupilot-sitl:custom-frame-import',
   ARDUPILOT_SITL_CUSTOM_FRAME_EXPORT: 'ardupilot-sitl:custom-frame-export',
 
+  // iNav SITL (Windows download-on-demand)
+  INAV_SITL_DOWNLOAD_PROGRESS: 'inav-sitl:download-progress',
+
   // Visual Simulators (FlightGear, X-Plane)
   SIMULATOR_DETECT: 'simulator:detect',
   SIMULATOR_BROWSE_FG: 'simulator:browse-fg',

@@ -33,6 +33,39 @@ export function extractInsightCards(raw: string): HealthCheckResult[] | null {
   return null;
 }
 
+/**
+ * ArduPilot dataflash types use short names (IMU, ATT, GPS, VIBE, BAT...).
+ * Models occasionally guess MAVLink/ROS sensor names instead. This alias map
+ * resolves the most common ones to the closest dataflash type so a plot marker
+ * can still render, remapping MAVLink-style field names to dataflash fields
+ * where they differ (e.g. VEHICLE_ACCELERATION.x → IMU.AccX).
+ */
+export const PLOT_TYPE_ALIASES: Record<string, { type: string; fields?: Record<string, string> }> = {
+  VEHICLE_ACCELERATION: { type: 'IMU', fields: { x: 'AccX', y: 'AccY', z: 'AccZ' } },
+  VEHICLE_ANGULAR_VELOCITY: { type: 'IMU', fields: { x: 'GyrX', y: 'GyrY', z: 'GyrZ' } },
+  VEHICLE_ATTITUDE: { type: 'ATT' },
+  ATTITUDE: { type: 'ATT' },
+  VEHICLE_GLOBAL_POSITION: { type: 'GPS' },
+  VEHICLE_LOCAL_POSITION: { type: 'GPS' },
+  GLOBAL_POSITION: { type: 'GPS' },
+  BATTERY_STATUS: { type: 'BAT' },
+  VIBRATION: { type: 'VIBE' },
+  VEHICLE_STATUS: { type: 'STAT' },
+  SENSOR_STATUS: { type: 'STAT' },
+  DISTANCE_SENSOR: { type: 'RFND' },
+  SYSTEM_STATUS: { type: 'STAT' },
+};
+
+/** Resolve a plot marker's message type (and remap fields) via the alias map. */
+export function resolvePlotType(
+  marker: PlotMarker,
+): { type: string; fields: string[] } {
+  const alias = PLOT_TYPE_ALIASES[marker.type];
+  const type = alias?.type ?? marker.type;
+  const fields = marker.fields.map((f) => alias?.fields?.[f] ?? f);
+  return { type, fields };
+}
+
 type LogMsg = { type: string; timeUs: number; fields: Record<string, number | string> };
 
 /** Round to a compact-but-faithful precision so tool payloads stay small. */

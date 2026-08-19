@@ -18,6 +18,8 @@ import {
   type ScanResult,
 } from '@jawji/comms';
 import { registerCompanionIpcHandlers } from './companion/companion-ipc-handlers.js';
+import { createLicenseCredentialStore, type LicenseCredentialStore } from './licensing/license-credentials.js';
+import { createLicenseGate, LicenseGateError, type LicenseGate } from './licensing/license-gate.js';
 import { registerDroneBridgeIpcHandlers } from './dronebridge/dronebridge-ipc-handlers.js';
 import { setupOverlayHandlers, getApiKey } from './overlays/overlay-ipc-handlers.js';
 import { getAllWindows, getMainWindow } from './window-manager.js';
@@ -144,7 +146,7 @@ import {
   isUlogBuffer,
 } from '@jawji/ulog-parser';
 import { sitlProcess } from './sitl/sitl-process.js';
-import { ardupilotSitlProcess, ardupilotSitlDownloader, ardupilotRcSender } from './sitl/index.js';
+import { ardupilotSitlProcess, ardupilotSitlDownloader, ardupilotRcSender, inavSitlDownloader } from './sitl/index.js';
 import {
   initUnifiedLogger,
   shutdownLogger,
@@ -259,12 +261,30 @@ const settingsStore = new Store<SettingsStoreSchema>({
   },
 });
 
-// Last-known entitlement snapshot (see licensing-store.ts in the renderer),
-// so the Licensing tab has something to show when a live fetch fails.
-const licensingCacheStore = new Store<LicensingCacheSchema>({
-  name: 'licensing-cache',
-  defaults: { uid: null, snapshot: null, token: null, cachedAt: null },
-});
+// Encrypted-at-rest entitlement credential store (see licensing-store.ts in
+// the renderer). The signed token + snapshot written through LICENSING_CACHE_*
+// is never persisted in plaintext - safeStorage encrypts it before disk, and
+// the main-process license gate only trusts a locally Ed25519-verified token.
+let licensingCredentials: LicenseCredentialStore | null = null;
+async function getLicensingCredentials(): Promise<LicenseCredentialStore> {
+  if (!licensingCredentials) licensingCredentials = await createLicenseCredentialStore();
+  return licensingCredentials;
+}
+
+// Fail-closed license gate: every paid/cloud feature calls requireService()
+// before doing any real work. The public key is embedded at build time and
+// the token is verified locally, offline, against the encrypted credential cache.
+let licenseGate: LicenseGate | null = null;
+async function getLicenseGate(): Promise<LicenseGate> {
+  if (!licenseGate) {
+    const store = await getLicensingCredentials();
+    licenseGate = createLicenseGate({
+      publicKey: __JAWJI_LICENSE_PUBLIC_KEY__ ?? '',
+      readCredentials: () => store.read(),
+    });
+  }
+  return licenseGate;
+}
 
 let currentTransport: Transport | null = null;
 let currentVehicleType = 0; // 1=plane, 2=copter, etc.
@@ -1031,14 +1051,17 @@ function readUint32(payload: Uint8Array, offset: number): number {
   return (payload[offset]! | (payload[offset + 1]! << 8) | (payload[offset + 2]! << 16) | (payload[offset + 3]! << 24)) >>> 0;
 }
 
+// Shared buffer for readFloat: readFloat is called several times per
+// telemetry packet (ATTITUDE/VFR_HUD/WIND/NVF) and allocating a fresh
+// ArrayBuffer+DataView per call was pure GC churn in the hot parse loop.
+// Safe to reuse — readFloat is synchronous with no interleaved awaits.
+const readFloatView = new DataView(new ArrayBuffer(4));
 function readFloat(payload: Uint8Array, offset: number): number {
-  const buffer = new ArrayBuffer(4);
-  const view = new DataView(buffer);
-  view.setUint8(0, payload[offset]!);
-  view.setUint8(1, payload[offset + 1]!);
-  view.setUint8(2, payload[offset + 2]!);
-  view.setUint8(3, payload[offset + 3]!);
-  return view.getFloat32(0, true); // little-endian
+  readFloatView.setUint8(0, payload[offset]!);
+  readFloatView.setUint8(1, payload[offset + 1]!);
+  readFloatView.setUint8(2, payload[offset + 2]!);
+  readFloatView.setUint8(3, payload[offset + 3]!);
+  return readFloatView.getFloat32(0, true); // little-endian
 }
 
 // MAVLink message IDs
@@ -1083,6 +1106,9 @@ const MSG_ESC_TELEMETRY_9_TO_12 = 11032;
 // FTP message ID
 const MSG_FILE_TRANSFER_PROTOCOL = 110;
 
+// MAV_RESULT names for COMMAND_ACK — hoisted, allocated per-packet before.
+const MAV_RESULT_NAMES = ['ACCEPTED', 'TEMPORARILY_REJECTED', 'DENIED', 'UNSUPPORTED', 'FAILED', 'IN_PROGRESS'];
+
 // Fence message ID
 const MSG_FENCE_STATUS = 162;
 const MSG_LOG_ENTRY = 118;
@@ -1097,14 +1123,16 @@ const MISSION_ITEM_CRC_EXTRA_V1 = 254;
 const MISSION_CLEAR_ALL_CRC_EXTRA_V1 = 232;
 const MISSION_ACK_CRC_EXTRA_V1 = 153;
 
+// Hoisted: checked for every parsed packet, was reallocated per call.
+const MISSION_MSG_IDS = [39, 40, 41, 42, 43, 44, 45, 46, 47, 51, 73];
+
 // Parse telemetry from MAVLink packet
 // NOTE: MAVLink v2 orders payload fields by size (largest first for alignment)
 function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void {
   const { msgid, payload } = packet;
 
   // Log mission-related messages for debugging
-  const missionMsgIds = [39, 40, 41, 42, 43, 44, 45, 46, 47, 51, 73];
-  if (missionMsgIds.includes(msgid)) {
+  if (MISSION_MSG_IDS.includes(msgid)) {
     const hexPayload = Array.from(payload).map(b => b.toString(16).padStart(2, '0')).join(' ');
     sendLog(mainWindow, 'debug', `Received MSG #${msgid} (len=${payload.length}): ${hexPayload}`);
   }
@@ -1533,7 +1561,6 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
       const ackCommand = readUint16(payload, 0);
       const ackResult = payload[2] ?? 0;
       // MAV_RESULT: 0=ACCEPTED, 1=TEMPORARILY_REJECTED, 2=DENIED, 3=UNSUPPORTED, 4=FAILED, 5=IN_PROGRESS
-      const MAV_RESULT_NAMES = ['ACCEPTED', 'TEMPORARILY_REJECTED', 'DENIED', 'UNSUPPORTED', 'FAILED', 'IN_PROGRESS'];
       const resultName = MAV_RESULT_NAMES[ackResult] ?? `UNKNOWN(${ackResult})`;
 
       // Log arm/disarm command results prominently and forward to messages panel
@@ -2722,14 +2749,16 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
             // Broadcast raw frame to renderer(s) for the MAVLink Inspector and
             // any FieldGraph pop-outs. Stays cheap: payload is the small bytes
-            // already in memory; conversion is O(payload length). Renderer-side
-            // decoders only run for messages a live inspector/graph cares about.
+            // already in memory. Send the Uint8Array directly — structured
+            // clone serializes it far cheaper than the old Array.from() number
+            // array (~2KB garbage per packet at 50Hz), and the renderer's
+            // ingestPacket wraps it in `new Uint8Array(p.payload)` anyway.
             safeSend(mainWindow, IPC_CHANNELS.MAVLINK_PACKET, {
               msgid: packet.msgid,
               sysid: packet.sysid,
               compid: packet.compid,
               seq: packet.seq,
-              payload: Array.from(packet.payload),
+              payload: packet.payload,
               rxtime: packet.rxtime.getTime(),
               isMavlink2: packet.isMavlink2,
               isSigned: packet.isSigned,
@@ -3768,11 +3797,21 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   });
 
   ipcMain.handle(IPC_CHANNELS.LICENSING_CACHE_GET, async (): Promise<LicensingCacheSchema> => {
-    return licensingCacheStore.store;
+    const cached = (await getLicensingCredentials()).read();
+    return cached ?? { uid: null, snapshot: null, token: null, cachedAt: null };
   });
 
   ipcMain.handle(IPC_CHANNELS.LICENSING_CACHE_SET, async (_, cache: LicensingCacheSchema): Promise<void> => {
-    licensingCacheStore.set(cache);
+    if (cache.token) {
+      await getLicensingCredentials().then((store) =>
+        store.write({
+          uid: cache.uid ?? null,
+          snapshot: cache.snapshot,
+          token: cache.token,
+          cachedAt: cache.cachedAt ?? null,
+        })
+      );
+    }
   });
 
   // Telemetry stream rate control (MAVLink only)
@@ -7884,6 +7923,9 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   // Set main window for SITL process to forward output
   sitlProcess.setMainWindow(mainWindow);
 
+  // iNav SITL: cleanup legacy bundled binary (now downloaded on demand on Windows)
+  inavSitlDownloader.cleanupLegacyBundledBinaries();
+
   // Start SITL process
   ipcMain.handle(IPC_CHANNELS.SITL_START, async (_event, config: SitlConfig): Promise<{ success: boolean; command?: string; error?: string }> => {
     try {
@@ -8466,8 +8508,14 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   });
 
   ipcMain.handle(IPC_CHANNELS.APP_OPEN_EXTERNAL, (_event, url: string): void => {
-    if (typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://'))) {
-      shell.openExternal(url);
+    if (typeof url !== 'string') return;
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+        shell.openExternal(url);
+      }
+    } catch {
+      // Unparseable / non-http(s) URL — deny.
     }
   });
 
@@ -8717,6 +8765,13 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     messages: { role: 'user' | 'assistant'; content: string }[];
     systemContext: string;
   }): Promise<{ success: boolean; response?: string; error?: string }> => {
+    try {
+      await (await getLicenseGate()).requireService('ai-analysis');
+    } catch (err) {
+      if (err instanceof LicenseGateError) return { success: false, error: `License required: ${err.reason}` };
+      throw err;
+    }
+
     const { provider, messages, systemContext } = args;
 
     const apiKey = getApiKey(`ai-${provider}`);
@@ -8741,6 +8796,13 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     messages: unknown[];
     tools: unknown[];
   }): Promise<{ success: boolean; content?: unknown[]; stop_reason?: string; error?: string }> => {
+    try {
+      await (await getLicenseGate()).requireService('ai-analysis');
+    } catch (err) {
+      if (err instanceof LicenseGateError) return { success: false, error: `License required: ${err.reason}` };
+      throw err;
+    }
+
     const apiKey = getApiKey('ai-claude');
     if (!apiKey) {
       return { success: false, error: 'No API key configured for claude. Add it in Settings.' };

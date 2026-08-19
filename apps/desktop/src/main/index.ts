@@ -6,6 +6,18 @@
 import { app, BrowserWindow, shell } from 'electron';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+
+// Only http/https URLs may be opened in the user's external browser. Everything
+// else (file:, javascript:, custom schemes) is denied to avoid opening
+// dangerous URLs from a compromised renderer or a crafted link.
+function isSafeExternalUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
 import { setupIpcHandlers, cleanupOnShutdown } from './ipc-handlers.js';
 import { setupModuleIpc } from './modules/module-ipc.js';
 import { registerTileCacheScheme, setupTileCacheProtocol, setupTileCacheHandlers } from './tile-cache.js';
@@ -110,8 +122,34 @@ function createWindow(): BrowserWindow {
   });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url);
+    if (isSafeExternalUrl(details.url)) {
+      shell.openExternal(details.url);
+    }
     return { action: 'deny' };
+  });
+
+  // Never let the app window navigate away from the bundled app. If the
+  // renderer ever navigates to a remote origin, that page would inherit the
+  // preload bridge (which can arm/disarm, flash firmware, read files) — so
+  // block all external navigation outright.
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const appOrigin = isDev && process.env['ELECTRON_RENDERER_URL']
+      ? new URL(process.env['ELECTRON_RENDERER_URL']).origin
+      : null;
+    let sameApp: boolean;
+    try {
+      const target = new URL(url);
+      sameApp = appOrigin !== null && target.origin === appOrigin;
+    } catch {
+      sameApp = false;
+    }
+    if (!sameApp) event.preventDefault();
+  });
+
+  // The app does not use camera/mic/geolocation/notifications/etc. Deny all
+  // permission requests so a compromised renderer cannot obtain them.
+  mainWindow.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => {
+    callback(false);
   });
 
   // Load the app

@@ -4,6 +4,7 @@
 
 // iNav SITL
 export { sitlProcess } from './sitl-process.js';
+export { inavSitlDownloader } from './inav-sitl-downloader.js';
 
 // ArduPilot SITL
 export { ardupilotSitlProcess } from './ardupilot-sitl-process.js';

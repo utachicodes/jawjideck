@@ -98,8 +98,22 @@ async function listOpenRCServices(): Promise<ServiceInfo[]> {
   }
 }
 
+const ALLOWED_ACTIONS: readonly ServiceAction[] = ['start', 'stop', 'restart'];
+
 export async function controlService(name: string, action: ServiceAction): Promise<{ success: boolean; error?: string }> {
   const init = await getInitSystem();
+
+  // Only allow actions we know about, and only against services the controller
+  // can actually enumerate — prevents injecting arbitrary systemctl targets
+  // (e.g. *.target units, shutdown, reboot).
+  if (!ALLOWED_ACTIONS.includes(action)) {
+    return { success: false, error: `Invalid action: ${action}` };
+  }
+
+  const known = (await listServices()).find(s => s.name === name);
+  if (!known) {
+    return { success: false, error: `Unknown service: ${name}` };
+  }
 
   try {
     if (init === 'systemd') {

@@ -41,8 +41,33 @@ export function openAreaEditorWindow(): BrowserWindow {
   });
 
   win.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url);
+    try {
+      const parsed = new URL(details.url);
+      if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+        shell.openExternal(details.url);
+      }
+    } catch {
+      // unparseable URL — deny
+    }
     return { action: 'deny' };
+  });
+
+  // Block navigation away from the bundled app (a remote page would inherit
+  // the preload bridge).
+  win.webContents.on('will-navigate', (event, url) => {
+    const devOrigin = process.env['ELECTRON_RENDERER_URL'];
+    let sameApp = false;
+    try {
+      const target = new URL(url);
+      if (devOrigin) {
+        sameApp = target.origin === new URL(devOrigin).origin;
+      } else {
+        sameApp = target.protocol === 'file:';
+      }
+    } catch {
+      sameApp = false;
+    }
+    if (!sameApp) event.preventDefault();
   });
 
   // Keep the singleton ref current. registerSecondaryWindow handles broadcast
