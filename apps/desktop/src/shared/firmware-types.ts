@@ -111,6 +111,7 @@ export interface FlashOptions {
   fullChipErase?: boolean;         // Erase entire flash (slower but cleaner)
   verify?: boolean;                // Verify after write
   manualBaudRate?: number;         // Override auto baud rate detection
+  expectedHash?: string;           // Expected SHA256 hash for integrity verification
 }
 
 /**

@@ -8,6 +8,7 @@ import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import Store from 'electron-store';
 import { ValidateIPC, ConnectOptionsSchema, MSPConnectOptionsSchema, SigningSetKeySchema, FirmwareFlashSchema, ParamSetSchema, MissionItemSchema, MavlinkSendSchema, sanitizePath } from './ipc-validation.js';
+import { verifyFirmwareHash } from './firmware-signature.js';
 import {
   listSerialPorts,
   scanPorts,
@@ -7111,6 +7112,17 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   ): Promise<{ success: boolean; result?: FlashResult; error?: string }> => {
     ValidateIPC(FirmwareFlashSchema, { firmwarePath, board, options });
     try {
+      // Verify firmware hash if provided in options
+      if (options?.expectedHash) {
+        sendLog(mainWindow, 'info', 'Verifying firmware SHA256 hash...');
+        const hashValid = await verifyFirmwareHash(firmwarePath, options.expectedHash);
+        if (!hashValid) {
+          sendLog(mainWindow, 'error', 'Firmware hash verification failed!');
+          return { success: false, error: 'Firmware hash mismatch - file may be corrupted or tampered' };
+        }
+        sendLog(mainWindow, 'info', 'Firmware hash verified successfully');
+      }
+      
       sendLog(mainWindow, 'info', `Flashing firmware to ${board.name}...`);
       sendLog(mainWindow, 'info', `Flasher type: ${board.flasher}, path: ${firmwarePath}`);
       sendLog(mainWindow, 'info', `Board: ${JSON.stringify({ name: board.name, boardId: board.boardId, port: board.port, detectionMethod: board.detectionMethod })}`);

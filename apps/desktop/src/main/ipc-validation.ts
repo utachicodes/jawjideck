@@ -35,6 +35,7 @@ export const FirmwareFlashSchema = z.object({
   options: z.object({
     eraseAll: z.boolean().optional(),
     verify: z.boolean().optional(),
+    expectedHash: z.string().regex(/^[a-fA-F0-9]{64}$/).optional(),
   }).optional(),
 }).strict();
 
