@@ -5502,6 +5502,10 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     if (connectionState.protocol !== 'mavlink') {
       return { success: false, error: 'MAVLink-FTP requires a MAVLink connection' };
     }
+    // Validate path to prevent traversal
+    if (path.includes('..') || path.includes('\0')) {
+      return { success: false, error: 'Invalid path' };
+    }
     const client = buildBrowserFtpClient();
     const previous = ftpClient;
     ftpClient = client;
@@ -5543,6 +5547,10 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     }
     if (connectionState.protocol !== 'mavlink') {
       return { success: false, error: 'MAVLink-FTP requires a MAVLink connection' };
+    }
+    // Validate path to prevent traversal
+    if (fcPath.includes('..') || fcPath.includes('\0')) {
+      return { success: false, error: 'Invalid path' };
     }
     // Ask user where to save the file before doing any FC work.
     const defaultName = fcPath.split('/').filter(Boolean).pop() ?? 'download.bin';
@@ -5586,6 +5594,10 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     }
     if (connectionState.protocol !== 'mavlink') {
       return { success: false, error: 'MAVLink-FTP requires a MAVLink connection' };
+    }
+    // Validate path to prevent traversal
+    if (targetDir.includes('..') || targetDir.includes('\0')) {
+      return { success: false, error: 'Invalid path' };
     }
     const dlg = await dialog.showOpenDialog(mainWindow, {
       title: `Upload to ${targetDir}`,
@@ -5644,6 +5656,10 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     if (connectionState.protocol !== 'mavlink') {
       return { success: false, error: 'MAVLink-FTP requires a MAVLink connection' };
     }
+    // Validate path to prevent traversal
+    if (fcPath.includes('..') || fcPath.includes('\0')) {
+      return { success: false, error: 'Invalid path' };
+    }
     const client = buildBrowserFtpClient();
     const previous = ftpClient;
     ftpClient = client;
@@ -5673,6 +5689,10 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     }
     if (connectionState.protocol !== 'mavlink') {
       return { success: false, error: 'MAVLink-FTP requires a MAVLink connection' };
+    }
+    // Validate paths to prevent traversal
+    if (oldPath.includes('..') || oldPath.includes('\0') || newPath.includes('..') || newPath.includes('\0')) {
+      return { success: false, error: 'Invalid path' };
     }
     const client = buildBrowserFtpClient();
     const previous = ftpClient;
