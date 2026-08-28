@@ -7,6 +7,7 @@ import { ipcMain, BrowserWindow, dialog, app, shell, safeStorage } from 'electro
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import Store from 'electron-store';
+import { ValidateIPC, ConnectOptionsSchema, MSPConnectOptionsSchema, SigningSetKeySchema, FirmwareFlashSchema, ParamSetSchema, MissionItemSchema, MavlinkSendSchema, sanitizePath } from './ipc-validation.js';
 import {
   listSerialPorts,
   scanPorts,
@@ -3197,6 +3198,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   // Connect to a device
   ipcMain.handle(IPC_CHANNELS.COMMS_CONNECT, async (_, options: ConnectOptions): Promise<boolean> => {
+    // Validate input
+    ValidateIPC(ConnectOptionsSchema, options);
     // Cancel any pending auto-reconnect (user is manually connecting)
     if (pendingReconnect) {
       if (reconnectTimer) {
@@ -3729,6 +3732,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   // Send MAVLink message
   ipcMain.handle(IPC_CHANNELS.MAVLINK_SEND, async (_, payload: number[]): Promise<boolean> => {
+    ValidateIPC(MavlinkSendSchema, { payload });
     if (!currentTransport?.isOpen) {
       return false;
     }
@@ -3829,10 +3833,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   // Set signing key from passphrase (hashed with SHA-256)
   ipcMain.handle(IPC_CHANNELS.MAVLINK_SIGNING_SET_KEY, async (_, passphrase: string): Promise<{ success: boolean; error?: string }> => {
+    ValidateIPC(SigningSetKeySchema, { passphrase });
     try {
-      if (!passphrase || passphrase.length === 0) {
-        return { success: false, error: 'Passphrase cannot be empty' };
-      }
       const key = await passphraseToKey(passphrase);
       const newB64 = Buffer.from(key).toString('base64').slice(0, 12);
       const savedBefore = (signingStore.get('savedKeys') ?? []).length;
@@ -4197,6 +4199,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   // Set a single parameter
   ipcMain.handle(IPC_CHANNELS.PARAM_SET, async (_, paramId: string, value: number, type: number): Promise<{ success: boolean; error?: string }> => {
+    ValidateIPC(ParamSetSchema, { paramId, value, type });
     if (!currentTransport?.isOpen || !connectionState.isConnected) {
       return { success: false, error: 'Not connected' };
     }
@@ -6281,6 +6284,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   // Upload mission to flight controller
   ipcMain.handle(IPC_CHANNELS.MISSION_UPLOAD, async (_, items: MissionItem[]): Promise<{ success: boolean; error?: string }> => {
+    items.forEach(item => ValidateIPC(MissionItemSchema, item));
     if (!currentTransport?.isOpen || !connectionState.isConnected) {
       return { success: false, error: 'Not connected' };
     }
@@ -7105,6 +7109,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     board: DetectedBoard,
     options?: FlashOptions
   ): Promise<{ success: boolean; result?: FlashResult; error?: string }> => {
+    ValidateIPC(FirmwareFlashSchema, { firmwarePath, board, options });
     try {
       sendLog(mainWindow, 'info', `Flashing firmware to ${board.name}...`);
       sendLog(mainWindow, 'info', `Flasher type: ${board.flasher}, path: ${firmwarePath}`);
@@ -8662,7 +8667,10 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
   // for a 100MB log) and then sent it back to main for parsing — that
   // double-IPC-marshal was the multi-minute "frozen UI" symptom users saw.
   ipcMain.handle(IPC_CHANNELS.LOG_PARSE_FILE, async (_, filePath: string): Promise<unknown> => {
-    if (!existsSync(filePath)) {
+    // Validate path to prevent traversal
+    const allowedRoots = [app.getPath('userData'), app.getPath('downloads'), app.getPath('documents')];
+    const safePath = sanitizePath(filePath, allowedRoots);
+    if (!existsSync(safePath)) {
       // Stale recent — clean it up so the user doesn't keep seeing it.
       const logs = recentLogsStore.get('logs').filter((l) => l.path !== filePath);
       recentLogsStore.set('logs', logs);

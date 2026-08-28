@@ -169,7 +169,7 @@ function createWindow(): BrowserWindow {
   ].join('; ');
   
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-    const headers = details.responseHeaders;
+    const headers: Record<string, string[]> = details.responseHeaders || {};
     headers['Content-Security-Policy'] = [csp];
     if (details.url.startsWith('https:')) {
       headers['Strict-Transport-Security'] = ['max-age=31536000; includeSubDomains'];
