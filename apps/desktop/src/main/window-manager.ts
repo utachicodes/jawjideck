@@ -175,7 +175,7 @@ export function openDetachedWindow(req: OpenDetachedRequest): string {
     backgroundColor: '#0f1115',
     webPreferences: {
       preload: preloadPath,
-      sandbox: false,
+      sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
     },
