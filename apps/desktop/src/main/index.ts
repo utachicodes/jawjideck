@@ -152,6 +152,36 @@ function createWindow(): BrowserWindow {
     callback(false);
   });
 
+  // Set strict Content Security Policy
+  const csp = [
+    "default-src 'none'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "connect-src 'self' ws: wss:",
+    "frame-ancestors 'none'",
+    "base-uri 'none'",
+    "form-action 'none'",
+    "object-src 'none'",
+    "media-src 'self' blob:",
+    "worker-src 'self' blob:",
+  ].join('; ');
+  
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    const headers = details.responseHeaders;
+    headers['Content-Security-Policy'] = [csp];
+    if (details.url.startsWith('https:')) {
+      headers['Strict-Transport-Security'] = ['max-age=31536000; includeSubDomains'];
+    }
+    headers['X-Content-Type-Options'] = ['nosniff'];
+    headers['X-Frame-Options'] = ['DENY'];
+    headers['X-XSS-Protection'] = ['1; mode=block'];
+    headers['Referrer-Policy'] = ['strict-origin-when-cross-origin'];
+    headers['Permissions-Policy'] = ['camera=(), microphone=(), geolocation=(), payment=()'];
+    callback({ cancel: false, responseHeaders: headers });
+  });
+
   // Load the app
   if (isDev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
