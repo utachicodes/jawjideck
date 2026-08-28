@@ -9,6 +9,7 @@ import { existsSync, mkdirSync } from 'fs';
 import Store from 'electron-store';
 import { ValidateIPC, ConnectOptionsSchema, MSPConnectOptionsSchema, SigningSetKeySchema, FirmwareFlashSchema, ParamSetSchema, MissionItemSchema, MavlinkSendSchema, sanitizePath } from './ipc-validation.js';
 import { verifyFirmwareHash } from './firmware-signature.js';
+import { checkIPCRateLimit } from './ipc-rate-limiter.js';
 import {
   listSerialPorts,
   scanPorts,
@@ -126,6 +127,28 @@ import * as scriptRegistry from './script-installer/registry-store.js';
 import { getScriptBundle } from './script-installer/bundle.js';
 import * as installerService from './script-installer/installer-service.js';
 import type { FcAdapter } from './script-installer/installer-service.js';
+
+/**
+ * Rate-limited IPC handler wrapper
+ */
+function rateLimitedHandle<T extends unknown[]>(
+  channel: string,
+  handler: (...args: T) => Promise<unknown>
+): void {
+  ipcMain.handle(channel, async (event, ...args: T) => {
+    const { allowed, remaining, resetTime } = checkIPCRateLimit(channel);
+    if (!allowed) {
+      const retryAfter = Math.ceil((resetTime - Date.now()) / 1000);
+      throw new Error(`Rate limited. Retry after ${retryAfter}s`);
+    }
+    // Add rate limit headers to response via event
+    (event as unknown as { returnValue: { rateLimitRemaining?: number; rateLimitReset?: number } }).returnValue = {
+      rateLimitRemaining: remaining,
+      rateLimitReset: resetTime,
+    };
+    return handler(...args);
+  });
+}
 import type { PreflightFix } from '../shared/script-installer-types.js';
 import {
   serializeFileTransferProtocol,
