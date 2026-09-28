@@ -29,7 +29,7 @@ export interface DeviceOpWrite {
 }
 
 export const DEVICE_OP_WRITE_ID = 11002;
-export const DEVICE_OP_WRITE_CRC_EXTRA = 71;
+export const DEVICE_OP_WRITE_CRC_EXTRA = 234;
 export const DEVICE_OP_WRITE_MIN_LENGTH = 180;
 export const DEVICE_OP_WRITE_MAX_LENGTH = 180;
 

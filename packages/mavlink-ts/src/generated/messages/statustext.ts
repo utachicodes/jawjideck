@@ -15,19 +15,19 @@ export interface Statustext {
 }
 
 export const STATUSTEXT_ID = 253;
-export const STATUSTEXT_CRC_EXTRA = 66;
-export const STATUSTEXT_MIN_LENGTH = 54;
+export const STATUSTEXT_CRC_EXTRA = 83;
+export const STATUSTEXT_MIN_LENGTH = 51;
 export const STATUSTEXT_MAX_LENGTH = 54;
 
 export function serializeStatustext(msg: Statustext): Uint8Array {
   const buffer = new Uint8Array(54);
   const view = new DataView(buffer.buffer);
 
-  view.setUint16(0, msg.id, true);
-  buffer[2] = msg.severity & 0xff;
+  buffer[0] = msg.severity & 0xff;
   // String: text
   const textBytes = new TextEncoder().encode(msg.text || '');
-  buffer.set(textBytes.slice(0, 50), 3);
+  buffer.set(textBytes.slice(0, 50), 1);
+  view.setUint16(51, msg.id, true);
   buffer[53] = msg.chunkSeq & 0xff;
 
   return buffer;
@@ -37,9 +37,9 @@ export function deserializeStatustext(payload: Uint8Array): Statustext {
   const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
 
   return {
-    id: view.getUint16(0, true),
-    severity: payload[2],
-    text: new TextDecoder().decode(payload.slice(3, 53)).replace(/\0.*$/, ''),
+    severity: payload[0],
+    text: new TextDecoder().decode(payload.slice(1, 51)).replace(/\0.*$/, ''),
+    id: view.getUint16(51, true),
     chunkSeq: payload[53],
   };
 }

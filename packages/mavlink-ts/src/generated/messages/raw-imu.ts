@@ -31,8 +31,8 @@ export interface RawImu {
 }
 
 export const RAW_IMU_ID = 27;
-export const RAW_IMU_CRC_EXTRA = 83;
-export const RAW_IMU_MIN_LENGTH = 29;
+export const RAW_IMU_CRC_EXTRA = 144;
+export const RAW_IMU_MIN_LENGTH = 26;
 export const RAW_IMU_MAX_LENGTH = 29;
 
 export function serializeRawImu(msg: RawImu): Uint8Array {
@@ -49,8 +49,8 @@ export function serializeRawImu(msg: RawImu): Uint8Array {
   view.setInt16(20, msg.xmag, true);
   view.setInt16(22, msg.ymag, true);
   view.setInt16(24, msg.zmag, true);
-  view.setInt16(26, msg.temperature, true);
-  buffer[28] = msg.id & 0xff;
+  buffer[26] = msg.id & 0xff;
+  view.setInt16(27, msg.temperature, true);
 
   return buffer;
 }
@@ -69,7 +69,7 @@ export function deserializeRawImu(payload: Uint8Array): RawImu {
     xmag: view.getInt16(20, true),
     ymag: view.getInt16(22, true),
     zmag: view.getInt16(24, true),
-    temperature: view.getInt16(26, true),
-    id: payload[28],
+    id: payload[26],
+    temperature: view.getInt16(27, true),
   };
 }

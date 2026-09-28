@@ -29,10 +29,10 @@ export interface CameraFovStatus {
 export const CAMERA_FOV_STATUS_ID = 271;
 export const CAMERA_FOV_STATUS_CRC_EXTRA = 22;
 export const CAMERA_FOV_STATUS_MIN_LENGTH = 52;
-export const CAMERA_FOV_STATUS_MAX_LENGTH = 52;
+export const CAMERA_FOV_STATUS_MAX_LENGTH = 53;
 
 export function serializeCameraFovStatus(msg: CameraFovStatus): Uint8Array {
-  const buffer = new Uint8Array(52);
+  const buffer = new Uint8Array(53);
   const view = new DataView(buffer.buffer);
 
   view.setUint32(0, msg.timeBootMs, true);

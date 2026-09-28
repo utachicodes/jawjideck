@@ -25,7 +25,7 @@ export interface VisionPositionEstimate {
 }
 
 export const VISION_POSITION_ESTIMATE_ID = 102;
-export const VISION_POSITION_ESTIMATE_CRC_EXTRA = 152;
+export const VISION_POSITION_ESTIMATE_CRC_EXTRA = 158;
 export const VISION_POSITION_ESTIMATE_MIN_LENGTH = 117;
 export const VISION_POSITION_ESTIMATE_MAX_LENGTH = 117;
 

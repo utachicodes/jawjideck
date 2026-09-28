@@ -29,12 +29,12 @@ export interface StorageInformation {
 }
 
 export const STORAGE_INFORMATION_ID = 261;
-export const STORAGE_INFORMATION_CRC_EXTRA = 114;
-export const STORAGE_INFORMATION_MIN_LENGTH = 60;
-export const STORAGE_INFORMATION_MAX_LENGTH = 60;
+export const STORAGE_INFORMATION_CRC_EXTRA = 179;
+export const STORAGE_INFORMATION_MIN_LENGTH = 27;
+export const STORAGE_INFORMATION_MAX_LENGTH = 61;
 
 export function serializeStorageInformation(msg: StorageInformation): Uint8Array {
-  const buffer = new Uint8Array(60);
+  const buffer = new Uint8Array(61);
   const view = new DataView(buffer.buffer);
 
   view.setUint32(0, msg.timeBootMs, true);

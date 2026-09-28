@@ -39,7 +39,7 @@ export interface HighresImu {
 }
 
 export const HIGHRES_IMU_ID = 105;
-export const HIGHRES_IMU_CRC_EXTRA = 253;
+export const HIGHRES_IMU_CRC_EXTRA = 93;
 export const HIGHRES_IMU_MIN_LENGTH = 63;
 export const HIGHRES_IMU_MAX_LENGTH = 63;
 

@@ -29,10 +29,10 @@ export interface CameraTrackingImageStatus {
 export const CAMERA_TRACKING_IMAGE_STATUS_ID = 275;
 export const CAMERA_TRACKING_IMAGE_STATUS_CRC_EXTRA = 126;
 export const CAMERA_TRACKING_IMAGE_STATUS_MIN_LENGTH = 31;
-export const CAMERA_TRACKING_IMAGE_STATUS_MAX_LENGTH = 31;
+export const CAMERA_TRACKING_IMAGE_STATUS_MAX_LENGTH = 32;
 
 export function serializeCameraTrackingImageStatus(msg: CameraTrackingImageStatus): Uint8Array {
-  const buffer = new Uint8Array(31);
+  const buffer = new Uint8Array(32);
   const view = new DataView(buffer.buffer);
 
   view.setFloat32(0, msg.pointX, true);

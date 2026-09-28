@@ -39,7 +39,7 @@ export interface HilSensor {
 }
 
 export const HIL_SENSOR_ID = 107;
-export const HIL_SENSOR_CRC_EXTRA = 207;
+export const HIL_SENSOR_CRC_EXTRA = 108;
 export const HIL_SENSOR_MIN_LENGTH = 65;
 export const HIL_SENSOR_MAX_LENGTH = 65;
 

@@ -17,7 +17,7 @@ export interface ScaledPressure3 {
 }
 
 export const SCALED_PRESSURE3_ID = 143;
-export const SCALED_PRESSURE3_CRC_EXTRA = 69;
+export const SCALED_PRESSURE3_CRC_EXTRA = 131;
 export const SCALED_PRESSURE3_MIN_LENGTH = 16;
 export const SCALED_PRESSURE3_MAX_LENGTH = 16;
 

@@ -35,12 +35,12 @@ export interface CameraInformation {
 }
 
 export const CAMERA_INFORMATION_ID = 259;
-export const CAMERA_INFORMATION_CRC_EXTRA = 160;
-export const CAMERA_INFORMATION_MIN_LENGTH = 236;
-export const CAMERA_INFORMATION_MAX_LENGTH = 236;
+export const CAMERA_INFORMATION_CRC_EXTRA = 92;
+export const CAMERA_INFORMATION_MIN_LENGTH = 235;
+export const CAMERA_INFORMATION_MAX_LENGTH = 237;
 
 export function serializeCameraInformation(msg: CameraInformation): Uint8Array {
-  const buffer = new Uint8Array(236);
+  const buffer = new Uint8Array(237);
   const view = new DataView(buffer.buffer);
 
   view.setUint32(0, msg.timeBootMs, true);
@@ -54,11 +54,11 @@ export function serializeCameraInformation(msg: CameraInformation): Uint8Array {
   view.setUint16(28, msg.camDefinitionVersion, true);
   // Array: vendor_name
   for (let i = 0; i < 32; i++) {
-    buffer[30 + i * 1] = msg.vendorName[i] ?? 0 & 0xff;
+    buffer[30 + i] = (msg.vendorName[i] ?? 0) & 0xff;
   }
   // Array: model_name
   for (let i = 0; i < 32; i++) {
-    buffer[62 + i * 1] = msg.modelName[i] ?? 0 & 0xff;
+    buffer[62 + i] = (msg.modelName[i] ?? 0) & 0xff;
   }
   buffer[94] = msg.lensId & 0xff;
   // String: cam_definition_uri
@@ -82,8 +82,8 @@ export function deserializeCameraInformation(payload: Uint8Array): CameraInforma
     resolutionH: view.getUint16(24, true),
     resolutionV: view.getUint16(26, true),
     camDefinitionVersion: view.getUint16(28, true),
-    vendorName: Array.from({ length: 32 }, (_, i) => payload[30 + i * 1]),
-    modelName: Array.from({ length: 32 }, (_, i) => payload[62 + i * 1]),
+    vendorName: Array.from({ length: 32 }, (_, i) => payload[30 + i]),
+    modelName: Array.from({ length: 32 }, (_, i) => payload[62 + i]),
     lensId: payload[94],
     camDefinitionUri: new TextDecoder().decode(payload.slice(95, 235)).replace(/\0.*$/, ''),
     gimbalDeviceId: payload[235],

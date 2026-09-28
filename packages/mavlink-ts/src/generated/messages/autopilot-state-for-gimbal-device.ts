@@ -33,8 +33,8 @@ export interface AutopilotStateForGimbalDevice {
 }
 
 export const AUTOPILOT_STATE_FOR_GIMBAL_DEVICE_ID = 286;
-export const AUTOPILOT_STATE_FOR_GIMBAL_DEVICE_CRC_EXTRA = 31;
-export const AUTOPILOT_STATE_FOR_GIMBAL_DEVICE_MIN_LENGTH = 57;
+export const AUTOPILOT_STATE_FOR_GIMBAL_DEVICE_CRC_EXTRA = 210;
+export const AUTOPILOT_STATE_FOR_GIMBAL_DEVICE_MIN_LENGTH = 53;
 export const AUTOPILOT_STATE_FOR_GIMBAL_DEVICE_MAX_LENGTH = 57;
 
 export function serializeAutopilotStateForGimbalDevice(msg: AutopilotStateForGimbalDevice): Uint8Array {
@@ -52,11 +52,11 @@ export function serializeAutopilotStateForGimbalDevice(msg: AutopilotStateForGim
   view.setFloat32(36, msg.vz, true);
   view.setUint32(40, msg.vEstimatedDelayUs, true);
   view.setFloat32(44, msg.feedForwardAngularVelocityZ, true);
-  view.setFloat32(48, msg.angularVelocityZ, true);
-  view.setUint16(52, msg.estimatorStatus, true);
-  buffer[54] = msg.targetSystem & 0xff;
-  buffer[55] = msg.targetComponent & 0xff;
-  buffer[56] = msg.landedState & 0xff;
+  view.setUint16(48, msg.estimatorStatus, true);
+  buffer[50] = msg.targetSystem & 0xff;
+  buffer[51] = msg.targetComponent & 0xff;
+  buffer[52] = msg.landedState & 0xff;
+  view.setFloat32(53, msg.angularVelocityZ, true);
 
   return buffer;
 }
@@ -73,10 +73,10 @@ export function deserializeAutopilotStateForGimbalDevice(payload: Uint8Array): A
     vz: view.getFloat32(36, true),
     vEstimatedDelayUs: view.getUint32(40, true),
     feedForwardAngularVelocityZ: view.getFloat32(44, true),
-    angularVelocityZ: view.getFloat32(48, true),
-    estimatorStatus: view.getUint16(52, true),
-    targetSystem: payload[54],
-    targetComponent: payload[55],
-    landedState: payload[56],
+    estimatorStatus: view.getUint16(48, true),
+    targetSystem: payload[50],
+    targetComponent: payload[51],
+    landedState: payload[52],
+    angularVelocityZ: view.getFloat32(53, true),
   };
 }

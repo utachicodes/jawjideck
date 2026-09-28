@@ -15,7 +15,7 @@ export interface MissionCurrent {
 }
 
 export const MISSION_CURRENT_ID = 42;
-export const MISSION_CURRENT_CRC_EXTRA = 218;
+export const MISSION_CURRENT_CRC_EXTRA = 28;
 export const MISSION_CURRENT_MIN_LENGTH = 6;
 export const MISSION_CURRENT_MAX_LENGTH = 6;
 

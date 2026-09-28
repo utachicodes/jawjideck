@@ -15,18 +15,18 @@ export interface CameraSettings {
 }
 
 export const CAMERA_SETTINGS_ID = 260;
-export const CAMERA_SETTINGS_CRC_EXTRA = 8;
-export const CAMERA_SETTINGS_MIN_LENGTH = 13;
-export const CAMERA_SETTINGS_MAX_LENGTH = 13;
+export const CAMERA_SETTINGS_CRC_EXTRA = 146;
+export const CAMERA_SETTINGS_MIN_LENGTH = 5;
+export const CAMERA_SETTINGS_MAX_LENGTH = 14;
 
 export function serializeCameraSettings(msg: CameraSettings): Uint8Array {
-  const buffer = new Uint8Array(13);
+  const buffer = new Uint8Array(14);
   const view = new DataView(buffer.buffer);
 
   view.setUint32(0, msg.timeBootMs, true);
-  view.setFloat32(4, msg.zoomlevel, true);
-  view.setFloat32(8, msg.focuslevel, true);
-  buffer[12] = msg.modeId & 0xff;
+  buffer[4] = msg.modeId & 0xff;
+  view.setFloat32(5, msg.zoomlevel, true);
+  view.setFloat32(9, msg.focuslevel, true);
 
   return buffer;
 }
@@ -36,8 +36,8 @@ export function deserializeCameraSettings(payload: Uint8Array): CameraSettings {
 
   return {
     timeBootMs: view.getUint32(0, true),
-    zoomlevel: view.getFloat32(4, true),
-    focuslevel: view.getFloat32(8, true),
-    modeId: payload[12],
+    modeId: payload[4],
+    zoomlevel: view.getFloat32(5, true),
+    focuslevel: view.getFloat32(9, true),
   };
 }

@@ -23,7 +23,7 @@ export interface ViconPositionEstimate {
 }
 
 export const VICON_POSITION_ESTIMATE_ID = 104;
-export const VICON_POSITION_ESTIMATE_CRC_EXTRA = 176;
+export const VICON_POSITION_ESTIMATE_CRC_EXTRA = 56;
 export const VICON_POSITION_ESTIMATE_MIN_LENGTH = 116;
 export const VICON_POSITION_ESTIMATE_MAX_LENGTH = 116;
 
