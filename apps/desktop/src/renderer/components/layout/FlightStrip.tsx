@@ -21,6 +21,7 @@ import {
   getVehicleClass,
   ARDUPILOT_COMMON_MODES,
 } from '../../../shared/telemetry-types';
+import { MAV_AUTOPILOT_PX4, PX4_COPTER_MODES } from '../../../shared/px4';
 import { useGamepad, loadAxisMap, saveAxisMap, DEFAULT_AXIS_MAP, type GamepadAxisMap } from '../../hooks/useGamepad';
 import { Gamepad2, Keyboard, ChevronDown, Settings2 } from 'lucide-react';
 
@@ -163,7 +164,9 @@ export function FlightStrip() {
     qEnable: typeof qEnable === 'number' ? qEnable : undefined,
     sitlFrame: sitlIsRunning ? sitlFrame : undefined,
   });
-  const availableModes = ARDUPILOT_COMMON_MODES[vehicleClass] ?? [];
+  const availableModes = connectionState?.autopilotType === MAV_AUTOPILOT_PX4
+    ? PX4_COPTER_MODES
+    : ARDUPILOT_COMMON_MODES[vehicleClass] ?? [];
 
   // ── Input mode state ───────────────────────────────────────────────────────
   // kbActive/gpActive live in flight-control-store — the toggle buttons are in
@@ -353,7 +356,7 @@ export function FlightStrip() {
   if (!isConnected) return null;
 
   return (
-    <div className="h-16 shrink-0 border-t border-subtle bg-surface-nav flex items-center px-4 gap-3 z-40">
+    <div className="h-16 shrink-0 border-t border-subtle bg-surface-nav flex items-center px-2 lg:px-4 gap-2 lg:gap-3 z-40 min-w-0">
 
       {/* ── ARM / DISARM ── */}
       <button
@@ -378,7 +381,7 @@ export function FlightStrip() {
 
       {/* Arming-blocked chips */}
       {!flight.armed && preArmReasons.length > 0 && (
-        <div className="flex items-center gap-1.5 overflow-hidden">
+        <div className="hidden xl:flex items-center gap-1.5 overflow-hidden min-w-0">
           {preArmReasons.slice(0, 3).map((r, i) => (
             <span key={i} className="px-2 py-0.5 bg-red-500/15 rounded-lg text-red-300 text-xs font-medium whitespace-nowrap">
               {r}
@@ -393,8 +396,8 @@ export function FlightStrip() {
       {/* Receiver not set to MSP — GCS stick input (throttle/joystick/keyboard)
           won't reach the mixer even though arming and telemetry work fine. */}
       {isMsp && rxConfigChecked && rxConfigIsMsp === false && (
-        <div className="flex items-center gap-2 px-2 py-1 bg-amber-500/15 rounded-lg shrink-0">
-          <span className="text-xs font-medium text-amber-300 whitespace-nowrap">
+        <div className="flex items-center gap-2 px-2 py-1 bg-amber-500/15 rounded-lg min-w-0">
+          <span className="text-xs font-medium text-amber-300 truncate" title="Receiver not set to MSP — GCS control won't reach motors">
             Receiver not set to MSP — GCS control won't reach motors
           </span>
           <button
@@ -415,8 +418,8 @@ export function FlightStrip() {
           can't safely auto-fix, but still warn while a GCS input mode is on
           since this is the #1 cause of "control does nothing" reports. */}
       {isMsp && rxConfigChecked && rxConfigIsMsp === null && (kbActive || gpActive) && (
-        <div className="flex items-center gap-2 px-2 py-1 bg-amber-500/10 rounded-lg shrink-0">
-          <span className="text-xs font-medium text-amber-300/80 whitespace-nowrap">
+        <div className="flex items-center gap-2 px-2 py-1 bg-amber-500/10 rounded-lg min-w-0">
+          <span className="text-xs font-medium text-amber-300/80 truncate" title="Couldn't verify receiver config — if controls don't respond, set Receiver Mode to MSP on the FC">
             Couldn't verify receiver config — if controls don't respond, set Receiver Mode to MSP on the FC
           </span>
         </div>
@@ -468,7 +471,7 @@ export function FlightStrip() {
           renders on its own condition so one being off never hides the other). */}
       {(isMsp || isMavlink) && kbActive && (
         <>
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="hidden xl:flex items-center gap-2.5 shrink-0">
             <div className="flex items-center gap-1.5 text-blue-400" title="Keyboard RC control active">
               <Keyboard size={15} />
               <span className="text-sm font-bold">KB</span>
@@ -517,7 +520,7 @@ export function FlightStrip() {
             </div>
 
             {/* Live axis bars */}
-            <div className="flex items-end gap-1.5">
+            <div className="hidden lg:flex items-end gap-1.5">
               {(['roll','pitch','throttle','yaw'] as const).map((axis) => {
                 const idx = axisMap[axis] as number;
                 const raw = gamepad.axes[idx] ?? 0;
@@ -600,7 +603,7 @@ export function FlightStrip() {
       )}
 
       {/* ── BATTERY + SIGNAL + RC CHANNEL MINI-BARS ── */}
-      <div className="flex items-center gap-3 shrink-0 ml-auto">
+      <div className="flex items-center gap-2 lg:gap-3 shrink-0 ml-auto">
         {/* Battery */}
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface border border-subtle">
           {(() => {
@@ -629,7 +632,7 @@ export function FlightStrip() {
         </div>
 
         {/* Signal */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface border border-subtle">
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface border border-subtle">
           <div className="flex items-end gap-0.5">
             {[1,2,3,4,5].map((bar) => (
               <div
@@ -649,6 +652,7 @@ export function FlightStrip() {
           </div>
         </div>
 
+        <div className="hidden lg:flex items-center gap-3">
         <Divider />
 
         {/* RC Channels — MSP uses flight-control-store, MAVLink uses keyboard/gamepad state */}
@@ -656,6 +660,7 @@ export function FlightStrip() {
         <MiniBar label="ROLL" value={isMsp ? (channels[0] ?? 1500) : (isMavlink && kbActive ? mavKbChannels.roll : isMavlink && gpActive ? mavGpChannels.roll : 1500)} />
         <MiniBar label="PTCH" value={isMsp ? (channels[1] ?? 1500) : (isMavlink && kbActive ? mavKbChannels.pitch : isMavlink && gpActive ? mavGpChannels.pitch : 1500)} />
         <MiniBar label="YAW" value={isMsp ? (channels[3] ?? 1500) : (isMavlink && kbActive ? mavKbChannels.yaw : isMavlink && gpActive ? mavGpChannels.yaw : 1500)} />
+        </div>
       </div>
     </div>
   );

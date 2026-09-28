@@ -6,6 +6,7 @@ export const IPC_CHANNELS = {
   // Port management
   COMMS_LIST_PORTS: 'comms:list-ports',
   COMMS_SCAN_PORTS: 'comms:scan-ports',
+  COMMS_PROBE_PORT: 'comms:probe-port',
   COMMS_CONNECT: 'comms:connect',
   COMMS_DISCONNECT: 'comms:disconnect',
   COMMS_NEW_PORT: 'comms:new-port',
@@ -736,6 +737,7 @@ export interface ConnectionState {
   systemId?: number;
   componentId?: number;
   autopilot?: string;
+  autopilotType?: number; // Raw MAV_AUTOPILOT (3 = ArduPilot, 12 = PX4)
   vehicleType?: string;
   mavType?: number; // Raw MAV_TYPE for metadata lookup
   // MSP-specific (Betaflight/iNav)

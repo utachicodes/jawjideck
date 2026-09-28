@@ -100,3 +100,23 @@ export function formatPortDisplayName(port: SerialPortInfo): string {
 
   return port.path;
 }
+
+/**
+ * System ports that are never a vehicle (macOS debug/Bluetooth/Wi-Fi pseudo-ports)
+ */
+const SYSTEM_PORT_PATTERN = /debug-console|bluetooth|wlan-debug|airpods/i;
+
+/**
+ * Whether a port is a built-in system port rather than a connected device.
+ */
+export function isSystemPort(port: SerialPortInfo): boolean {
+  return SYSTEM_PORT_PATTERN.test(port.path);
+}
+
+/**
+ * Whether a port looks like a real USB serial device (FC or telemetry radio)
+ * worth probing automatically.
+ */
+export function isAutoConnectCandidate(port: SerialPortInfo): boolean {
+  return !isSystemPort(port) && Boolean(port.vendorId && port.productId);
+}
