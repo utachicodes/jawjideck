@@ -35,10 +35,10 @@ export interface CameraTrackingGeoStatus {
 export const CAMERA_TRACKING_GEO_STATUS_ID = 276;
 export const CAMERA_TRACKING_GEO_STATUS_CRC_EXTRA = 18;
 export const CAMERA_TRACKING_GEO_STATUS_MIN_LENGTH = 49;
-export const CAMERA_TRACKING_GEO_STATUS_MAX_LENGTH = 49;
+export const CAMERA_TRACKING_GEO_STATUS_MAX_LENGTH = 50;
 
 export function serializeCameraTrackingGeoStatus(msg: CameraTrackingGeoStatus): Uint8Array {
-  const buffer = new Uint8Array(49);
+  const buffer = new Uint8Array(50);
   const view = new DataView(buffer.buffer);
 
   view.setInt32(0, msg.lat, true);

@@ -207,10 +207,11 @@ export class MAVLinkParser {
         continue;
       }
 
-      // Validate payload length
+      // Validate payload length. MAVLink 2 strips trailing zero bytes, so a
+      // v2 payload can be shorter than the message's base (minLength).
       if (
-        packet.payloadLength < msgInfo.minLength ||
-        packet.payloadLength > msgInfo.maxLength
+        packet.payloadLength > msgInfo.maxLength ||
+        (!isMavlink2 && packet.payloadLength < msgInfo.minLength)
       ) {
         this.stats.badLength++;
         continue;
@@ -233,7 +234,17 @@ export class MAVLinkParser {
       }
 
       this.stats.packetsReceived++;
-      this.packetQueue.push(packet);
+
+      // Zero-pad to the full length so deserializers can read every field:
+      // v1 never carries extension fields and v2 truncates trailing zeros,
+      // and absent bytes are defined to be zero.
+      if (packet.payload.length < msgInfo.maxLength) {
+        const payload = new Uint8Array(msgInfo.maxLength);
+        payload.set(packet.payload);
+        this.packetQueue.push({ ...packet, payload });
+      } else {
+        this.packetQueue.push(packet);
+      }
     }
   }
 }

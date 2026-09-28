@@ -27,7 +27,7 @@ export interface DeviceOpRead {
 }
 
 export const DEVICE_OP_READ_ID = 11000;
-export const DEVICE_OP_READ_CRC_EXTRA = 187;
+export const DEVICE_OP_READ_CRC_EXTRA = 134;
 export const DEVICE_OP_READ_MIN_LENGTH = 52;
 export const DEVICE_OP_READ_MAX_LENGTH = 52;
 

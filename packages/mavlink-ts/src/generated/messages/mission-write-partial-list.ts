@@ -17,7 +17,7 @@ export interface MissionWritePartialList {
 }
 
 export const MISSION_WRITE_PARTIAL_LIST_ID = 38;
-export const MISSION_WRITE_PARTIAL_LIST_CRC_EXTRA = 168;
+export const MISSION_WRITE_PARTIAL_LIST_CRC_EXTRA = 9;
 export const MISSION_WRITE_PARTIAL_LIST_MIN_LENGTH = 7;
 export const MISSION_WRITE_PARTIAL_LIST_MAX_LENGTH = 7;
 

@@ -8,7 +8,18 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 
 ## [Unreleased]
 
+### Added
+- **PX4 support.** Jawji previously assumed ArduPilot for every MAVLink vehicle. PX4 vehicles now get PX4 flight-mode names and mode switching (main/sub mode in `MAV_CMD_DO_SET_MODE`), byte-wise integer param read/write, takeoff via `MAV_CMD_NAV_TAKEOFF` with an AMSL target, Land/Return as mode switches, joystick and keyboard input via `MANUAL_CONTROL`, PX4-appropriate stream requests, and missions without ArduPilot's home item at seq 0. A "PX4 flight setup" card in Flight Control flags `COM_RC_IN_MODE`, `COM_DISARM_LAND` and `MIS_TAKEOFF_ALT` values that would block these controls and offers a one-click fix.
+- **Serial auto-connect.** Like QGroundControl, Jawji now probes USB serial devices for MAVLink (57600, then 115200 and 921600) on launch and when a device is plugged in, and connects to the first one found. macOS system ports (debug-console, Bluetooth) are hidden from the port list.
+- **Parameter download retries.** Missing parameters are re-requested by index after a 3 s gap (up to 5 rounds) instead of failing with a timeout. Over a 57600 telemetry radio this took a PX4 download from 649/966 to 966/966.
+
 ### Fixed
+- **MAVLink CRC_EXTRA values** — 62 messages, including HEARTBEAT, GPS_RAW_INT, COMMAND_ACK, STATUSTEXT, HOME_POSITION and MANUAL_CONTROL, had wrong CRC_EXTRA values, so their packets were dropped on receive and rejected by the vehicle on send. Every real vehicle failed to connect because no HEARTBEAT ever validated. Values now match pymavlink.
+- **MAVLink extension field layout** — 61 generated (de)serializers placed extension fields among the size-sorted base fields, which shifted every later field (e.g. GPS fix type and satellite count). Regenerated from the MAVLink XML wire layout.
+- **Short MAVLink payloads** — the parser rejected MAVLink 2 payloads truncated below the base length and passed MAVLink 1 payloads without extension fields to deserializers that read past the end. Payloads are now zero-padded to full length before decoding.
+- **Map tiles blocked by CSP** — `img-src` did not allow the `tile-cache:` scheme, so every map tile was refused.
+- **Gamepad pitch was reversed by default** — pushing the stick forward commanded pitch back. Existing saved axis maps keep their setting; "Reset to defaults" picks up the fix.
+- **Layout on narrow windows** — below 1024 px the navigation rail collapses to icons, the header shrinks and truncates the port name, and the flight strip hides secondary readouts instead of overflowing.
 - **CI: broken lockfile and vitest version mismatch** — a dependabot PR bumped `vitest` to `^3.2.6` but left `@vitest/coverage-v8` at `2.1.9`, and the merge into `main` corrupted `pnpm-lock.yaml`. This caused every CI job (`build`, `test`, `lint-and-typecheck`, `dependency-audit`) to fail at `pnpm install`. Fixed by aligning all `@vitest/coverage-v8` specifiers to `^3.2.6`, adding `pnpm.overrides` to force consistent vitest resolution across the monorepo, and regenerating the lockfile.
 - **CI: pnpm filter case sensitivity** — `ci.yml` used `@Jawji/desktop` (capital J) in the typecheck step but the package is `@jawji/desktop` (lowercase). pnpm filter is case-sensitive on Linux CI runners, so the typecheck silently matched zero projects and exited 0. Fixed to `@jawji/desktop`.
 - **Broken LICENSE links in jawji-controller README** — the License badge and footer linked to `packages/jawji-controller/LICENSE` and `packages/LICENSE`, neither of which exist. The LICENSE file lives at the repo root. Fixed both links to `../../LICENSE`.

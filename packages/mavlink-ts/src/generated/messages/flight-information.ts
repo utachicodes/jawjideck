@@ -17,10 +17,10 @@ export interface FlightInformation {
 export const FLIGHT_INFORMATION_ID = 264;
 export const FLIGHT_INFORMATION_CRC_EXTRA = 49;
 export const FLIGHT_INFORMATION_MIN_LENGTH = 28;
-export const FLIGHT_INFORMATION_MAX_LENGTH = 28;
+export const FLIGHT_INFORMATION_MAX_LENGTH = 32;
 
 export function serializeFlightInformation(msg: FlightInformation): Uint8Array {
-  const buffer = new Uint8Array(28);
+  const buffer = new Uint8Array(32);
   const view = new DataView(buffer.buffer);
 
   view.setBigUint64(0, BigInt(msg.armingTimeUtc), true);

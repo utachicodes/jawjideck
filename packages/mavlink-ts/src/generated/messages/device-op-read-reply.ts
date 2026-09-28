@@ -19,7 +19,7 @@ export interface DeviceOpReadReply {
 }
 
 export const DEVICE_OP_READ_REPLY_ID = 11001;
-export const DEVICE_OP_READ_REPLY_CRC_EXTRA = 206;
+export const DEVICE_OP_READ_REPLY_CRC_EXTRA = 15;
 export const DEVICE_OP_READ_REPLY_MIN_LENGTH = 136;
 export const DEVICE_OP_READ_REPLY_MAX_LENGTH = 136;
 

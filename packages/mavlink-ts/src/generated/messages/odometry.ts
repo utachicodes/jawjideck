@@ -43,7 +43,7 @@ export interface Odometry {
 }
 
 export const ODOMETRY_ID = 331;
-export const ODOMETRY_CRC_EXTRA = 147;
+export const ODOMETRY_CRC_EXTRA = 91;
 export const ODOMETRY_MIN_LENGTH = 233;
 export const ODOMETRY_MAX_LENGTH = 233;
 

@@ -29,7 +29,7 @@ export interface ScaledImu {
 }
 
 export const SCALED_IMU_ID = 26;
-export const SCALED_IMU_CRC_EXTRA = 48;
+export const SCALED_IMU_CRC_EXTRA = 170;
 export const SCALED_IMU_MIN_LENGTH = 24;
 export const SCALED_IMU_MAX_LENGTH = 24;
 

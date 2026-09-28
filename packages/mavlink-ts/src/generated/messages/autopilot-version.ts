@@ -31,7 +31,7 @@ export interface AutopilotVersion {
 }
 
 export const AUTOPILOT_VERSION_ID = 148;
-export const AUTOPILOT_VERSION_CRC_EXTRA = 39;
+export const AUTOPILOT_VERSION_CRC_EXTRA = 178;
 export const AUTOPILOT_VERSION_MIN_LENGTH = 78;
 export const AUTOPILOT_VERSION_MAX_LENGTH = 78;
 

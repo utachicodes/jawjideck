@@ -17,7 +17,7 @@ export interface FenceStatus {
 }
 
 export const FENCE_STATUS_ID = 162;
-export const FENCE_STATUS_CRC_EXTRA = 178;
+export const FENCE_STATUS_CRC_EXTRA = 189;
 export const FENCE_STATUS_MIN_LENGTH = 9;
 export const FENCE_STATUS_MAX_LENGTH = 9;
 

@@ -196,7 +196,7 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
   const activeInTools = visibleTools.some((i) => i.id === currentView);
 
   return (
-    <nav className="w-44 h-full bg-surface-nav border-r border-subtle flex flex-col py-3 overflow-y-auto overflow-x-hidden shrink-0">
+    <nav className="w-14 lg:w-44 h-full bg-surface-nav border-r border-subtle flex flex-col py-3 overflow-y-auto overflow-x-hidden shrink-0">
 
       {/* Primary items */}
       <div className="flex flex-col gap-0.5 px-2">
@@ -224,7 +224,7 @@ export function NavigationRail({ onViewChange }: NavigationRailProps) {
               size={13}
               className={`text-content-tertiary transition-transform duration-200 shrink-0 ${toolsOpen ? 'rotate-90' : ''}`}
             />
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-content-tertiary group-hover:text-content-secondary transition-colors select-none">
+            <span className="hidden lg:inline text-[11px] font-semibold uppercase tracking-widest text-content-tertiary group-hover:text-content-secondary transition-colors select-none">
               Tools
             </span>
             {!toolsOpen && activeInTools && (
@@ -292,8 +292,9 @@ function NavButton({ item, active, onClick }: NavButtonProps) {
     <button
       onClick={() => !item.disabled && onClick()}
       disabled={item.disabled}
+      title={item.label}
       className={`
-        relative flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium
+        relative flex items-center justify-center lg:justify-start gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium
         transition-all duration-150 text-left
         ${item.disabled
           ? 'text-content-disabled cursor-not-allowed opacity-50'
@@ -308,7 +309,7 @@ function NavButton({ item, active, onClick }: NavButtonProps) {
         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-400 rounded-r" />
       )}
       {item.icon}
-      <span className="truncate leading-none">{item.label}</span>
+      <span className="hidden lg:inline truncate leading-none">{item.label}</span>
     </button>
   );
 }
@@ -368,11 +369,11 @@ function ThemeToggle() {
   return (
     <button
       onClick={cycle}
-      className="relative flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-content-secondary hover:text-content hover:bg-surface-raised transition-all duration-150 text-left"
+      className="relative flex items-center justify-center lg:justify-start gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-content-secondary hover:text-content hover:bg-surface-raised transition-all duration-150 text-left"
       title={THEME_LABELS[theme]}
     >
       {THEME_ICONS[theme]}
-      <span className="truncate leading-none">{THEME_LABELS[theme]}</span>
+      <span className="hidden lg:inline truncate leading-none">{THEME_LABELS[theme]}</span>
     </button>
   );
 }

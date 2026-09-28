@@ -35,10 +35,10 @@ export interface SysStatus {
 export const SYS_STATUS_ID = 1;
 export const SYS_STATUS_CRC_EXTRA = 124;
 export const SYS_STATUS_MIN_LENGTH = 31;
-export const SYS_STATUS_MAX_LENGTH = 31;
+export const SYS_STATUS_MAX_LENGTH = 43;
 
 export function serializeSysStatus(msg: SysStatus): Uint8Array {
-  const buffer = new Uint8Array(31);
+  const buffer = new Uint8Array(43);
   const view = new DataView(buffer.buffer);
 
   view.setUint32(0, msg.onboardControlSensorsPresent, true);

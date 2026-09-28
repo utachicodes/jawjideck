@@ -17,19 +17,19 @@ export interface SetGpsGlobalOrigin {
 }
 
 export const SET_GPS_GLOBAL_ORIGIN_ID = 48;
-export const SET_GPS_GLOBAL_ORIGIN_CRC_EXTRA = 62;
-export const SET_GPS_GLOBAL_ORIGIN_MIN_LENGTH = 21;
+export const SET_GPS_GLOBAL_ORIGIN_CRC_EXTRA = 41;
+export const SET_GPS_GLOBAL_ORIGIN_MIN_LENGTH = 13;
 export const SET_GPS_GLOBAL_ORIGIN_MAX_LENGTH = 21;
 
 export function serializeSetGpsGlobalOrigin(msg: SetGpsGlobalOrigin): Uint8Array {
   const buffer = new Uint8Array(21);
   const view = new DataView(buffer.buffer);
 
-  view.setBigUint64(0, BigInt(msg.timeUsec), true);
-  view.setInt32(8, msg.latitude, true);
-  view.setInt32(12, msg.longitude, true);
-  view.setInt32(16, msg.altitude, true);
-  buffer[20] = msg.targetSystem & 0xff;
+  view.setInt32(0, msg.latitude, true);
+  view.setInt32(4, msg.longitude, true);
+  view.setInt32(8, msg.altitude, true);
+  buffer[12] = msg.targetSystem & 0xff;
+  view.setBigUint64(13, BigInt(msg.timeUsec), true);
 
   return buffer;
 }
@@ -38,10 +38,10 @@ export function deserializeSetGpsGlobalOrigin(payload: Uint8Array): SetGpsGlobal
   const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
 
   return {
-    timeUsec: view.getBigUint64(0, true),
-    latitude: view.getInt32(8, true),
-    longitude: view.getInt32(12, true),
-    altitude: view.getInt32(16, true),
-    targetSystem: payload[20],
+    latitude: view.getInt32(0, true),
+    longitude: view.getInt32(4, true),
+    altitude: view.getInt32(8, true),
+    targetSystem: payload[12],
+    timeUsec: view.getBigUint64(13, true),
   };
 }

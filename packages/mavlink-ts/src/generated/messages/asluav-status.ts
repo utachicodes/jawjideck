@@ -28,7 +28,7 @@ export function serializeAsluavStatus(msg: AsluavStatus): Uint8Array {
   buffer[5] = msg.satcomStatus & 0xff;
   // Array: Servo_status
   for (let i = 0; i < 8; i++) {
-    buffer[6 + i * 1] = msg.servoStatus[i] ?? 0 & 0xff;
+    buffer[6 + i] = (msg.servoStatus[i] ?? 0) & 0xff;
   }
 
   return buffer;
@@ -41,6 +41,6 @@ export function deserializeAsluavStatus(payload: Uint8Array): AsluavStatus {
     motorRpm: view.getFloat32(0, true),
     ledStatus: payload[4],
     satcomStatus: payload[5],
-    servoStatus: Array.from({ length: 8 }, (_, i) => payload[6 + i * 1]),
+    servoStatus: Array.from({ length: 8 }, (_, i) => payload[6 + i]),
   };
 }

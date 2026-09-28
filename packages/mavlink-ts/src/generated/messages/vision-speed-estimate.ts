@@ -19,7 +19,7 @@ export interface VisionSpeedEstimate {
 }
 
 export const VISION_SPEED_ESTIMATE_ID = 103;
-export const VISION_SPEED_ESTIMATE_CRC_EXTRA = 153;
+export const VISION_SPEED_ESTIMATE_CRC_EXTRA = 208;
 export const VISION_SPEED_ESTIMATE_MIN_LENGTH = 57;
 export const VISION_SPEED_ESTIMATE_MAX_LENGTH = 57;
 

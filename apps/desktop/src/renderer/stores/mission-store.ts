@@ -22,6 +22,7 @@ import { useConnectionStore } from './connection-store';
 import { useParameterStore } from './parameter-store';
 import { useArduPilotSitlStore } from './ardupilot-sitl-store';
 import { getVehicleClass } from '../../shared/telemetry-types';
+import { MAV_AUTOPILOT_PX4 } from '../../shared/px4';
 
 // MSP Waypoint types (matching msp-ts)
 interface MSPWaypoint {
@@ -1169,10 +1170,12 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
     // Extract home waypoint: seq=0 is always the home position in ArduPilot missions.
     // It shares MAV_CMD 16 (WAYPOINT) but has current=true in the protocol.
     // Also detect seq=0 at 0,0 (placeholder when no GPS fix).
+    // PX4 has no home item: its seq=0 is the first real mission item.
+    const fcHasHomeAtSeq0 = useConnectionStore.getState().connectionState.autopilotType !== MAV_AUTOPILOT_PX4;
     let homePosition: HomePosition | null = null;
-    const homeWasStripped = items.some(item => item.seq === 0);
+    const homeWasStripped = fcHasHomeAtSeq0 && items.some(item => item.seq === 0);
     const filteredItems = items.filter(item => {
-      if (item.seq === 0) {
+      if (fcHasHomeAtSeq0 && item.seq === 0) {
         // seq=0 is home position - extract it if it has valid coordinates
         if (item.latitude !== 0 || item.longitude !== 0) {
           homePosition = { lat: item.latitude, lon: item.longitude, alt: item.altitude };

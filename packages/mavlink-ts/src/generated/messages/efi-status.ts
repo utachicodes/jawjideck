@@ -45,8 +45,8 @@ export interface EfiStatus {
 }
 
 export const EFI_STATUS_ID = 225;
-export const EFI_STATUS_CRC_EXTRA = 10;
-export const EFI_STATUS_MIN_LENGTH = 73;
+export const EFI_STATUS_CRC_EXTRA = 208;
+export const EFI_STATUS_MIN_LENGTH = 65;
 export const EFI_STATUS_MAX_LENGTH = 73;
 
 export function serializeEfiStatus(msg: EfiStatus): Uint8Array {
@@ -69,9 +69,9 @@ export function serializeEfiStatus(msg: EfiStatus): Uint8Array {
   view.setFloat32(52, msg.exhaustGasTemperature, true);
   view.setFloat32(56, msg.throttleOut, true);
   view.setFloat32(60, msg.ptCompensation, true);
-  view.setFloat32(64, msg.ignitionVoltage, true);
-  view.setFloat32(68, msg.fuelPressure, true);
-  buffer[72] = msg.health & 0xff;
+  buffer[64] = msg.health & 0xff;
+  view.setFloat32(65, msg.ignitionVoltage, true);
+  view.setFloat32(69, msg.fuelPressure, true);
 
   return buffer;
 }
@@ -96,8 +96,8 @@ export function deserializeEfiStatus(payload: Uint8Array): EfiStatus {
     exhaustGasTemperature: view.getFloat32(52, true),
     throttleOut: view.getFloat32(56, true),
     ptCompensation: view.getFloat32(60, true),
-    ignitionVoltage: view.getFloat32(64, true),
-    fuelPressure: view.getFloat32(68, true),
-    health: payload[72],
+    health: payload[64],
+    ignitionVoltage: view.getFloat32(65, true),
+    fuelPressure: view.getFloat32(69, true),
   };
 }

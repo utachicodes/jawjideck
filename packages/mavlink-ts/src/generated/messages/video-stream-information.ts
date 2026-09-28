@@ -33,12 +33,12 @@ export interface VideoStreamInformation {
 }
 
 export const VIDEO_STREAM_INFORMATION_ID = 269;
-export const VIDEO_STREAM_INFORMATION_CRC_EXTRA = 51;
-export const VIDEO_STREAM_INFORMATION_MIN_LENGTH = 214;
-export const VIDEO_STREAM_INFORMATION_MAX_LENGTH = 214;
+export const VIDEO_STREAM_INFORMATION_CRC_EXTRA = 109;
+export const VIDEO_STREAM_INFORMATION_MIN_LENGTH = 213;
+export const VIDEO_STREAM_INFORMATION_MAX_LENGTH = 215;
 
 export function serializeVideoStreamInformation(msg: VideoStreamInformation): Uint8Array {
-  const buffer = new Uint8Array(214);
+  const buffer = new Uint8Array(215);
   const view = new DataView(buffer.buffer);
 
   view.setFloat32(0, msg.framerate, true);

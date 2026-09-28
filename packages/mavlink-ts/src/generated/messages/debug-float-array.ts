@@ -15,8 +15,8 @@ export interface DebugFloatArray {
 }
 
 export const DEBUG_FLOAT_ARRAY_ID = 350;
-export const DEBUG_FLOAT_ARRAY_CRC_EXTRA = 68;
-export const DEBUG_FLOAT_ARRAY_MIN_LENGTH = 252;
+export const DEBUG_FLOAT_ARRAY_CRC_EXTRA = 232;
+export const DEBUG_FLOAT_ARRAY_MIN_LENGTH = 20;
 export const DEBUG_FLOAT_ARRAY_MAX_LENGTH = 252;
 
 export function serializeDebugFloatArray(msg: DebugFloatArray): Uint8Array {
@@ -24,14 +24,14 @@ export function serializeDebugFloatArray(msg: DebugFloatArray): Uint8Array {
   const view = new DataView(buffer.buffer);
 
   view.setBigUint64(0, BigInt(msg.timeUsec), true);
-  // Array: data
-  for (let i = 0; i < 58; i++) {
-    view.setFloat32(8 + i * 4, msg.data[i] ?? 0, true);
-  }
-  view.setUint16(240, msg.arrayId, true);
+  view.setUint16(8, msg.arrayId, true);
   // String: name
   const nameBytes = new TextEncoder().encode(msg.name || '');
-  buffer.set(nameBytes.slice(0, 10), 242);
+  buffer.set(nameBytes.slice(0, 10), 10);
+  // Array: data
+  for (let i = 0; i < 58; i++) {
+    view.setFloat32(20 + i * 4, msg.data[i] ?? 0, true);
+  }
 
   return buffer;
 }
@@ -41,8 +41,8 @@ export function deserializeDebugFloatArray(payload: Uint8Array): DebugFloatArray
 
   return {
     timeUsec: view.getBigUint64(0, true),
-    data: Array.from({ length: 58 }, (_, i) => view.getFloat32(8 + i * 4, true)),
-    arrayId: view.getUint16(240, true),
-    name: new TextDecoder().decode(payload.slice(242, 252)).replace(/\0.*$/, ''),
+    arrayId: view.getUint16(8, true),
+    name: new TextDecoder().decode(payload.slice(10, 20)).replace(/\0.*$/, ''),
+    data: Array.from({ length: 58 }, (_, i) => view.getFloat32(20 + i * 4, true)),
   };
 }

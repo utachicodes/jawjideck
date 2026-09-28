@@ -30,8 +30,8 @@ export interface RadioRcChannels {
 }
 
 export const RADIO_RC_CHANNELS_ID = 420;
-export const RADIO_RC_CHANNELS_CRC_EXTRA = 189;
-export const RADIO_RC_CHANNELS_MIN_LENGTH = 73;
+export const RADIO_RC_CHANNELS_CRC_EXTRA = 20;
+export const RADIO_RC_CHANNELS_MIN_LENGTH = 9;
 export const RADIO_RC_CHANNELS_MAX_LENGTH = 73;
 
 export function serializeRadioRcChannels(msg: RadioRcChannels): Uint8Array {
@@ -40,13 +40,13 @@ export function serializeRadioRcChannels(msg: RadioRcChannels): Uint8Array {
 
   view.setUint32(0, msg.timeLastUpdateMs, true);
   view.setUint16(4, msg.flags, true);
+  buffer[6] = msg.targetSystem & 0xff;
+  buffer[7] = msg.targetComponent & 0xff;
+  buffer[8] = msg.count & 0xff;
   // Array: channels
   for (let i = 0; i < 32; i++) {
-    view.setInt16(6 + i * 2, msg.channels[i] ?? 0, true);
+    view.setInt16(9 + i * 2, msg.channels[i] ?? 0, true);
   }
-  buffer[70] = msg.targetSystem & 0xff;
-  buffer[71] = msg.targetComponent & 0xff;
-  buffer[72] = msg.count & 0xff;
 
   return buffer;
 }
@@ -57,9 +57,9 @@ export function deserializeRadioRcChannels(payload: Uint8Array): RadioRcChannels
   return {
     timeLastUpdateMs: view.getUint32(0, true),
     flags: view.getUint16(4, true),
-    channels: Array.from({ length: 32 }, (_, i) => view.getInt16(6 + i * 2, true)),
-    targetSystem: payload[70],
-    targetComponent: payload[71],
-    count: payload[72],
+    targetSystem: payload[6],
+    targetComponent: payload[7],
+    count: payload[8],
+    channels: Array.from({ length: 32 }, (_, i) => view.getInt16(9 + i * 2, true)),
   };
 }
