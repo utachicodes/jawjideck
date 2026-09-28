@@ -17,7 +17,7 @@ export interface MissionRequestPartialList {
 }
 
 export const MISSION_REQUEST_PARTIAL_LIST_ID = 37;
-export const MISSION_REQUEST_PARTIAL_LIST_CRC_EXTRA = 4;
+export const MISSION_REQUEST_PARTIAL_LIST_CRC_EXTRA = 212;
 export const MISSION_REQUEST_PARTIAL_LIST_MIN_LENGTH = 7;
 export const MISSION_REQUEST_PARTIAL_LIST_MAX_LENGTH = 7;
 

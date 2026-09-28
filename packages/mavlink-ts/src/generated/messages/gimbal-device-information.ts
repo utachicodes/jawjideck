@@ -39,12 +39,12 @@ export interface GimbalDeviceInformation {
 }
 
 export const GIMBAL_DEVICE_INFORMATION_ID = 283;
-export const GIMBAL_DEVICE_INFORMATION_CRC_EXTRA = 205;
-export const GIMBAL_DEVICE_INFORMATION_MIN_LENGTH = 145;
-export const GIMBAL_DEVICE_INFORMATION_MAX_LENGTH = 145;
+export const GIMBAL_DEVICE_INFORMATION_CRC_EXTRA = 74;
+export const GIMBAL_DEVICE_INFORMATION_MIN_LENGTH = 144;
+export const GIMBAL_DEVICE_INFORMATION_MAX_LENGTH = 149;
 
 export function serializeGimbalDeviceInformation(msg: GimbalDeviceInformation): Uint8Array {
-  const buffer = new Uint8Array(145);
+  const buffer = new Uint8Array(149);
   const view = new DataView(buffer.buffer);
 
   view.setBigUint64(0, BigInt(msg.uid), true);

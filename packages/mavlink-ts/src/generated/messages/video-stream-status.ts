@@ -25,10 +25,10 @@ export interface VideoStreamStatus {
 export const VIDEO_STREAM_STATUS_ID = 270;
 export const VIDEO_STREAM_STATUS_CRC_EXTRA = 59;
 export const VIDEO_STREAM_STATUS_MIN_LENGTH = 19;
-export const VIDEO_STREAM_STATUS_MAX_LENGTH = 19;
+export const VIDEO_STREAM_STATUS_MAX_LENGTH = 20;
 
 export function serializeVideoStreamStatus(msg: VideoStreamStatus): Uint8Array {
-  const buffer = new Uint8Array(19);
+  const buffer = new Uint8Array(20);
   const view = new DataView(buffer.buffer);
 
   view.setFloat32(0, msg.framerate, true);

@@ -46,30 +46,30 @@ export interface MlrsRadioLinkStats {
 }
 
 export const MLRS_RADIO_LINK_STATS_ID = 60045;
-export const MLRS_RADIO_LINK_STATS_CRC_EXTRA = 186;
-export const MLRS_RADIO_LINK_STATS_MIN_LENGTH = 23;
+export const MLRS_RADIO_LINK_STATS_CRC_EXTRA = 14;
+export const MLRS_RADIO_LINK_STATS_MIN_LENGTH = 15;
 export const MLRS_RADIO_LINK_STATS_MAX_LENGTH = 23;
 
 export function serializeMlrsRadioLinkStats(msg: MlrsRadioLinkStats): Uint8Array {
   const buffer = new Uint8Array(23);
   const view = new DataView(buffer.buffer);
 
-  view.setFloat32(0, msg.frequency1, true);
-  view.setFloat32(4, msg.frequency2, true);
-  view.setUint16(8, msg.flags, true);
-  buffer[10] = msg.targetSystem & 0xff;
-  buffer[11] = msg.targetComponent & 0xff;
-  buffer[12] = msg.rxLqRc & 0xff;
-  buffer[13] = msg.rxLqSer & 0xff;
-  buffer[14] = msg.rxRssi1 & 0xff;
-  view.setInt8(15, msg.rxSnr1);
-  buffer[16] = msg.txLqSer & 0xff;
-  buffer[17] = msg.txRssi1 & 0xff;
-  view.setInt8(18, msg.txSnr1);
-  buffer[19] = msg.rxRssi2 & 0xff;
-  view.setInt8(20, msg.rxSnr2);
-  buffer[21] = msg.txRssi2 & 0xff;
-  view.setInt8(22, msg.txSnr2);
+  view.setUint16(0, msg.flags, true);
+  buffer[2] = msg.targetSystem & 0xff;
+  buffer[3] = msg.targetComponent & 0xff;
+  buffer[4] = msg.rxLqRc & 0xff;
+  buffer[5] = msg.rxLqSer & 0xff;
+  buffer[6] = msg.rxRssi1 & 0xff;
+  view.setInt8(7, msg.rxSnr1);
+  buffer[8] = msg.txLqSer & 0xff;
+  buffer[9] = msg.txRssi1 & 0xff;
+  view.setInt8(10, msg.txSnr1);
+  buffer[11] = msg.rxRssi2 & 0xff;
+  view.setInt8(12, msg.rxSnr2);
+  buffer[13] = msg.txRssi2 & 0xff;
+  view.setInt8(14, msg.txSnr2);
+  view.setFloat32(15, msg.frequency1, true);
+  view.setFloat32(19, msg.frequency2, true);
 
   return buffer;
 }
@@ -78,21 +78,21 @@ export function deserializeMlrsRadioLinkStats(payload: Uint8Array): MlrsRadioLin
   const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
 
   return {
-    frequency1: view.getFloat32(0, true),
-    frequency2: view.getFloat32(4, true),
-    flags: view.getUint16(8, true),
-    targetSystem: payload[10],
-    targetComponent: payload[11],
-    rxLqRc: payload[12],
-    rxLqSer: payload[13],
-    rxRssi1: payload[14],
-    rxSnr1: view.getInt8(15),
-    txLqSer: payload[16],
-    txRssi1: payload[17],
-    txSnr1: view.getInt8(18),
-    rxRssi2: payload[19],
-    rxSnr2: view.getInt8(20),
-    txRssi2: payload[21],
-    txSnr2: view.getInt8(22),
+    flags: view.getUint16(0, true),
+    targetSystem: payload[2],
+    targetComponent: payload[3],
+    rxLqRc: payload[4],
+    rxLqSer: payload[5],
+    rxRssi1: payload[6],
+    rxSnr1: view.getInt8(7),
+    txLqSer: payload[8],
+    txRssi1: payload[9],
+    txSnr1: view.getInt8(10),
+    rxRssi2: payload[11],
+    rxSnr2: view.getInt8(12),
+    txRssi2: payload[13],
+    txSnr2: view.getInt8(14),
+    frequency1: view.getFloat32(15, true),
+    frequency2: view.getFloat32(19, true),
   };
 }

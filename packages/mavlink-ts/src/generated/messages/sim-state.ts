@@ -53,7 +53,7 @@ export interface SimState {
 }
 
 export const SIM_STATE_ID = 108;
-export const SIM_STATE_CRC_EXTRA = 205;
+export const SIM_STATE_CRC_EXTRA = 32;
 export const SIM_STATE_MIN_LENGTH = 92;
 export const SIM_STATE_MAX_LENGTH = 92;
 

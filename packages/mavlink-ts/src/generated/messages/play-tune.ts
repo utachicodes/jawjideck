@@ -15,7 +15,7 @@ export interface PlayTune {
 }
 
 export const PLAY_TUNE_ID = 258;
-export const PLAY_TUNE_CRC_EXTRA = 139;
+export const PLAY_TUNE_CRC_EXTRA = 187;
 export const PLAY_TUNE_MIN_LENGTH = 232;
 export const PLAY_TUNE_MAX_LENGTH = 232;
 

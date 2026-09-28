@@ -19,7 +19,7 @@ export interface AttPosMocap {
 }
 
 export const ATT_POS_MOCAP_ID = 138;
-export const ATT_POS_MOCAP_CRC_EXTRA = 19;
+export const ATT_POS_MOCAP_CRC_EXTRA = 109;
 export const ATT_POS_MOCAP_MIN_LENGTH = 120;
 export const ATT_POS_MOCAP_MAX_LENGTH = 120;
 

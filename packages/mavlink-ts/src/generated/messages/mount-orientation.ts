@@ -17,7 +17,7 @@ export interface MountOrientation {
 }
 
 export const MOUNT_ORIENTATION_ID = 265;
-export const MOUNT_ORIENTATION_CRC_EXTRA = 77;
+export const MOUNT_ORIENTATION_CRC_EXTRA = 26;
 export const MOUNT_ORIENTATION_MIN_LENGTH = 20;
 export const MOUNT_ORIENTATION_MAX_LENGTH = 20;
 

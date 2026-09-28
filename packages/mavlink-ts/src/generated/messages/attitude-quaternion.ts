@@ -25,7 +25,7 @@ export interface AttitudeQuaternion {
 }
 
 export const ATTITUDE_QUATERNION_ID = 31;
-export const ATTITUDE_QUATERNION_CRC_EXTRA = 92;
+export const ATTITUDE_QUATERNION_CRC_EXTRA = 246;
 export const ATTITUDE_QUATERNION_MIN_LENGTH = 48;
 export const ATTITUDE_QUATERNION_MAX_LENGTH = 48;
 
