@@ -42,7 +42,7 @@ function InputModeToggle() {
         title="Keyboard RC control (WASD + QE + Arrows)"
       >
         <Keyboard size={13} />
-        <span>KB</span>
+        <span className="hidden lg:inline">KB</span>
       </button>
       <button
         onClick={toggleGpActive}
@@ -57,7 +57,7 @@ function InputModeToggle() {
         title={gamepad.connected ? `Joystick RC control (${gamepad.name})` : 'No gamepad detected — connect a controller'}
       >
         <Gamepad2 size={13} />
-        <span>JOY</span>
+        <span className="hidden lg:inline">JOY</span>
       </button>
     </div>
   );
@@ -98,12 +98,12 @@ export function AppShell({ children }: AppShellProps) {
             follow its natural aspect ratio so it isn't cropped into a square. */}
         <img src={iconImage} alt="Jawji" className="h-7 w-auto ml-3 object-contain shrink-0" />
 
-        <div className="ml-auto flex items-center gap-4 pr-6">
+        <div className="ml-auto flex items-center gap-2 lg:gap-4 pr-3 lg:pr-6 min-w-0">
           {/* Version badge */}
           {currentVersion && (
             <button
               onClick={() => setView('settings')}
-              className="flex items-center gap-1.5 text-content-tertiary hover:text-content-secondary transition-colors"
+              className="hidden md:flex items-center gap-1.5 text-content-tertiary hover:text-content-secondary transition-colors"
               title="About Jawji"
             >
               <span className="text-xs">v{currentVersion}</span>
@@ -127,7 +127,7 @@ export function AppShell({ children }: AppShellProps) {
             <button
               onClick={disconnect}
               title={connectionState.isStale ? `No data for ${staleSeconds}s. Click to disconnect` : 'Click to disconnect'}
-              className={`group flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-surface border transition-colors cursor-pointer ${
+              className={`group flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-surface border transition-colors cursor-pointer min-w-0 ${
                 connectionState.isStale
                   ? 'border-yellow-500/50 hover:border-red-500/50'
                   : 'border-emerald-500/30 hover:border-red-500/50'
@@ -138,7 +138,7 @@ export function AppShell({ children }: AppShellProps) {
               ) : (
                 <div className="status-dot status-dot-connected group-hover:bg-red-400" />
               )}
-              <span className={`text-sm font-medium transition-colors ${
+              <span className={`text-sm font-medium transition-colors truncate max-w-[9rem] xl:max-w-none ${
                 connectionState.isStale ? 'text-yellow-300' : 'text-content-secondary group-hover:text-red-300'
               }`}>
                 {connectionState.isStale ? `No data ${staleSeconds}s` : connectionState.transport}
