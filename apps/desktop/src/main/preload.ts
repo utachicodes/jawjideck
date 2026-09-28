@@ -78,6 +78,9 @@ const api = {
   scanPorts: (): Promise<ScanResult[]> =>
     ipcRenderer.invoke(IPC_CHANNELS.COMMS_SCAN_PORTS),
 
+  probePort: (portPath: string): Promise<ScanResult | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.COMMS_PROBE_PORT, portPath),
+
   connect: (options: ConnectOptions): Promise<boolean> =>
     ipcRenderer.invoke(IPC_CHANNELS.COMMS_CONNECT, options),
 

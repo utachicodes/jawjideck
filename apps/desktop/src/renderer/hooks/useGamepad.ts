@@ -42,13 +42,15 @@ export interface GamepadAxisMap {
   invertPitch: boolean;
 }
 
+// Gamepad Y axes read -1 when pushed forward. RC pitch is low-PWM-forward, so
+// pitch needs no inversion; throttle does (forward = more throttle).
 export const DEFAULT_AXIS_MAP: GamepadAxisMap = {
   roll: 0,
   pitch: 1,
   throttle: 3,
   yaw: 2,
   invertThrottle: true,
-  invertPitch: true,
+  invertPitch: false,
 };
 
 const STORAGE_KEY = 'gamepad-axis-map';

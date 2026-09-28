@@ -19,7 +19,9 @@ import { isPreArmMessage, extractPreArmReason, matchPreArmError } from '../../..
 import { PreArmParamFix } from '../prearm/PreArmParamFix';
 import { PanelContainer, SectionTitle } from './panel-utils';
 import { getVehicleClass, ARDUPILOT_COMMON_MODES, VEHICLE_CAPABILITIES, type ArduPilotVehicleClass } from '../../../shared/telemetry-types';
+import { MAV_AUTOPILOT_PX4, PX4_COPTER_MODES, PX4_CAPABILITIES, PX4_MISSION_MODES } from '../../../shared/px4';
 import { executeTakeoff, presentTakeoff } from './takeoff-strategies';
+import { Px4SetupCheck } from './Px4SetupCheck';
 
 // =============================================================================
 // Visual Components
@@ -700,13 +702,14 @@ function MavlinkFlightControl() {
     qEnable: typeof qEnable === 'number' ? qEnable : undefined,
     sitlFrame: sitlIsRunning ? sitlFrame : undefined,
   });
-  const availableModes = ARDUPILOT_COMMON_MODES[vehicleClass];
-  const capabilities = VEHICLE_CAPABILITIES[vehicleClass];
+  const isPx4 = connectionState.autopilotType === MAV_AUTOPILOT_PX4;
+  const availableModes = isPx4 ? PX4_COPTER_MODES : ARDUPILOT_COMMON_MODES[vehicleClass];
+  const capabilities = isPx4 ? PX4_CAPABILITIES : VEHICLE_CAPABILITIES[vehicleClass];
   const missionItems = useMissionStore((s) => s.missionItems);
   const currentSeq = useMissionStore((s) => s.currentSeq);
   const fetchMission = useMissionStore((s) => s.fetchMission);
   const missionLoaded = missionItems.length > 0;
-  const missionModes = MISSION_MODES[vehicleClass];
+  const missionModes = isPx4 ? PX4_MISSION_MODES : MISSION_MODES[vehicleClass];
   const isInAuto = flight.modeNum === missionModes.auto;
   const isInPause = flight.modeNum === missionModes.pause;
 
@@ -912,6 +915,7 @@ function MavlinkFlightControl() {
       altitudeM:    takeoffAlt,
       forceArm,
       vehicleClass,
+      autopilot: isPx4 ? 'px4' : 'ardupilot',
       capabilities,
       isSitl: connectionState.isSitl ?? sitlIsRunning,
       getFlight:   () => store().flight,
@@ -942,7 +946,7 @@ function MavlinkFlightControl() {
   };
 
   // Per-vehicle button + dialog copy comes from the strategy module.
-  const takeoffPresentation = useMemo(() => presentTakeoff(vehicleClass), [vehicleClass]);
+  const takeoffPresentation = useMemo(() => presentTakeoff(vehicleClass, isPx4 ? 'px4' : 'ardupilot'), [vehicleClass, isPx4]);
 
   // RTL/Land sourced from the per-vehicle capability matrix.
   const rtlModeNum = capabilities.rtlModeNum;
@@ -1183,8 +1187,8 @@ function MavlinkFlightControl() {
               </div>
             </button>
 
-            {/* ── FIX PRE-ARM: disable RC checks for GCS-only control ── */}
-            {!flight.armed && preArmReasons.length > 0 && (
+            {/* ── FIX PRE-ARM: disable RC checks for GCS-only control (ArduPilot params) ── */}
+            {!flight.armed && preArmReasons.length > 0 && !isPx4 && (
               <button
                 onClick={async () => {
                   const setParam = useParameterStore.getState().setParameter;
@@ -1200,6 +1204,8 @@ function MavlinkFlightControl() {
                 Disable RC Failsafe (ARMING_RC_CHECKS=0, FS_THR_ENABLE=0)
               </button>
             )}
+
+            {isPx4 && !flight.armed && <Px4SetupCheck />}
 
             {/* ── FLIGHT MODES ── */}
             <div>

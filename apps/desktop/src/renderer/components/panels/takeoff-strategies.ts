@@ -14,12 +14,16 @@
  *   rover   : N/A — surface vehicle.
  *   sub     : N/A — descent commands aren't a "takeoff" in the user sense.
  *
+ * PX4 (any frame) uses its own procedure: ARM → NAV_TAKEOFF, which puts
+ * the vehicle in PX4's Takeoff mode (target altitude sent as AMSL by main).
+ *
  * Helicopter (MAV_TYPE 4) classifies as 'copter' here — ArduCopter's
  * NAV_TAKEOFF handles the RSC interlock internally as long as the user has
  * `H_RSC_MODE` configured. We don't try to second-guess that on the GCS side.
  */
 
 import type { ArduPilotVehicleClass, VehicleCapabilities, FlightState, GpsData, PositionData } from '../../../shared/telemetry-types';
+import { PX4_MODE } from '../../../shared/px4';
 
 type StatusType = 'info' | 'success' | 'error';
 
@@ -32,6 +36,7 @@ export interface TakeoffContext {
   altitudeM: number;
   forceArm: boolean;
   vehicleClass: ArduPilotVehicleClass;
+  autopilot: 'ardupilot' | 'px4';
   capabilities: VehicleCapabilities;
   /** True when we're driving the bundled SITL simulator (vs real FC). Lets
    *  strategies fall back to virtual-RC throttle ramping when upstream's
@@ -85,7 +90,15 @@ export interface TakeoffPresentation {
   dialogNote?: string;
 }
 
-export function presentTakeoff(vehicleClass: ArduPilotVehicleClass): TakeoffPresentation {
+export function presentTakeoff(vehicleClass: ArduPilotVehicleClass, autopilot: 'ardupilot' | 'px4' = 'ardupilot'): TakeoffPresentation {
+  if (autopilot === 'px4') {
+    return {
+      buttonLabel: 'Takeoff…',
+      buttonHint:  'Arm and climb in PX4 Takeoff mode (NAV_TAKEOFF)',
+      dialogPrompt: 'Climb to',
+      dialogNote:  'Holds position at the target altitude when done. Needs a GPS position.',
+    };
+  }
   switch (vehicleClass) {
     case 'copter':
       return {
@@ -130,6 +143,7 @@ export async function executeTakeoff(ctx: TakeoffContext): Promise<TakeoffOutcom
   if (!ctx.capabilities.takeoff.supported) {
     return { ok: false, reason: `${ctx.vehicleClass} does not support takeoff` };
   }
+  if (ctx.autopilot === 'px4') return takeoffPx4(ctx);
   switch (ctx.vehicleClass) {
     case 'copter': return takeoffCopter(ctx);
     case 'plane':  return takeoffPlane(ctx);
@@ -239,6 +253,33 @@ async function takeoffCopter(ctx: TakeoffContext): Promise<TakeoffOutcome> {
   return ok
     ? { ok: true }
     : { ok: false, reason: 'Takeoff command failed' };
+}
+
+/**
+ * PX4 takeoff (matches QGroundControl):
+ *   GPS ready → ARM → NAV_TAKEOFF.
+ * PX4 arms from any mode and NAV_TAKEOFF switches it into Takeoff mode,
+ * which climbs to the target and then holds. Must follow arming promptly:
+ * PX4 auto-disarms on the ground after COM_DISARM_PRFLT (10 s default).
+ */
+async function takeoffPx4(ctx: TakeoffContext): Promise<TakeoffOutcome> {
+  const gps = await ensureGpsReady(ctx);
+  if (!gps.ok) return gps;
+
+  const arm = await armIfNeeded(ctx);
+  if (!arm.ok) return arm;
+
+  ctx.setStatus({ text: `Taking off to ${ctx.altitudeM}m...`, type: 'info' });
+  const ok = await ctx.api.mavlinkTakeoff(ctx.altitudeM);
+  if (!ok) return { ok: false, reason: 'Takeoff command failed — PX4 needs a GPS position' };
+
+  const inTakeoff = await ctx.waitForState(
+    () => ctx.getFlight().modeNum === PX4_MODE.TAKEOFF,
+    MODE_TIMEOUT_MS * 2,
+  );
+  return inTakeoff
+    ? { ok: true }
+    : { ok: false, reason: 'PX4 did not enter Takeoff mode — check the vehicle messages' };
 }
 
 /**

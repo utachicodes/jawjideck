@@ -10,6 +10,7 @@ import Store from 'electron-store';
 import {
   listSerialPorts,
   scanPorts,
+  scanPort,
   SerialTransport,
   TcpTransport,
   UdpTransport,
@@ -90,6 +91,9 @@ import {
   serializeRcChannelsOverride,
   RC_CHANNELS_OVERRIDE_ID,
   RC_CHANNELS_OVERRIDE_CRC_EXTRA,
+  serializeManualControl,
+  MANUAL_CONTROL_ID,
+  MANUAL_CONTROL_CRC_EXTRA,
   serializeSetMode,
   SET_MODE_ID,
   SET_MODE_CRC_EXTRA,
@@ -105,6 +109,7 @@ import type { ParamValuePayload, ParameterProgress } from '../shared/parameter-t
 import { PARAMETER_METADATA_URLS, mavTypeToVehicleType, type VehicleType, type ParameterMetadata, type ParameterMetadataStore } from '../shared/parameter-metadata.js';
 import type { AttitudeData, PositionData, GpsData, BatteryData, VfrHudData, FlightState, RcChannelsData } from '../shared/telemetry-types.js';
 import { COPTER_MODES, PLANE_MODES, ROVER_MODES, SUB_MODES } from '../shared/telemetry-types.js';
+import { MAV_AUTOPILOT_PX4, px4ModeName, px4ModeKey, px4ModeParts, decodeParamBytewise, encodeParamBytewise, pwmToManualControl } from '../shared/px4.js';
 import type { MissionItem, MissionProgress, MavFrame } from '../shared/mission-types.js';
 import { MAV_MISSION_RESULT, MAV_MISSION_TYPE } from '../shared/mission-types.js';
 import type { FenceItem, FenceStatus } from '../shared/fence-types.js';
@@ -687,6 +692,16 @@ async function sendStreamRateRequests(mainWindow: BrowserWindow, speed: Telemetr
     { msgId: 11031, hz: rates.other },  // ESC_TELEMETRY_5_TO_8
     { msgId: 11032, hz: rates.other },  // ESC_TELEMETRY_9_TO_12
   ];
+  if (isPx4()) {
+    // PX4 links are often slow radios with a small MAV_x_RATE budget: skip the
+    // raw sensor/ESC streams and ask for what flying needs instead.
+    const skip = new Set([27, 29, 35, 11030, 11031, 11032]);
+    messageIntervals.splice(0, messageIntervals.length, ...messageIntervals.filter(m => !skip.has(m.msgId)),
+      { msgId: 242, hz: 0.5 },          // HOME_POSITION
+      { msgId: 245, hz: 1 },            // EXTENDED_SYS_STATE (landed state)
+      { msgId: 147, hz: 1 },            // BATTERY_STATUS
+    );
+  }
 
   let sent = 0;
   for (const req of messageIntervals) {
@@ -714,7 +729,7 @@ async function sendStreamRateRequests(mainWindow: BrowserWindow, speed: Telemetr
 
   // Also send legacy REQUEST_DATA_STREAM as fallback for broader compatibility
   // Some ArduPilot configurations only respond to the older stream group requests
-  await sendLegacyStreamRequests(mainWindow, speed);
+  if (!isPx4()) await sendLegacyStreamRequests(mainWindow, speed);
 
   currentTelemetrySpeed = speed;
   const r = STREAM_RATE_PRESETS[speed]!;
@@ -818,6 +833,24 @@ let connectionState: ConnectionState = {
   packetsSent: 0,
 };
 
+const isPx4 = (): boolean => connectionState.autopilotType === MAV_AUTOPILOT_PX4;
+
+// Last GLOBAL_POSITION_INT, for commands that need AMSL altitudes (PX4 takeoff)
+let lastGlobalPosition: { alt: number; relativeAlt: number; at: number } | null = null;
+
+/** Build a PARAM_SET payload, encoding integer params byte-wise for PX4. */
+function buildParamSetPayload(paramId: string, value: number, paramType: number): Uint8Array {
+  const payload = serializeParamSet({
+    targetSystem: connectionState.systemId ?? 1,
+    targetComponent: 1, // MAV_COMP_ID_AUTOPILOT1
+    paramId,
+    paramValue: value,
+    paramType,
+  });
+  if (isPx4()) payload.set(encodeParamBytewise(value, paramType), 0);
+  return payload;
+}
+
 // Detected MAVLink version from flight controller (1 or 2)
 let detectedMavlinkVersion: 1 | 2 = 1; // Default to v1 for compatibility
 
@@ -827,6 +860,10 @@ let receivedParams = new Map<string, ParamValue>();
 let paramDownloadTimeout: NodeJS.Timeout | null = null;
 let paramDownloadActive = false; // True only during bulk PARAM_REQUEST_LIST download
 let paramDownloadStartTime = 0; // Timestamp for measuring download duration
+let receivedParamIndices = new Set<number>(); // Indices seen during bulk download
+let paramRetryRounds = 0;
+const PARAM_IDLE_MS = 3000; // Idle gap after which missing params are re-requested
+const PARAM_MAX_RETRY_ROUNDS = 5;
 
 // MAVLink FTP client for fast parameter download
 let ftpClient: MavlinkFtpClient | null = null;
@@ -1128,6 +1165,49 @@ const MISSION_MSG_IDS = [39, 40, 41, 42, 43, 44, 45, 46, 47, 51, 73];
 
 // Parse telemetry from MAVLink packet
 // NOTE: MAVLink v2 orders payload fields by size (largest first for alignment)
+/**
+ * Called when a bulk parameter download goes quiet. Lossy links (e.g. 57600
+ * telemetry radios) drop PARAM_VALUEs, so re-request the missing indices
+ * like QGroundControl does before giving up.
+ */
+async function handleParamDownloadIdle(mainWindow: BrowserWindow): Promise<void> {
+  paramDownloadTimeout = null;
+  if (!paramDownloadActive || receivedParams.size >= expectedParamCount) return;
+
+  const missing: number[] = [];
+  for (let i = 0; i < expectedParamCount; i++) {
+    if (!receivedParamIndices.has(i)) missing.push(i);
+  }
+
+  if (paramRetryRounds >= PARAM_MAX_RETRY_ROUNDS || missing.length === 0 || !currentTransport?.isOpen) {
+    safeSend(mainWindow, IPC_CHANNELS.PARAM_ERROR,
+      `Timeout: received ${receivedParams.size}/${expectedParamCount} parameters`);
+    return;
+  }
+
+  paramRetryRounds++;
+  sendLog(mainWindow, 'info', `Re-requesting ${missing.length} missing parameters (round ${paramRetryRounds}/${PARAM_MAX_RETRY_ROUNDS})`);
+  for (const paramIndex of missing) {
+    if (!currentTransport?.isOpen || !paramDownloadActive) return;
+    const payload = serializeParamRequestRead({
+      targetSystem: connectionState.systemId ?? 1,
+      targetComponent: 1,
+      paramId: '',
+      paramIndex,
+    });
+    const packet = await sendMavlinkPacket(PARAM_REQUEST_READ_ID, payload, PARAM_REQUEST_READ_CRC_EXTRA);
+    await currentTransport.write(packet);
+    connectionState.packetsSent++;
+    await new Promise(r => setTimeout(r, 10)); // pace requests for slow radios
+  }
+  armParamIdleTimer(mainWindow);
+}
+
+function armParamIdleTimer(mainWindow: BrowserWindow): void {
+  if (paramDownloadTimeout) clearTimeout(paramDownloadTimeout);
+  paramDownloadTimeout = setTimeout(() => { void handleParamDownloadIdle(mainWindow); }, PARAM_IDLE_MS);
+}
+
 function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void {
   const { msgid, payload } = packet;
 
@@ -1183,10 +1263,13 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
         lastReportedArmed = armed;
       }
 
-      // Get mode name based on vehicle type
+      // Get mode name based on autopilot and vehicle type
       let modeName = `Mode ${customMode}`;
-      // Fixed wing and VTOL types use plane modes
-      if (vehicleType === 1 || (vehicleType >= 19 && vehicleType <= 25)) {
+      let modeNum = customMode;
+      if (autopilotType === MAV_AUTOPILOT_PX4) {
+        modeName = px4ModeName(customMode);
+        modeNum = px4ModeKey(customMode);
+      } else if (vehicleType === 1 || (vehicleType >= 19 && vehicleType <= 25)) {
         modeName = PLANE_MODES[customMode] || modeName;
       } else if (vehicleType === 2 || (vehicleType >= 13 && vehicleType <= 15) || vehicleType === 29 || vehicleType === 35) {
         // Rotorcraft types: quad, hex, octo, tri, dodeca, deca
@@ -1201,7 +1284,7 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
 
       const flight: FlightState = {
         mode: modeName,
-        modeNum: customMode,
+        modeNum,
         armed,
         isFlying: armed && (baseMode & 0x04) !== 0, // MAV_MODE_FLAG_CUSTOM_MODE_ENABLED as proxy
       };
@@ -1303,6 +1386,7 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
       const vz = readInt16(payload, 24) / 100;
 
       const position: PositionData = { lat, lon, alt, relativeAlt, vx, vy, vz };
+      lastGlobalPosition = { alt, relativeAlt, at: Date.now() };
       queueMavlinkTelemetry(mainWindow, { position });
       break;
     }
@@ -1644,9 +1728,12 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
     case MSG_PARAM_VALUE: {
       // Deserialize parameter value
       const param = deserializeParamValue(payload);
+      // PX4 packs integer params byte-wise into the float field
+      if (isPx4()) param.paramValue = decodeParamBytewise(payload, param.paramType);
 
-      // Track received parameters
+      // Track received parameters (index 65535 = reply to a read/set by name)
       receivedParams.set(param.paramId, param);
+      if (param.paramIndex !== 65535) receivedParamIndices.add(param.paramIndex);
       expectedParamCount = param.paramCount;
 
       // Resolve any pending one-shot read for this paramId (PARAM_READ_BATCH).
@@ -1664,16 +1751,8 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
         console.error('[ipc-handlers] pending param read callback threw', err);
       }
 
-      // Reset timeout on each received param
-      if (paramDownloadTimeout) {
-        clearTimeout(paramDownloadTimeout);
-        paramDownloadTimeout = setTimeout(() => {
-          if (receivedParams.size < expectedParamCount) {
-            safeSend(mainWindow, IPC_CHANNELS.PARAM_ERROR,
-              `Timeout: received ${receivedParams.size}/${expectedParamCount} parameters`);
-          }
-        }, 10000); // 10 second timeout after last param
-      }
+      // Reset the idle timer on each received param during a bulk download
+      if (paramDownloadActive) armParamIdleTimer(mainWindow);
 
       // Send parameter to renderer
       const paramPayload: ParamValuePayload = {
@@ -1716,31 +1795,9 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
       }
 
       try {
-        // MISSION_COUNT payload byte order:
-        // Some FCs use v2 byte order (size-sorted) even in v1 packets!
-        // v1 order: target_system(1), target_component(1), count(2) - count at offset 2
-        // v2 order: count(2), target_system(1), target_component(1), [mission_type(1)] - count at offset 0
-        //
-        // Detection: If bytes 2-3 are our GCS IDs (255, 190) or count at offset 2 is unreasonable,
-        // assume v2 byte order (count at offset 0)
-        let count: number;
-        const countAtOffset0 = payload[0]! | (payload[1]! << 8);
-        const countAtOffset2 = payload[2]! | (payload[3]! << 8);
-
-        // Check if bytes 2-3 look like GCS IDs (255, 190) - indicates v2 order
-        const looksLikeV2Order = (payload[2] === 0xFF && payload[3] === 0xBE) ||
-                                 (payload[2] === 0xFF && payload[3] === 0x01) ||  // compid 1
-                                 countAtOffset2 > 1000;  // Unreasonable count
-
-        if (payload.length >= 5 || looksLikeV2Order) {
-          // v2 byte order: count is at offset 0
-          count = countAtOffset0;
-          sendLog(mainWindow, 'debug', `MISSION_COUNT using v2 byte order: count=${count}`);
-        } else {
-          // v1 byte order: count is at offset 2
-          count = countAtOffset2;
-          sendLog(mainWindow, 'debug', `MISSION_COUNT using v1 byte order: count=${count}`);
-        }
+        // Wire order (v1 and v2 alike, fields are size-sorted):
+        // count(2), target_system(1), target_component(1), [mission_type(1), opaque_id(4)]
+        const count = readUint16(payload, 0);
         missionDownloadState.expected = count;
 
         sendLog(mainWindow, 'debug', `Mission has ${count} items (payload len: ${payload.length})`);
@@ -1864,26 +1921,9 @@ function parseTelemetry(mainWindow: BrowserWindow, packet: MAVLinkPacket): void 
       }
 
       try {
-        // MISSION_REQUEST payload byte order:
-        // Some FCs use v2 byte order (size-sorted) even in v1 packets!
-        // v1 order: target_system(1), target_component(1), seq(2) - seq at offset 2
-        // v2 order: seq(2), target_system(1), target_component(1), [mission_type(1)] - seq at offset 0
-        let seq: number;
-        const seqAtOffset0 = payload[0]! | (payload[1]! << 8);
-        const seqAtOffset2 = payload[2]! | (payload[3]! << 8);
-
-        // Check if bytes 2-3 look like GCS IDs (255, 190) - indicates v2 order
-        const looksLikeV2Order = (payload[2] === 0xFF && payload[3] === 0xBE) ||
-                                 (payload[2] === 0xFF && payload[3] === 0x01) ||
-                                 seqAtOffset2 > 1000;  // Unreasonable seq
-
-        if (msgid === MSG_MISSION_REQUEST_INT || looksLikeV2Order) {
-          // v2 byte order: seq is at offset 0
-          seq = seqAtOffset0;
-        } else {
-          // v1 byte order: seq is at offset 2
-          seq = seqAtOffset2;
-        }
+        // Wire order (v1 and v2 alike, fields are size-sorted):
+        // seq(2), target_system(1), target_component(1), [mission_type(1)]
+        const seq = readUint16(payload, 0);
 
         sendLog(mainWindow, 'debug', `FC requesting mission item ${seq} (msg ${msgid}, raw: ${Array.from(payload.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join(' ')})`);
 
@@ -2277,6 +2317,19 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     });
   });
 
+  // Probe a single port for MAVLink (used for auto-connect).
+  // Telemetry radios (SiK/MicoAir) default to 57600, USB FCs to 115200.
+  ipcMain.handle(IPC_CHANNELS.COMMS_PROBE_PORT, async (_, portPath: string): Promise<ScanResult | null> => {
+    if (currentTransport) return null;
+    try {
+      // 3.5s: telemetry radios (SiK/MicoAir) heartbeat around 1Hz, so a
+      // shorter window can miss a real vehicle waiting between beats.
+      return await scanPort(portPath, { baudRates: [57600, 115200, 921600], timeout: 3500 });
+    } catch {
+      return null;
+    }
+  });
+
   // Port watcher for detecting new devices (with safety measures)
   let portWatchInterval: ReturnType<typeof setInterval> | null = null;
   let lastKnownPorts: string[] = [];
@@ -2660,6 +2713,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
                 connectionState.systemId = packet.sysid;
                 connectionState.componentId = packet.compid;
                 connectionState.autopilot = AUTOPILOT_NAMES[autopilotType] || `Unknown (${autopilotType})`;
+                connectionState.autopilotType = autopilotType;
                 connectionState.vehicleType = VEHICLE_NAMES[vehicleType] || `Unknown (${vehicleType})`;
                 connectionState.mavType = vehicleType;
                 connectionState.mavlinkVersion = detectedMavlinkVersion;
@@ -3617,7 +3671,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
             currentTransport?.close();
           }
         }
-      }, 2500); // Shorter timeout, then try MSP
+      }, 4000); // Telemetry radios (SiK/MicoAir) can stay quiet ~2s after the port opens and
+      // heartbeat at 1Hz, so allow a couple of cycles before falling back to MSP
 
       return true;
     } catch (error) {
@@ -4035,6 +4090,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
    */
   async function requestParamsTraditional(): Promise<{ success: boolean; error?: string }> {
     receivedParams.clear();
+    receivedParamIndices.clear();
+    paramRetryRounds = 0;
     expectedParamCount = 0;
     paramDownloadActive = true;
     paramDownloadStartTime = Date.now();
@@ -4209,13 +4266,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       }
 
       // Build PARAM_SET message
-      const payload = serializeParamSet({
-        targetSystem: connectionState.systemId ?? 1,
-        targetComponent: 1, // MAV_COMP_ID_AUTOPILOT1
-        paramId,
-        paramValue: value,
-        paramType: type,
-      });
+      const payload = buildParamSetPayload(paramId, value, type);
 
       // Use detected MAVLink version for compatibility (with signing if enabled)
       const packet = await sendMavlinkPacket(PARAM_SET_ID, payload, PARAM_SET_CRC_EXTRA);
@@ -4322,13 +4373,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         }
 
         try {
-          const payload = serializeParamSet({
-            targetSystem: connectionState.systemId ?? 1,
-            targetComponent: 1,
-            paramId: p.paramId,
-            paramValue: p.value,
-            paramType: p.type,
-          });
+          const payload = buildParamSetPayload(p.paramId, p.value, p.type);
 
           const packet = await sendMavlinkPacket(PARAM_SET_ID, payload, PARAM_SET_CRC_EXTRA);
           await currentTransport.write(packet);
@@ -4623,6 +4668,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     }
 
     const transport = currentTransport; // local ref for TS type narrowing
+    // The RC-override pre-arm stream and failsafe param writes below are ArduPilot-only
+    const ardupilot = !isPx4();
 
     try {
       // When arming without a transmitter, ArduPilot needs RC input.
@@ -4640,7 +4687,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       // arm-switch pre-arm check fails because every channel defaults to
       // PWM 1000 (DISARM for most configurations).
       let armSwitchChannel: number | undefined;
-      if (arm) {
+      if (arm && ardupilot) {
         for (let ch = 5; ch <= 16; ch++) {
           const p = receivedParams.get(`RC${ch}_OPTION`);
           if (p && p.paramValue === 41) {
@@ -4652,7 +4699,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
       // Stream RC_CHANNELS_OVERRIDE for a short pre-arm window so ArduPilot
       // sees stable input before COMMAND_LONG is sent.
-      if (arm) {
+      if (arm && ardupilot) {
         await sendRcOverridePreArmStream({
           sendMavlinkPacket,
           writePacket: async packet => {
@@ -4673,18 +4720,12 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       // the next boot.
       // We send these unconditionally — if the param doesn't exist the FC
       // silently ignores the PARAM_SET, and if it's already 0 it's a no-op.
-      if (arm && !force) {
+      if (arm && !force && ardupilot) {
         const sendParamSet = async (paramId: string, value: number, fallbackType: number) => {
           try {
             const cached = receivedParams.get(paramId);
             const paramType = cached ? cached.paramType : fallbackType;
-            const payload = serializeParamSet({
-              targetSystem: connectionState.systemId ?? 1,
-              targetComponent: 1,
-              paramId,
-              paramValue: value,
-              paramType,
-            });
+            const payload = buildParamSetPayload(paramId, value, paramType);
             const packet = await sendMavlinkPacket(PARAM_SET_ID, payload, PARAM_SET_CRC_EXTRA);
             await transport.write(packet);
             connectionState.packetsSent++;
@@ -4745,6 +4786,10 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
       const armedBit = lastReportedArmed ? 128 : 0;
       const baseMode = 1 | armedBit; // MAV_MODE_FLAG_CUSTOM_MODE_ENABLED + armed bit
 
+      // PX4 takes main/sub mode as separate DO_SET_MODE params; ArduPilot takes the mode number
+      const { mainMode, subMode } = px4ModeParts(customMode);
+      const px4 = isPx4();
+
       // 1. MAV_CMD_DO_SET_MODE — preferred path
       const cmdPayload = serializeCommandLong({
         targetSystem: connectionState.systemId ?? 1,
@@ -4752,8 +4797,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         command: 176, // MAV_CMD_DO_SET_MODE
         confirmation: 0,
         param1: baseMode,
-        param2: customMode,
-        param3: 0,
+        param2: px4 ? mainMode : customMode,
+        param3: px4 ? subMode : 0,
         param4: 0,
         param5: 0,
         param6: 0,
@@ -4862,19 +4907,31 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
     const pitch = typeof pitchDeg === 'number' ? pitchDeg : 15;
 
+    // PX4 wants param7 as AMSL and NaN for "keep current" yaw/lat/lon;
+    // ArduPilot wants altitude relative to home.
+    let px4TargetAmsl: number | null = null;
+    if (isPx4()) {
+      if (!lastGlobalPosition || Date.now() - lastGlobalPosition.at > 5000) {
+        sendLog(mainWindow, 'error', 'Takeoff needs a position estimate', 'PX4 reports no global position - check the GPS');
+        return false;
+      }
+      const homeAmsl = lastGlobalPosition.alt - lastGlobalPosition.relativeAlt;
+      px4TargetAmsl = homeAmsl + altitude;
+    }
+
     try {
       const payload = serializeCommandLong({
         targetSystem: connectionState.systemId ?? 1,
         targetComponent: 1,
         command: 22,
         confirmation: 0,
-        param1: pitch,
+        param1: px4TargetAmsl !== null ? -1 : pitch,
         param2: 0,
         param3: 0,
-        param4: 0,
-        param5: 0,
-        param6: 0,
-        param7: altitude,
+        param4: px4TargetAmsl !== null ? NaN : 0,
+        param5: px4TargetAmsl !== null ? NaN : 0,
+        param6: px4TargetAmsl !== null ? NaN : 0,
+        param7: px4TargetAmsl ?? altitude,
       });
 
       const packet = await sendMavlinkPacket(COMMAND_LONG_ID, payload, COMMAND_LONG_CRC_EXTRA);
@@ -5168,9 +5225,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         // Look up paramType from receivedParams cache, default to REAL32 (9).
         const cached = receivedParams.get(paramId);
         const paramType = cached?.paramType ?? 9;
-        const setPayload = serializeParamSet({
-          targetSystem, targetComponent, paramId, paramValue: value, paramType,
-        });
+        const setPayload = buildParamSetPayload(paramId, value, paramType);
         const packet = await sendMavlinkPacket(PARAM_SET_ID, setPayload, PARAM_SET_CRC_EXTRA);
         await currentTransport!.write(packet);
         connectionState.packetsSent++;
@@ -5790,6 +5845,25 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     if (connectionState.protocol !== 'mavlink') {
       return { success: false, error: 'RC override requires MAVLink connection' };
     }
+    // PX4 ignores RC_CHANNELS_OVERRIDE; GCS sticks go in MANUAL_CONTROL
+    // (needs COM_RC_IN_MODE to allow MAVLink input). Aux channels don't apply.
+    if (isPx4()) {
+      try {
+        const axes = pwmToManualControl(request);
+        const payload = serializeManualControl({
+          target: connectionState.systemId ?? 1,
+          ...axes,
+          buttons: 0, buttons2: 0, enabledExtensions: 0,
+          s: 0, t: 0, aux1: 0, aux2: 0, aux3: 0, aux4: 0, aux5: 0, aux6: 0,
+        });
+        const packet = await sendMavlinkPacket(MANUAL_CONTROL_ID, payload, MANUAL_CONTROL_CRC_EXTRA);
+        await currentTransport.write(packet);
+        connectionState.packetsSent++;
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+      }
+    }
     try {
       // Aux channels default to UINT16_MAX = "ignore" per MAVLink spec, so we
       // don't accidentally hijack FLTMODE_CH or other RCx_OPTION-driven aux
@@ -5842,6 +5916,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
     if (connectionState.protocol !== 'mavlink') {
       return { success: false, error: 'RC override requires MAVLink connection' };
     }
+    // PX4 has no release message: MAVLink stick input ends when MANUAL_CONTROL stops
+    if (isPx4()) return { success: true };
     try {
       const RELEASE = 65535; // UINT16_MAX = "ignore this channel"
       const payload = serializeRcChannelsOverride({
@@ -6298,9 +6374,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
     try {
       // Send MISSION_COUNT to start upload
-      // MAVLink v1 and v2 have different payload formats:
-      // v1: target_system(1), target_component(1), count(2) = 4 bytes (declaration order)
-      // v2: count(2), target_system(1), target_component(1), mission_type(1) = 5 bytes (size order)
+      // Both versions use size-sorted wire order: count(2), target_system(1),
+      // target_component(1); v2 adds the mission_type extension.
       let packet: Uint8Array;
       const targetSystem = connectionState.systemId ?? 1;
 
@@ -6318,9 +6393,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
         console.log(`[MISSION UPLOAD] v2 payload: ${Array.from(payload).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
         packet = await sendMavlinkPacket(MISSION_COUNT_ID, payload, MISSION_COUNT_CRC_EXTRA);
       } else {
-        // MAVLink v1 packet but use v2 byte order (size-sorted) for payload!
-        // ArduPilot uses v2 byte order internally regardless of packet format.
-        // v2 order: count(2), target_system(1), target_component(1) - no mission_type for v1
+        // MAVLink v1 frame: base fields only, no mission_type extension
         const payload = new Uint8Array(4);
         payload[0] = items.length & 0xff;         // count low byte
         payload[1] = (items.length >> 8) & 0xff;  // count high byte

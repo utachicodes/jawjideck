@@ -5,7 +5,7 @@ import { useSitlStore } from '../../stores/sitl-store';
 import { useArduPilotSitlStore } from '../../stores/ardupilot-sitl-store';
 import { useSigningStore, initSigningListener } from '../../stores/signing-store';
 import type { SerialPortInfo } from '@jawji/comms';
-import { formatPortDisplayName } from '../../utils/usb-device-names';
+import { formatPortDisplayName, isAutoConnectCandidate, isSystemPort } from '../../utils/usb-device-names';
 import { DriverAssistant } from './DriverAssistant';
 import { RecentConnectionsButton } from './RecentConnectionsButton';
 import type { SavedConnection } from '../../stores/settings-store';
@@ -37,6 +37,8 @@ export function ConnectionPanel() {
   const [signingInputHasValue, setSigningInputHasValue] = useState(false);
   const signingInputRef = useRef<HTMLInputElement>(null);
   const hasAppliedMemory = useRef(false);
+  const autoConnectInFlight = useRef(false);
+  const hasRunStartupAutoConnect = useRef(false);
   const { hasKey, keyBase64, keyMismatch, savedKeys, loading: signingLoading, setKey: signingSetKey } = useSigningStore();
 
   // Apply connection memory once settings have loaded from disk.
@@ -251,6 +253,10 @@ export function ConnectionPanel() {
               setSelectedPort(rememberedPort.path);
             }
           }
+          // Newly plugged USB device (FC or telemetry radio) - probe and connect
+          if (event.newPorts.length > 0) {
+            tryAutoConnect(event.newPorts);
+          }
         });
       });
 
@@ -278,23 +284,79 @@ export function ConnectionPanel() {
     }
   }, [connectionState.isConnected]);
 
-  const refreshPorts = async () => {
+  const refreshPorts = async (): Promise<SerialPortInfo[]> => {
     setIsRefreshingPorts(true);
     let portList: SerialPortInfo[] = [];
     try {
-      portList = await window.electronAPI.listPorts();
+      // Hide built-in system ports (macOS debug-console, Bluetooth, etc.)
+      portList = (await window.electronAPI.listPorts()).filter(p => !isSystemPort(p));
       setPorts(portList);
     } finally {
       setIsRefreshingPorts(false);
     }
 
-    // Try to select the remembered port, fall back to first available
+    // Try to select the remembered port, then a USB device, then first available
     if (portList.length > 0 && !selectedPort) {
       const rememberedPort = connectionMemory?.lastSerialPort;
-      const portToSelect = portList.find(p => p.path === rememberedPort) || portList[0];
+      const portToSelect = portList.find(p => p.path === rememberedPort)
+        || portList.find(isAutoConnectCandidate)
+        || portList[0];
       setSelectedPort(portToSelect?.path ?? '');
     }
+    return portList;
   };
+
+  // QGroundControl-style auto-connect: probe USB serial ports for MAVLink
+  // (trying telemetry-radio and FC baud rates) and connect to the first hit.
+  const tryAutoConnect = async (candidates: SerialPortInfo[]) => {
+    if (autoConnectInFlight.current) return;
+    const isBusy = () => {
+      const state = useConnectionStore.getState();
+      return state.connectionState.isConnected || state.isConnecting;
+    };
+    if (isBusy()) return;
+
+    const rememberedPort = connectionMemory?.lastSerialPort;
+    const toProbe = candidates
+      .filter(isAutoConnectCandidate)
+      .sort((a, b) => Number(b.path === rememberedPort) - Number(a.path === rememberedPort));
+    if (toProbe.length === 0) return;
+
+    autoConnectInFlight.current = true;
+    try {
+      for (const port of toProbe) {
+        console.log('[ConnectionPanel] Auto-connect probing', port.path);
+        const found = await window.electronAPI.probePort(port.path);
+        if (!found || isBusy()) continue;
+
+        console.log(`[ConnectionPanel] MAVLink found on ${found.port} @ ${found.baudRate}, connecting`);
+        setConnectionType('serial');
+        setSelectedPort(found.port);
+        setBaudRate(found.baudRate);
+        // The probe just closed this same port; some USB-serial drivers (CP210x)
+        // need a brief moment to release the handle before it can reopen.
+        await new Promise(r => setTimeout(r, 400));
+        const success = await connect({ type: 'serial', port: found.port, baudRate: found.baudRate });
+        if (success) {
+          updateConnectionMemory({
+            lastSerialPort: found.port,
+            lastBaudRate: found.baudRate,
+            lastConnectionType: 'serial',
+          });
+          return;
+        }
+      }
+    } finally {
+      autoConnectInFlight.current = false;
+    }
+  };
+
+  // Auto-connect once on startup to a device that is already plugged in
+  useEffect(() => {
+    if (!settingsInitialized || hasRunStartupAutoConnect.current || !window.electronAPI) return;
+    hasRunStartupAutoConnect.current = true;
+    window.electronAPI.listPorts().then(tryAutoConnect).catch(() => {});
+  }, [settingsInitialized]);
 
   // Apply a recent connection entry to the form fields. Switching modes is
   // allowed (e.g. clicking a listen recent while in client mode switches to
