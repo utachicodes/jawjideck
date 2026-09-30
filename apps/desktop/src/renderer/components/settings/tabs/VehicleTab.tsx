@@ -5,20 +5,9 @@ import { useNavigationStore } from '../../../stores/navigation-store';
 import { useTelemetryStore } from '../../../stores/telemetry-store';
 import { useConnectionStore } from '../../../stores/connection-store';
 import { Wifi, Battery, Cpu, Satellite, AlertTriangle, RefreshCw, Download } from 'lucide-react';
-import { VehicleTemplatePicker } from '../vehicle-profile/VehicleTemplatePicker';
-import { ApplyProfileButton } from '../vehicle-profile/ApplyProfileButton';
-import { DriftBadge } from '../vehicle-profile/DriftBadge';
-import { SnapshotList } from '../vehicle-profile/SnapshotList';
+import { EditVehicleModal } from '../vehicle-profile/EditVehicleModal';
 import { TemplateChip } from '../vehicle-profile/TemplateChip';
-import { ConfigSelectors } from '../vehicle-profile/ConfigSelectors';
-import { PhysicsAdvanced } from '../vehicle-profile/PhysicsAdvanced';
-import { ParamsPreview } from '../vehicle-profile/ParamsPreview';
-import { StallSpeedCalcButton } from '../vehicle-profile/StallSpeedCalcButton';
-import { inferProfileFromParams } from '../../../lib/vehicle-templates/import';
 import { VEHICLE_ICONS, VEHICLE_TYPE_NAMES } from '../../../lib/vehicle-icons';
-import { saveParmToFile } from '../../../lib/vehicle-templates/export-parm';
-import { getTemplate, defaultTemplateForType } from '../../../lib/vehicle-templates/registry';
-import type { VehicleTemplate } from '../../../lib/vehicle-templates/types';
 import { mavTypeToVehicleType } from '../../../../shared/vehicle-type-map';
 import { CircularGauge } from '../CircularGauge';
 import { ProfileCompatibilityBanner } from '../ProfileCompatibilityBanner';
@@ -84,8 +73,8 @@ export function VehicleTab() {
 
   const { connectionState } = useConnectionStore();
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
-  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const activeVehicle = getActiveVehicle();
+  const editingVehicle = vehicles.find((v) => v.id === editingVehicleId) ?? null;
   const estimatedFlightTime = getEstimatedFlightTime();
   const estimatedRange = getEstimatedRange();
 
@@ -180,6 +169,7 @@ export function VehicleTab() {
                     {activeVehicle?.boardId && (
                       <span className="text-[10px] bg-surface-raised px-1.5 py-0.5 rounded">{activeVehicle.boardId}</span>
                     )}
+                    {activeVehicle?.templateSlug && <TemplateChip slug={activeVehicle.templateSlug} />}
                   </div>
                 </div>
                 {activeVehicle && (
@@ -286,6 +276,10 @@ export function VehicleTab() {
           <h3 className="text-xs font-medium text-content-secondary uppercase tracking-wider mb-3">Tips & Recommendations</h3>
           <TipsSection vehicle={activeVehicle} />
         </section>
+      )}
+
+      {editingVehicle && (
+        <EditVehicleModal vehicle={editingVehicle} onClose={() => setEditingVehicleId(null)} />
       )}
     </div>
   );
