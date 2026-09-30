@@ -276,12 +276,10 @@ function App() {
   const { vehicles, activeVehicleId, updateVehicle, experienceLevel, experienceLevelVersion, setExperienceLevel } = useSettingsStore();
   const sidebarCollapsedByContext = useSettingsStore((s) => s.sidebarCollapsedByContext);
   const setSidebarCollapsedForContext = useSettingsStore((s) => s.setSidebarCollapsedForContext);
-  // Per-context collapse: shared "connected" state while connected, otherwise
-  // per-screen while offline. Default: collapsed when connected (connect panel
-  // not needed), expanded when offline. A manual toggle is remembered for that
-  // exact context and persisted, so e.g. collapsing on Mission Planning while
-  // offline sticks there without affecting other screens.
-  const sidebarContextKey = connectionState.isConnected ? 'connected' : `offline:${currentView}`;
+  // Two remembered states: one while connected, one while offline (shared by
+  // every screen, so collapsing it once keeps it closed everywhere). Default:
+  // collapsed when connected (connect panel not needed), expanded when offline.
+  const sidebarContextKey = connectionState.isConnected ? 'connected' : 'offline';
   const sidebarCollapsed =
     sidebarCollapsedByContext[sidebarContextKey] ?? connectionState.isConnected;
   const setSidebarCollapsed = (collapsed: boolean) =>
