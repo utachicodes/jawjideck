@@ -8,7 +8,7 @@ interface FleetStore {
 
   loadRoster: () => Promise<void>;
   addVehicle: (candidate: Omit<FleetVehicleEntry, 'id'>) => Promise<{ success: boolean; error?: string }>;
-  updateVehicle: (id: string, patch: Partial<Omit<FleetVehicleEntry, 'id'>>) => Promise<void>;
+  updateVehicle: (id: string, patch: Partial<Omit<FleetVehicleEntry, 'id'>>) => Promise<{ success: boolean; error?: string }>;
   removeVehicle: (id: string) => Promise<void>;
   focusVehicle: (entry: FleetVehicleEntry, connectOptions: ConnectOptions) => Promise<boolean>;
   applyStatus: (status: FleetVehicleStatus) => void;
@@ -34,10 +34,12 @@ export const useFleetStore = create<FleetStore>((set, get) => ({
   },
 
   updateVehicle: async (id, patch) => {
-    const updated = await window.electronAPI.fleetUpdateVehicle(id, patch);
-    if (updated) {
+    const result = await window.electronAPI.fleetUpdateVehicle(id, patch);
+    const updated = result.entry;
+    if (result.success && updated) {
       set({ roster: get().roster.map((v) => (v.id === id ? updated : v)) });
     }
+    return result;
   },
 
   removeVehicle: async (id) => {

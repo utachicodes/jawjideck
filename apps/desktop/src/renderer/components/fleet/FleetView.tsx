@@ -11,6 +11,7 @@ import { useConnectionStore } from '../../stores/connection-store';
 import { FleetMapPanel } from './FleetMapPanel';
 import { AddVehicleModal } from './AddVehicleModal';
 import type { FleetVehicleEntry } from '../../../shared/ipc-channels';
+import { FLEET_FIRMWARE_LABELS, FLEET_VEHICLE_TYPE_LABELS } from '../../../shared/fleet-vehicle';
 import { Plus, Pencil, Trash2, Radio } from 'lucide-react';
 
 function connectOptionsFor(entry: FleetVehicleEntry) {
@@ -20,7 +21,16 @@ function connectOptionsFor(entry: FleetVehicleEntry) {
   if (entry.transportType === 'tcp') {
     return { type: 'tcp' as const, host: entry.host, tcpPort: entry.port, protocol: entry.protocol };
   }
+  if (entry.udpMode === 'listen') {
+    return { type: 'udp' as const, udpMode: 'listen' as const, udpPort: entry.port, protocol: entry.protocol };
+  }
   return { type: 'udp' as const, udpMode: 'client' as const, udpRemoteHost: entry.host, udpRemotePort: entry.port, protocol: entry.protocol };
+}
+
+function endpointLabel(entry: FleetVehicleEntry): string {
+  if (entry.transportType === 'serial') return `${entry.serialPath} @ ${entry.baudRate ?? 57600}`;
+  if (entry.transportType === 'udp' && entry.udpMode === 'listen') return `UDP listen :${entry.port}`;
+  return `${entry.transportType.toUpperCase()} ${entry.host}:${entry.port}`;
 }
 
 function VehicleTile({ entry, isFocused, onFocus, onEdit, onRemove }: {
@@ -34,7 +44,11 @@ function VehicleTile({ entry, isFocused, onFocus, onEdit, onRemove }: {
   const connected = isFocused || status?.connected;
 
   return (
-    <div className={`rounded-xl border p-4 flex flex-col gap-2 ${isFocused ? 'border-blue-500/60 bg-blue-500/5' : 'border-subtle bg-surface'}`}>
+    <div
+      className={`rounded-xl border border-l-4 p-4 flex flex-col gap-2 ${isFocused ? 'border-blue-500/60 bg-blue-500/5' : 'border-subtle bg-surface'}`}
+      style={entry.color ? { borderLeftColor: entry.color } : undefined}
+      title={entry.notes}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-400' : status?.error ? 'bg-red-400' : 'bg-content-tertiary'}`} />
@@ -47,9 +61,14 @@ function VehicleTile({ entry, isFocused, onFocus, onEdit, onRemove }: {
         </div>
       </div>
 
-      <div className="text-xs text-content-secondary">
-        {entry.protocol.toUpperCase()} · {entry.transportType === 'serial' ? entry.serialPath : `${entry.host}:${entry.port}`}
+      <div className="text-xs text-content-secondary truncate">
+        {[
+          entry.firmware ? FLEET_FIRMWARE_LABELS[entry.firmware] : entry.protocol.toUpperCase(),
+          entry.vehicleType && FLEET_VEHICLE_TYPE_LABELS[entry.vehicleType],
+          entry.systemId !== undefined && `SYS ${entry.systemId}`,
+        ].filter(Boolean).join(' · ')}
       </div>
+      <div className="text-xs text-content-tertiary font-mono truncate">{endpointLabel(entry)}</div>
 
       {status?.error && <div className="text-xs text-red-400">{status.error}</div>}
 

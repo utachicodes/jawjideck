@@ -9,6 +9,7 @@ import type { FleetVehicleEntry } from '../../shared/ipc-channels.js';
 import { getAllWindows } from '../window-manager.js';
 import { getRoster, addVehicle, updateVehicle, removeVehicle, validateNewEntry } from './fleet-roster.js';
 import { startMonitor, type FleetMonitorHandle } from './fleet-monitor.js';
+import { probeConnection } from './fleet-probe.js';
 
 const activeMonitors = new Map<string, FleetMonitorHandle>();
 let focusedVehicleId: string | null = null;
@@ -67,10 +68,29 @@ export function registerFleetHandlers(_mainWindow: BrowserWindow): void {
   });
 
   ipcMain.handle(IPC_CHANNELS.FLEET_UPDATE_VEHICLE, async (_, id: string, patch: Partial<Omit<FleetVehicleEntry, 'id'>>) => {
+    const roster = getRoster();
+    const existing = roster.find((v) => v.id === id);
+    if (!existing) return { success: false, error: 'Vehicle not found' };
+    const error = validateNewEntry(roster, { ...existing, ...patch }, id);
+    if (error) return { success: false, error };
     stopMonitor(id);
     const updated = updateVehicle(id, patch);
     syncMonitors();
-    return updated;
+    return { success: true, entry: updated };
+  });
+
+  // Probe a not-yet-saved entry. The entry's own monitor (if editing) is
+  // paused so the probe can take the serial port or UDP socket.
+  ipcMain.handle(IPC_CHANNELS.FLEET_TEST_CONNECTION, async (_, candidate: Omit<FleetVehicleEntry, 'id'>, editingId?: string) => {
+    if (editingId && activeMonitors.has(editingId)) {
+      stopMonitor(editingId);
+      await new Promise((r) => setTimeout(r, 300)); // let the monitor release its port
+    }
+    try {
+      return await probeConnection(candidate);
+    } finally {
+      if (editingId) syncMonitors();
+    }
   });
 
   ipcMain.handle(IPC_CHANNELS.FLEET_REMOVE_VEHICLE, async (_, id: string) => {

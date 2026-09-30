@@ -4,7 +4,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type SettingsStoreSchema, type MSPConnectOptions, type MSPConnectionState, type MSPTelemetryData, type SitlConfig, type SitlStatus, type SitlExitData, type VirtualRCState, type ArduPilotSitlConfig, type ArduPilotSitlStatus, type ArduPilotSitlExitData, type ArduPilotSitlDownloadProgress, type ArduPilotSitlBinaryInfo, type ArduPilotFrameCatalog, type ArduPilotVehicleType, type ArduPilotReleaseTrack, type AppUpdateInfo, type SigningStatus, type TelemetrySpeed, type StatusMessage, type TileCacheStats, type TileCacheDownloadProgress, type TileCacheSettings, type TileCacheDownloadRegion, type CompanionConnectOptions, type CompanionConnectionIpcState, type CompanionDiscoveryResult, type FleetVehicleEntry, type FleetVehicleStatus, type VideoStreamInfo, type LicensingCacheSchema } from '../shared/ipc-channels.js';
+import { IPC_CHANNELS, type ConnectOptions, type ConnectionState, type ConsoleLogEntry, type SavedLayout, type SettingsStoreSchema, type MSPConnectOptions, type MSPConnectionState, type MSPTelemetryData, type SitlConfig, type SitlStatus, type SitlExitData, type VirtualRCState, type ArduPilotSitlConfig, type ArduPilotSitlStatus, type ArduPilotSitlExitData, type ArduPilotSitlDownloadProgress, type ArduPilotSitlBinaryInfo, type ArduPilotFrameCatalog, type ArduPilotVehicleType, type ArduPilotReleaseTrack, type AppUpdateInfo, type SigningStatus, type TelemetrySpeed, type StatusMessage, type TileCacheStats, type TileCacheDownloadProgress, type TileCacheSettings, type TileCacheDownloadRegion, type CompanionConnectOptions, type CompanionConnectionIpcState, type CompanionDiscoveryResult, type FleetVehicleEntry, type FleetVehicleStatus, type FleetTestResult, type VideoStreamInfo, type LicensingCacheSchema } from '../shared/ipc-channels.js';
 import type { DetachedWindowInfo, OpenDetachedRequest } from '../shared/window-types.js';
 import type { ExportArea } from '../shared/kml-export.js';
 import type { SystemInfo, NetworkInfo, MediaMtxStatus, MetricsData, ProcessInfo, LogEntry, FileEntry, ServiceInfo, ServiceAction, ContainerInfo, ContainerAction, ExtensionInfo } from '@jawji/companion-types';
@@ -300,8 +300,11 @@ const api = {
   fleetAddVehicle: (candidate: Omit<FleetVehicleEntry, 'id'>): Promise<{ success: boolean; error?: string; entry?: FleetVehicleEntry }> =>
     ipcRenderer.invoke(IPC_CHANNELS.FLEET_ADD_VEHICLE, candidate),
 
-  fleetUpdateVehicle: (id: string, patch: Partial<Omit<FleetVehicleEntry, 'id'>>): Promise<FleetVehicleEntry | null> =>
+  fleetUpdateVehicle: (id: string, patch: Partial<Omit<FleetVehicleEntry, 'id'>>): Promise<{ success: boolean; error?: string; entry?: FleetVehicleEntry | null }> =>
     ipcRenderer.invoke(IPC_CHANNELS.FLEET_UPDATE_VEHICLE, id, patch),
+
+  fleetTestConnection: (candidate: Omit<FleetVehicleEntry, 'id'>, editingId?: string): Promise<FleetTestResult> =>
+    ipcRenderer.invoke(IPC_CHANNELS.FLEET_TEST_CONNECTION, candidate, editingId),
 
   fleetRemoveVehicle: (id: string): Promise<void> =>
     ipcRenderer.invoke(IPC_CHANNELS.FLEET_REMOVE_VEHICLE, id),
