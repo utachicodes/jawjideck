@@ -816,6 +816,8 @@ export interface FleetVehicleEntry {
   systemId?: number;
   color?: string;
   notes?: string;
+  /** Vehicle Profile (Settings > Vehicle) to switch to when this roster entry is focused. */
+  vehicleProfileId?: string;
 }
 
 /** Result of probing a roster entry's connection before saving it. */

@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { RefreshCw, Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
 import { useFleetStore } from '../../stores/fleet-store';
+import { useSettingsStore } from '../../stores/settings-store';
 import { formatPortDisplayName, isSystemPort } from '../../utils/usb-device-names';
 import type { SerialPortInfo } from '@jawji/comms';
 import type { FleetVehicleEntry, FleetFirmware, FleetVehicleType, FleetTestResult } from '../../../shared/ipc-channels';
@@ -16,7 +17,10 @@ import {
   FLEET_VEHICLE_TYPE_LABELS,
   FLEET_COLORS,
   protocolForFirmware,
+  profileTypeForFleetVehicleType,
 } from '../../../shared/fleet-vehicle';
+
+const CREATE_PROFILE = '__create__';
 
 interface AddVehicleModalProps {
   editingEntry: FleetVehicleEntry | null;
@@ -78,6 +82,8 @@ export function AddVehicleModal({ editingEntry, onClose }: AddVehicleModalProps)
   const addVehicle = useFleetStore((s) => s.addVehicle);
   const updateVehicle = useFleetStore((s) => s.updateVehicle);
   const roster = useFleetStore((s) => s.roster);
+  const profiles = useSettingsStore((s) => s.vehicles);
+  const addProfile = useSettingsStore((s) => s.addVehicle);
 
   const [name, setName] = useState(editingEntry?.name ?? '');
   const [firmware, setFirmware] = useState<FleetFirmware>(defaultFirmware(editingEntry));
@@ -92,6 +98,7 @@ export function AddVehicleModal({ editingEntry, onClose }: AddVehicleModalProps)
   const [baudRate, setBaudRate] = useState(editingEntry?.baudRate ?? 57600);
   const [systemId, setSystemId] = useState(editingEntry?.systemId !== undefined ? String(editingEntry.systemId) : '');
   const [notes, setNotes] = useState(editingEntry?.notes ?? '');
+  const [vehicleProfileId, setVehicleProfileId] = useState(editingEntry?.vehicleProfileId ?? '');
   const [showAdvanced, setShowAdvanced] = useState(Boolean(editingEntry?.systemId || editingEntry?.notes));
 
   const [ports, setPorts] = useState<SerialPortInfo[]>([]);
@@ -141,15 +148,31 @@ export function AddVehicleModal({ editingEntry, onClose }: AddVehicleModalProps)
       transportType,
       ...(sysidNum !== undefined && protocolForFirmware(firmware) === 'mavlink' ? { systemId: sysidNum } : {}),
       ...(notes.trim() ? { notes: notes.trim() } : {}),
+      ...(vehicleProfileId ? { vehicleProfileId } : {}),
     };
     if (transportType === 'serial') return { ...base, serialPath, baudRate };
     if (transportType === 'udp') return { ...base, udpMode, port: portNum, ...(isListen ? {} : { host: host.trim() }) };
     return { ...base, host: host.trim(), port: portNum };
-  }, [name, firmware, vehicleType, color, transportType, sysidNum, notes, serialPath, baudRate, udpMode, portNum, isListen, host]);
+  }, [name, firmware, vehicleType, color, transportType, sysidNum, notes, vehicleProfileId, serialPath, baudRate, udpMode, portNum, isListen, host]);
 
   // A test result describes the connection it was run on; drop it when that changes
   // (firmware is left out: a successful test sets it)
   useEffect(() => { setTestResult(null); }, [transportType, udpMode, host, port, serialPath, baudRate, systemId]);
+
+  const handleProfileChange = (value: string) => {
+    if (value !== CREATE_PROFILE) {
+      setVehicleProfileId(value);
+      return;
+    }
+    const newId = addProfile({
+      name: name.trim() || 'New Vehicle',
+      type: profileTypeForFleetVehicleType(vehicleType),
+      weight: 500,
+      batteryCells: 4,
+      batteryCapacity: 1500,
+    });
+    setVehicleProfileId(newId);
+  };
 
   const applyPreset = (preset: (typeof PRESETS)[number]['apply']) => {
     setTransportType(preset.transportType);
@@ -242,6 +265,16 @@ export function AddVehicleModal({ editingEntry, onClose }: AddVehicleModalProps)
                   ))}
                 </select>
               </Field>
+              <Field label="Vehicle profile" hint="Switches Settings > Vehicle to this profile when the fleet vehicle is focused, so weight/battery estimates match it right away.">
+                <select value={vehicleProfileId} onChange={(e) => handleProfileChange(e.target.value)} className={inputClass}>
+                  <option value="">None — auto-detect on connect</option>
+                  {profiles.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  <option value={CREATE_PROFILE}>+ Create new profile</option>
+                </select>
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <Field label="Color">
                 <div className="flex flex-wrap gap-1.5 py-1.5">
                   {FLEET_COLORS.map((c) => (

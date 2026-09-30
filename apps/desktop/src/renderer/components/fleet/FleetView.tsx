@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { useFleetStore } from '../../stores/fleet-store';
 import { useConnectionStore } from '../../stores/connection-store';
+import { useSettingsStore } from '../../stores/settings-store';
 import { FleetMapPanel } from './FleetMapPanel';
 import { AddVehicleModal } from './AddVehicleModal';
 import type { FleetVehicleEntry } from '../../../shared/ipc-channels';
@@ -42,6 +43,7 @@ function VehicleTile({ entry, isFocused, onFocus, onEdit, onRemove }: {
 }) {
   const status = useFleetStore((s) => s.statusByVehicleId[entry.id]);
   const connected = isFocused || status?.connected;
+  const profileName = useSettingsStore((s) => entry.vehicleProfileId ? s.vehicles.find((v) => v.id === entry.vehicleProfileId)?.name : undefined);
 
   return (
     <div
@@ -69,6 +71,7 @@ function VehicleTile({ entry, isFocused, onFocus, onEdit, onRemove }: {
         ].filter(Boolean).join(' · ')}
       </div>
       <div className="text-xs text-content-tertiary font-mono truncate">{endpointLabel(entry)}</div>
+      {profileName && <div className="text-xs text-content-tertiary truncate">Profile: {profileName}</div>}
 
       {status?.error && <div className="text-xs text-red-400">{status.error}</div>}
 

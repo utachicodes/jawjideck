@@ -58,3 +58,9 @@ export const MAV_AUTOPILOT_INVALID = 8;
 
 /** Accent colors offered for roster entries. */
 export const FLEET_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b'];
+
+/** Roster vehicle type -> Settings > Vehicle profile type (VehicleProfile has no 'heli'/'other'). */
+export function profileTypeForFleetVehicleType(type: FleetVehicleType): 'copter' | 'plane' | 'vtol' | 'rover' | 'boat' | 'sub' {
+  if (type === 'heli' || type === 'other') return 'copter';
+  return type;
+}
