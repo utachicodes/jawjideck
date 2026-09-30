@@ -18,6 +18,23 @@ export type VehicleType = 'copter' | 'plane' | 'vtol' | 'rover' | 'boat' | 'sub'
  */
 export type { BoardStats } from '../../shared/ipc-channels.js';
 
+/** Which spoken-alert categories are on. All default to true once alerts are enabled. */
+export interface VoiceAlertCategories {
+  armDisarm: boolean;
+  modeChange: boolean;
+  connection: boolean;
+  gpsFix: boolean;
+  lowBattery: boolean;
+}
+
+export const DEFAULT_VOICE_ALERT_CATEGORIES: VoiceAlertCategories = {
+  armDisarm: true,
+  modeChange: true,
+  connection: true,
+  gpsFix: true,
+  lowBattery: true,
+};
+
 /**
  * Configuration specifier values shared across plane/vtol templates.
  * These are orthogonal axes: a profile combines vehicle `type` with some
@@ -311,6 +328,12 @@ interface SettingsStore {
   // Console
   showDebugLogs: boolean;
   setShowDebugLogs: (enabled: boolean) => void;
+
+  // Voice alerts
+  voiceAlertsEnabled: boolean;
+  setVoiceAlertsEnabled: (enabled: boolean) => void;
+  voiceAlertCategories: VoiceAlertCategories;
+  setVoiceAlertCategory: (category: keyof VoiceAlertCategories, enabled: boolean) => void;
 
   // AI Analysis
   aiProvider: 'claude' | 'openai' | 'gemini' | 'fanar' | 'nvidia' | null;
@@ -771,6 +794,15 @@ export const useSettingsStore = create<SettingsStore>()(
     set({ showDebugLogs: enabled });
   },
 
+  voiceAlertsEnabled: false,
+  setVoiceAlertsEnabled: (enabled: boolean) => {
+    set({ voiceAlertsEnabled: enabled });
+  },
+  voiceAlertCategories: { ...DEFAULT_VOICE_ALERT_CATEGORIES },
+  setVoiceAlertCategory: (category, enabled) => {
+    set((state) => ({ voiceAlertCategories: { ...state.voiceAlertCategories, [category]: enabled } }));
+  },
+
   aiProvider: null,
   setAiProvider: (provider) => {
     set({ aiProvider: provider });
@@ -933,6 +965,11 @@ export const useSettingsStore = create<SettingsStore>()(
           companionUnlocked: !!((settings as unknown as Record<string, unknown>).companionUnlocked),
           advancedCommandsUnlocked: !!((settings as unknown as Record<string, unknown>).advancedCommandsUnlocked),
           showDebugLogs: !!((settings as unknown as Record<string, unknown>).showDebugLogs),
+          voiceAlertsEnabled: !!((settings as unknown as Record<string, unknown>).voiceAlertsEnabled),
+          voiceAlertCategories: {
+            ...DEFAULT_VOICE_ALERT_CATEGORIES,
+            ...((settings as unknown as Record<string, unknown>).voiceAlertCategories as Partial<VoiceAlertCategories> | undefined),
+          },
           aiProvider: ((settings as unknown as Record<string, unknown>).aiProvider as 'claude' | 'openai' | 'gemini' | 'fanar' | 'nvidia' | null) ?? null,
           aiWarningDismissed: !!((settings as unknown as Record<string, unknown>).aiWarningDismissed),
           surveyPresets: (settings.surveyPresets ?? []) as PersistedSurveyPreset[],
@@ -978,6 +1015,8 @@ export const useSettingsStore = create<SettingsStore>()(
         companionUnlocked: state.companionUnlocked,
         advancedCommandsUnlocked: state.advancedCommandsUnlocked,
         showDebugLogs: state.showDebugLogs,
+        voiceAlertsEnabled: state.voiceAlertsEnabled,
+        voiceAlertCategories: state.voiceAlertCategories,
         aiProvider: state.aiProvider,
         aiWarningDismissed: state.aiWarningDismissed,
         surveyPresets: state.surveyPresets,
@@ -1311,6 +1350,8 @@ useSettingsStore.subscribe(
     companionUnlocked: state.companionUnlocked,
     advancedCommandsUnlocked: state.advancedCommandsUnlocked,
     showDebugLogs: state.showDebugLogs,
+    voiceAlertsEnabled: state.voiceAlertsEnabled,
+    voiceAlertCategories: state.voiceAlertCategories,
     aiProvider: state.aiProvider,
     aiWarningDismissed: state.aiWarningDismissed,
     surveyPresets: state.surveyPresets,
@@ -1342,6 +1383,8 @@ useSettingsStore.subscribe(
         curr.companionUnlocked !== prev.companionUnlocked ||
         curr.advancedCommandsUnlocked !== prev.advancedCommandsUnlocked ||
         curr.showDebugLogs !== prev.showDebugLogs ||
+        curr.voiceAlertsEnabled !== prev.voiceAlertsEnabled ||
+        curr.voiceAlertCategories !== prev.voiceAlertCategories ||
         curr.aiProvider !== prev.aiProvider ||
         curr.aiWarningDismissed !== prev.aiWarningDismissed ||
         curr.surveyPresets !== prev.surveyPresets ||
