@@ -45,6 +45,7 @@ import { useMessagesStore } from './stores/messages-store';
 import { useSigningStore } from './stores/signing-store';
 import { useBoardProfileAssociation } from './hooks/useBoardProfileAssociation';
 import { SitlAutoApplyWatcher } from './components/settings/vehicle-profile/SitlAutoApplyWatcher';
+import { VoiceAlertsWatcher } from './components/settings/VoiceAlertsWatcher';
 import { ProfileApplyOverlay } from './components/settings/vehicle-profile/ProfileApplyOverlay';
 import { ParameterCompareModalRoot } from './components/parameters/ParameterCompareModalRoot';
 import { GlobalTooltip } from './components/GlobalTooltip';
@@ -868,6 +869,7 @@ function App() {
       <GlobalTooltip />
       <ActivityIndicator />
       <SitlAutoApplyWatcher />
+      <VoiceAlertsWatcher />
       <ProfileApplyOverlay />
       <ParameterCompareModalRoot />
       <div className="flex h-full">

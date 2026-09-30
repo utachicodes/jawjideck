@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useSettingsStore } from '../../../stores/settings-store';
+import { useSettingsStore, type VoiceAlertCategories } from '../../../stores/settings-store';
 import { useToursStore } from '../../../stores/tours-store';
 import { useNavigationStore } from '../../../stores/navigation-store';
 import { ScriptInstallModal } from '../../script-installer/ScriptInstallModal';
-import { Terminal, FlaskConical, Puzzle, RotateCcw } from 'lucide-react';
+import { Terminal, FlaskConical, Puzzle, RotateCcw, Volume2 } from 'lucide-react';
+import { speak } from '../../../lib/voice-alerts';
 
 export function ToolsTab() {
   return (
     <div className="space-y-6">
       <ConsoleSettingsSection />
+      <VoiceAlertsSection />
       <AiAnalysisSection />
       <ExperimentalFeaturesSection />
     </div>
@@ -166,6 +168,73 @@ function ExperimentalFeaturesSection() {
           </div>
         </div>
       </div>
+    </section>
+  );
+}
+
+const VOICE_CATEGORY_LABELS: Record<keyof VoiceAlertCategories, { label: string; hint: string }> = {
+  armDisarm: { label: 'Arm / disarm', hint: '"Armed" / "Disarmed"' },
+  modeChange: { label: 'Flight mode changes', hint: 'e.g. "Mode Loiter"' },
+  connection: { label: 'Connection', hint: 'Connected, disconnected, link lost/regained' },
+  gpsFix: { label: 'GPS lock', hint: 'Acquired / lost 3D fix' },
+  lowBattery: { label: 'Low battery', hint: 'Once, when remaining charge drops to 20%' },
+};
+
+function VoiceAlertsSection() {
+  const enabled = useSettingsStore((s) => s.voiceAlertsEnabled);
+  const setEnabled = useSettingsStore((s) => s.setVoiceAlertsEnabled);
+  const categories = useSettingsStore((s) => s.voiceAlertCategories);
+  const setCategory = useSettingsStore((s) => s.setVoiceAlertCategory);
+
+  return (
+    <section className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-5">
+      <h2 className="text-sm font-medium text-content mb-4 flex items-center gap-2">
+        <Volume2 size={14} className="text-content-secondary" />
+        Voice Alerts
+      </h2>
+      <div className="flex items-center justify-between bg-surface-input rounded-lg p-3">
+        <div className="flex-1 mr-3">
+          <div className="text-sm text-content font-medium">Spoken announcements</div>
+          <div className="text-xs text-content-secondary mt-0.5">
+            Announce arm/disarm, mode changes and connection events out loud, like QGroundControl's audio notifications. Uses your system's text-to-speech.
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {enabled && (
+            <button
+              onClick={() => speak('Voice alerts enabled')}
+              className="px-2 py-1 rounded text-xs text-content-secondary hover:text-content hover:bg-surface-raised border border-subtle"
+            >
+              Test
+            </button>
+          )}
+          <button
+            onClick={() => setEnabled(!enabled)}
+            className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${enabled ? 'bg-blue-600' : 'bg-surface-raised'}`}
+          >
+            <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${enabled ? 'left-[18px]' : 'left-0.5'}`} />
+          </button>
+        </div>
+      </div>
+
+      {enabled && (
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {(Object.keys(VOICE_CATEGORY_LABELS) as Array<keyof typeof categories>).map((key) => (
+            <label key={key} className="flex items-center justify-between bg-surface-input rounded-lg p-2.5 cursor-pointer">
+              <div className="mr-2 min-w-0">
+                <div className="text-xs text-content font-medium">{VOICE_CATEGORY_LABELS[key].label}</div>
+                <div className="text-[11px] text-content-tertiary truncate">{VOICE_CATEGORY_LABELS[key].hint}</div>
+              </div>
+              <input
+                type="checkbox"
+                checked={categories[key]}
+                onChange={(e) => setCategory(key, e.target.checked)}
+                className="shrink-0 w-4 h-4 accent-blue-600"
+              />
+            </label>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
