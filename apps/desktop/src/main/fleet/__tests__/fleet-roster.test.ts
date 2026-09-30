@@ -71,4 +71,32 @@ describe('fleet-roster', () => {
     removeVehicle(entry.id);
     expect(getRoster()).toEqual([]);
   });
+
+  describe('validation', () => {
+    const listen = { name: 'A', protocol: 'mavlink' as const, transportType: 'udp' as const, udpMode: 'listen' as const, port: 14550 };
+
+    it('rejects two UDP listeners on the same port, whatever the host', () => {
+      addVehicle(listen);
+      expect(validateNewEntry(getRoster(), { ...listen, name: 'B', host: '10.0.0.5' })).toMatch(/already listens on UDP port 14550/);
+      expect(validateNewEntry(getRoster(), { ...listen, name: 'B', port: 14551 })).toBeNull();
+    });
+
+    it('does not treat a UDP client as clashing with a listener', () => {
+      addVehicle(listen);
+      expect(validateNewEntry(getRoster(), { ...listen, name: 'B', udpMode: 'client', host: '127.0.0.1' })).toBeNull();
+    });
+
+    it('lets an entry keep its own endpoint when edited', () => {
+      const entry = addVehicle(listen);
+      expect(validateNewEntry(getRoster(), { ...listen, name: 'Renamed' }, entry.id)).toBeNull();
+    });
+
+    it('requires a name, a port in range, a host for clients and a serial path', () => {
+      expect(validateNewEntry([], { ...listen, name: ' ' })).toMatch(/Name/);
+      expect(validateNewEntry([], { ...listen, port: 70000 })).toMatch(/Port/);
+      expect(validateNewEntry([], { ...listen, udpMode: 'client' })).toMatch(/Host/);
+      expect(validateNewEntry([], { name: 'S', protocol: 'mavlink', transportType: 'serial' })).toMatch(/serial port/);
+      expect(validateNewEntry([], { ...listen, systemId: 0 })).toMatch(/System ID/);
+    });
+  });
 });

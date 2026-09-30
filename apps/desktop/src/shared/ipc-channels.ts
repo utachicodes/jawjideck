@@ -85,6 +85,7 @@ export const IPC_CHANNELS = {
   FLEET_UPDATE_VEHICLE: 'fleet:update-vehicle',
   FLEET_REMOVE_VEHICLE: 'fleet:remove-vehicle',
   FLEET_SET_FOCUSED: 'fleet:set-focused',
+  FLEET_TEST_CONNECTION: 'fleet:test-connection',
   FLEET_VEHICLE_STATUS: 'fleet:vehicle-status',
 
   // Console/debug
@@ -795,6 +796,9 @@ export interface ConnectionState {
  * independent of connection details (a roster entry can be edited without
  * losing its identity/status history).
  */
+export type FleetFirmware = 'ardupilot' | 'px4' | 'betaflight' | 'inav';
+export type FleetVehicleType = 'copter' | 'heli' | 'plane' | 'vtol' | 'rover' | 'boat' | 'sub' | 'other';
+
 export interface FleetVehicleEntry {
   id: string;
   name: string;
@@ -802,8 +806,27 @@ export interface FleetVehicleEntry {
   transportType: 'tcp' | 'udp' | 'serial';
   host?: string;
   port?: number;
+  /** UDP only: listen on `port`, or connect to host:port. Missing means 'client' (entries saved before listen mode). */
+  udpMode?: 'listen' | 'client';
   serialPath?: string;
   baudRate?: number;
+  firmware?: FleetFirmware;
+  vehicleType?: FleetVehicleType;
+  /** MAVLink only: track just this system ID when several vehicles share one link. */
+  systemId?: number;
+  color?: string;
+  notes?: string;
+  /** Vehicle Profile (Settings > Vehicle) to switch to when this roster entry is focused. */
+  vehicleProfileId?: string;
+}
+
+/** Result of probing a roster entry's connection before saving it. */
+export interface FleetTestResult {
+  success: boolean;
+  error?: string;
+  firmware?: FleetFirmware;
+  vehicleType?: FleetVehicleType;
+  systemId?: number;
 }
 
 /**

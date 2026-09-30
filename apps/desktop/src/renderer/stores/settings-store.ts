@@ -325,11 +325,10 @@ interface SettingsStore {
   surveyPerformance: SurveyPerformance;
   updateSurveyPerformance: (updates: Partial<SurveyPerformance>) => void;
 
-  // Connection sidebar collapsed state, remembered PER CONTEXT and persisted.
-  // The context key is "connected" when a vehicle is connected (one shared
-  // state - the connect panel is rarely needed once connected) and
-  // "offline:<viewId>" otherwise, so a manual minimize is remembered per screen
-  // while offline (e.g. collapsed on Mission Planning, open on Telemetry).
+  // Connection sidebar collapsed state, remembered per context and persisted.
+  // The context key is "connected" while a vehicle is connected and "offline"
+  // otherwise; each is shared by every screen. (Older settings may still hold
+  // per-screen "offline:<viewId>" keys, which are ignored.)
   // Absent key falls back to: collapsed when connected, expanded when offline.
   sidebarCollapsedByContext: Record<string, boolean>;
   setSidebarCollapsedForContext: (contextKey: string, collapsed: boolean) => void;

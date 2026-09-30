@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { useFleetStore } from './fleet-store';
+import { useSettingsStore } from './settings-store';
 
 // This project has no jsdom configured (renderer tests run under plain
 // Node and avoid touching `window`), but fleet-store.ts calls
@@ -44,5 +45,46 @@ describe('fleet-store', () => {
     expect(api.connect).toHaveBeenCalledWith({ type: 'udp', udpMode: 'client', udpRemoteHost: '127.0.0.1', udpRemotePort: 14550 });
     expect(api.fleetSetFocused).toHaveBeenCalledWith('v1');
     expect(useFleetStore.getState().focusedVehicleId).toBe('v1');
+  });
+
+  it('focusVehicle switches to the linked Vehicle Profile when the entry has one', async () => {
+    const profileId = useSettingsStore.getState().addVehicle({ name: 'Survey Quad', type: 'copter', weight: 900, batteryCells: 6, batteryCapacity: 5000 });
+    useSettingsStore.setState({ activeVehicleId: 'default' });
+
+    const entry = { id: 'v1', name: 'Drone 1', protocol: 'mavlink' as const, transportType: 'udp' as const, host: '127.0.0.1', port: 14550, vehicleProfileId: profileId };
+    await useFleetStore.getState().focusVehicle(entry, { type: 'udp', udpMode: 'client', udpRemoteHost: '127.0.0.1', udpRemotePort: 14550 });
+
+    expect(useSettingsStore.getState().activeVehicleId).toBe(profileId);
+  });
+
+  it('focusVehicle leaves the active profile alone when the entry has no link', async () => {
+    useSettingsStore.setState({ activeVehicleId: 'default' });
+    const entry = { id: 'v1', name: 'Drone 1', protocol: 'mavlink' as const, transportType: 'udp' as const, host: '127.0.0.1', port: 14550 };
+    await useFleetStore.getState().focusVehicle(entry, { type: 'udp', udpMode: 'client', udpRemoteHost: '127.0.0.1', udpRemotePort: 14550 });
+    expect(useSettingsStore.getState().activeVehicleId).toBe('default');
+  });
+
+  it('focusVehicle releases the roster monitor before connecting, so it does not fight the entry for the same port', async () => {
+    const order: string[] = [];
+    (window.electronAPI as unknown as { fleetSetFocused: ReturnType<typeof vi.fn> }).fleetSetFocused = vi.fn().mockImplementation(async () => { order.push('fleetSetFocused'); });
+    (window.electronAPI as unknown as { connect: ReturnType<typeof vi.fn> }).connect = vi.fn().mockImplementation(async () => { order.push('connect'); return true; });
+
+    const entry = { id: 'v1', name: 'Drone 1', protocol: 'mavlink' as const, transportType: 'udp' as const, udpMode: 'listen' as const, port: 14550 };
+    await useFleetStore.getState().focusVehicle(entry, { type: 'udp', udpMode: 'listen', udpPort: 14550, protocol: 'mavlink' });
+
+    expect(order).toEqual(['fleetSetFocused', 'connect']);
+  });
+
+  it('focusVehicle gives the entry back to its monitor if connecting fails, instead of leaving it unfocused and unmonitored', async () => {
+    (window.electronAPI as unknown as { connect: ReturnType<typeof vi.fn> }).connect = vi.fn().mockResolvedValue(false);
+    const fleetSetFocused = window.electronAPI.fleetSetFocused as ReturnType<typeof vi.fn>;
+
+    const entry = { id: 'v1', name: 'Drone 1', protocol: 'mavlink' as const, transportType: 'udp' as const, host: '127.0.0.1', port: 14550 };
+    const success = await useFleetStore.getState().focusVehicle(entry, { type: 'udp', udpMode: 'client', udpRemoteHost: '127.0.0.1', udpRemotePort: 14550 });
+
+    expect(success).toBe(false);
+    expect(useFleetStore.getState().focusedVehicleId).toBeNull();
+    expect(fleetSetFocused).toHaveBeenNthCalledWith(1, 'v1');
+    expect(fleetSetFocused).toHaveBeenNthCalledWith(2, null);
   });
 });
