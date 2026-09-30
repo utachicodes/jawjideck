@@ -781,7 +781,7 @@ function App() {
             </div>
 
             <h2 className="text-2xl font-semibold text-content mb-3">
-              Welcome to Jawji
+              Welcome to JawjiDeck
             </h2>
             <p className="text-content-secondary mb-8 leading-relaxed max-w-md mx-auto">
               Connect to your flight controller using the panel on the left,
