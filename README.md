@@ -447,21 +447,21 @@ Jawji is a next-generation ground control station built with Electron, React, an
 
 **Most users should download a pre-built release.** No need to clone or build anything.
 
-> **Windows and Linux.** Jawji ships pre-built releases for Windows and Linux. macOS is coming soon — the source is cross-platform (Electron/React), so contributors can already build and run it from source on macOS in the meantime — see [Development](#development-contributors-only).
+> **Windows, macOS, and Linux.** Jawji ships pre-built releases for all three.
 
 | Platform | Format | Link |
 |----------|--------|------|
 | **Windows** | Installer (.exe) | [Latest Release](https://github.com/utachicodes/jawjideck/releases/latest) |
 | **Windows** | Portable (.exe) | [Latest Release](https://github.com/utachicodes/jawjideck/releases/latest) |
+| **macOS** | .dmg (Apple Silicon / Intel) | [Latest Release](https://github.com/utachicodes/jawjideck/releases/latest) |
 | **Linux** | AppImage | [Latest Release](https://github.com/utachicodes/jawjideck/releases/latest) |
 | **Linux** | .deb (Debian/Ubuntu) | [Latest Release](https://github.com/utachicodes/jawjideck/releases/latest) |
-| **macOS** | Coming soon | — |
 
 **Getting started:** Download the installer, install, plug in your flight controller via USB, and you're ready to go.
 
-> **Note on code signing:** Jawji binaries are currently unsigned. Windows SmartScreen may show a warning — click "More info" then "Run anyway". We plan to obtain a code signing certificate once the project reaches a meaningful user base to justify the cost.
+> **Note on code signing:** Jawji binaries are currently unsigned on every platform. Windows SmartScreen may show a warning — click "More info" then "Run anyway". On macOS, Gatekeeper will say the app is "damaged" or from an "unidentified developer" — right-click (Control-click) it and choose **Open** instead of double-clicking, then confirm once. We plan to obtain code-signing certificates once the project reaches a meaningful user base to justify the cost.
 >
-> **Auto-updates:** Jawji supports seamless in-app updates on Windows — download and install with a single click. Linux (AppImage/.deb) is new this release; grab new versions from the [releases page](https://github.com/utachicodes/jawjideck/releases) manually for now until in-app updates are verified there too.
+> **Auto-updates:** Jawji supports seamless in-app updates on Windows — download and install with a single click. macOS and Linux builds are newer; grab new versions from the [releases page](https://github.com/utachicodes/jawjideck/releases) manually for now until in-app updates are verified there too.
 
 ---
 
@@ -659,7 +659,6 @@ Found a bug? We want to hear about it! Jawji includes a built-in bug reporting t
 - **Security Hardening** - API keys no longer exposed to renderer, URL validation hardened, SITL EEPROM path traversal fixed, input validation on controller endpoints
 
 ### Coming Soon
-- macOS release
 - Mission-planner map rendering fix (tiles/panel not displaying in some layouts)
 - Wiring `jawji-orchestrator`'s status into Jawji's Companion Dashboard so its advisories and confirm/reject actions are visible from the GCS, not just the local API
 
