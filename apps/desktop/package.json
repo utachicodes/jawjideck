@@ -152,7 +152,8 @@
       "gatekeeperAssess": false,
       "entitlements": "codesign/entitlements.mac.plist",
       "entitlementsInherit": "codesign/entitlements.mac.inherit.plist",
-      "notarize": true,
+      "identity": null,
+      "notarize": false,
       "target": [
         "dmg",
         "zip"

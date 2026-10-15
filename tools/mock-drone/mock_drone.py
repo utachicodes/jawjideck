@@ -129,7 +129,7 @@ def make_mavlink_v2(sysid, compid, msgid, payload):
     compat = 0
     seq = 0  # incremented per packet
     length = len(payload)
-    header = struct.pack('<BBBBBB', magic, length, incompat, compat, seq, sysid, compid)
+    header = struct.pack('<BBBBBBB', magic, length, incompat, compat, seq, sysid, compid)
     # Msgid (3 bytes, little-endian)
     msgid_bytes = struct.pack('<I', msgid)[:3]
     # Full message for CRC (header + msgid + payload)

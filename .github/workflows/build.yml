@@ -163,15 +163,95 @@ jobs:
             apps/desktop/release/*.blockmap
           if-no-files-found: ignore
 
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          elif [ -n "${{ inputs.release_tag }}" ]; then
+            TAG="${{ inputs.release_tag }}"
+          fi
+
+          if [ -n "$TAG" ]; then
+            VERSION="${TAG#v}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "BUILD_NAME=Jawji-${VERSION}-mac" >> $GITHUB_ENV
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Sync version to desktop app
+        run: |
+          node -e "
+            const fs = require('fs');
+            const root = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+            root.version = '${{ env.VERSION }}';
+            fs.writeFileSync('./package.json', JSON.stringify(root, null, 2) + '\n');
+            const desktop = JSON.parse(fs.readFileSync('./apps/desktop/package.json', 'utf8'));
+            desktop.version = '${{ env.VERSION }}';
+            fs.writeFileSync('./apps/desktop/package.json', JSON.stringify(desktop, null, 2) + '\n');
+          "
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Build macOS universal (unsigned)
+        working-directory: apps/desktop
+        env:
+          # No Developer ID cert is configured yet: force electron-builder to skip
+          # code signing entirely instead of falling back to an ad-hoc keychain
+          # identity it may find on the runner. Users get a Gatekeeper
+          # "unidentified developer" prompt until this project has a cert.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: pnpm package --mac --universal --publish never
+
+      - name: Upload macOS dmg
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILD_NAME }}-dmg
+          path: apps/desktop/release/*.dmg
+
+      - name: Upload macOS zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILD_NAME }}-zip
+          path: apps/desktop/release/*.zip
+
+      - name: Upload macOS update metadata
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ env.BUILD_NAME }}-meta
+          path: |
+            apps/desktop/release/*.yml
+            apps/desktop/release/*.blockmap
+          if-no-files-found: ignore
+
   # Upload artifacts to a release
   release:
-    needs: [build-windows, build-linux]
+    needs: [build-windows, build-linux, build-macos]
     runs-on: ubuntu-latest
     if: |
       always() &&
       (github.event_name == 'release' || inputs.release_tag != '') &&
       needs.build-windows.result == 'success' &&
-      needs.build-linux.result == 'success'
+      needs.build-linux.result == 'success' &&
+      needs.build-macos.result == 'success'
     permissions:
       contents: write
     steps:
@@ -202,6 +282,8 @@ jobs:
             artifacts/**/*.blockmap
             artifacts/**/*.AppImage
             artifacts/**/*.deb
+            artifacts/**/*.dmg
+            artifacts/**/*.zip
           )
           if [ ${#files[@]} -eq 0 ]; then
             echo "No artifacts found to upload" >&2
