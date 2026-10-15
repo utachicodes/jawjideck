@@ -114,6 +114,15 @@ export function createVehicleThreeJsLayer(): VehicleThreeJsLayer {
   // Current state
   let currentState: VehicleLayerState | null = null;
 
+  // Snapshot of the fields that actually require rebuilding geometry/materials
+  // (vs. just updating the existing vehicleGroup's transform). Position and
+  // attitude update every GPS/attitude tick and must NOT trigger a rebuild.
+  let lastArmed: boolean | null = null;
+  let lastHasDropline: boolean | null = null;
+  let lastShowHeadingLine: boolean | null = null;
+  let lastHeadingLineColor: string | null = null;
+  let lastHeadingLineLength: number | null = null;
+
   // Scene objects
   let vehicleGroup: THREE.Group | null = null;
   let bodyMesh: THREE.Mesh | null = null;
@@ -202,22 +211,50 @@ export function createVehicleThreeJsLayer(): VehicleThreeJsLayer {
     finOutlineMesh = null;
   }
 
-  function rebuildScene(state: VehicleLayerState) {
-    clearScene();
-    if (!state.lngLat) return;
-
-    ensureGeometries();
-
-    const [lon, lat] = state.lngLat;
+  /**
+   * Recompute the local mercator-coordinate origin from the vehicle's
+   * lon/lat. Cheap (no allocation beyond one object) and safe to call every
+   * tick — unlike rebuildScene, it never touches geometry/materials.
+   */
+  function updateTransform(lngLat: [number, number]) {
+    const [lon, lat] = lngLat;
     const refMc = maplibregl.MercatorCoordinate.fromLngLat([lon, lat], 0);
     const s = refMc.meterInMercatorCoordinateUnits();
-
     modelTransform = {
       translateX: refMc.x,
       translateY: refMc.y,
       translateZ: refMc.z,
       scale: s,
     };
+  }
+
+  /** Whether `state` requires tearing down and recreating meshes/materials. */
+  function needsRebuild(state: VehicleLayerState): boolean {
+    if (!vehicleGroup) return true;
+    const hasDropline = state.altitudeAgl >= MIN_ALT_FOR_DROPLINE;
+    return (
+      state.armed !== lastArmed ||
+      hasDropline !== lastHasDropline ||
+      state.showHeadingLine !== lastShowHeadingLine ||
+      state.headingLineColor !== lastHeadingLineColor ||
+      state.headingLineLength !== lastHeadingLineLength
+    );
+  }
+
+  function recordRebuildState(state: VehicleLayerState) {
+    lastArmed = state.armed;
+    lastHasDropline = state.altitudeAgl >= MIN_ALT_FOR_DROPLINE;
+    lastShowHeadingLine = state.showHeadingLine;
+    lastHeadingLineColor = state.headingLineColor;
+    lastHeadingLineLength = state.headingLineLength;
+  }
+
+  function rebuildScene(state: VehicleLayerState) {
+    clearScene();
+    if (!state.lngLat) return;
+
+    ensureGeometries();
+    updateTransform(state.lngLat);
 
     const color = state.armed ? COLOR_ARMED : COLOR_DISARMED;
 
@@ -489,7 +526,26 @@ export function createVehicleThreeJsLayer(): VehicleThreeJsLayer {
 
   function updateState(state: VehicleLayerState) {
     currentState = state;
-    rebuildScene(state);
+
+    if (!state.lngLat) {
+      clearScene();
+    } else if (needsRebuild(state)) {
+      rebuildScene(state);
+      recordRebuildState(state);
+    } else {
+      // Position/attitude-only update: move the existing meshes instead of
+      // disposing and recreating them. This is the common case — GPS and
+      // attitude telemetry update several times a second, while color,
+      // drop-line/ground-ring visibility, and heading-line styling change
+      // rarely.
+      updateTransform(state.lngLat);
+      if (vehicleGroup) {
+        vehicleGroup.rotation.y = -state.heading * DEG2RAD;
+        vehicleGroup.rotation.x = state.pitch * DEG2RAD;
+        vehicleGroup.rotation.z = -state.roll * DEG2RAD;
+      }
+    }
+
     map?.triggerRepaint();
   }
 
