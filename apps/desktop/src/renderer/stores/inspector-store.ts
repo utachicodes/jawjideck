@@ -208,6 +208,20 @@ function applyResetLocal(): void {
   useInspectorStore.setState((s) => ({ tick: s.tick + 1 }));
 }
 
+/**
+ * Clears inspector stats/rate accumulators/sample buffers without going
+ * through the user-facing "Clear" button — called when the active vehicle
+ * disconnects or changes, so per-(sysid,compid,msgid) state doesn't outlive
+ * the vehicle that produced it across reconnects and Fleet focus switches.
+ * Still broadcasts to other windows (e.g. a popped-out graph) so they clear
+ * in step with the main inspector.
+ */
+export function resetInspectorStatsForVehicleChange(): void {
+  window.electronAPI?.broadcastInspector?.({ type: 'reset' }).catch(() => {});
+  applyResetLocal();
+  useInspectorStore.setState({ tick: 0 });
+}
+
 export const useInspectorStore = create<InspectorStore>((set) => ({
   tick: 0,
   showOutgoing: false,

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { ConnectionState, ConnectOptions } from '../../shared/ipc-channels';
+import { resetInspectorStatsForVehicleChange } from './inspector-store';
 
 interface ConnectionStore {
   // State
@@ -27,7 +28,15 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
   error: null,
   platformChangeInProgress: false,
 
-  setConnectionState: (state) => set({ connectionState: state }),
+  setConnectionState: (state) => {
+    const wasConnected = get().connectionState.isConnected;
+    if (wasConnected && !state.isConnected) {
+      // The MAVLink Inspector keys its stats by (sysid, compid, msgid); without
+      // this they'd accumulate across every reconnect for the life of the app.
+      resetInspectorStatsForVehicleChange();
+    }
+    set({ connectionState: state });
+  },
   setError: (error) => set({ error }),
   setPlatformChangeInProgress: (inProgress) => set({ platformChangeInProgress: inProgress }),
 

@@ -38,6 +38,7 @@ Every pull request must add an entry here (see [Unreleased](#unreleased)) — CI
 - **CI: pnpm filter case sensitivity** — `ci.yml` used `@Jawji/desktop` (capital J) in the typecheck step but the package is `@jawji/desktop` (lowercase). pnpm filter is case-sensitive on Linux CI runners, so the typecheck silently matched zero projects and exited 0. Fixed to `@jawji/desktop`.
 - **Broken LICENSE links in jawji-controller README** — the License badge and footer linked to `packages/jawji-controller/LICENSE` and `packages/LICENSE`, neither of which exist. The LICENSE file lives at the repo root. Fixed both links to `../../LICENSE`.
 - **`tools/mock-drone/mock_drone.py` crashed on the first telemetry send** — the MAVLink v2 header was packed with `struct.pack('<BBBBBB', ...)` (6 fields) against 7 values, raising `struct.error` in the telemetry thread the instant a client connected. This is the no-hardware demo path for new users, so every attempt to connect Jawji to it silently died after the handshake. Fixed the format string to `'<BBBBBBB'` and confirmed telemetry now streams correctly in default, `--move`, and `--sitl` modes.
+- **MAVLink Inspector stats never cleared across reconnects.** Per-`(sysid, compid, msgid)` entries in `inspector-store.ts` were only cleared by the user clicking "Clear" — switching vehicles or reconnecting during a long session left every previous vehicle's message stats accumulating in memory indefinitely. Now cleared automatically whenever the connection transitions from connected to disconnected.
 
 ## [0.1.0] - 2026-08-17
 
