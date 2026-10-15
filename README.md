@@ -764,11 +764,6 @@ This project is licensed under the **GPL-3.0** - see the [LICENSE](LICENSE) file
 - [iNav](https://github.com/iNavFlight/inav) - Navigation-focused flight controller firmware
 - [Mission Planner](https://github.com/ArduPilot/MissionPlanner) - Original GCS that inspired this project
 - [QGroundControl](http://qgroundcontrol.com/) - Cross-platform GCS inspiration
+- ArduDeck - GCS inspiration
 - [MAVLink](https://mavlink.io/) - Micro Air Vehicle communication protocol
 - [Leaflet](https://leafletjs.com/) - Interactive maps library
-
----
-
-<p align="center">
-  Made with ❤️ by <a href="https://github.com/utachicodes">Codeforges</a>
-</p>
