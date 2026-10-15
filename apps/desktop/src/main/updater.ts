@@ -39,6 +39,20 @@ function checkMacCodeSigning(): Promise<boolean> {
   });
 }
 
+/**
+ * electron-updater's Linux auto-updater only knows how to replace a running
+ * AppImage (it checks the APPIMAGE env var the AppImage runtime sets, or
+ * SNAP for snap installs). A .deb install has neither, so checking for
+ * updates would still report one as "available", but downloading/installing
+ * it would fail — the user needs apt/dpkg for those, not this. Returns true
+ * (auto-update can proceed) for anything other than a non-AppImage,
+ * non-snap Linux install.
+ */
+function checkLinuxUpdateSupport(): boolean {
+  if (process.platform !== 'linux') return true;
+  return process.env.APPIMAGE != null || process.env.SNAP != null;
+}
+
 function sendStatus(info: Partial<AppUpdateInfo>) {
   const payload: AppUpdateInfo = {
     status: 'idle',
@@ -62,10 +76,10 @@ export async function initAutoUpdater(win: BrowserWindow): Promise<void> {
     return;
   }
 
-  // Check code signing on macOS
-  canAutoUpdate = await checkMacCodeSigning();
+  // Check code signing on macOS, and AppImage/snap on Linux.
+  canAutoUpdate = (await checkMacCodeSigning()) && checkLinuxUpdateSupport();
   if (!canAutoUpdate) {
-    console.log('[Updater] App is not code-signed, auto-download disabled (will open release page instead)');
+    console.log('[Updater] Auto-download not supported on this install (unsigned macOS app, or a .deb/rpm Linux install) - will open release page instead');
   }
 
   autoUpdater.autoDownload = false;

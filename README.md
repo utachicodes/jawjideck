@@ -461,7 +461,7 @@ Jawji is a next-generation ground control station built with Electron, React, an
 
 > **Note on code signing:** Jawji binaries are currently unsigned on every platform. Windows SmartScreen may show a warning — click "More info" then "Run anyway". On macOS, Gatekeeper will say the app is "damaged" or from an "unidentified developer" — right-click (Control-click) it and choose **Open** instead of double-clicking, then confirm once. We plan to obtain code-signing certificates once the project reaches a meaningful user base to justify the cost.
 >
-> **Auto-updates:** Jawji supports seamless in-app updates on Windows — download and install with a single click. macOS and Linux builds are newer; grab new versions from the [releases page](https://github.com/utachicodes/jawjideck/releases) manually for now until in-app updates are verified there too.
+> **Auto-updates:** Jawji checks for updates automatically and supports seamless in-app download-and-install on Windows and the Linux AppImage. The macOS build can't silently auto-update without an Apple Developer ID certificate (which this project doesn't have yet), and the Linux `.deb` is managed by `apt`/`dpkg`, not the app itself — both of those instead get a one-click button that opens the latest release so you can grab the new installer.
 
 ---
 
