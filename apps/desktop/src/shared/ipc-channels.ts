@@ -580,6 +580,16 @@ export const IPC_CHANNELS = {
    */
   INSPECTOR_BROADCAST: 'inspector:broadcast',
 
+  // App lock (username + PIN quick-unlock screen)
+  APP_LOCK_GET_STATE: 'app-lock:get-state',
+  APP_LOCK_SETUP: 'app-lock:setup',
+  APP_LOCK_VERIFY: 'app-lock:verify',
+  APP_LOCK_DISABLE: 'app-lock:disable',
+  /** Renderer -> main: "lock now" was clicked. */
+  APP_LOCK_REQUEST_ENGAGE: 'app-lock:request-engage',
+  /** Main -> renderer: show the lock screen. */
+  APP_LOCK_ENGAGE: 'app-lock:engage',
+
   // Map overlays
   OVERLAY_GET_RADAR_META: 'overlay:get-radar-meta',
   OVERLAY_GET_AIRSPACE: 'overlay:get-airspace',
@@ -1442,6 +1452,13 @@ export interface SigningStatus {
   keyMismatch?: boolean;
   /** All saved signing keys (fingerprint, label, associated FC system IDs) */
   savedKeys?: Array<{ fingerprint: string; label?: string; systemIds: number[] }>;
+}
+
+export interface AppLockState {
+  /** Whether the quick-unlock PIN screen is configured. */
+  enabled: boolean;
+  /** Display name shown on the lock screen. Never the PIN itself. */
+  username: string | null;
 }
 
 export interface AppUpdateInfo {

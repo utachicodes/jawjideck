@@ -23,6 +23,7 @@ import { createLicenseCredentialStore, type LicenseCredentialStore } from './lic
 import { createLicenseGate, LicenseGateError, type LicenseGate } from './licensing/license-gate.js';
 import { registerDroneBridgeIpcHandlers } from './dronebridge/dronebridge-ipc-handlers.js';
 import { setupOverlayHandlers, getApiKey } from './overlays/overlay-ipc-handlers.js';
+import { setupAppLockHandlers } from './app-lock.js';
 import { getAllWindows, getMainWindow } from './window-manager.js';
 import {
   MAVLinkParser,
@@ -8665,6 +8666,9 @@ export function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   // Map overlays (RainViewer radar, OpenAIP airspace/airports)
   setupOverlayHandlers();
+
+  // App lock (username + PIN quick-unlock screen)
+  setupAppLockHandlers(mainWindow);
 
   // === Log Download & Diagnostics ===
 

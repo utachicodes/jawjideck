@@ -2,18 +2,123 @@ import { useState, useEffect } from 'react';
 import { useSettingsStore, type VoiceAlertCategories } from '../../../stores/settings-store';
 import { useToursStore } from '../../../stores/tours-store';
 import { useNavigationStore } from '../../../stores/navigation-store';
+import { useAppLockStore } from '../../../stores/app-lock-store';
 import { ScriptInstallModal } from '../../script-installer/ScriptInstallModal';
-import { Terminal, FlaskConical, Puzzle, RotateCcw, Volume2 } from 'lucide-react';
+import { Terminal, FlaskConical, Puzzle, RotateCcw, Volume2, Lock } from 'lucide-react';
 import { speak } from '../../../lib/voice-alerts';
 
 export function ToolsTab() {
   return (
     <div className="space-y-6">
       <ConsoleSettingsSection />
+      <AppLockSection />
       <VoiceAlertsSection />
       <AiAnalysisSection />
       <ExperimentalFeaturesSection />
     </div>
+  );
+}
+
+function AppLockSection() {
+  const { enabled, username, setup, disable, lockNow } = useAppLockStore();
+  const [newUsername, setNewUsername] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [disablePin, setDisablePin] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSetup = async () => {
+    setError(null);
+    const result = await setup(newUsername, newPin);
+    if (!result.success) {
+      setError(result.error ?? 'Could not set up App Lock');
+      return;
+    }
+    setNewUsername('');
+    setNewPin('');
+  };
+
+  const handleDisable = async () => {
+    setError(null);
+    const ok = await disable(disablePin);
+    if (!ok) {
+      setError('Incorrect PIN');
+      return;
+    }
+    setDisablePin('');
+  };
+
+  return (
+    <section className="bg-gradient-to-br from-surface to-surface-base rounded-xl border border-subtle p-5">
+      <h2 className="text-sm font-medium text-content mb-4 flex items-center gap-2">
+        <Lock size={14} className="text-content-secondary" />
+        App Lock
+      </h2>
+      {!enabled ? (
+        <div className="space-y-3">
+          <p className="text-xs text-content-secondary">
+            Require a username and PIN to open Jawji - useful if other people can get to this laptop.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="text"
+              value={newUsername}
+              onChange={(e) => setNewUsername(e.target.value)}
+              placeholder="Username"
+              className="bg-surface-input border border-subtle rounded-lg px-3 py-2 text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-blue-500/50"
+            />
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={8}
+              value={newPin}
+              onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+              placeholder="4-8 digit PIN"
+              className="bg-surface-input border border-subtle rounded-lg px-3 py-2 text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-blue-500/50"
+            />
+          </div>
+          <button
+            onClick={handleSetup}
+            disabled={!newUsername.trim() || newPin.length < 4}
+            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Enable App Lock
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between bg-surface-input rounded-lg p-3">
+            <div className="text-sm text-content">
+              Enabled for <span className="font-medium">{username}</span>
+            </div>
+            <button
+              onClick={() => lockNow()}
+              className="px-3 py-1 rounded text-xs text-content-secondary hover:text-content hover:bg-surface-raised border border-subtle"
+            >
+              Lock now
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={8}
+              value={disablePin}
+              onChange={(e) => setDisablePin(e.target.value.replace(/\D/g, ''))}
+              placeholder="Enter PIN to disable"
+              className="flex-1 bg-surface-input border border-subtle rounded-lg px-3 py-2 text-sm text-content placeholder-content-tertiary focus:outline-none focus:border-blue-500/50"
+            />
+            <button
+              onClick={handleDisable}
+              disabled={!disablePin}
+              className="px-4 py-2 rounded-lg bg-surface-raised hover:bg-surface-input text-content text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-subtle"
+            >
+              Disable
+            </button>
+          </div>
+        </div>
+      )}
+      {error && <div className="text-xs text-red-400 mt-2">{error}</div>}
+    </section>
   );
 }
 

@@ -38,6 +38,8 @@ import { useLegacyConfigStore } from './stores/legacy-config-store';
 import { useCliStore, setupCliDataListener, cleanupCliDataListener } from './stores/cli-store';
 import { initializeSettings, useSettingsStore, type VehicleType, type ExperienceLevel } from './stores/settings-store';
 import { ExperienceLevelDialog } from './components/ui/ExperienceLevelDialog';
+import { LockScreen } from './components/ui/LockScreen';
+import { useAppLockStore } from './stores/app-lock-store';
 import { AppTourProvider } from './components/tours/AppTourProvider';
 import { useFlightControlStore } from './stores/flight-control-store';
 import { useCompanionStore } from './stores/companion-store';
@@ -234,6 +236,7 @@ function CollapsedSidebar({ onExpand }: { onExpand: () => void }) {
 }
 
 function App() {
+  const locked = useAppLockStore((s) => s.locked);
   const { connectionState, setConnectionState } = useConnectionStore();
   const { updateAttitude, updatePosition, updateGps, updateBattery, updateVfrHud, updateFlight, updateBatch, reset } = useTelemetryStore();
   const addStatusMessage = useMessagesStore((s) => s.addMessage);
@@ -384,6 +387,11 @@ function App() {
   // Initialize settings on mount
   useEffect(() => {
     initializeSettings();
+  }, []);
+
+  // App lock: fetch whether a username+PIN is configured, and if so, start locked.
+  useEffect(() => {
+    useAppLockStore.getState().init();
   }, []);
 
   // Crash recovery: if a mission was autosaved last session and nothing has
@@ -866,6 +874,7 @@ function App() {
     <ModuleRuntime>
     <AppTourProvider>
     <AppShell>
+      {locked && <LockScreen />}
       <GlobalTooltip />
       <ActivityIndicator />
       <SitlAutoApplyWatcher />
