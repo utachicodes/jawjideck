@@ -14,7 +14,7 @@ By submitting a Contribution to the Jawji project, you accept and agree to the f
 
 **"Project"** means the Jawji software project, including all repositories maintained under the Jawji project by the Copyright Holder.
 
-**"Copyright Holder"** means Ruben M, the original author and sole copyright holder of Jawji, and any successors or assigns.
+**"Copyright Holder"** means Abdoullah N, the original author and sole copyright holder of Jawji, and any successors or assigns.
 
 **"Contribution"** means any original work of authorship, including any modifications to or additions to existing work, that you intentionally submit to the Project for inclusion. This includes code, documentation, configuration, tests, or any other material submitted via pull request, patch, issue, or any other mechanism.
 

@@ -10,7 +10,7 @@ All contributions to Jawji require agreement to our [Contributor License Agreeme
 
 ### Why?
 
-Jawji is licensed under GPL v3 with a [Marketplace Module Exception](LICENSE) that allows third-party modules sold through the official Jawji Hangar to use proprietary licenses. To maintain this dual-licensing structure, we need sufficient rights over all contributed code. The CLA grants the project maintainer (Ruben M) the ability to manage licensing while keeping Jawji open source.
+Jawji is licensed under GPL v3 with a [Marketplace Module Exception](LICENSE) that allows third-party modules sold through the official Jawji Hangar to use proprietary licenses. To maintain this dual-licensing structure, we need sufficient rights over all contributed code. The CLA grants the project maintainer (Abdoullah N) the ability to manage licensing while keeping Jawji open source.
 
 ### How to agree
 
